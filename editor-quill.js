@@ -492,6 +492,16 @@ class SiksamitraEditor {
         const titleEdit = document.getElementById('titleEdit');
         if (titleEdit) {
             titleEdit.value = this.currentFileName;
+            
+            // Prevent focus from returning to editor when clicking/typing in input
+            titleEdit.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+            
+            titleEdit.addEventListener('focus', (e) => {
+                e.stopPropagation();
+            });
+            
             titleEdit.addEventListener('input', (e) => {
                 this.currentFileName = e.target.value || 'Untitled document';
                 document.title = `śikṣāmitra - ${this.currentFileName}`;
@@ -508,6 +518,16 @@ class SiksamitraEditor {
         const titleEditHeader = document.getElementById('titleEditHeader');
         if (titleEditHeader) {
             titleEditHeader.value = this.currentFileName;
+            
+            // Prevent focus from returning to editor when clicking/typing in input
+            titleEditHeader.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+            
+            titleEditHeader.addEventListener('focus', (e) => {
+                e.stopPropagation();
+            });
+            
             titleEditHeader.addEventListener('input', (e) => {
                 this.currentFileName = e.target.value || 'Untitled document';
                 document.title = `śikṣāmitra - ${this.currentFileName}`;
