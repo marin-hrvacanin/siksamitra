@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>śikṣāmitra</title>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Gentium+Plus:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="light">
+    <!-- Theme Toggle (top-right like main2.pyw) -->
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌞/🌙</button>
+
+    <!-- Main Application Container -->
+    <div class="app-container">
+        <!-- Ribbon Tabs (like Microsoft Word) -->
+        <div class="ribbon-tabs">
+            <div class="tab-headers">
+                <div class="app-title-section">
+                    <span class="app-name">śikṣāmitra</span>
+                    <input type="text" id="titleEditHeader" class="title-input-header" value="Untitled document" title="Document title">
+                </div>
+                <div class="tab-buttons">
+                    <button class="tab-header" data-tab="file">File</button>
+                    <button class="tab-header active" data-tab="edit">Edit</button>
+                    <button class="tab-header" data-tab="insert">Insert</button>
+                    <button class="tab-header" data-tab="convert">Convert</button>
+                    <button class="tab-header" data-tab="preferences">Preferences</button>
+                </div>
+            </div>
+
+            <!-- File Tab Content -->
+            <div class="tab-content" id="file-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="saveBtn" class="ribbon-btn" title="Save the document (single self-contained HTML)">
+                                💾 Save
+                            </button>
+                            <button id="saveAsBtn" class="ribbon-btn" title="Save the document to a new file">
+                                📝 Save As…
+                            </button>
+                        </div>
+                        <div class="group-label">Document</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="exportBtn" class="ribbon-btn" title="Export document (same as Save for now)">
+                                📤 Export…
+                            </button>
+                        </div>
+                        <div class="group-label">Export</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <label for="titleEdit">Title:</label>
+                            <input type="text" id="titleEdit" placeholder="Untitled document" />
+                        </div>
+                        <div class="group-label">Metadata</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Tab Content -->
+            <div class="tab-content active" id="edit-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="shortHoldingButton" class="ribbon-btn" title="Apply or remove short holding (thin green rectangle) on selection">
+                                <span class="holding-icon short">a</span>
+                            </button>
+                            <button id="longHoldingButton" class="ribbon-btn" title="Apply or remove long holding (thick green rectangle) on selection">
+                                <span class="holding-icon long">a</span>
+                            </button>
+                            <button id="cleanHoldingsButton" class="ribbon-btn" title="Remove holdings from the current selection only">
+                                ❌
+                            </button>
+                        </div>
+                        <div class="group-label">Holdings</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="boldButton" class="ribbon-btn" title="Bold (Ctrl+B)">
+                                <strong>B</strong>
+                            </button>
+                            <button id="italicButton" class="ribbon-btn" title="Italic (Ctrl+I)">
+                                <em>I</em>
+                            </button>
+                            <button id="underlineButton" class="ribbon-btn" title="Underline (Ctrl+U)">
+                                <u>U</u>
+                            </button>
+                            <select id="styleCombo">
+                                <option value="normal">Normal</option>
+                                <option value="change">Change</option>
+                                <option value="svara">Svara</option>
+                                <option value="mixed" disabled>Mixed</option>
+                            </select>
+                        </div>
+                        <div class="group-label">Text Formatting</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="svaritaButton" class="ribbon-btn small" title="Svarita - apply to previous character">a̍</button>
+                            <button id="anudattaButton" class="ribbon-btn small" title="Anudatta - apply to previous character">a̱</button>
+                            <button id="udattaButton" class="ribbon-btn small" title="Udatta - apply to previous character">a̎</button>
+                            <button id="tickButton" class="ribbon-btn small" title="Tick mark - apply to previous character">aˎ</button>
+                        </div>
+                        <div class="group-label">Svara</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insert Tab Content -->
+            <div class="tab-content" id="insert-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <div class="iast-dropdown-container">
+                                <button class="ribbon-btn" id="iastMenuBtn" title="Insert IAST Characters (F9 + key for shortcuts)">
+                                    <span style="font-family: 'Gentium Plus', serif; font-size: 16px;">Insert IAST</span>
+                                </button>
+                                <div class="iast-dropdown-menu" id="iastMenu">
+                                    <div class="iast-menu-content">
+                                        <table class="iast-table">
+                                            <caption>Vowels & Special</caption>
+                                            <tbody>
+                                                <tr>
+                                                    <td><button class="iast-char-btn" data-char="ā" title="F9+a">ā</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ī" title="F9+i">ī</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ū" title="F9+u">ū</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ṛ" title="F9+r">ṛ</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ṝ" title="F9+R">ṝ</button></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><button class="iast-char-btn" data-char="ḷ" title="F9+l">ḷ</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ḹ" title="F9+L">ḹ</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ṁ" title="F9+m">ṁ</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ḥ" title="F9+h">ḥ</button></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <table class="iast-table">
+                                            <caption>Gutturals</caption>
+                                            <tbody>
+                                                <tr>
+                                                    <td><button class="iast-char-btn" data-char="k">k</button></td>
+                                                    <td><button class="iast-char-btn" data-char="kh">kh</button></td>
+                                                    <td><button class="iast-char-btn" data-char="g">g</button></td>
+                                                    <td><button class="iast-char-btn" data-char="gh">gh</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ṅ" title="F9+G">ṅ</button></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <table class="iast-table">
+                                            <caption>Palatals</caption>
+                                            <tbody>
+                                                <tr>
+                                                    <td><button class="iast-char-btn" data-char="c">c</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ch">ch</button></td>
+                                                    <td><button class="iast-char-btn" data-char="j">j</button></td>
+                                                    <td><button class="iast-char-btn" data-char="jh">jh</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ñ" title="F9+J">ñ</button></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <table class="iast-table">
+                                            <caption>Retroflexes</caption>
+                                            <tbody>
+                                                <tr>
+                                                    <td><button class="iast-char-btn" data-char="ṭ" title="F9+t">ṭ</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ṭh" title="F9+T">ṭh</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ḍ" title="F9+d">ḍ</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ḍh" title="F9+D">ḍh</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ṇ" title="F9+n">ṇ</button></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <table class="iast-table">
+                                            <caption>Dentals</caption>
+                                            <tbody>
+                                                <tr>
+                                                    <td><button class="iast-char-btn" data-char="t">t</button></td>
+                                                    <td><button class="iast-char-btn" data-char="th">th</button></td>
+                                                    <td><button class="iast-char-btn" data-char="d">d</button></td>
+                                                    <td><button class="iast-char-btn" data-char="dh">dh</button></td>
+                                                    <td><button class="iast-char-btn" data-char="n">n</button></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <table class="iast-table">
+                                            <caption>Labials</caption>
+                                            <tbody>
+                                                <tr>
+                                                    <td><button class="iast-char-btn" data-char="p">p</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ph">ph</button></td>
+                                                    <td><button class="iast-char-btn" data-char="b">b</button></td>
+                                                    <td><button class="iast-char-btn" data-char="bh">bh</button></td>
+                                                    <td><button class="iast-char-btn" data-char="m">m</button></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <table class="iast-table">
+                                            <caption>Semivowels & Sibilants</caption>
+                                            <tbody>
+                                                <tr>
+                                                    <td><button class="iast-char-btn" data-char="y">y</button></td>
+                                                    <td><button class="iast-char-btn" data-char="r">r</button></td>
+                                                    <td><button class="iast-char-btn" data-char="l">l</button></td>
+                                                    <td><button class="iast-char-btn" data-char="v">v</button></td>
+                                                    <td><button class="iast-char-btn" data-char="ś" title="F9+s">ś</button></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><button class="iast-char-btn" data-char="ṣ" title="F9+S">ṣ</button></td>
+                                                    <td><button class="iast-char-btn" data-char="s">s</button></td>
+                                                    <td><button class="iast-char-btn" data-char="h">h</button></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="group-label">Characters</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Convert Tab Content -->
+            <div class="tab-content" id="convert-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <!-- Empty for now -->
+                        </div>
+                        <div class="group-label">Transliteration</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <!-- Empty for now -->
+                        </div>
+                        <div class="group-label">Marking consistency</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferences Tab Content -->
+            <div class="tab-content" id="preferences-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <label for="cleanupModeCombo">Cleanup strategy:</label>
+                            <select id="cleanupModeCombo" title="Controls how holdings cleanup runs after edits.">
+                                <option value="complete">Complete and reliable (default)</option>
+                                <option value="balanced">Balanced (localized + debounce)</option>
+                                <option value="localized">Localized only (fast)</option>
+                                <option value="save-only">On Save only</option>
+                            </select>
+                        </div>
+                        <div class="group-label">Editing behavior</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Container (like main2.pyw paper background) -->
+        <div class="container">
+            <div id="editor" spellcheck="false"></div>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="statusbar">
+            <div class="statusbar-left">
+                <span id="wordCount">Words: 0</span>
+                <span class="separator">|</span>
+                <span id="charCount">Characters: 0</span>
+                <span class="separator">|</span>
+                <span id="lineCount">Lines: 1</span>
+            </div>
+            <div class="statusbar-right">
+                <span>Zoom:</span>
+                <input type="range" id="zoomSlider" min="50" max="200" value="100" step="10" title="Adjust zoom level">
+                <span id="zoomLevel">100%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" accept=".txt,.html,.md" style="display: none;">
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <script src="theme-manager.js"></script>
+    <script src="file-operations.js"></script>
+    <script src="editor-quill.js"></script>
+</body>
+</html>

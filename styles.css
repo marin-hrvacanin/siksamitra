@@ -1,0 +1,676 @@
+/* ==================== CSS VARIABLES (matching main2.pyw) ==================== */
+:root {
+  /* Light Theme Colors (from main2.pyw) */
+  --bg-color: #f8f9fa;
+  --paper-bg: #ffffff;
+  --text-color: #2c3e50;
+  --holding-border: #538135;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  /* Dark Theme Colors (from main2.pyw) */
+  --bg-color: #1a1a1a;
+  --paper-bg: #2d2d2d;
+  --text-color: #e0e0e0;
+  --holding-border: #7cb342;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* ==================== GLOBAL STYLES ==================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 32px;
+    line-height: 1.5;
+    color: var(--text-color);
+    background: var(--bg-color);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}/* ==================== THEME TOGGLE (top-right like main2.pyw) ==================== */
+.theme-toggle {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--paper-bg);
+  color: var(--text-color);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+}
+
+.theme-toggle:hover {
+  opacity: 0.8;
+}
+
+/* ==================== APP CONTAINER ==================== */
+.app-container {
+    background: var(--paper-bg);
+    min-height: 100vh;
+}
+
+/* ==================== RIBBON TABS (Word-like interface) ==================== */
+.ribbon-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #f0f0f0;
+    border-bottom: 1px solid #ccc;
+    width: 100%;
+    box-shadow: var(--shadow);
+}[data-theme='dark'] .ribbon-tabs {
+  background: #333;
+  border-bottom-color: #555;
+}
+
+.tab-headers {
+  display: flex;
+  align-items: center;
+  background: #e8e8e8;
+  border-bottom: 1px solid #ccc;
+}
+
+[data-theme='dark'] .tab-headers {
+  background: #2a2a2a;
+  border-bottom-color: #555;
+}
+
+/* App title section (left side) */
+.app-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-right: 1px solid #ccc;
+}
+
+[data-theme='dark'] .app-title-section {
+  border-right-color: #555;
+}
+
+.app-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text-color);
+  white-space: nowrap;
+}
+
+.title-input-header {
+  font-size: 13px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-color);
+  border-radius: 3px;
+  min-width: 200px;
+  transition: all 0.2s;
+}
+
+.title-input-header:hover {
+  border-color: var(--button-border);
+  background: var(--editor-bg);
+}
+
+.title-input-header:focus {
+  outline: none;
+  border-color: var(--button-hover-border);
+  background: var(--editor-bg);
+}
+
+[data-theme='dark'] .title-input-header:hover {
+  border-color: #555;
+  background: #333;
+}
+
+[data-theme='dark'] .title-input-header:focus {
+  border-color: #666;
+  background: #333;
+}
+
+/* Tab buttons container */
+.tab-buttons {
+  display: flex;
+  flex: 1;
+}
+
+.tab-header {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  border-right: 1px solid #ccc;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-color);
+  transition: background-color 0.2s;
+}
+
+[data-theme='dark'] .tab-header {
+  border-right-color: #555;
+}
+
+.tab-header:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+[data-theme='dark'] .tab-header:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.tab-header.active {
+  background: #f0f0f0;
+  font-weight: bold;
+}
+
+[data-theme='dark'] .tab-header.active {
+  background: #333;
+}
+
+/* ==================== TAB CONTENT ==================== */
+.tab-content {
+  display: none;
+  padding: 8px 12px;
+  background: #f0f0f0;
+  min-height: 60px;
+  max-height: 60px;
+  overflow: visible;
+}
+
+[data-theme='dark'] .tab-content {
+  background: #333;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.ribbon-groups {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.ribbon-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.group-label {
+  font-size: 10px;
+  color: #666;
+  margin-top: 4px;
+  text-align: center;
+  width: 100%;
+}
+
+[data-theme='dark'] .group-label {
+  color: #aaa;
+}
+
+.group-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 3px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ==================== RIBBON BUTTONS ==================== */
+.ribbon-btn {
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-color);
+  transition: all 0.2s;
+  min-width: 50px;
+  text-align: center;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme='dark'] .ribbon-btn {
+  background: #444;
+  border-color: #666;
+}
+
+.ribbon-btn:hover {
+  background: #e6e6e6;
+  border-color: #999;
+}
+
+[data-theme='dark'] .ribbon-btn:hover {
+  background: #555;
+  border-color: #777;
+}
+
+/* ==================== RESPONSIVE BUTTON STATES ==================== */
+.ribbon-btn.active {
+  background: #007acc !important;
+  color: white !important;
+  border-color: #005a9e !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+[data-theme='dark'] .ribbon-btn.active {
+  background: #0e639c !important;
+  border-color: #1177bb !important;
+}
+
+/* ==================== STYLE DROPDOWN STATES ==================== */
+#styleCombo.style-normal {
+  color: var(--text-color);
+  font-style: normal;
+}
+
+#styleCombo.style-change {
+  color: #1d4ed8 !important;
+  font-style: italic !important;
+  background: #f0f8ff;
+}
+
+[data-theme='dark'] #styleCombo.style-change {
+  background: #1a2332;
+}
+
+#styleCombo.style-mixed {
+  color: #666 !important;
+  font-style: italic !important;
+  background: #fff3cd;
+}
+
+[data-theme='dark'] #styleCombo.style-mixed {
+  background: #3d3d1f;
+}
+
+.ribbon-btn.small {
+  min-width: 35px;
+  padding: 4px 8px;
+}
+
+/* IAST Dropdown Menu */
+.iast-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.iast-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--editor-bg);
+  border: 1px solid var(--button-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  padding: 10px;
+  margin-top: 2px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.iast-dropdown-menu.show {
+  display: block;
+}
+
+[data-theme='dark'] .iast-dropdown-menu {
+  background: #2a2a2a;
+  border-color: #555;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.iast-menu-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.iast-table {
+  border-collapse: collapse;
+  font-family: 'Gentium Plus', serif;
+}
+
+.iast-table caption {
+  text-align: left;
+  font-weight: bold;
+  font-size: 11px;
+  color: var(--text-color);
+  margin-bottom: 4px;
+  padding-left: 2px;
+}
+
+.iast-table td {
+  padding: 2px;
+}
+
+.iast-char-btn {
+  min-width: 40px;
+  height: 32px;
+  padding: 4px 6px;
+  font-size: 15px;
+  font-family: 'Gentium Plus', serif;
+  background: var(--button-bg);
+  border: 1px solid var(--button-border);
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-color);
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iast-char-btn:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--button-hover-border);
+  transform: translateY(-1px);
+}
+
+.iast-char-btn:active {
+  background: var(--button-active-bg);
+  transform: translateY(0);
+}
+
+[data-theme='dark'] .iast-char-btn {
+  background: #3a3a3a;
+  border-color: #555;
+}
+
+[data-theme='dark'] .iast-char-btn:hover {
+  background: #4a4a4a;
+  border-color: #666;
+}
+
+[data-theme='dark'] .iast-char-btn:active {
+  background: #2a2a2a;
+}
+
+/* Holdings button icons */
+.holding-icon.short {
+  color: var(--holding-border);
+  border: 2px solid var(--holding-border);
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-block;
+  min-width: 16px;
+  text-align: center;
+}
+
+.holding-icon.long {
+  color: var(--holding-border);
+  border: 3px solid var(--holding-border);
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-block;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ==================== FORM ELEMENTS ==================== */
+select, input[type="text"] {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: var(--paper-bg);
+  color: var(--text-color);
+  font-size: 12px;
+  min-width: 120px;
+}
+
+[data-theme='dark'] select,
+[data-theme='dark'] input[type="text"] {
+  border-color: #666;
+}
+
+select:focus, input[type="text"]:focus {
+  outline: none;
+  border-color: #0078d4;
+}
+
+label {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+[data-theme='dark'] label {
+  color: #aaa;
+}
+
+/* ==================== DOCUMENT CONTAINER (main2.pyw style) ==================== */
+.container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  margin-bottom: 50px; /* Space for statusbar */
+  background: var(--paper-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 3rem;
+  min-height: calc(100vh - 200px);
+}
+
+/* ==================== EDITOR STYLES (matching main2.pyw) ==================== */
+#editor {
+    min-height: 60vh;
+    outline: none;
+    border: none;
+}
+
+#editor:focus {
+    outline: none;
+}
+
+/* ==================== QUILL OVERRIDES ==================== */
+.ql-container {
+    font-family: Arial, sans-serif !important;
+    font-size: 32px !important;
+    border: none !important;
+}
+
+.ql-editor {
+    padding: 0 !important;
+    color: var(--text-color) !important;
+    background: transparent !important;
+    line-height: 1.5 !important;
+    font-size: 32px !important;
+    font-family: Arial, sans-serif !important;
+    min-height: 60vh !important;
+    border: none !important;
+    /* Disable spell checking red squiggly lines */
+    -webkit-user-modify: read-write-plaintext-only;
+}
+
+.ql-editor:focus {
+    outline: none !important;
+    border: none !important;
+}
+
+.ql-editor.ql-blank::before {
+    font-style: normal !important;
+    color: #999 !important;
+    font-size: 32px !important;
+    left: 0 !important;
+}/* ==================== CUSTOM FORMAT STYLES (matching example.html) ==================== */
+.ql-editor .ql-holding-short,
+.ql-holding-short {
+  border: 1px solid var(--holding-border);
+  border-radius: 3px;
+  padding: 0;
+  display: inline;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.ql-editor .ql-holding-long,
+.ql-holding-long {
+  border: 2px solid var(--holding-border);
+  border-radius: 3px;
+  padding: 0;
+  display: inline;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.ql-editor .ql-change-style,
+.ql-change-style {
+  font-style: italic;
+  color: #1d4ed8;
+  white-space: pre;
+}
+
+/* Svara marks with special styling - positioned to combine with previous character */
+.ql-editor .ql-svara-char,
+.ql-svara-char {
+  font-family: 'Gentium Plus', serif;
+  font-size: 28px;
+  color: #943634;
+  display: inline-block;
+  line-height: 1;
+  position: relative;
+  left: -0.5em; /* Offset to overlap with previous character */
+  margin-right: -0.5em; /* Compensate spacing so next character isn't affected */
+  width: 0; /* Make it take no horizontal space */
+  vertical-align: top;
+  z-index: 1; /* Ensure it appears above the base character */
+}
+
+.style-normal {
+  /* intentionally minimal to allow inheritance */
+  font-style: normal;
+  color: inherit;
+}
+
+.ql-editor .svara-accent,
+.svara-accent {
+  color: #cc0000;
+  font-weight: bold;
+  font-size: 1.05em;
+  line-height: 1;
+  display: inline;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 768px) {
+  body {
+    padding: 1rem;
+    font-size: 24px;
+  }
+  
+  .container {
+    margin: 1rem auto;
+    padding: 2rem;
+  }
+  
+  #editor,
+  .ql-editor {
+    font-size: 24px !important;
+  }
+  
+  .ribbon-groups {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .theme-toggle {
+    top: 8px;
+    right: 8px;
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
+/* ==================== ANIMATIONS ==================== */
+.ribbon-btn,
+.tab-header,
+select,
+input[type="text"] {
+  transition: all 0.2s ease;
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+.hidden {
+  display: none !important;
+}
+
+.active {
+  background-color: #e6e6e6 !important;
+}
+
+[data-theme='dark'] .active {
+  background-color: #555 !important;
+}
+
+/* ==================== STATUSBAR ==================== */
+.statusbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: #f0f0f0;
+  border-top: 1px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--text-color);
+  z-index: 100;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .statusbar {
+  background: #2a2a2a;
+  border-top-color: #555;
+}
+
+.statusbar-left,
+.statusbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusbar .separator {
+  color: #999;
+}
+
+#zoomSlider {
+  width: 100px;
+  height: 4px;
+  cursor: pointer;
+  accent-color: #538135;
+}
+
+#zoomLevel {
+  min-width: 40px;
+  font-weight: 500;
+}

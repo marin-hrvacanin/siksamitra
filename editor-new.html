@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>śikṣāmitra</title>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="light">
+    <!-- Theme Toggle (top-right like main2.pyw) -->
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌞/🌙</button>
+
+    <!-- Main Application Container -->
+    <div class="app-container">
+        <!-- Ribbon Tabs (like Microsoft Word) -->
+        <div class="ribbon-tabs">
+            <div class="tab-headers">
+                <button class="tab-header" data-tab="file">File</button>
+                <button class="tab-header active" data-tab="edit">Edit</button>
+                <button class="tab-header" data-tab="insert">Insert</button>
+                <button class="tab-header" data-tab="convert">Convert</button>
+                <button class="tab-header" data-tab="preferences">Preferences</button>
+            </div>
+
+            <!-- File Tab Content -->
+            <div class="tab-content" id="file-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="saveBtn" class="ribbon-btn" title="Save the document (single self-contained HTML)">
+                                💾 Save
+                            </button>
+                            <button id="saveAsBtn" class="ribbon-btn" title="Save the document to a new file">
+                                📝 Save As…
+                            </button>
+                        </div>
+                        <div class="group-label">Document</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="exportBtn" class="ribbon-btn" title="Export document (same as Save for now)">
+                                📤 Export…
+                            </button>
+                        </div>
+                        <div class="group-label">Export</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <label for="titleEdit">Title:</label>
+                            <input type="text" id="titleEdit" placeholder="Untitled document" />
+                        </div>
+                        <div class="group-label">Metadata</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Tab Content -->
+            <div class="tab-content active" id="edit-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="shortHoldingButton" class="ribbon-btn" title="Apply or remove short holding (thin green rectangle) on selection">
+                                <span class="holding-icon short">⬜</span> Short
+                            </button>
+                            <button id="longHoldingButton" class="ribbon-btn" title="Apply or remove long holding (thick green rectangle) on selection">
+                                <span class="holding-icon long">⬛</span> Long
+                            </button>
+                            <button id="cleanHoldingsButton" class="ribbon-btn" title="Remove holdings from the current selection only">
+                                ❌ Clean
+                            </button>
+                        </div>
+                        <div class="group-label">Holdings</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="boldButton" class="ribbon-btn" title="Bold (Ctrl+B)">
+                                <strong>B</strong>
+                            </button>
+                            <button id="italicButton" class="ribbon-btn" title="Italic (Ctrl+I)">
+                                <em>I</em>
+                            </button>
+                            <button id="underlineButton" class="ribbon-btn" title="Underline (Ctrl+U)">
+                                <u>U</u>
+                            </button>
+                            <select id="styleCombo">
+                                <option value="normal">Normal</option>
+                                <option value="change">Change</option>
+                                <option value="mixed" disabled>Mixed</option>
+                            </select>
+                        </div>
+                        <div class="group-label">Text Formatting</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="svaritaButton" class="ribbon-btn small" title="Svarita - apply to previous character">á</button>
+                            <button id="anudattaButton" class="ribbon-btn small" title="Anudatta - apply to previous character">a̱</button>
+                            <button id="udattaButton" class="ribbon-btn small" title="Udatta - apply to previous character">a̎</button>
+                            <button id="tickButton" class="ribbon-btn small" title="Tick mark - apply to previous character">aˎ</button>
+                        </div>
+                        <div class="group-label">Svara</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insert Tab Content -->
+            <div class="tab-content" id="insert-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <!-- Empty for now -->
+                        </div>
+                        <div class="group-label">Media</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <!-- Empty for now -->
+                        </div>
+                        <div class="group-label">Characters</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Convert Tab Content -->
+            <div class="tab-content" id="convert-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <!-- Empty for now -->
+                        </div>
+                        <div class="group-label">Transliteration</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <!-- Empty for now -->
+                        </div>
+                        <div class="group-label">Marking consistency</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferences Tab Content -->
+            <div class="tab-content" id="preferences-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <label for="cleanupModeCombo">Cleanup strategy:</label>
+                            <select id="cleanupModeCombo" title="Controls how holdings cleanup runs after edits.">
+                                <option value="complete">Complete and reliable (default)</option>
+                                <option value="balanced">Balanced (localized + debounce)</option>
+                                <option value="localized">Localized only (fast)</option>
+                                <option value="save-only">On Save only</option>
+                            </select>
+                        </div>
+                        <div class="group-label">Editing behavior</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Container (like main2.pyw paper background) -->
+        <div class="container">
+            <div id="editor"></div>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="statusbar">
+            <div class="statusbar-left">
+                <span id="wordCount">Words: 0</span>
+                <span class="separator">|</span>
+                <span id="charCount">Characters: 0</span>
+                <span class="separator">|</span>
+                <span id="lineCount">Lines: 1</span>
+            </div>
+            <div class="statusbar-right">
+                <span>Zoom:</span>
+                <input type="range" id="zoomSlider" min="50" max="200" value="100" step="10" title="Adjust zoom level">
+                <span id="zoomLevel">100%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" accept=".txt,.html,.md" style="display: none;">
+
+    <!-- Scripts -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="theme-manager.js"></script>
+    <script src="file-operations.js"></script>
+    <script src="editor-quill.js"></script>
+</body>
+</html>
