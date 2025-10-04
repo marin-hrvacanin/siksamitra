@@ -4,20 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>śikṣāmitra</title>
+    <link rel="icon" type="image/x-icon" href="../data/icon.ico">
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Gentium+Plus:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body data-theme="light">
-    <!-- Theme Toggle (top-right like main2.pyw) -->
-    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌞/🌙</button>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌞</button>
 
-    <!-- Main Application Container -->
     <div class="app-container">
-        <!-- Ribbon Tabs (like Microsoft Word) -->
         <div class="ribbon-tabs">
             <div class="tab-headers">
                 <div class="app-title-section">
+                    <img src="../data/logo.png" alt="śikṣāmitra logo" class="app-logo">
                     <span class="app-name">śikṣāmitra</span>
                     <input type="text" id="titleEditHeader" class="title-input-header" value="Untitled document" title="Document title">
                 </div>
@@ -30,11 +29,13 @@
                 </div>
             </div>
 
-            <!-- File Tab Content -->
             <div class="tab-content" id="file-tab">
                 <div class="ribbon-groups">
                     <div class="ribbon-group">
                         <div class="group-buttons">
+                            <button id="openBtn" class="ribbon-btn" title="Open a saved document">
+                                📂 Open
+                            </button>
                             <button id="saveBtn" class="ribbon-btn" title="Save the document (single self-contained HTML)">
                                 💾 Save
                             </button>
@@ -62,25 +63,48 @@
                 </div>
             </div>
 
-            <!-- Edit Tab Content -->
             <div class="tab-content active" id="edit-tab">
                 <div class="ribbon-groups">
+                    <!-- Font & Size Group -->
                     <div class="ribbon-group">
-                        <div class="group-buttons">
-                            <button id="shortHoldingButton" class="ribbon-btn" title="Apply or remove short holding (thin green rectangle) on selection">
-                                <span class="holding-icon short">a</span>
-                            </button>
-                            <button id="longHoldingButton" class="ribbon-btn" title="Apply or remove long holding (thick green rectangle) on selection">
-                                <span class="holding-icon long">a</span>
-                            </button>
-                            <button id="cleanHoldingsButton" class="ribbon-btn" title="Remove holdings from the current selection only">
-                                ❌
-                            </button>
+                        <div class="group-buttons-grid">
+                            <select id="fontCombo" title="Font">
+                                <option value="">Font (default)</option>
+                                <option value="Gentium Plus">Gentium Plus</option>
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Calibri">Calibri</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Noto Sans Devanagari">Noto Sans Devanagari</option>
+                            </select>
+                            <select id="sizeCombo" title="Font Size">
+                                <option value="">Size (default)</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="14">14</option>
+                                <option value="16">16</option>
+                                <option value="18">18</option>
+                                <option value="20">20</option>
+                                <option value="22">22</option>
+                                <option value="24">24</option>
+                                <option value="28">28</option>
+                                <option value="32">32</option>
+                                <option value="36">36</option>
+                                <option value="48">48</option>
+                                <option value="72">72</option>
+                            </select>
                         </div>
-                        <div class="group-label">Holdings</div>
+                        <div class="group-label">Font</div>
                     </div>
+                    
+                    <!-- Basic Formatting Group -->
                     <div class="ribbon-group">
-                        <div class="group-buttons">
+                        <div class="group-buttons-grid grid-2col">
                             <button id="boldButton" class="ribbon-btn" title="Bold (Ctrl+B)">
                                 <strong>B</strong>
                             </button>
@@ -90,23 +114,98 @@
                             <button id="underlineButton" class="ribbon-btn" title="Underline (Ctrl+U)">
                                 <u>U</u>
                             </button>
+                            <button id="strikeButton" class="ribbon-btn" title="Strikethrough">
+                                <s>S</s>
+                            </button>
+                        </div>
+                        <div class="group-label">Format</div>
+                    </div>
+                    
+                    <!-- Colors Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid grid-2col">
+                            <div class="color-picker-wrapper">
+                                <label for="textColorPicker" title="Text Color - Click to apply current color">A</label>
+                                <input type="color" id="textColorPicker" value="#000000" title="Click to change color">
+                            </div>
+                            <div class="color-picker-wrapper">
+                                <label for="highlightColorPicker" title="Highlight - Click to apply current color" class="highlight-label">H</label>
+                                <input type="color" id="highlightColorPicker" value="#ffff00" title="Click to change highlight color">
+                            </div>
+                            <button id="clearFormatButton" class="ribbon-btn span-2" title="Clear Formatting">
+                                🧹
+                            </button>
+                        </div>
+                        <div class="group-label">Colors</div>
+                    </div>
+                    
+                    <!-- Style & Alignment Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid">
                             <select id="styleCombo">
                                 <option value="normal">Normal</option>
                                 <option value="change">Change</option>
                                 <option value="svara">Svara</option>
+                                <option value="short-pause">Short Pause</option>
+                                <option value="long-pause">Long Pause</option>
                                 <option value="mixed" disabled>Mixed</option>
                             </select>
+                            <div class="alignment-buttons">
+                                <button id="alignLeftButton" class="ribbon-btn compact" title="Align Left">⬅</button>
+                                <button id="alignCenterButton" class="ribbon-btn compact" title="Align Center">⬌</button>
+                                <button id="alignRightButton" class="ribbon-btn compact" title="Align Right">➡</button>
+                            </div>
                         </div>
-                        <div class="group-label">Text Formatting</div>
+                        <div class="group-label">Style</div>
                     </div>
+                    
+                    <!-- Holdings & Pauses Group -->
                     <div class="ribbon-group">
-                        <div class="group-buttons">
+                        <div class="group-buttons-grid grid-3col">
+                            <button id="shortHoldingButton" class="ribbon-btn" title="Apply or remove short holding (thin green rectangle) on selection">
+                                <span class="holding-icon short">a</span>
+                            </button>
+                            <button id="shortPauseButton" class="ribbon-btn" title="Insert short pause (blue vertical line)">
+                                <span class="pause-icon short">|</span>
+                            </button>
+                            <button id="viramaButton" class="ribbon-btn" title="Insert avagraha (apostrophe for missing letter)">
+                                '
+                            </button>
+                            <button id="longHoldingButton" class="ribbon-btn" title="Apply or remove long holding (thick green rectangle) on selection">
+                                <span class="holding-icon long">a</span>
+                            </button>
+                            <button id="longPauseButton" class="ribbon-btn" title="Insert long pause (red vertical line)">
+                                <span class="pause-icon long">|</span>
+                            </button>
+                            <button id="cleanHoldingsButton" class="ribbon-btn" title="Remove holdings from the current selection only">
+                                ❌
+                            </button>
+                        </div>
+                        <div class="group-label">Holdings</div>
+                    </div>
+                    
+                    <!-- Svara Accents Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid grid-2col">
                             <button id="svaritaButton" class="ribbon-btn small" title="Svarita - apply to previous character">a̍</button>
                             <button id="anudattaButton" class="ribbon-btn small" title="Anudatta - apply to previous character">a̱</button>
                             <button id="udattaButton" class="ribbon-btn small" title="Udatta - apply to previous character">a̎</button>
                             <button id="tickButton" class="ribbon-btn small" title="Tick mark - apply to previous character">aˎ</button>
                         </div>
                         <div class="group-label">Svara</div>
+                    </div>
+                    
+                    <!-- Automatic Processing Group -->
+                    <div class="ribbon-group automatic-group">
+                        <div class="group-buttons">
+                            <button id="applyHoldingsButton" class="ribbon-btn auto-btn" title="Automatically apply holdings according to Sanskrit grammatical rules">
+                                <span class="auto-icon">ab<span class="hold-demo">c</span></span>
+                            </button>
+                            <button id="applyPausesButton" class="ribbon-btn auto-btn" title="Automatically apply pauses according to Sanskrit grammatical rules">
+                                <span class="auto-icon">a<span class="pause-demo">|</span>bc</span>
+                            </button>
+                        </div>
+                        <div class="group-label">Automatic</div>
                     </div>
                 </div>
             </div>
@@ -240,7 +339,12 @@
                 <div class="ribbon-groups">
                     <div class="ribbon-group">
                         <div class="group-buttons">
-                            <!-- Empty for now -->
+                            <button id="devanagariToIastBtn" class="ribbon-btn" title="Convert selected Devanagari text to IAST">
+                                देव → IAST
+                            </button>
+                            <button id="iastToDevanagariBtn" class="ribbon-btn" title="Convert selected IAST text to Devanagari">
+                                IAST → देव
+                            </button>
                         </div>
                         <div class="group-label">Transliteration</div>
                     </div>
@@ -277,6 +381,18 @@
             <div id="editor" spellcheck="false"></div>
         </div>
         
+        <!-- Console (bottom-left, above status bar) -->
+        <div class="console-container" id="consoleContainer">
+            <div class="console-header" id="consoleHeader">
+                <span class="console-title">Console</span>
+                <div class="console-controls">
+                    <button class="console-btn" id="consoleClear" title="Clear console">🗑️</button>
+                    <button class="console-btn" id="consoleToggle" title="Minimize/Maximize">−</button>
+                </div>
+            </div>
+            <div class="console-content" id="consoleContent"></div>
+        </div>
+        
         <!-- Status Bar -->
         <div class="statusbar">
             <div class="statusbar-left">
@@ -299,6 +415,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <script src="js/sanskrit_rules.js"></script>
     <script src="theme-manager.js"></script>
     <script src="file-operations.js"></script>
     <script src="editor-quill.js"></script>

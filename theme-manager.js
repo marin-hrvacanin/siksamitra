@@ -96,7 +96,8 @@ class ThemeManager {
     updateToggleIcon() {
         if (!this.themeToggleBtn) return;
         
-        this.themeToggleBtn.textContent = this.currentTheme === 'light' ? '🌞/🌙' : '🌙/🌞';
+        // Show sun icon in light mode, moon icon in dark mode
+        this.themeToggleBtn.textContent = this.currentTheme === 'light' ? '🌞' : '🌙';
         this.themeToggleBtn.title = this.currentTheme === 'light' ? 
             'Switch to dark mode' : 'Switch to light mode';
     }

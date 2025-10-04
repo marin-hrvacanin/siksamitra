@@ -1,20 +1,49 @@
-/* ==================== CSS VARIABLES (matching main2.pyw) ==================== */
+/* ==================== CSS VARIABLES - Modern Color Palette ==================== */
 :root {
-  /* Light Theme Colors (from main2.pyw) */
-  --bg-color: #f8f9fa;
+  /* Primary Brand Colors - Elegant Deep Purple & Teal */
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-light: #a5b4fc;
+  --accent-color: #14b8a6;
+  --accent-hover: #0d9488;
+  
+  /* Light Theme */
+  --bg-color: #f8fafc;
+  --bg-secondary: #f1f5f9;
   --paper-bg: #ffffff;
-  --text-color: #2c3e50;
-  --holding-border: #538135;
-  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --text-color: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+  --holding-border: #10b981;
+  --holding-long: #ef4444;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --ribbon-bg: linear-gradient(to bottom, #ffffff, #f8fafc);
+  --ribbon-border: #e2e8f0;
 }
 
 [data-theme='dark'] {
-  /* Dark Theme Colors (from main2.pyw) */
-  --bg-color: #1a1a1a;
-  --paper-bg: #2d2d2d;
-  --text-color: #e0e0e0;
-  --holding-border: #7cb342;
-  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  /* Dark Theme */
+  --primary-color: #818cf8;
+  --primary-hover: #6366f1;
+  --primary-light: #4f46e5;
+  --accent-color: #2dd4bf;
+  --accent-hover: #14b8a6;
+  
+  --bg-color: #0f172a;
+  --bg-secondary: #1e293b;
+  --paper-bg: #1e293b;
+  --text-color: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+  --holding-border: #34d399;
+  --holding-long: #f87171;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --ribbon-bg: linear-gradient(to bottom, #1e293b, #0f172a);
+  --ribbon-border: #334155;
 }
 
 /* ==================== GLOBAL STYLES ==================== */
@@ -29,78 +58,81 @@ html, body {
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     font-size: 32px;
-    line-height: 1.5;
+    line-height: 1.6;
     color: var(--text-color);
     background: var(--bg-color);
     min-height: 100vh;
     margin: 0;
     padding: 0;
-}/* ==================== THEME TOGGLE (top-right like main2.pyw) ==================== */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ==================== THEME TOGGLE ==================== */
 .theme-toggle {
   position: fixed;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
   z-index: 1000;
-  border: 1px solid rgba(0,0,0,0.15);
-  border-radius: 8px;
-  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px 14px;
   background: var(--paper-bg);
   color: var(--text-color);
   box-shadow: var(--shadow);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 18px;
   user-select: none;
+  transition: all 0.2s ease;
 }
 
 .theme-toggle:hover {
-  opacity: 0.8;
+  transform: scale(1.05);
+  box-shadow: var(--shadow-lg);
 }
 
 /* ==================== APP CONTAINER ==================== */
 .app-container {
     background: var(--paper-bg);
     min-height: 100vh;
+    transition: background-color 0.3s ease;
 }
 
-/* ==================== RIBBON TABS (Word-like interface) ==================== */
+/* ==================== RIBBON TABS ==================== */
 .ribbon-tabs {
     position: sticky;
     top: 0;
     z-index: 100;
-    background: #f0f0f0;
-    border-bottom: 1px solid #ccc;
+    background: var(--ribbon-bg);
+    border-bottom: 2px solid var(--ribbon-border);
     width: 100%;
-    box-shadow: var(--shadow);
-}[data-theme='dark'] .ribbon-tabs {
-  background: #333;
-  border-bottom-color: #555;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(10px);
+    overflow: visible;
 }
 
 .tab-headers {
   display: flex;
   align-items: center;
-  background: #e8e8e8;
-  border-bottom: 1px solid #ccc;
-}
-
-[data-theme='dark'] .tab-headers {
-  background: #2a2a2a;
-  border-bottom-color: #555;
+  background: var(--paper-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 4px 0;
 }
 
 /* App title section (left side) */
 .app-title-section {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  border-right: 1px solid #ccc;
+  gap: 14px;
+  padding: 0 20px;
+  border-right: 1px solid var(--border-color);
+  min-width: 280px;
 }
 
-[data-theme='dark'] .app-title-section {
-  border-right-color: #555;
+.app-logo {
+  height: 24px;
+  width: auto;
 }
 
 .app-name {
@@ -149,49 +181,49 @@ body {
 }
 
 .tab-header {
-  padding: 8px 16px;
+  padding: 10px 20px;
   background: none;
   border: none;
-  border-right: 1px solid #ccc;
+  border-right: 1px solid var(--border-color);
   cursor: pointer;
   font-size: 13px;
-  color: var(--text-color);
-  transition: background-color 0.2s;
-}
-
-[data-theme='dark'] .tab-header {
-  border-right-color: #555;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .tab-header:hover {
-  background: rgba(0,0,0,0.05);
-}
-
-[data-theme='dark'] .tab-header:hover {
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-secondary);
+  color: var(--text-color);
 }
 
 .tab-header.active {
-  background: #f0f0f0;
-  font-weight: bold;
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+  font-weight: 600;
 }
 
-[data-theme='dark'] .tab-header.active {
-  background: #333;
+.tab-header.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary-color);
+  border-radius: 3px 3px 0 0;
 }
 
 /* ==================== TAB CONTENT ==================== */
 .tab-content {
   display: none;
-  padding: 8px 12px;
-  background: #f0f0f0;
-  min-height: 60px;
-  max-height: 60px;
+  padding: 10px 10px 15px 10px;
+  background: var(--ribbon-bg);
+  min-height: 110px;
+  max-height: 110px;
   overflow: visible;
-}
-
-[data-theme='dark'] .tab-content {
-  background: #333;
+  border-bottom: 1px solid var(--ribbon-border);
 }
 
 .tab-content.active {
@@ -200,82 +232,197 @@ body {
 
 .ribbon-groups {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   align-items: flex-start;
+  flex-wrap: nowrap;
+  min-width: min-content;
+  padding: 2px 0;
+  overflow: visible;
 }
 
 .ribbon-group {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 60px;
+  min-width: fit-content;
+  flex-shrink: 0;
+  padding: 4px 6px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  overflow: visible;
+}
+
+.ribbon-group:hover {
+  background: rgba(99, 102, 241, 0.05);
 }
 
 .group-label {
   font-size: 10px;
-  color: #666;
-  margin-top: 4px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-top: 8px;
   text-align: center;
   width: 100%;
-}
-
-[data-theme='dark'] .group-label {
-  color: #aaa;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .group-buttons {
   display: flex;
   flex-direction: row;
-  gap: 3px;
+  gap: 4px;
   align-items: center;
   flex-wrap: wrap;
   justify-content: center;
+  min-height: 55px;
+  overflow: visible;
+}
+
+/* Grid layout for buttons */
+.group-buttons-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  align-items: center;
+  min-height: 50px;
+}
+
+.group-buttons-grid.grid-2col {
+  grid-template-columns: 1fr 1fr;
+}
+
+.group-buttons-grid.grid-3col {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.group-buttons-grid select {
+  grid-column: 1 / -1;
+}
+
+/* Spanning utilities */
+.span-2 {
+  grid-column: 1 / -1;
+}
+
+.span-2-rows {
+  grid-row: span 2;
+}
+
+/* Color picker wrapper */
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  background: var(--button-bg);
+  border: 1px solid var(--button-border);
+  border-radius: 3px;
+  transition: all 0.2s;
+  height: 28px;
+}
+
+.color-picker-wrapper:hover {
+  background: var(--button-hover-bg);
+  border-color: var(--button-hover-border);
+}
+
+.color-picker-wrapper label {
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 4px;
+  border-radius: 2px;
+  transition: background 0.2s;
+  min-width: 20px;
+  text-align: center;
+}
+
+.color-picker-wrapper label:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.color-picker-wrapper label.highlight-label {
+  background: #ffff00;
+}
+
+.color-picker-wrapper label.highlight-label:hover {
+  background: #ffee00;
+}
+
+.color-picker-wrapper input[type="color"] {
+  width: 24px;
+  height: 20px;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 2px;
+}
+
+.color-picker-wrapper input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+/* Alignment buttons */
+.alignment-buttons {
+  display: flex;
+  gap: 2px;
+}
+
+.ribbon-btn.compact {
+  min-width: 26px;
+  padding: 2px 4px;
+  font-size: 11px;
+  height: 28px;
+}
+
+.ribbon-btn.small {
+  padding: 2px 5px;
+  font-size: 14px;
+  min-width: 28px;
+  height: 28px;
 }
 
 /* ==================== RIBBON BUTTONS ==================== */
 .ribbon-btn {
   padding: 4px 8px;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 3px;
+  background: var(--paper-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
   cursor: pointer;
   font-size: 11px;
+  font-weight: 500;
   color: var(--text-color);
-  transition: all 0.2s;
-  min-width: 50px;
-  text-align: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 28px;
   height: 28px;
+  text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-[data-theme='dark'] .ribbon-btn {
-  background: #444;
-  border-color: #666;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
 }
 
 .ribbon-btn:hover {
-  background: #e6e6e6;
-  border-color: #999;
-}
-
-[data-theme='dark'] .ribbon-btn:hover {
-  background: #555;
-  border-color: #777;
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
 }
 
 /* ==================== RESPONSIVE BUTTON STATES ==================== */
 .ribbon-btn.active {
-  background: #007acc !important;
+  background: var(--primary-color) !important;
   color: white !important;
-  border-color: #005a9e !important;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-}
-
-[data-theme='dark'] .ribbon-btn.active {
-  background: #0e639c !important;
-  border-color: #1177bb !important;
+  border-color: var(--primary-hover) !important;
+  box-shadow: var(--shadow);
 }
 
 /* ==================== STYLE DROPDOWN STATES ==================== */
@@ -304,9 +451,110 @@ body {
   background: #3d3d1f;
 }
 
+#styleCombo.style-short-pause {
+  color: #0066cc !important;
+  font-weight: bold !important;
+  background: #e6f2ff;
+}
+
+[data-theme='dark'] #styleCombo.style-short-pause {
+  background: #1a2632;
+}
+
+#styleCombo.style-long-pause {
+  color: #cc0000 !important;
+  font-weight: bold !important;
+  background: #ffe6e6;
+}
+
+[data-theme='dark'] #styleCombo.style-long-pause {
+  background: #321a1a;
+}
+
 .ribbon-btn.small {
   min-width: 35px;
   padding: 4px 8px;
+}
+
+/* ==================== AUTOMATIC BUTTONS (Horizontal with Visual Icons) ==================== */
+.ribbon-btn.auto-btn {
+  min-width: 52px;
+  height: 38px;
+  padding: 6px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ribbon-btn.auto-btn .auto-icon {
+  font-family: 'Gentium Plus', serif;
+  font-size: 17px;
+  font-weight: normal;
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  letter-spacing: -0.5px;
+}
+
+/* Holdings button - 'c' with thick underline */
+.ribbon-btn.auto-btn .hold-demo {
+  border: 2px solid white;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  display: inline-block;
+}
+
+/* Pauses button - '|' in contrasting color */
+.ribbon-btn.auto-btn .pause-demo {
+  color: #ef4444 !important;
+  font-weight: 900;
+  font-size: 22px;
+  margin: 0 1px;
+  line-height: 1;
+  display: inline-block;
+  transform: scaleX(0.8);
+  text-shadow: 0 0 1px #ef4444;
+}
+
+.ribbon-btn.auto-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, var(--primary-hover), var(--primary-light));
+}
+
+.ribbon-btn.auto-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Second automatic button with accent color */
+.ribbon-btn.auto-btn:nth-child(2) {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+}
+
+.ribbon-btn.auto-btn:nth-child(2):hover {
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent-color));
+}
+
+.ribbon-btn.auto-btn:nth-child(2) .pause-demo {
+  color: #60a5fa;
+}
+
+/* Automatic group styling */
+.automatic-group {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 6px;
+  border: 1px solid var(--border-color);
 }
 
 /* IAST Dropdown Menu */
@@ -320,15 +568,16 @@ body {
   position: absolute;
   top: 100%;
   left: 0;
-  background: var(--editor-bg);
-  border: 1px solid var(--button-border);
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  padding: 10px;
-  margin-top: 2px;
+  background: var(--ribbon-bg);
+  border: 1px solid var(--ribbon-border);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  z-index: 100000;
+  padding: 12px;
+  margin-top: 4px;
   max-height: 500px;
   overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .iast-dropdown-menu.show {
@@ -336,9 +585,9 @@ body {
 }
 
 [data-theme='dark'] .iast-dropdown-menu {
-  background: #2a2a2a;
-  border-color: #555;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  background: var(--ribbon-bg);
+  border-color: var(--ribbon-border);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
 }
 
 .iast-menu-content {
@@ -354,11 +603,14 @@ body {
 
 .iast-table caption {
   text-align: left;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 11px;
-  color: var(--text-color);
-  margin-bottom: 4px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
   padding-left: 2px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .iast-table td {
@@ -411,36 +663,69 @@ body {
 .holding-icon.short {
   color: var(--holding-border);
   border: 2px solid var(--holding-border);
-  padding: 2px 5px;
-  border-radius: 3px;
-  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 11px;
   font-weight: bold;
   display: inline-block;
-  min-width: 16px;
+  min-width: 14px;
   text-align: center;
 }
 
 .holding-icon.long {
   color: var(--holding-border);
   border: 3px solid var(--holding-border);
-  padding: 2px 5px;
-  border-radius: 3px;
-  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 11px;
   font-weight: bold;
   display: inline-block;
-  min-width: 16px;
+  min-width: 14px;
   text-align: center;
+}
+
+/* Pause button icons */
+.pause-icon.short {
+  color: #0066cc;
+  font-size: 16px;
+  font-weight: bold;
+  display: inline-block;
+  line-height: 1;
+}
+
+.pause-icon.long {
+  color: #cc0000;
+  font-size: 16px;
+  font-weight: bold;
+  display: inline-block;
+  line-height: 1;
 }
 
 /* ==================== FORM ELEMENTS ==================== */
 select, input[type="text"] {
-  padding: 4px 8px;
+  padding: 3px 6px;
   border: 1px solid #ccc;
   border-radius: 3px;
   background: var(--paper-bg);
   color: var(--text-color);
-  font-size: 12px;
-  min-width: 120px;
+  font-size: 11px;
+  min-width: 90px;
+  height: 28px;
+}
+
+/* Style combo in ribbon */
+#styleCombo {
+  min-width: 85px;
+}
+
+/* Font combo in ribbon */
+#fontCombo {
+  min-width: 110px;
+}
+
+/* Size combo in ribbon */
+#sizeCombo {
+  min-width: 50px;
 }
 
 [data-theme='dark'] select,
@@ -467,7 +752,8 @@ label {
 .container {
   max-width: 1000px;
   margin: 2rem auto;
-  margin-bottom: 50px; /* Space for statusbar */
+  margin-bottom: 2rem; /* Match top margin for symmetry */
+  padding-bottom: 50px; /* Space for statusbar */
   background: var(--paper-bg);
   border-radius: 12px;
   box-shadow: var(--shadow);
@@ -544,20 +830,37 @@ label {
   white-space: pre;
 }
 
-/* Svara marks with special styling - positioned to combine with previous character */
+/* Pause styles */
+.ql-editor .ql-short-pause,
+.ql-short-pause {
+  color: #0066cc;
+  font-weight: bold;
+  white-space: pre;
+}
+
+.ql-editor .ql-long-pause,
+.ql-long-pause {
+  color: #cc0000;
+  font-weight: bold;
+  white-space: pre;
+}
+
+/* Svara marks with special styling - combines naturally with previous character */
 .ql-editor .ql-svara-char,
 .ql-svara-char {
-  font-family: 'Gentium Plus', serif;
-  font-size: 28px;
+  /* Use Gentium Plus (URW Palladio ITU not available) at same size as example.mht */
+  font-family: "Gentium Plus", serif !important;
+  font-size: 18pt !important;
   color: #943634;
-  display: inline-block;
-  line-height: 1;
-  position: relative;
-  left: -0.5em; /* Offset to overlap with previous character */
-  margin-right: -0.5em; /* Compensate spacing so next character isn't affected */
-  width: 0; /* Make it take no horizontal space */
-  vertical-align: top;
-  z-index: 1; /* Ensure it appears above the base character */
+  font-weight: bold;
+  /* CRITICAL: must be inline to allow Unicode combining to work across span boundary */
+  display: inline !important;
+  /* No margins or padding that would separate from previous character */
+  margin: 0 !important;
+  padding: 0 !important;
+  /* No border or outline */
+  border: none !important;
+  outline: none !important;
 }
 
 .style-normal {
@@ -674,3 +977,201 @@ input[type="text"] {
   min-width: 40px;
   font-weight: 500;
 }
+
+/* ==================== FONT FAMILY CLASSES ==================== */
+.ql-font-Gentium-Plus,
+.ql-font-gentium-plus {
+  font-family: 'Gentium Plus', serif;
+}
+
+.ql-font-Arial,
+.ql-font-arial {
+  font-family: Arial, sans-serif;
+}
+
+.ql-font-Times-New-Roman,
+.ql-font-times-new-roman {
+  font-family: 'Times New Roman', serif;
+}
+
+.ql-font-Calibri,
+.ql-font-calibri {
+  font-family: Calibri, sans-serif;
+}
+
+.ql-font-Georgia,
+.ql-font-georgia {
+  font-family: Georgia, serif;
+}
+
+.ql-font-Verdana,
+.ql-font-verdana {
+  font-family: Verdana, sans-serif;
+}
+
+.ql-font-Courier-New,
+.ql-font-courier-new {
+  font-family: 'Courier New', monospace;
+}
+
+.ql-font-Noto-Sans-Devanagari,
+.ql-font-noto-sans-devanagari {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+}
+
+/* ==================== FONT SIZE CLASSES ==================== */
+.ql-size-8px { font-size: 8px; }
+.ql-size-9px { font-size: 9px; }
+.ql-size-10px { font-size: 10px; }
+.ql-size-11px { font-size: 11px; }
+.ql-size-12px { font-size: 12px; }
+.ql-size-14px { font-size: 14px; }
+.ql-size-16px { font-size: 16px; }
+.ql-size-18px { font-size: 18px; }
+.ql-size-20px { font-size: 20px; }
+.ql-size-22px { font-size: 22px; }
+.ql-size-24px { font-size: 24px; }
+.ql-size-28px { font-size: 28px; }
+.ql-size-32px { font-size: 32px; }
+.ql-size-36px { font-size: 36px; }
+.ql-size-48px { font-size: 48px; }
+
+/* ==================== CONSOLE (Modern Design) ==================== */
+.console-container {
+  position: fixed;
+  bottom: 24px;
+  left: 20px;
+  width: 420px;
+  max-height: 300px;
+  background: var(--paper-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  z-index: 900;
+  display: none;
+  flex-direction: column;
+  font-size: 13px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+}
+
+.console-container.visible {
+  display: flex;
+}
+
+.console-container.minimized {
+  width: 180px;
+}
+
+.console-container.minimized .console-content {
+  display: none;
+}
+
+.console-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 12px 12px 0 0;
+  cursor: move;
+  user-select: none;
+}
+
+.console-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-color);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-title::before {
+  content: '💬';
+  font-size: 14px;
+}
+
+.console-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.console-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.console-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: scale(1.1);
+}
+
+.console-content {
+  padding: 8px;
+  overflow-y: auto;
+  max-height: 230px;
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.console-message {
+  padding: 8px 10px;
+  margin: 4px 0;
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+  background: var(--bg-secondary);
+  transition: all 0.2s ease;
+}
+
+.console-message:hover {
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.console-message:last-child {
+  margin-bottom: 0;
+}
+
+.console-message.info {
+  color: var(--primary-color);
+  border-left-color: var(--primary-color);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.console-message.success {
+  color: var(--holding-border);
+  border-left-color: var(--holding-border);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.console-message.warning {
+  color: #f59e0b;
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.console-message.error {
+  color: var(--holding-long);
+  border-left-color: var(--holding-long);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.console-message .timestamp {
+  opacity: 0.7;
+  margin-right: 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.ql-size-72px { font-size: 72px; }
