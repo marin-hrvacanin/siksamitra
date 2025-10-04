@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        .svara {
+            font-family: "URW Palladio ITU";
+            color: #943634;
+            font-weight: bold;
+        }
+        .translit {
+            font-family: Arial, sans-serif;
+            font-size: 16pt;
+        }
+        body {
+            padding: 40px;
+            line-height: 2;
+        }
+    </style>
+</head>
+<body>
+    <h2>Test 1: Single span with svara class</h2>
+    <p class="translit"><span>dhara</span><span class="svara">&#x0331;</span> text after</p>
+    
+    <h2>Test 2: Nested span (EXACT example.mht structure)</h2>
+    <p class="translit"><span>dhara</span><span class="svara"><span style="font-size:18.0pt">&#x0331;</span></span> text after</p>
+    
+    <h2>Test 3: With lang attribute (even more exact)</h2>
+    <p class="translit"><span lang="EN-GB">dhara</span><span class="svara"><span lang="EN-GB" style="font-size:18.0pt">&#x0331;</span></span> text after</p>
+    
+    <h2>Test 4: NO whitespace between spans (inline)</h2>
+    <p class="translit"><span>dhara</span><span class="svara">&#x0331;</span>text after</p>
+    
+    <h2>Test 5: Check if double-nesting helps</h2>
+    <p class="translit">dhara<span class="svara"><span>&#x0331;</span></span> text</p>
+</body>
+</html>

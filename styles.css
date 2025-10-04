@@ -222,7 +222,8 @@ body {
   background: var(--ribbon-bg);
   min-height: 110px;
   max-height: 110px;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: visible;
   border-bottom: 1px solid var(--ribbon-border);
 }
 

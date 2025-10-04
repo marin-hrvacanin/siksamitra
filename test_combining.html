@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        .svara {
+            color: #943634;
+            font-weight: bold;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 32px;
+            padding: 40px;
+            line-height: 2;
+        }
+    </style>
+</head>
+<body>
+    <h2>Test 1: Combining mark in same text node (no span)</h2>
+    <p>dhara&#x0331; (combining in same text node)</p>
+    
+    <h2>Test 2: Combining mark in separate span (like we're trying)</h2>
+    <p>dhara<span class="svara">&#x0331;</span> (combining in styled span)</p>
+    
+    <h2>Test 3: EXACT structure from example.mht (both in spans)</h2>
+    <p><span>dhara</span><span class="svara"><span style="font-size:18.0pt">&#x0331;</span></span></p>
+    
+    <h2>Test 4: Both in spans, no nested span in svara</h2>
+    <p><span>dhara</span><span class="svara">&#x0331;</span></p>
+    
+    <h2>Test 5: Arial font explicitly</h2>
+    <p style="font-family: Arial"><span>dhara</span><span class="svara">&#x0331;</span>text after</p>
+    
+    <h2>Test 6: Check if whitespace matters</h2>
+    <p><span>dhara</span><span class="svara">&#x0331;</span></p>
+    <p><span>dhara</span> <span class="svara">&#x0331;</span></p>
+    
+    <h2>Test 7: Gentium Plus font</h2>
+    <p style="font-family: 'Gentium Plus', serif"><span>dhara</span><span class="svara">&#x0331;</span>text after</p>
+</body>
+</html>

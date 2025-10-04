@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quill Editor with Custom UI and Styles</title>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        #toolbar {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        #toolbar button {
+            margin-right: 5px;
+            padding: 5px 10px;
+            background-color: white;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        #toolbar button.active {
+            background-color: #d0d0d0;
+        }
+
+        .ql-editor {
+            font-family: Arial;
+            font-size: 32px;
+        }
+
+        /* Styles for the custom formats in the editor */
+        .ql-editor .ql-holding-short {
+            border-width: 1px;
+            border-style: solid;
+            border-color: #538135;
+            border-radius: 3px;
+            padding: 0;
+            display: inline;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+
+        .ql-editor .ql-holding-long {
+            border-width: 2px;
+            border-style: solid;
+            border-color: #538135;
+            border-radius: 3px;
+            padding: 0;
+            display: inline;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+
+        .ql-editor .change-style {
+            font-style: italic;
+            color: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <button id="bold">Bold</button>
+        <button id="italic">Italic</button>
+        <button id="underline">Underline</button>
+        <button id="short-holding">Short Holding</button>
+        <button id="long-holding">Long Holding</button>
+        <button id="normal">Normal</button>
+        <button id="change">Change</button>
+    </div>
+    <div id="editor" style="height: 300px; border: 1px solid #ccc;"></div>
+
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+        // Register the custom attributor for holding
+        var Parchment = Quill.import('parchment');
+        var HoldingClass = new Parchment.Attributor.Class('holding', 'ql-holding', {
+            scope: Parchment.Scope.INLINE,
+            whitelist: ['short', 'long']
+        });
+        Quill.register(HoldingClass, true);
+
+        // Register the custom blot for change style
+        var Inline = Quill.import('blots/inline');
+
+        class ChangeStyle extends Inline {
+            static blotName = 'change-style';
+            static tagName = 'span';
+
+            static create(value) {
+                let node = super.create(value);
+                node.classList.add('change-style');
+                return node;
+            }
+
+            static formats(node) {
+                return node.classList.contains('change-style');
+            }
+        }
+
+        Quill.register(ChangeStyle);
+
+        // Initialize Quill editor without default toolbar
+        var quill = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: false
+            }
+        });
+
+        // Function to update button states
+        function updateButtons() {
+            const range = quill.getSelection();
+            if (range) {
+                const format = quill.getFormat(range.index, range.length);
+                document.getElementById('bold').classList.toggle('active', !!format.bold);
+                document.getElementById('italic').classList.toggle('active', !!format.italic);
+                document.getElementById('underline').classList.toggle('active', !!format.underline);
+                
+                const currentHolding = format.holding;
+                document.getElementById('short-holding').classList.toggle('active', currentHolding === 'short');
+                document.getElementById('long-holding').classList.toggle('active', currentHolding === 'long');
+                
+                const isChange = !!format['change-style'];
+                document.getElementById('normal').classList.toggle('active', !isChange);
+                document.getElementById('change').classList.toggle('active', isChange);
+            } else {
+                // No selection, remove active classes
+                document.querySelectorAll('#toolbar button').forEach(button => {
+                    button.classList.remove('active');
+                });
+            }
+        }
+
+        // Update button active states on selection change
+        quill.on('selection-change', () => {
+            updateButtons();
+        });
+
+        // Custom button handlers
+        document.getElementById('bold').addEventListener('click', () => {
+            const format = quill.getFormat();
+            quill.format('bold', !format.bold);
+            updateButtons();
+        });
+
+        document.getElementById('italic').addEventListener('click', () => {
+            const format = quill.getFormat();
+            quill.format('italic', !format.italic);
+            updateButtons();
+        });
+
+        document.getElementById('underline').addEventListener('click', () => {
+            const format = quill.getFormat();
+            quill.format('underline', !format.underline);
+            updateButtons();
+        });
+
+        document.getElementById('short-holding').addEventListener('click', () => {
+            const format = quill.getFormat();
+            const currentHolding = format.holding;
+            if (currentHolding === 'short') {
+                quill.format('holding', false);
+            } else {
+                quill.format('holding', 'short');
+            }
+            updateButtons();
+        });
+
+        document.getElementById('long-holding').addEventListener('click', () => {
+            const format = quill.getFormat();
+            const currentHolding = format.holding;
+            if (currentHolding === 'long') {
+                quill.format('holding', false);
+            } else {
+                quill.format('holding', 'long');
+            }
+            updateButtons();
+        });
+
+        document.getElementById('normal').addEventListener('click', () => {
+            quill.format('change-style', false);
+            updateButtons();
+        });
+
+        document.getElementById('change').addEventListener('click', () => {
+            const format = quill.getFormat();
+            quill.format('change-style', !format['change-style']);
+            updateButtons();
+        });
+    </script>
+</body>
+</html>

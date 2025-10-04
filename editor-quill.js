@@ -1567,6 +1567,10 @@ class SiksamitraEditor {
             const startIndex = selection.index;
             const textLength = selection.length;
             
+            // Step 0: Clear any existing holdings in the selection
+            this.log('Clearing existing holdings...', 'info');
+            this.quill.formatText(startIndex, textLength, 'holding', false, Quill.sources.SILENT);
+            
             // Get the plain text from the selection
             let text = this.quill.getText(startIndex, textLength);
             
