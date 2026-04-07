@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>śikṣāmitra</title>
+    <link rel="icon" type="image/x-icon" href="icon.ico">
+    <link href="lib/quill.snow.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+Devanagari:wght@400;500;600&family=Gentium+Plus:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=3">
+    <!-- PyQt6 QWebChannel bridge -->
+    <script src="qwebchannel.js"></script>
+    <script src="pyqt-bridge.js"></script>
+</head>
+<body>
+    <script>
+        // Injected by backend (local_app.py) to prevent theme flash on first paint.
+        // Fallback is safe when running editor.html directly.
+        window.__SIKSAMITRA_INITIAL_THEME_MODE__ = '__SIKSAMITRA_INITIAL_THEME_MODE__';
+    </script>
+    <script>
+        // Apply saved/initial theme immediately to prevent flash.
+        (function() {
+            const injected = (window.__SIKSAMITRA_INITIAL_THEME_MODE__ || '').toLowerCase();
+            const stored = (localStorage.getItem('siksamitra-theme') || '').toLowerCase();
+            const valid = (m) => (m === 'light' || m === 'dark' || m === 'system');
+
+            const mode = valid(stored) ? stored : (valid(injected) ? injected : 'system');
+            if (!valid(stored) && valid(injected)) {
+                // Persist the backend preference so the next boot is instant.
+                localStorage.setItem('siksamitra-theme', injected);
+            }
+
+            const theme = mode === 'system'
+                ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                : mode;
+
+            document.body.setAttribute('data-theme', theme);
+            // Also set on app-container if it exists (it might not yet)
+            const container = document.querySelector('.app-container');
+            if (container) container.setAttribute('data-theme', theme);
+        })();
+    </script>
+
+    <!-- Minimal critical CSS so the initial loader is clean before styles.css finishes loading -->
+    <style>
+        /* Solid background colors to prevent flickering */
+        body { margin: 0; }
+        body[data-theme='dark'] { background: #111113; color: #e8e8ec; }
+        body[data-theme='light'] { background: #f2f2f5; color: #1b1b1f; }
+
+        /* App container visible immediately, loader is overlay */
+        .app-container {
+            opacity: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #fullscreenLoader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            z-index: 10000;
+            background: rgba(242, 242, 245, 0.97);
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        body[data-theme='dark'] #fullscreenLoader {
+            background: rgba(13, 13, 13, 0.97);
+        }
+        #fullscreenLoader.hidden { opacity: 0; pointer-events: none; }
+        #fullscreenLoader .loader-logo { 
+            width: 84px; 
+            height: 84px; 
+            object-fit: contain;
+            filter: drop-shadow(0 6px 18px rgba(0,0,0,0.12));
+        }
+        #fullscreenLoader .loader-subtitle { 
+            font: 500 13px/1.4 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; 
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        body[data-theme='dark'] #fullscreenLoader .loader-subtitle { color: #9ca3af; }
+        .ring-loader {
+            width: 34px;
+            height: 34px;
+            border: 3px solid rgba(184, 129, 61, 0.25);
+            border-top-color: #b8813d;
+            border-radius: 50%;
+            animation: loaderSpin 0.9s linear infinite;
+        }
+        @keyframes loaderSpin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    <div class="app-container" data-theme="light">
+        <div class="ribbon-tabs">
+            <div class="tab-headers">
+                <div class="app-title-section">
+                    <img src="logo.png" alt="śikṣāmitra logo" class="app-logo">
+                </div>
+                <div class="tab-buttons">
+                    <button class="tab-header active" data-tab="file">File</button>
+                    <button class="tab-header" data-tab="edit">Edit</button>
+                    <button class="tab-header" data-tab="insert">Insert</button>
+                    <button class="tab-header" data-tab="convert">Convert</button>
+                    <button class="tab-header" data-tab="preferences">Preferences</button>
+                </div>
+            </div>
+
+            <div class="tab-content active" id="file-tab">
+                <div class="ribbon-groups">
+                    <!-- File Operations Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="newDocBtn" class="ribbon-btn" title="Create new document (Ctrl+N)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M13 3H8.2C7.0799 3 6.51984 3 6.09202 3.21799C5.71569 3.40973 5.40973 3.71569 5.21799 4.09202C5 4.51984 5 5.0799 5 6.2V17.8C5 18.9201 5 19.4802 5.21799 19.908C5.40973 20.2843 5.71569 20.5903 6.09202 20.782C6.51984 21 7.0799 21 8.2 21H12M13 3L19 9M13 3V7.4C13 7.96005 13 8.24008 13.109 8.45399C13.2049 8.64215 13.3578 8.79513 13.546 8.89101C13.7599 9 14.0399 9 14.6 9H19M19 9V12M17 19H21M19 17V21"></path>
+                                </svg>
+                                New
+                            </button>
+                            <button id="openDocBtn" class="ribbon-btn" title="Open document (Ctrl+O)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 8.2C3 7.07989 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H9.67452C10.1637 5 10.4083 5 10.6385 5.05526C10.8425 5.10425 11.0376 5.18506 11.2166 5.29472C11.4184 5.4184 11.5914 5.59135 11.9373 5.93726L12.0627 6.06274C12.4086 6.40865 12.5816 6.5816 12.7834 6.70528C12.9624 6.81494 13.1575 6.89575 13.3615 6.94474C13.5917 7 13.8363 7 14.3255 7H17.8C18.9201 7 19.4802 7 19.908 7.21799C20.2843 7.40973 20.5903 7.71569 20.782 8.09202C21 8.51984 21 9.0799 21 10.2V15.8C21 16.9201 21 17.4802 20.782 17.908C20.5903 18.2843 20.2843 18.5903 19.908 18.782C19.4802 19 18.9201 19 17.8 19H6.2C5.07989 19 4.51984 19 4.09202 18.782C3.71569 18.5903 3.40973 18.2843 3.21799 17.908C3 17.4802 3 16.9201 3 15.8V8.2Z"></path>
+                                </svg>
+                                Open
+                            </button>
+                            <button id="saveDocBtn" class="ribbon-btn" title="Save document (Ctrl+S)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 15V21M19 21L17 19M19 21L21 19M13 3H8.2C7.0799 3 6.51984 3 6.09202 3.21799C5.71569 3.40973 5.40973 3.71569 5.21799 4.09202C5 4.51984 5 5.0799 5 6.2V17.8C5 18.9201 5 19.4802 5.21799 19.908C5.40973 20.2843 5.71569 20.5903 6.09202 20.782C6.51984 21 7.0799 21 8.2 21H14M13 3L19 9M13 3V7.4C13 7.96005 13 8.24008 13.109 8.45399C13.2049 8.64215 13.3578 8.79513 13.546 8.89101C13.7599 9 14.0399 9 14.6 9H19M19 9V11M9 17H13M9 13H15M9 9H10"></path>
+                                </svg>
+                                Save
+                            </button>
+                            <button id="saveAsDocBtn" class="ribbon-btn" title="Save As (Ctrl+Shift+S)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M8 3.00152C8.06462 3.00146 8.13126 3.00146 8.2 3.00146H13.462C14.0268 3.00146 14.3092 3.00146 14.5699 3.07329C14.7198 3.11459 14.8641 3.17315 15 3.24761M8 3.00152C7.01165 3.00229 6.49359 3.01484 6.09202 3.21945C5.71569 3.4112 5.40973 3.71716 5.21799 4.09348C5 4.52131 5 5.08136 5 6.20146V17.8015C5 18.9216 5 19.4816 5.21799 19.9094C5.40973 20.2858 5.71569 20.5917 6.09202 20.7835C6.51984 21.0015 7.0799 21.0015 8.2 21.0015H15.8C16.9201 21.0015 17.4802 21.0015 17.908 20.7835C18.2843 20.5917 18.5903 20.2858 18.782 19.9094C19 19.4816 19 18.9216 19 17.8015V9.12396C19 8.70793 19 8.49991 18.9592 8.30094C18.9229 8.12442 18.863 7.9536 18.781 7.79312C18.6886 7.61224 18.5587 7.44981 18.2988 7.12494L15.9608 4.20244C15.608 3.76141 15.4315 3.54089 15.2126 3.38216C15.1445 3.33281 15.0735 3.28788 15 3.24761M8 3.00152V7.00002H15V3.24761M15 15C15 16.6569 13.6569 18 12 18C10.3431 18 9 16.6569 9 15C9 13.3432 10.3431 12 12 12C13.6569 12 15 13.3432 15 15Z"></path>
+                                </svg>
+                                Save As
+                            </button>
+                            <button id="viewDocBtn" class="ribbon-btn" title="View document in browser">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 14C3 9.02944 7.02944 5 12 5C16.9706 5 21 9.02944 21 14M17 14C17 16.7614 14.7614 19 12 19C9.23858 19 7 16.7614 7 14C7 11.2386 9.23858 9 12 9C14.7614 9 17 11.2386 17 14Z"></path>
+                                </svg>
+                                View
+                            </button>
+                        </div>
+                        <div class="group-label">Document</div>
+                    </div>
+                    
+                    <!-- Auto-save Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="autoSaveToggle" class="ribbon-btn toggle-btn active" title="Toggle auto-save for this document">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 3V8M21 8H16M21 8L18 5.29168C16.4077 3.86656 14.3051 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21C16.2832 21 19.8675 18.008 20.777 14"></path>
+                                </svg>
+                                Auto-save
+                            </button>
+                        </div>
+                        <div class="group-label">Options</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Tab Content -->
+            <div class="tab-content" id="edit-tab">
+                <div class="ribbon-groups">
+                    <!-- Font & Size Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid">
+                            <div class="custom-dropdown" id="fontDropdown" data-value="">
+                                <div class="custom-dropdown-trigger">Font</div>
+                                <div class="custom-dropdown-menu">
+                                    <div class="custom-dropdown-option selected" data-value="">Default</div>
+                                    <div class="custom-dropdown-option" data-value="Gentium Plus">Gentium Plus</div>
+                                    <div class="custom-dropdown-option" data-value="Arial">Arial</div>
+                                    <div class="custom-dropdown-option" data-value="Times New Roman">Times New Roman</div>
+                                    <div class="custom-dropdown-option" data-value="Calibri">Calibri</div>
+                                    <div class="custom-dropdown-option" data-value="Georgia">Georgia</div>
+                                    <div class="custom-dropdown-option" data-value="Verdana">Verdana</div>
+                                    <div class="custom-dropdown-option" data-value="Courier New">Courier New</div>
+                                    <div class="custom-dropdown-option" data-value="Noto Sans Devanagari">Noto Sans Devanagari</div>
+                                </div>
+                            </div>
+                            <div class="custom-dropdown" id="sizeDropdown" data-value="">
+                                <div class="custom-dropdown-trigger">Size</div>
+                                <div class="custom-dropdown-menu">
+                                    <div class="custom-dropdown-option selected" data-value="">Default</div>
+                                    <div class="custom-dropdown-option" data-value="8">8</div>
+                                    <div class="custom-dropdown-option" data-value="9">9</div>
+                                    <div class="custom-dropdown-option" data-value="10">10</div>
+                                    <div class="custom-dropdown-option" data-value="11">11</div>
+                                    <div class="custom-dropdown-option" data-value="12">12</div>
+                                    <div class="custom-dropdown-option" data-value="14">14</div>
+                                    <div class="custom-dropdown-option" data-value="16">16</div>
+                                    <div class="custom-dropdown-option" data-value="18">18</div>
+                                    <div class="custom-dropdown-option" data-value="20">20</div>
+                                    <div class="custom-dropdown-option" data-value="22">22</div>
+                                    <div class="custom-dropdown-option" data-value="24">24</div>
+                                    <div class="custom-dropdown-option" data-value="28">28</div>
+                                    <div class="custom-dropdown-option" data-value="32">32</div>
+                                    <div class="custom-dropdown-option" data-value="36">36</div>
+                                    <div class="custom-dropdown-option" data-value="48">48</div>
+                                    <div class="custom-dropdown-option" data-value="72">72</div>
+                                </div>
+                            </div>
+                            <!-- Hidden original selects for fallback -->
+                            <select id="fontCombo" style="display:none;">
+                                <option value="">Font (default)</option>
+                                <option value="Gentium Plus">Gentium Plus</option>
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Calibri">Calibri</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Noto Sans Devanagari">Noto Sans Devanagari</option>
+                            </select>
+                            <select id="sizeCombo" style="display:none;">
+                                <option value="">Size (default)</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="14">14</option>
+                                <option value="16">16</option>
+                                <option value="18">18</option>
+                                <option value="20">20</option>
+                                <option value="22">22</option>
+                                <option value="24">24</option>
+                                <option value="28">28</option>
+                                <option value="32">32</option>
+                                <option value="36">36</option>
+                                <option value="48">48</option>
+                                <option value="72">72</option>
+                            </select>
+                        </div>
+                        <div class="group-label">Font</div>
+                    </div>
+                    
+                    <!-- Basic Formatting Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid grid-3col">
+                            <button id="boldButton" class="ribbon-btn" title="Bold (Ctrl+B)">
+                                <strong>B</strong>
+                            </button>
+                            <button id="italicButton" class="ribbon-btn" title="Italic (Ctrl+I)">
+                                <em>I</em>
+                            </button>
+                            <button id="underlineButton" class="ribbon-btn" title="Underline (Ctrl+U)">
+                                <u>U</u>
+                            </button>
+                            <button id="strikeButton" class="ribbon-btn" title="Strikethrough">
+                                <s>S</s>
+                            </button>
+                            <button id="subscriptButton" class="ribbon-btn" title="Subscript">
+                                X₂
+                            </button>
+                            <button id="superscriptButton" class="ribbon-btn" title="Superscript">
+                                X²
+                            </button>
+                        </div>
+                        <div class="group-label">Format</div>
+                    </div>
+                    
+                    <!-- Colors Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid grid-2col">
+                            <div class="color-picker-wrapper">
+                                <label for="textColorPicker" title="Text Color - Click to apply current color">A</label>
+                                <input type="color" id="textColorPicker" value="#000000" title="Click to change color">
+                            </div>
+                            <div class="color-picker-wrapper">
+                                <label for="highlightColorPicker" title="Highlight - Click to apply current color" class="highlight-label">H</label>
+                                <input type="color" id="highlightColorPicker" value="#ffff00" title="Click to change highlight color">
+                            </div>
+                            <button id="clearFormatButton" class="ribbon-btn span-2" title="Clear Formatting">
+                                Clear
+                            </button>
+                        </div>
+                        <div class="group-label">Colors</div>
+                    </div>
+                    
+                    <!-- Style & Alignment Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid">
+                            <div class="custom-dropdown" id="styleDropdown" data-value="normal">
+                                <div class="custom-dropdown-trigger">Normal</div>
+                                <div class="custom-dropdown-menu">
+                                    <div class="custom-dropdown-option selected" data-value="normal" data-style="normal">Normal</div>
+                                    <div class="custom-dropdown-option" data-value="title" data-style="title">Title</div>
+                                    <div class="custom-dropdown-option" data-value="subtitle" data-style="subtitle">Subtitle</div>
+                                    <div class="custom-dropdown-option" data-value="section" data-style="section">Section Title</div>
+                                    <div class="custom-dropdown-option" data-value="subsection" data-style="subsection">Subsection</div>
+                                    <div class="custom-dropdown-option" data-value="translation" data-style="translation">Translation</div>
+                                    <div class="custom-dropdown-option" data-value="change" data-style="change">Change</div>
+                                    <div class="custom-dropdown-option" data-value="comment" data-style="comment">Comment</div>
+                                    <div class="custom-dropdown-option" data-value="svara" data-style="svara">Svara</div>
+                                    <div class="custom-dropdown-option" data-value="short-pause" data-style="short-pause">Short Pause</div>
+                                    <div class="custom-dropdown-option" data-value="long-pause" data-style="long-pause">Long Pause</div>
+                                    <div class="custom-dropdown-option disabled" data-value="mixed" data-style="mixed">Mixed</div>
+                                </div>
+                            </div>
+                            <!-- Hidden original select for fallback -->
+                            <select id="styleCombo" style="display:none;">
+                                <option value="normal">Normal</option>
+                                <option value="title">Title</option>
+                                <option value="subtitle">Subtitle</option>
+                                <option value="section">Section Title</option>
+                                <option value="subsection">Subsection Title</option>
+                                <option value="translation">Translation</option>
+                                <option value="change">Change</option>
+                                <option value="comment">Comment</option>
+                                <option value="svara">Svara</option>
+                                <option value="short-pause">Short Pause</option>
+                                <option value="long-pause">Long Pause</option>
+                                <option value="mixed" disabled>Mixed</option>
+                            </select>
+                            <div class="alignment-buttons">
+                                <button id="alignLeftButton" class="ribbon-btn compact" title="Align Left">⬅</button>
+                                <button id="alignCenterButton" class="ribbon-btn compact" title="Align Center">⬌</button>
+                                <button id="alignRightButton" class="ribbon-btn compact" title="Align Right">➡</button>
+                            </div>
+                        </div>
+                        <div class="group-label">Style</div>
+                    </div>
+                    
+                    <!-- Holdings & Pauses Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid grid-3col">
+                            <button id="shortHoldingButton" class="ribbon-btn" title="Apply or remove short holding (thin green rectangle) on selection">
+                                <span class="holding-icon short">a</span>
+                            </button>
+                            <button id="shortPauseButton" class="ribbon-btn" title="Insert short pause (blue vertical line)">
+                                <span class="pause-icon short">|</span>
+                            </button>
+                            <button id="viramaButton" class="ribbon-btn" title="Insert avagraha (apostrophe for missing letter)">
+                                '
+                            </button>
+                            <button id="longHoldingButton" class="ribbon-btn" title="Apply or remove long holding (thick green rectangle) on selection">
+                                <span class="holding-icon long">a</span>
+                            </button>
+                            <button id="longPauseButton" class="ribbon-btn" title="Insert long pause (red vertical line)">
+                                <span class="pause-icon long">|</span>
+                            </button>
+                            <button id="cleanHoldingsButton" class="ribbon-btn" title="Remove holdings from the current selection only">
+                                ❌
+                            </button>
+                        </div>
+                        <div class="group-label">Holdings</div>
+                    </div>
+                    
+                    <!-- Svara Accents Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid grid-3col">
+                            <button id="svaritaButton" class="ribbon-btn small" data-svara="svarita" title="Svarita (upper tone) - apply to previous character">a̍</button>
+                            <button id="anudattaButton" class="ribbon-btn small" data-svara="anudatta" title="Anudatta (lower tone) - apply to previous character">a̱</button>
+                            <button class="ribbon-btn small" data-action="auto-svaras-apply" title="Automatically place svaras based on patterns">Auto</button>
+                            <button id="udattaButton" class="ribbon-btn small" data-svara="udatta" title="Dīrgha Svarita - apply to previous character">a̎</button>
+                            <button id="tickButton" class="ribbon-btn small" data-svara="tick" title="Tick mark - apply to previous character">aˎ</button>
+                            <button class="ribbon-btn small" data-action="auto-svaras-settings" title="Configure automatic svara patterns"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        </div>
+                        <div class="group-label">Svara</div>
+                    </div>
+
+                    <!-- Automatic Processing Group -->
+                    <div class="ribbon-group automatic-group">
+                        <div class="group-buttons">
+                            <button id="autoRunButton" class="ribbon-btn auto-run-btn" title="Run configured Sanskrit automation on the current selection">Run Agent</button>
+                            <button id="autoRunSettingsButton" class="ribbon-btn auto-settings-btn compact" title="Configure which steps are included in Run Agent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        </div>
+                        <div class="group-label">Automation</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insert Tab Content -->
+            <div class="tab-content" id="insert-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons-vertical">
+                            <button class="ribbon-btn" id="insertAudioButton" title="Insert audio/media attachment at current paragraph">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                                Media
+                            </button>
+                            <button class="ribbon-btn" id="fileManagerButton" title="Manage embedded media files">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                Files
+                            </button>
+                        </div>
+                        <div class="group-label">Media</div>
+                    </div>
+
+                    <div class="ribbon-group">
+                        <div class="group-buttons-vertical">
+                            <button class="ribbon-btn" id="openIastDialogButton" title="Insert IAST Characters (F9 + key for shortcuts)">
+                                <span style="font-family: 'Gentium Plus', serif; font-size: 16px;">IAST</span>
+                            </button>
+                        </div>
+                        <div class="group-label">Characters</div>
+                    </div>
+
+                    <div class="ribbon-group">
+                        <div class="group-buttons-vertical">
+                            <button class="ribbon-btn" id="insertSvarabhaktiButton" title="Insert Svarabhakti mark (·) after 'r'">
+                                <span style="color: var(--svara-color); font-weight: bold;">r·</span> Svarabhakti
+                            </button>
+                            <button class="ribbon-btn" id="insertDirghaButton" title="Insert dīrgha mark (̄) on previous character">
+                                <span style="color: #1d4ed8; font-weight: 600;">a̅</span> Dīrgha
+                            </button>
+                        </div>
+                        <div class="group-label">Change</div>
+                    </div>
+
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button class="ribbon-btn" id="openShlokaSearchButton" title="Search online sources and insert a śloka into the document">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Śloka Search
+                            </button>
+                        </div>
+                        <div class="group-label">Śloka</div>
+                    </div>
+
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid grid-3col">
+                            <button class="ribbon-btn small" data-svara="svarita" title="Svarita (upper tone) - apply to previous character">a̍</button>
+                            <button class="ribbon-btn small" data-svara="anudatta" title="Anudatta (lower tone) - apply to previous character">a̱</button>
+                            <button class="ribbon-btn small" data-action="auto-svaras-apply" title="Automatically place svaras based on patterns">Auto</button>
+                            <button class="ribbon-btn small" data-svara="udatta" title="Dīrgha Svarita - apply to previous character">a̎</button>
+                            <button class="ribbon-btn small" data-svara="tick" title="Tick mark - apply to previous character">aˎ</button>
+                            <button class="ribbon-btn small" data-action="auto-svaras-settings" title="Configure automatic svara patterns"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        </div>
+                        <div class="group-label">Svara</div>
+                    </div>
+
+                    <div class="ribbon-group">
+                        <div class="group-buttons-grid grid-2col">
+                            <button id="insertDandaButton" class="ribbon-btn" title="Insert danda (।)">।</button>
+                            <button id="insertDoubleDandaButton" class="ribbon-btn" title="Insert double danda (॥)">॥</button>
+                        </div>
+                        <div class="group-label">Punctuation</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Convert Tab Content -->
+            <div class="tab-content" id="convert-tab">
+                <div class="ribbon-groups">
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="devanagariToIastBtn" class="ribbon-btn" title="Convert selected Devanagari text to IAST">
+                                देव → IAST
+                            </button>
+                            <button id="iastToDevanagariBtn" class="ribbon-btn" title="Convert selected IAST text to Devanagari">
+                                IAST → देव
+                            </button>
+                        </div>
+                        <div class="group-label">Transliteration</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="toLowerBtn" class="ribbon-btn" title="Lowercase selected text (preserves formatting)">
+                                abc
+                            </button>
+                            <button id="toUpperBtn" class="ribbon-btn" title="Uppercase selected text (preserves formatting)">
+                                ABC
+                            </button>
+                        </div>
+                        <div class="group-label">Marking consistency</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferences Tab Content -->
+            <div class="tab-content" id="preferences-tab">
+                <div class="ribbon-groups">
+                    <!-- Theme Group -->
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="themeLightBtn" class="ribbon-btn" title="Use light theme">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                                Light
+                            </button>
+                            <button id="themeDarkBtn" class="ribbon-btn" title="Use dark theme">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                                Dark
+                            </button>
+                            <button id="themeSystemBtn" class="ribbon-btn" title="Follow system theme">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                System
+                            </button>
+                        </div>
+                        <div class="group-label">Theme</div>
+                    </div>
+                    
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <label>Cleanup strategy:</label>
+                            <div class="custom-dropdown" id="cleanupModeDropdown" data-value="complete" title="Controls how holdings cleanup runs after edits.">
+                                <div class="custom-dropdown-trigger">Complete and reliable (default)</div>
+                                <div class="custom-dropdown-menu">
+                                    <div class="custom-dropdown-option selected" data-value="complete">Complete and reliable (default)</div>
+                                    <div class="custom-dropdown-option" data-value="balanced">Balanced (localized + debounce)</div>
+                                    <div class="custom-dropdown-option" data-value="localized">Localized only (fast)</div>
+                                    <div class="custom-dropdown-option" data-value="save-only">On Save only</div>
+                                </div>
+                            </div>
+                            <select id="cleanupModeCombo" style="display:none;">
+                                <option value="complete" selected>Complete and reliable (default)</option>
+                                <option value="balanced">Balanced (localized + debounce)</option>
+                                <option value="localized">Localized only (fast)</option>
+                                <option value="save-only">On Save only</option>
+                            </select>
+                        </div>
+                        <div class="group-label">Editing behavior</div>
+                    </div>
+                    <div class="ribbon-group">
+                        <div class="group-buttons">
+                            <button id="paragraphStylesButton" class="ribbon-btn" title="Customize the appearance of Titles, Subtitles, Section Titles, and Subsection Titles">
+                                Paragraph Styles
+                            </button>
+                        </div>
+                        <div class="group-label">Appearance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Browser (shown when File tab is active) -->
+        <div class="file-browser-container" id="fileBrowserContainer" style="display: none;">
+            <div class="file-browser-header">
+                <h2>File</h2>
+            </div>
+            <div class="file-browser-content" id="fileBrowserList">
+                <!-- Recent documents will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Document Container with Navigation -->
+        <div class="document-workspace" id="documentWorkspace">
+            <!-- Navigation Panel -->
+            <div class="nav-panel" id="navPanel">
+                <div class="nav-header">
+                    <h3>Document Navigation</h3>
+                    <button class="nav-toggle-btn" id="navToggleBtn" title="Toggle navigation panel">◀</button>
+                </div>
+                <div class="nav-tree" id="navTree">
+                    <!-- Tree will be populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Resize Handle -->
+            <div class="nav-resize-handle" id="navResizeHandle"></div>
+
+            <!-- Document Container (like main2.pyw paper background) -->
+            <div class="container" id="editorContainer">
+                <div id="editor" spellcheck="false"></div>
+            </div>
+        </div>
+        
+        <!-- Navigation Context Menu (inside app-container for positioning relative to content) -->
+        <div class="nav-context-menu" id="navContextMenu">
+            <div class="nav-context-menu-item" id="navMenuAttachAudio">
+                <span class="nav-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 8.89001V18.5M12.5 8.89001V5.57656C12.5 5.36922 12.5 5.26554 12.5347 5.17733C12.5653 5.09943 12.615 5.03047 12.6792 4.97678C12.752 4.91597 12.8503 4.88318 13.047 4.81761L17.447 3.35095C17.8025 3.23245 17.9803 3.17319 18.1218 3.20872C18.2456 3.23982 18.3529 3.31713 18.4216 3.42479C18.5 3.54779 18.5 3.73516 18.5 4.10989V7.42335C18.5 7.63069 18.5 7.73436 18.4653 7.82258C18.4347 7.90048 18.385 7.96943 18.3208 8.02313C18.248 8.08394 18.1497 8.11672 17.953 8.18229L13.553 9.64896C13.1975 9.76746 13.0197 9.82671 12.8782 9.79119C12.7544 9.76009 12.6471 9.68278 12.5784 9.57512C12.5 9.45212 12.5 9.26475 12.5 8.89001ZM12.5 18.5C12.5 19.8807 10.933 21 9 21C7.067 21 5.5 19.8807 5.5 18.5C5.5 17.1192 7.067 16 9 16C10.933 16 12.5 17.1192 12.5 18.5Z"/></svg></span>
+                <span>Attach Audio...</span>
+            </div>
+            <div class="nav-context-menu-item" id="navMenuRemoveAudio">
+                <span class="nav-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 6.8935V5.57661C12.5 5.36926 12.5 5.26559 12.5347 5.17738C12.5653 5.09948 12.615 5.03052 12.6792 4.97682C12.752 4.91601 12.8503 4.88323 13.047 4.81766L17.447 3.35099C17.8025 3.23249 17.9803 3.17324 18.1218 3.20877C18.2456 3.23987 18.3529 3.31718 18.4216 3.42484C18.5 3.54783 18.5 3.7352 18.5 4.10994V7.42339C18.5 7.63074 18.5 7.73441 18.4653 7.82262C18.4347 7.90052 18.385 7.96948 18.3208 8.02318C18.248 8.08399 18.1497 8.11677 17.953 8.18234L14.8192 9.22692M12.5 12.5V18.5M12.5 18.5C12.5 19.8807 10.933 21 9 21C7.067 21 5.5 19.8807 5.5 18.5C5.5 17.1193 7.067 16 9 16C10.933 16 12.5 17.1193 12.5 18.5ZM3 3L21 21"/></svg></span>
+                <span>Remove Audio</span>
+            </div>
+            <div class="nav-context-menu-item" id="navMenuMerge">
+                <span class="nav-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7C3 6.06812 3 5.60218 3.15224 5.23463C3.35523 4.74458 3.74458 4.35523 4.23463 4.15224C4.60218 4 5.06812 4 6 4H18C18.9319 4 19.3978 4 19.7654 4.15224C20.2554 4.35523 20.6448 4.74458 20.8478 5.23463C21 5.60218 21 6.06812 21 7C21 7.93188 21 8.39782 20.8478 8.76537C20.6448 9.25542 20.2554 9.64477 19.7654 9.84776C19.3978 10 18.9319 10 18 10H6C5.06812 10 4.60218 10 4.23463 9.84776C3.74458 9.64477 3.35523 9.25542 3.15224 8.76537C3 8.39782 3 7.93188 3 7Z"/><path d="M12 10V14"/><path d="M3 17C3 16.0681 3 15.6022 3.15224 15.2346C3.35523 14.7446 3.74458 14.3552 4.23463 14.1522C4.60218 14 5.06812 14 6 14H18C18.9319 14 19.3978 14 19.7654 14.1522C20.2554 14.3552 20.6448 14.7446 20.8478 15.2346C21 15.6022 21 16.0681 21 17C21 17.9319 21 18.3978 20.8478 18.7654C20.6448 19.2554 20.2554 19.6448 19.7654 19.8478C19.3978 20 18.9319 20 18 20H6C5.06812 20 4.60218 20 4.23463 19.8478C3.74458 19.6448 3.35523 19.2554 3.15224 18.7654C3 18.3978 3 17.9319 3 17Z"/></svg></span>
+                <span>Merge Paragraph</span>
+            </div>
+            <div class="nav-context-menu-separator"></div>
+            <div class="nav-context-menu-item" id="navMenuSplit">
+                <span class="nav-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7C3 6.06812 3 5.60218 3.15224 5.23463C3.35523 4.74458 3.74458 4.35523 4.23463 4.15224C4.60218 4 5.06812 4 6 4H18C18.9319 4 19.3978 4 19.7654 4.15224C20.2554 4.35523 20.6448 4.74458 20.8478 5.23463C21 5.60218 21 6.06812 21 7C21 7.93188 21 8.39782 20.8478 8.76537C20.6448 9.25542 20.2554 9.64477 19.7654 9.84776C19.3978 10 18.9319 10 18 10H6C5.06812 10 4.60218 10 4.23463 9.84776C3.74458 9.64477 3.35523 9.25542 3.15224 8.76537C3 8.39782 3 7.93188 3 7Z"/><path d="M3 17C3 16.0681 3 15.6022 3.15224 15.2346C3.35523 14.7446 3.74458 14.3552 4.23463 14.1522C4.60218 14 5.06812 14 6 14H18C18.9319 14 19.3978 14 19.7654 14.1522C20.2554 14.3552 20.6448 14.7446 20.8478 15.2346C21 15.6022 21 16.0681 21 17C21 17.9319 21 18.3978 20.8478 18.7654C20.6448 19.2554 20.2554 19.6448 19.7654 19.8478C19.3978 20 18.9319 20 18 20H6C5.06812 20 4.60218 20 4.23463 19.8478C3.74458 19.6448 3.35523 19.2554 3.15224 18.7654C3 18.3978 3 17.9319 3 17Z"/></svg></span>
+                <span>Split Paragraph</span>
+            </div>
+            <div class="nav-context-menu-separator"></div>
+            <div class="nav-context-menu-item" id="navMenuGoTo">
+                <span class="nav-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3V7M12 17V21M3 12H7M17 12H21M12 12H12.01M19 12C19 15.866 15.866 19 12 19C8.13401 19 5 15.866 5 12C5 8.13401 8.13401 5 12 5C15.866 5 19 8.13401 19 12Z"/></svg></span>
+                <span>Go to Section</span>
+            </div>
+            <div class="nav-context-menu-item" id="navMenuCopy">
+                <span class="nav-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8H7.2C6.0799 8 5.51984 8 5.09202 8.21799C4.71569 8.40973 4.40973 8.71569 4.21799 9.09202C4 9.51984 4 10.0799 4 11.2V16.8C4 17.9201 4 18.4802 4.21799 18.908C4.40973 19.2843 4.71569 19.5903 5.09202 19.782C5.51984 20 6.0799 20 7.2 20H12.8C13.9201 20 14.4802 20 14.908 19.782C15.2843 19.5903 15.5903 19.2843 15.782 18.908C16 18.4802 16 17.9201 16 16.8V16M11.2 16H16.8C17.9201 16 18.4802 16 18.908 15.782C19.2843 15.5903 19.5903 15.2843 19.782 14.908C20 14.4802 20 13.9201 20 12.8V7.2C20 6.0799 20 5.51984 19.782 5.09202C19.5903 4.71569 19.2843 4.40973 18.908 4.21799C18.4802 4 17.9201 4 16.8 4H11.2C10.0799 4 9.51984 4 9.09202 4.21799C8.71569 4.40973 8.40973 4.71569 8.21799 5.09202C8 5.51984 8 6.07989 8 7.2V12.8C8 13.9201 8 14.4802 8.21799 14.908C8.40973 15.2843 8.71569 15.5903 9.09202 15.782C9.51984 16 10.0799 16 11.2 16Z"/></svg></span>
+                <span>Copy</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ==================== MODALS (Outside app-container for proper fixed positioning) ==================== -->
+
+    <!-- File Manager Dialog -->
+        <div class="modal-overlay" id="fileManagerDialog" hidden>
+            <div class="modal-panel modal-wide">
+                <div class="modal-header">
+                    <h2>Embedded Media</h2>
+                    <button type="button" class="modal-close" id="fileManagerCloseIcon">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="file-manager-toolbar">
+                        <input type="file" id="fileManagerUploadInput" style="display: none;">
+                        <button type="button" id="fileManagerUploadBtn" class="custom-modal-btn custom-modal-btn-primary">Upload File</button>
+                        <span id="fileManagerStatus" class="status-text"></span>
+                    </div>
+                    <div class="file-list-container">
+                        <table class="file-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Size</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fileManagerList">
+                                <!-- Files will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="fileManagerCloseBtn">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Run Agent Settings Dialog -->
+        <div class="modal-overlay" id="autoRunDialog" hidden>
+            <div class="modal-panel modal-panel-wide">
+                <div class="modal-header">
+                    <h2>Run Agent Settings</h2>
+                    <button type="button" class="modal-close" id="autoRunDialogCloseIcon">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="autoRunForm">
+                        <p class="modal-description">Configure the automation pipeline steps and filters.</p>
+                        
+                        <div class="settings-grid">
+                            <!-- Column 1: Core Processing -->
+                            <div class="settings-column">
+                                <h3 class="settings-section-title">Standardization</h3>
+                                <div class="settings-group">
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="transliterate" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Transliterate (Dev → IAST)</span>
+                                    </label>
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="standardize" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Standardize Characters</span>
+                                    </label>
+                                </div>
+
+                                <h3 class="settings-section-title">Grammar & Marks</h3>
+                                <div class="settings-group">
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="svarabhakti" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Svarabhakti</span>
+                                    </label>
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="pauses" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Auto-Detect Pauses</span>
+                                    </label>
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="holdings" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Holdings</span>
+                                    </label>
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="anusvara" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Anusvara Rules</span>
+                                    </label>
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="visarga" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Visarga Rules</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Column 2: Insertions & Source -->
+                            <div class="settings-column">
+                                <h3 class="settings-section-title">Character Insertions</h3>
+                                <div class="settings-group">
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="insertJna" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Insert 'g' in jñ (j[g]ñ)</span>
+                                    </label>
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="insertSv" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Insert 'u' in sv (s[u]v)</span>
+                                    </label>
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="insertVy" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Insert 'u' in vy (v[u]y)</span>
+                                    </label>
+                                </div>
+
+                                <h3 class="settings-section-title">Configuration</h3>
+                                <div class="settings-group">
+                                    <label class="settings-label">Text Source:</label>
+                                    <div class="custom-dropdown modal-dropdown" id="autoRunSourceDropdown" data-value="yajurveda">
+                                        <div class="custom-dropdown-trigger">Yajurveda (Vedic anusvaras)</div>
+                                        <div class="custom-dropdown-menu">
+                                            <div class="custom-dropdown-option selected" data-value="yajurveda">Yajurveda (Vedic anusvaras)</div>
+                                            <div class="custom-dropdown-option" data-value="smriti">Smṛti (No Vedic anusvaras)</div>
+                                            <div class="custom-dropdown-option" data-value="rigveda">Ṛgveda (No Vedic anusvaras)</div>
+                                        </div>
+                                    </div>
+                                    <!-- Hidden native select keeps same id so JS reads it unchanged -->
+                                    <select id="autoRunSourceSelect" style="display:none;">
+                                        <option value="yajurveda" selected>Yajurveda</option>
+                                        <option value="smriti">Smṛti</option>
+                                        <option value="rigveda">Ṛgveda</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Style Filters (Full Width) -->
+                        <fieldset class="auto-run-style-filters mt-4">
+                            <legend>Style Filters (Skip unchecked)</legend>
+                            <div class="auto-run-style-grid">
+                                <label class="auto-run-style-chip">
+                                    <input type="checkbox" data-style="title" checked>
+                                    <span>Title</span>
+                                </label>
+                                <label class="auto-run-style-chip">
+                                    <input type="checkbox" data-style="subtitle" checked>
+                                    <span>Subtitle</span>
+                                </label>
+                                <label class="auto-run-style-chip">
+                                    <input type="checkbox" data-style="section" checked>
+                                    <span>Section</span>
+                                </label>
+                                <label class="auto-run-style-chip">
+                                    <input type="checkbox" data-style="subsection" checked>
+                                    <span>Subsection</span>
+                                </label>
+                                <label class="auto-run-style-chip">
+                                    <input type="checkbox" data-style="change" checked>
+                                    <span>Change</span>
+                                </label>
+                                <label class="auto-run-style-chip">
+                                    <input type="checkbox" data-style="comment">
+                                    <span>Comments</span>
+                                </label>
+                                <label class="auto-run-style-chip">
+                                    <input type="checkbox" data-style="translation">
+                                    <span>Translation</span>
+                                </label>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="autoRunDialogClose">Close</button>
+                    <button type="button" id="autoRunDialogSave">Save</button>
+                    <button type="button" id="autoRunDialogSaveRun" class="primary">Save &amp; Run</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Automatic Svaras Settings Dialog -->
+        <div class="modal-overlay" id="autoSvaraDialog" hidden>
+            <div class="modal-panel auto-svara-modal">
+                <div class="modal-header">
+                    <h2>Automatic Svaras</h2>
+                    <button type="button" class="modal-close" id="autoSvaraDialogCloseIcon">×</button>
+                </div>
+                <div class="modal-body auto-svara-body">
+                    <!-- Visual Preview Section -->
+                    <div class="auto-svara-preview-section">
+                        <div class="auto-svara-preview-label">Preview</div>
+                        <div id="autoSvaraPreview" class="auto-svara-preview">
+                            <span class="preview-syllable">ta</span><span class="preview-syllable has-svara svarita">tā̍</span><span class="preview-syllable">ta</span><span class="preview-syllable has-svara svarita">tā̍</span><span class="preview-syllable">ta</span><span class="preview-syllable has-svara anudatta">tā̱</span><span class="preview-syllable">ta</span><span class="preview-syllable has-svara svarita">tā̍</span>
+                        </div>
+                    </div>
+
+                    <!-- Preset Quick Select -->
+                    <div class="auto-svara-preset-section">
+                        <label class="auto-svara-section-label">Choose Pattern</label>
+                        <div class="auto-svara-preset-grid" id="autoSvaraPresetGrid">
+                            <!-- Preset buttons will be generated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Current Rule Display -->
+                    <div class="auto-svara-current">
+                        <div class="auto-svara-current-header">
+                            <span class="auto-svara-section-label">Active Rule</span>
+                            <button type="button" id="autoSvaraEditRule" class="auto-svara-edit-btn" title="Edit rule">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="autoSvaraCurrentRule" class="auto-svara-current-display">
+                            <span class="rule-pada">Pada 1: <strong>16</strong> syllables</span>
+                            <span class="rule-pada">Pada 2: <strong>16</strong> syllables</span>
+                            <span class="rule-plan">Pattern: <code>2̍ 4̍ 6̱ 8̍ 9̱ 11̱ 14̍</code></span>
+                        </div>
+                    </div>
+
+                    <!-- Edit Panel (hidden by default) -->
+                    <div id="autoSvaraEditPanel" class="auto-svara-edit-panel" hidden>
+                        <div class="auto-svara-edit-grid">
+                            <div class="auto-svara-edit-field">
+                                <label for="autoSvaraPada1">Pada 1 syllables</label>
+                                <input type="text" id="autoSvaraPada1" value="16" placeholder="e.g. 16 or ?">
+                            </div>
+                            <div class="auto-svara-edit-field">
+                                <label for="autoSvaraPada2">Pada 2 syllables</label>
+                                <input type="text" id="autoSvaraPada2" value="16" placeholder="e.g. 16 or ?">
+                            </div>
+                            <div class="auto-svara-edit-field full-width">
+                                <label for="autoSvaraPlan">Svara pattern</label>
+                                <input type="text" id="autoSvaraPlan" value="2̍4̍6̱8̍9̱11̱14̍" placeholder="e.g. 2̍4̍6̱8̍">
+                                <div class="auto-svara-plan-help">
+                                    Position + mark: <span class="mark-sample svarita">̍</span> svarita · <span class="mark-sample anudatta">̱</span> anudatta · <span class="mark-sample dirgha">̎</span> dīrgha
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="autoSvaraDialogApply" class="primary">Apply to Selection</button>
+                    <button type="button" id="autoSvaraDialogClose">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paragraph Styles Dialog -->
+        <div class="modal-overlay" id="paragraphStylesDialog" hidden>
+            <div class="modal-panel modal-wide">
+                <div class="modal-header">
+                    <h2>Customize Paragraph Styles</h2>
+                    <button type="button" class="modal-close" id="paragraphStylesDialogCloseIcon">×</button>
+                </div>
+                <div class="modal-body para-styles-body">
+                    <p class="modal-description">Customize the appearance of different paragraph styles. Changes are applied to the current document and saved for future documents.</p>
+                    
+                    <!-- Style selector tabs -->
+                    <div class="para-style-tabs">
+                        <button class="para-style-tab active" data-style="title">Title</button>
+                        <button class="para-style-tab" data-style="subtitle">Subtitle</button>
+                        <button class="para-style-tab" data-style="section">Section Title</button>
+                        <button class="para-style-tab" data-style="subsection">Subsection Title</button>
+                    </div>
+
+                    <!-- Style editor form -->
+                    <form id="paragraphStyleForm" class="para-style-form">
+                        <div class="para-style-grid">
+                            <div class="para-style-field">
+                                <label for="paraFontSize">Font Size (em)</label>
+                                <input type="number" id="paraFontSize" step="0.1" min="0.5" max="5" value="2.5">
+                            </div>
+                            <div class="para-style-field">
+                                <label>Font Weight</label>
+                                <div class="custom-dropdown modal-dropdown" id="paraFontWeightDropdown" data-value="700">
+                                    <div class="custom-dropdown-trigger">Bold</div>
+                                    <div class="custom-dropdown-menu">
+                                        <div class="custom-dropdown-option" data-value="300">Light</div>
+                                        <div class="custom-dropdown-option" data-value="400">Normal</div>
+                                        <div class="custom-dropdown-option" data-value="500">Medium</div>
+                                        <div class="custom-dropdown-option" data-value="600">Semi-Bold</div>
+                                        <div class="custom-dropdown-option selected" data-value="700">Bold</div>
+                                        <div class="custom-dropdown-option" data-value="800">Extra Bold</div>
+                                    </div>
+                                </div>
+                                <select id="paraFontWeight" style="display:none;">
+                                    <option value="300">Light</option>
+                                    <option value="400">Normal</option>
+                                    <option value="500">Medium</option>
+                                    <option value="600">Semi-Bold</option>
+                                    <option value="700" selected>Bold</option>
+                                    <option value="800">Extra Bold</option>
+                                </select>
+                            </div>
+                            <div class="para-style-field">
+                                <label for="paraColor">Color</label>
+                                <input type="color" id="paraColor" value="#b8813d">
+                            </div>
+                            <div class="para-style-field">
+                                <label>Alignment</label>
+                                <div class="custom-dropdown modal-dropdown" id="paraAlignmentDropdown" data-value="center">
+                                    <div class="custom-dropdown-trigger">Center</div>
+                                    <div class="custom-dropdown-menu">
+                                        <div class="custom-dropdown-option" data-value="left">Left</div>
+                                        <div class="custom-dropdown-option selected" data-value="center">Center</div>
+                                        <div class="custom-dropdown-option" data-value="right">Right</div>
+                                    </div>
+                                </div>
+                                <select id="paraAlignment" style="display:none;">
+                                    <option value="left">Left</option>
+                                    <option value="center" selected>Center</option>
+                                    <option value="right">Right</option>
+                                </select>
+                            </div>
+                            <div class="para-style-field">
+                                <label for="paraMarginTop">Margin Top (em)</label>
+                                <input type="number" id="paraMarginTop" step="0.1" min="0" max="5" value="0.8">
+                            </div>
+                            <div class="para-style-field">
+                                <label for="paraMarginBottom">Margin Bottom (em)</label>
+                                <input type="number" id="paraMarginBottom" step="0.1" min="0" max="5" value="0.5">
+                            </div>
+                            <div class="para-style-field">
+                                <label for="paraLetterSpacing">Letter Spacing (em)</label>
+                                <input type="number" id="paraLetterSpacing" step="0.01" min="-0.1" max="0.5" value="-0.02">
+                            </div>
+                            <div class="para-style-field">
+                                <label for="paraLineHeight">Line Height</label>
+                                <input type="number" id="paraLineHeight" step="0.1" min="0.8" max="3" value="1.2">
+                            </div>
+                            <div class="para-style-field">
+                                <label>Text Transform</label>
+                                <div class="custom-dropdown modal-dropdown" id="paraTextTransformDropdown" data-value="none">
+                                    <div class="custom-dropdown-trigger">None</div>
+                                    <div class="custom-dropdown-menu">
+                                        <div class="custom-dropdown-option selected" data-value="none">None</div>
+                                        <div class="custom-dropdown-option" data-value="uppercase">Uppercase</div>
+                                        <div class="custom-dropdown-option" data-value="lowercase">Lowercase</div>
+                                        <div class="custom-dropdown-option" data-value="capitalize">Capitalize</div>
+                                    </div>
+                                </div>
+                                <select id="paraTextTransform" style="display:none;">
+                                    <option value="none" selected>None</option>
+                                    <option value="uppercase">Uppercase</option>
+                                    <option value="lowercase">Lowercase</option>
+                                    <option value="capitalize">Capitalize</option>
+                                </select>
+                            </div>
+                            <div class="para-style-field">
+                                <label>Font Style</label>
+                                <div class="custom-dropdown modal-dropdown" id="paraFontStyleDropdown" data-value="normal">
+                                    <div class="custom-dropdown-trigger">Normal</div>
+                                    <div class="custom-dropdown-menu">
+                                        <div class="custom-dropdown-option selected" data-value="normal">Normal</div>
+                                        <div class="custom-dropdown-option" data-value="italic">Italic</div>
+                                    </div>
+                                </div>
+                                <select id="paraFontStyle" style="display:none;">
+                                    <option value="normal" selected>Normal</option>
+                                    <option value="italic">Italic</option>
+                                </select>
+                            </div>
+                            <div class="para-style-field para-style-special">
+                                <label for="paraBorderBottom">Border Bottom Width (px)</label>
+                                <input type="number" id="paraBorderBottom" step="1" min="0" max="10" value="3">
+                            </div>
+                            <div class="para-style-field para-style-special">
+                                <label for="paraBorderLeft">Border Left Width (px)</label>
+                                <input type="number" id="paraBorderLeft" step="1" min="0" max="10" value="0">
+                            </div>
+                            <div class="para-style-field para-style-special">
+                                <label for="paraPaddingLeft">Padding Left (em)</label>
+                                <input type="number" id="paraPaddingLeft" step="0.1" min="0" max="3" value="0">
+                            </div>
+                            <div class="para-style-field para-style-special">
+                                <label for="paraPaddingBottom">Padding Bottom (em)</label>
+                                <input type="number" id="paraPaddingBottom" step="0.1" min="0" max="3" value="0.3">
+                            </div>
+                        </div>
+
+                        <!-- Live preview -->
+                        <div class="para-style-preview-section">
+                            <h3>Live Preview</h3>
+                            <div class="para-style-preview" id="paragraphStylePreview">
+                                <p id="previewText" class="preview-para">Sample Paragraph Text</p>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="paragraphStylesReset" class="secondary">Reset to Default</button>
+                    <button type="button" id="paragraphStylesClose">Close</button>
+                    <button type="button" id="paragraphStylesSave" class="primary">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Śloka Search Dialog -->
+        <div class="modal-overlay" id="shlokaSearchOverlay" hidden>
+            <div class="modal-panel modal-wide shloka-search-panel">
+                <div class="modal-header">
+                    <h2>Insert Śloka</h2>
+                    <button type="button" class="modal-close" id="shlokaSearchCloseButton">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="shlokaSearchForm" class="shloka-search-form">
+                        <div class="form-row">
+                            <label for="shlokaSearchSource">Source</label>
+                            <select id="shlokaSearchSource" disabled>
+                                <option value="shlokam" selected>Shlokam.org</option>
+                            </select>
+                        </div>
+                        <div class="form-row query-row">
+                            <label for="shlokaSearchQuery">Query</label>
+                            <div class="query-input-group">
+                                <input type="text" id="shlokaSearchQuery" placeholder="e.g. yogah karmasu kausalam" required>
+                                <button type="submit" class="primary">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="shlokaSearchStatus" class="shloka-search-status">Enter a search phrase to begin.</div>
+                    <div class="shloka-search-content">
+                        <div class="shloka-results">
+                            <div class="section-heading">Results</div>
+                            <div id="shlokaSearchResults" class="shloka-results-list"></div>
+                        </div>
+                        <div class="shloka-details">
+                            <div class="section-heading" id="shlokaSelectedTitle">Select a result to preview the verses</div>
+                            <div class="shloka-insert-options">
+                                <span>Include:</span>
+                                <label><input type="checkbox" id="shlokaIncludeDevanagari" checked> Devanagari</label>
+                                <label><input type="checkbox" id="shlokaIncludeTransliteration" checked> Transliteration</label>
+                                <label><input type="checkbox" id="shlokaIncludeTranslation"> Translation</label>
+                                <button type="button" id="shlokaInsertAllButton" class="shloka-insert-all-button" disabled>Insert All</button>
+                            </div>
+                            <div id="shlokaDetailsList" class="shloka-details-list"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="shlokaSearchCancelButton">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insert IAST Dialog -->
+        <div class="modal-overlay" id="iastDialog" hidden>
+            <div class="modal-panel modal-wide">
+                <div class="modal-header">
+                    <h2>Insert IAST Character</h2>
+                    <button type="button" class="modal-close" id="iastDialogCloseIcon">×</button>
+                </div>
+                <div class="modal-body iast-dialog-body">
+                    <div class="iast-menu-content">
+                        <table class="iast-table">
+                            <caption>Vowels &amp; Special</caption>
+                            <tbody>
+                                <tr>
+                                    <td><button class="iast-char-btn" data-char="ā" title="F9+a">ā</button></td>
+                                    <td><button class="iast-char-btn" data-char="ī" title="F9+i">ī</button></td>
+                                    <td><button class="iast-char-btn" data-char="ū" title="F9+u">ū</button></td>
+                                    <td><button class="iast-char-btn" data-char="ṛ" title="F9+r">ṛ</button></td>
+                                    <td><button class="iast-char-btn" data-char="ṝ" title="F9+R">ṝ</button></td>
+                                </tr>
+                                <tr>
+                                    <td><button class="iast-char-btn" data-char="ḷ" title="F9+l">ḷ</button></td>
+                                    <td><button class="iast-char-btn" data-char="ḹ" title="F9+L">ḹ</button></td>
+                                    <td><button class="iast-char-btn" data-char="ṁ" title="F9+m">ṁ</button></td>
+                                    <td><button class="iast-char-btn" data-char="ḥ" title="F9+h">ḥ</button></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="iast-table">
+                            <caption>Gutturals</caption>
+                            <tbody>
+                                <tr>
+                                    <td><button class="iast-char-btn" data-char="k">k</button></td>
+                                    <td><button class="iast-char-btn" data-char="kh">kh</button></td>
+                                    <td><button class="iast-char-btn" data-char="g">g</button></td>
+                                    <td><button class="iast-char-btn" data-char="gh">gh</button></td>
+                                    <td><button class="iast-char-btn" data-char="ṅ" title="F9+G">ṅ</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="iast-table">
+                            <caption>Palatals</caption>
+                            <tbody>
+                                <tr>
+                                    <td><button class="iast-char-btn" data-char="c">c</button></td>
+                                    <td><button class="iast-char-btn" data-char="ch">ch</button></td>
+                                    <td><button class="iast-char-btn" data-char="j">j</button></td>
+                                    <td><button class="iast-char-btn" data-char="jh">jh</button></td>
+                                    <td><button class="iast-char-btn" data-char="ñ" title="F9+J">ñ</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="iast-table">
+                            <caption>Retroflexes</caption>
+                            <tbody>
+                                <tr>
+                                    <td><button class="iast-char-btn" data-char="ṭ" title="F9+t">ṭ</button></td>
+                                    <td><button class="iast-char-btn" data-char="ṭh" title="F9+T">ṭh</button></td>
+                                    <td><button class="iast-char-btn" data-char="ḍ" title="F9+d">ḍ</button></td>
+                                    <td><button class="iast-char-btn" data-char="ḍh" title="F9+D">ḍh</button></td>
+                                    <td><button class="iast-char-btn" data-char="ṇ" title="F9+n">ṇ</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="iast-table">
+                            <caption>Dentals</caption>
+                            <tbody>
+                                <tr>
+                                    <td><button class="iast-char-btn" data-char="t">t</button></td>
+                                    <td><button class="iast-char-btn" data-char="th">th</button></td>
+                                    <td><button class="iast-char-btn" data-char="d">d</button></td>
+                                    <td><button class="iast-char-btn" data-char="dh">dh</button></td>
+                                    <td><button class="iast-char-btn" data-char="n">n</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="iast-table">
+                            <caption>Labials</caption>
+                            <tbody>
+                                <tr>
+                                    <td><button class="iast-char-btn" data-char="p">p</button></td>
+                                    <td><button class="iast-char-btn" data-char="ph">ph</button></td>
+                                    <td><button class="iast-char-btn" data-char="b">b</button></td>
+                                    <td><button class="iast-char-btn" data-char="bh">bh</button></td>
+                                    <td><button class="iast-char-btn" data-char="m">m</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="iast-table">
+                            <caption>Semivowels &amp; Sibilants</caption>
+                            <tbody>
+                                <tr>
+                                    <td><button class="iast-char-btn" data-char="y">y</button></td>
+                                    <td><button class="iast-char-btn" data-char="r">r</button></td>
+                                    <td><button class="iast-char-btn" data-char="l">l</button></td>
+                                    <td><button class="iast-char-btn" data-char="v">v</button></td>
+                                    <td><button class="iast-char-btn" data-char="ś" title="F9+s">ś</button></td>
+                                </tr>
+                                <tr>
+                                    <td><button class="iast-char-btn" data-char="ṣ" title="F9+S">ṣ</button></td>
+                                    <td><button class="iast-char-btn" data-char="s">s</button></td>
+                                    <td><button class="iast-char-btn" data-char="h">h</button></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <span class="modal-hint">Tip: press F9 plus a key to insert these characters without opening this dialog.</span>
+                    <button type="button" id="iastDialogClose">Close</button>
+                </div>
+            </div>
+        </div>
+
+    <!-- ==================== END MODALS ==================== -->
+
+    <!-- Status Bar -->
+    <div class="statusbar">
+        <div class="statusbar-left">
+            <span id="wordCount">Words: 0</span>
+            <span class="separator">|</span>
+            <span id="charCount">Characters: 0</span>
+            <span class="separator">|</span>
+            <span id="lineCount">Lines: 1</span>
+        </div>
+        <div class="statusbar-center">
+            <span>Made by Marin Hrvaćanin (<a href="mailto:marin.hrvacanin03@gmail.com">marin.hrvacanin03@gmail.com</a>)</span>
+            <span class="separator">|</span>
+            <span>Special thanks to Davor Virkes</span>
+            <span class="separator">|</span>
+            <a href="#" id="aboutLink">About</a>
+        </div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" accept=".txt,.html,.md" style="display: none;">
+
+    <!-- Full-screen initial loader -->
+    <div class="fullscreen-loader" id="fullscreenLoader">
+        <img src="logo.png" alt="Logo" class="loader-logo">
+        <div class="loader-subtitle" id="fullscreenLoaderSubtitle">Loading editor...</div>
+        <div class="ring-loader"></div>
+    </div>
+
+    <!-- File loading popup -->
+    <div class="file-loading-overlay" id="fileLoadingOverlay"></div>
+    <div class="file-loading-popup" id="fileLoadingPopup">
+        <div class="file-loading-title" id="blockingLoaderTitle">Opening File</div>
+        <div class="file-loading-message" id="blockingLoaderMessage">Please wait while the file is being loaded...</div>
+        <div class="bar-loader-container">
+            <div class="bar-loader">
+                <div class="bar-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="lib/quill.js"></script>
+    <script src="modal-dialogs.js"></script>
+    <script src="sanskrit_rules.js"></script>
+    <script src="theme-manager.js"></script>
+    <script src="file-operations.js"></script>
+    <script src="smdoc-format.js"></script>
+    <script src="editor-quill.js"></script>
+    <script src="document-manager.js"></script>
+</body>
+</html>

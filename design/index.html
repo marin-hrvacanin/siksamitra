@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Śikṣāmitra — Sanskrit Editor</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+Devanagari:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* === DESIGN PHILOSOPHY ===
+           Inspired by ancient palm leaf manuscripts and modern minimalism.
+           Color palette draws from natural materials: ochre clay, saffron, charcoal, cream paper.
+           Logo represents the sacred syllable OM simplified into geometric form.
+        */
+
+        :root {
+            /* DARK MODE - "Midnight Manuscript" */
+            --bg-body: #0d0d0d;
+            --bg-surface: #1a1a1a;
+            --bg-elevated: #242424;
+            --border: #333333;
+            --border-subtle: #2a2a2a;
+            
+            --primary: #d4a574;      /* Warm ochre - palm leaf color */
+            --primary-hover: #e6b886;
+            --primary-subtle: rgba(212, 165, 116, 0.1);
+            
+            --accent: #ff9933;       /* Saffron - sacred color */
+            --accent-subtle: rgba(255, 153, 51, 0.15);
+            
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #666666;
+            
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+            --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+            
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            
+            --transition: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="light"] {
+            /* LIGHT MODE - "Paper & Ink" */
+            --bg-body: #f5f3f0;
+            --bg-surface: #ffffff;
+            --bg-elevated: #fafaf9;
+            --border: #e0ddd8;
+            --border-subtle: #ebe9e6;
+            
+            --primary: #b8813d;      /* Darker ochre for contrast */
+            --primary-hover: #9a6b2f;
+            --primary-subtle: rgba(184, 129, 61, 0.08);
+            
+            --accent: #d97706;       /* Amber/saffron */
+            --accent-subtle: rgba(217, 119, 6, 0.1);
+            
+            --text-primary: #1a1816;
+            --text-secondary: #5c5855;
+            --text-tertiary: #9b9792;
+            
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+        }
+
+        /* === BASE STYLES === */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            overflow: hidden;
+            transition: background-color 0.3s var(--transition), color 0.3s var(--transition);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .sanskrit {
+            font-family: 'Noto Serif Devanagari', serif;
+            font-feature-settings: "kern" 1, "liga" 1;
+        }
+
+        /* === LAYOUT === */
+        .slider-container {
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+        }
+        .slider-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        section {
+            min-height: 100vh;
+            width: 100%;
+            scroll-snap-align: start;
+            padding: 4rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* === NAVIGATION === */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 1.125rem;
+        }
+
+        .nav-logo svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s var(--transition);
+        }
+        
+        .icon-btn:hover {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border-color: var(--primary);
+        }
+
+        .slide-nav {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 1rem;
+            background: var(--bg-surface);
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s var(--transition);
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: var(--primary-subtle);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .progress-indicator {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 90;
+        }
+
+        .progress-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--text-tertiary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s var(--transition);
+            position: relative;
+        }
+
+        .progress-dot::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+        }
+
+        .progress-dot:hover {
+            background: var(--text-secondary);
+            transform: scale(1.5);
+        }
+
+        .progress-dot.active {
+            background: var(--primary);
+            height: 24px;
+            border-radius: 3px;
+        }
+
+        /* === ANIMATIONS === */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.6s var(--transition), transform 0.6s var(--transition);
+        }
+
+        section.in-view .reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-d1 { transition-delay: 0.1s; }
+        .reveal-d2 { transition-delay: 0.2s; }
+        .reveal-d3 { transition-delay: 0.3s; }
+        .reveal-d4 { transition-delay: 0.4s; }
+        .reveal-d5 { transition-delay: 0.5s; }
+
+        /* === LOGO === */
+        .logo-container {
+            margin-bottom: 3rem;
+        }
+
+        #om-logo {
+            width: 180px;
+            height: 180px;
+            filter: none;
+        }
+
+        /* Hero logo: simple text with animation */
+        #om-logo {
+            font-size: 120px;
+            font-weight: 300;
+            color: var(--primary);
+            opacity: 0;
+            transform: scale(0.8);
+            filter: none;
+        }
+
+        section.in-view #om-logo {
+            animation: logoAppear 1.2s var(--transition) forwards;
+            filter:
+                drop-shadow(0 18px 40px rgba(0, 0, 0, 0.35))
+                drop-shadow(0 0 18px rgba(212, 165, 116, 0.16));
+        }
+
+        @keyframes logoAppear {
+            to { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+        }
+
+        @keyframes drawPath {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes binduPop {
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes binduPulse {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.12); opacity: 1; }
+        }
+
+        /* === TYPOGRAPHY === */
+        .title-xl {
+            font-size: 3.5rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .title-lg {
+            font-size: 2.5rem;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        .title-md {
+            font-size: 1.75rem;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .text-muted {
+            color: var(--text-secondary);
+        }
+
+        /* === COMPONENTS === */
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.2s var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .grid {
+            display: grid;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+        .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+        .color-swatch {
+            height: 80px;
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s var(--transition);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg-body);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-elevated);
+            border-color: var(--primary);
+        }
+
+        .input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: var(--bg-body);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: all 0.2s var(--transition);
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-subtle);
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* === EDITOR MOCKUP === */
+        .editor-window {
+            width: 100%;
+            max-width: 1100px;
+            height: 600px;
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-titlebar {
+            height: 48px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            gap: 1rem;
+        }
+
+        .editor-dots {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .editor-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .editor-content {
+            flex: 1;
+            display: flex;
+        }
+
+        .editor-sidebar {
+            width: 240px;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .editor-main {
+            flex: 1;
+            padding: 2.5rem;
+            overflow-y: auto;
+        }
+
+        .tree-item {
+            padding: 0.375rem 0.5rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background 0.15s;
+            font-size: 0.875rem;
+        }
+
+        .tree-item:hover {
+            background: var(--bg-elevated);
+        }
+
+        .tree-item.active {
+            background: var(--primary-subtle);
+            color: var(--primary);
+        }
+
+        /* === TABS === */
+        .tabs-container {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-surface);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s var(--transition);
+            position: relative;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-elevated);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* === MODAL === */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.2s var(--transition);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        /* === DROPDOWN === */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-toggle {
+            padding: 0.625rem 1rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: all 0.2s var(--transition);
+        }
+
+        .dropdown-toggle:hover {
+            background: var(--bg-elevated);
+            border-color: var(--primary);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            left: 0;
+            min-width: 200px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            padding: 0.5rem;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px);
+            transition: all 0.2s var(--transition);
+            z-index: 100;
+        }
+
+        .dropdown.active .dropdown-menu {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            padding: 0.625rem 0.75rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .dropdown-item:hover {
+            background: var(--bg-elevated);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0.5rem 0;
+        }
+
+        /* === FORM CONTROLS === */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--border);
+            border-radius: 24px;
+            transition: 0.2s;
+        }
+
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+
+        .switch input:checked + .switch-slider {
+            background: var(--primary);
+        }
+
+        .switch input:checked + .switch-slider:before {
+            transform: translateX(20px);
+        }
+
+        .radio {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .radio input[type="radio"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s var(--transition);
+        }
+
+        .radio input[type="radio"]:checked {
+            border-color: var(--primary);
+        }
+
+        .radio input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .checkbox input[type="checkbox"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s var(--transition);
+        }
+
+        .checkbox input[type="checkbox"]:checked {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .checkbox input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* === COLOR PICKER === */
+        .color-picker-input {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--bg-surface);
+        }
+
+        .color-preview {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            border: 2px solid var(--border);
+            cursor: pointer;
+        }
+
+        input[type="color"] {
+            width: 0;
+            height: 0;
+            opacity: 0;
+            position: absolute;
+        }
+
+        /* === CUSTOM SCROLLBAR === */
+        .custom-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--text-tertiary);
+        }
+
+        /* === RANGE SLIDER === */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            transition: all 0.2s var(--transition);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: none;
+        }
+
+        /* === LOADING ANIMATIONS === */
+        .loading-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .loading-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .loading-card h4 {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Spinner Loader */
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Pulse Loader */
+        .pulse-loader {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* Dots Loader */
+        .dots-loader {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: dotBounce 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes dotBounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Bar Loader */
+        .bar-loader {
+            width: 150px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .bar-progress {
+            width: 40%;
+            height: 100%;
+            background: var(--primary);
+            animation: barSlide 1.5s ease-in-out infinite;
+        }
+
+        @keyframes barSlide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(350%); }
+        }
+
+        /* Ring Loader */
+        .ring-loader {
+            width: 48px;
+            height: 48px;
+            border: 4px solid transparent;
+            border-top-color: var(--primary);
+            border-bottom-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1.2s linear infinite;
+        }
+
+        /* Orbit Loader */
+        .orbit-loader {
+            width: 48px;
+            height: 48px;
+            position: relative;
+        }
+
+        .orbit-center {
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .orbit-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: orbit 1.5s linear infinite;
+        }
+
+        @keyframes orbit {
+            to { transform: translateX(-50%) rotate(360deg) translateY(20px) rotate(-360deg); }
+        }
+
+        /* Gradient Wave Loader */
+        .wave-loader {
+            display: flex;
+            gap: 4px;
+        }
+
+        .wave-bar {
+            width: 6px;
+            height: 32px;
+            background: linear-gradient(to top, var(--primary), var(--accent));
+            border-radius: 3px;
+            animation: waveHeight 1s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(1) { animation-delay: -0.4s; }
+        .wave-bar:nth-child(2) { animation-delay: -0.3s; }
+        .wave-bar:nth-child(3) { animation-delay: -0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: -0.1s; }
+        .wave-bar:nth-child(5) { animation-delay: 0s; }
+
+        @keyframes waveHeight {
+            0%, 100% { height: 16px; }
+            50% { height: 32px; }
+        }
+
+        /* Sanskrit Loader */
+        .sanskrit-loader {
+            font-family: 'Noto Serif Devanagari', serif;
+            font-size: 2rem;
+            color: var(--primary);
+            animation: fadeInOut 2s ease-in-out infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* Skeleton Loader */
+        .skeleton-loader {
+            width: 150px;
+        }
+
+        .skeleton-line {
+            height: 12px;
+            background: linear-gradient(
+                90deg,
+                var(--border) 25%,
+                var(--bg-elevated) 50%,
+                var(--border) 75%
+            );
+            background-size: 200% 100%;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            animation: shimmer 1.5s infinite;
+        }
+
+        .skeleton-line:last-child {
+            width: 70%;
+            margin-bottom: 0;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Full Screen Loader */
+        .fullscreen-loader {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-body);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s var(--transition);
+        }
+
+        .fullscreen-loader.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+
+
+        .fullscreen-loader p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+        <div class="nav-logo">
+            <span style="font-size: 1.5rem; font-weight: 300;">m̐</span>
+            śikṣāmitra
+        </div>
+        <div class="nav-controls">
+            <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Slide Navigation -->
+    <div class="slide-nav">
+        <button class="nav-btn" onclick="navigateSlide(-1)" id="prevBtn" disabled>
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round">
+                <path d="M15 18l-6-6 6-6"/>
+            </svg>
+        </button>
+        <button class="nav-btn" onclick="navigateSlide(1)" id="nextBtn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round">
+                <path d="M9 18l6-6-6-6"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="progress-indicator">
+        <div class="progress-dot active" onclick="scrollToSlide(0)"></div>
+        <div class="progress-dot" onclick="scrollToSlide(1)"></div>
+        <div class="progress-dot" onclick="scrollToSlide(2)"></div>
+        <div class="progress-dot" onclick="scrollToSlide(3)"></div>
+        <div class="progress-dot" onclick="scrollToSlide(4)"></div>
+        <div class="progress-dot" onclick="scrollToSlide(5)"></div>
+        <div class="progress-dot" onclick="scrollToSlide(6)"></div>
+        <div class="progress-dot" onclick="scrollToSlide(7)"></div>
+    </div>
+
+    <!-- Modal Overlay (Hidden by default) -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Save Changes?</h3>
+                <button class="icon-btn" style="width: 32px; height: 32px;" onclick="toggleModal()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>You have unsaved changes in "Bhagavad_Gita_Ch1.skt". Do you want to save your changes before closing?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="toggleModal()">Don't Save</button>
+                <button class="btn btn-secondary" onclick="toggleModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="toggleModal()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Loader -->
+    <div class="fullscreen-loader" id="fullscreenLoader">
+        <div style="font-size: 80px; font-weight: 300; color: var(--primary); animation: pulse 2s ease-in-out infinite;">m̐</div>
+        <p>Loading śikṣāmitra...</p>
+    </div>
+
+    <!-- Slides -->
+    <div class="slider-container" id="scroller">
+
+        <!-- Slide 1: Hero -->
+        <section class="in-view">
+            <div class="logo-container reveal">
+                <div id="om-logo">m̐</div>
+            </div>
+            <h1 class="title-xl reveal reveal-d1" style="margin-bottom: 0.5rem;">śikṣāmitra</h1>
+            <p class="subtitle reveal reveal-d2">Where Ancient Wisdom Meets Modern Design</p>
+            <p class="reveal reveal-d3" style="margin-top: 2rem; max-width: 600px; text-align: center; color: var(--text-secondary); line-height: 1.6;">
+                A Sanskrit text editor crafted with precision and respect for tradition. 
+                Built for scholars, students, and anyone preserving the beauty of Devanagari script.
+            </p>
+        </section>
+
+        <!-- Slide 2: Philosophy -->
+        <section>
+            <div style="max-width: 800px; text-align: center;">
+                <h2 class="title-lg reveal" style="margin-bottom: 2rem;">Design Philosophy</h2>
+                <div class="grid grid-3 reveal reveal-d1">
+                    <div class="card" style="text-align: center;">
+                        <div style="width: 48px; height: 48px; margin: 0 auto 1rem; border-radius: 50%; background: var(--accent-subtle); display: flex; align-items: center; justify-content: center; color: var(--accent);">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 1.125rem; margin-bottom: 0.75rem;">Minimalist</h3>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">
+                            Clean interfaces that honor the manuscript tradition — only what matters.
+                        </p>
+                    </div>
+                    <div class="card" style="text-align: center;">
+                        <div style="width: 48px; height: 48px; margin: 0 auto 1rem; border-radius: 50%; background: var(--primary-subtle); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18M9 21V9"/>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 1.125rem; margin-bottom: 0.75rem;">Purposeful</h3>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">
+                            Every element serves a function, echoing ancient palm leaf manuscripts.
+                        </p>
+                    </div>
+                    <div class="card" style="text-align: center;">
+                        <div style="width: 48px; height: 48px; margin: 0 auto 1rem; border-radius: 50%; background: var(--primary-subtle); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 1.125rem; margin-bottom: 0.75rem;">Timeless</h3>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">
+                            Design that respects history while embracing contemporary aesthetics.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: Color Palette -->
+        <section>
+            <h2 class="title-lg reveal" style="margin-bottom: 3rem;">Color Palette</h2>
+            <div class="grid grid-4 reveal reveal-d1" style="max-width: 1000px;">
+                <div class="card">
+                    <div class="color-swatch" style="background: var(--primary);"></div>
+                    <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Ochre Clay</h4>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary);">Primary actions</p>
+                    <code style="font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.5rem; display: block;">#d4a574</code>
+                </div>
+                <div class="card">
+                    <div class="color-swatch" style="background: var(--accent);"></div>
+                    <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Sacred Saffron</h4>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary);">Accents & alerts</p>
+                    <code style="font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.5rem; display: block;">#ff9933</code>
+                </div>
+                <div class="card">
+                    <div class="color-swatch" style="background: var(--bg-surface);"></div>
+                    <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Canvas</h4>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary);">Surface layer</p>
+                    <code style="font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.5rem; display: block;">Adaptive</code>
+                </div>
+                <div class="card">
+                    <div class="color-swatch" style="background: var(--text-primary);"></div>
+                    <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Ink</h4>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary);">Typography</p>
+                    <code style="font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.5rem; display: block;">Adaptive</code>
+                </div>
+            </div>
+            <p class="reveal reveal-d2" style="margin-top: 2rem; color: var(--text-secondary); max-width: 600px; text-align: center;">
+                Inspired by natural materials: palm leaves, saffron threads, charcoal ink, and aged paper.
+                The palette works harmoniously in both light and dark modes.
+            </p>
+        </section>
+
+        <!-- Slide 4: Typography -->
+        <section>
+            <h2 class="title-lg reveal" style="margin-bottom: 3rem;">Typography System</h2>
+            <div class="grid grid-2 reveal reveal-d1" style="max-width: 1000px;">
+                <div class="card">
+                    <span class="badge" style="background: var(--primary-subtle); color: var(--primary); margin-bottom: 1rem;">Devanagari</span>
+                    <h1 class="sanskrit" style="font-size: 3rem; line-height: 1.3; margin: 1.5rem 0; font-weight: 500;">
+                        ॐ भूर्भुवः स्वः
+                    </h1>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">Noto Serif Devanagari</p>
+                    <p style="font-size: 0.875rem; line-height: 1.6; color: var(--text-secondary);">
+                        Designed by Google Fonts with full support for Vedic accents, conjuncts, and proper ligatures.
+                    </p>
+                </div>
+                <div class="card">
+                    <span class="badge" style="background: var(--bg-elevated); color: var(--text-secondary); margin-bottom: 1rem;">Interface</span>
+                    <h1 style="font-size: 2.5rem; line-height: 1.2; margin: 1.5rem 0; font-weight: 500;">
+                        Modern Sans
+                    </h1>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">IBM Plex Sans</p>
+                    <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <span style="font-weight: 300; font-size: 0.875rem;">Light 300</span>
+                        <span style="font-weight: 400; font-size: 0.875rem;">Regular 400</span>
+                        <span style="font-weight: 500; font-size: 0.875rem;">Medium 500</span>
+                        <span style="font-weight: 600; font-size: 0.875rem;">Semibold 600</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: Components Part 1 -->
+        <section>
+            <h2 class="title-lg reveal" style="margin-bottom: 2rem;">UI Components Library</h2>
+            <div class="grid grid-2 reveal reveal-d1" style="max-width: 1100px;">
+                <div class="card">
+                    <h3 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Buttons</h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                        <button class="btn btn-primary">Save Document</button>
+                        <button class="btn btn-secondary">Cancel</button>
+                        <button class="icon-btn">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Tabs</h3>
+                    <div class="tabs-container" style="border-radius: var(--radius-md); overflow: hidden;">
+                        <button class="tab active">File</button>
+                        <button class="tab">Edit</button>
+                        <button class="tab">View</button>
+                        <button class="tab">Tools</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Dropdown Menu</h3>
+                    <div class="dropdown active">
+                        <button class="dropdown-toggle">
+                            <span>Select Font</span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </button>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-item">Noto Serif Devanagari</div>
+                            <div class="dropdown-item">Tiro Devanagari Sanskrit</div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-item">Siddhanta</div>
+                            <div class="dropdown-item">Murty Hindi</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Switches & Radio</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-size: 0.875rem;">Auto-save</span>
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+                            <label class="radio">
+                                <input type="radio" name="theme" checked>
+                                Dark
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="theme">
+                                Light
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Color Picker</h3>
+                    <div class="color-picker-input">
+                        <div class="color-preview" style="background: var(--primary);" onclick="document.getElementById('colorInput').click()"></div>
+                        <input type="color" id="colorInput" value="#d4a574">
+                        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 0.875rem; color: var(--text-secondary);">#d4a574</span>
+                    </div>
+                    <input type="range" value="50" style="margin-top: 1rem;">
+                </div>
+
+                <div class="card">
+                    <h3 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Input Fields</h3>
+                    <input type="text" class="input" placeholder="Search verses..." style="margin-bottom: 0.75rem;">
+                    <input type="text" class="input" placeholder="Type in Devanagari..." value="धर्मक्षेत्रे">
+                </div>
+
+                <div class="card">
+                    <h3 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Custom Scrollbar</h3>
+                    <div class="custom-scroll" style="height: 120px; overflow-y: auto; padding: 0.75rem; background: var(--bg-body); border-radius: var(--radius-md); border: 1px solid var(--border);">
+                        <p style="font-size: 0.875rem; line-height: 1.6; color: var(--text-secondary);">
+                            This is a scrollable content area with custom styled scrollbars. 
+                            The scrollbar matches the design system with smooth hover effects.
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+                            Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                            Ut enim ad minim veniam, quis nostrud exercitation ullamco.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="font-size: 1.125rem; margin-bottom: 1.5rem;">Badges & Tags</h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        <span class="badge" style="background: var(--primary-subtle); color: var(--primary);">Chapter 1</span>
+                        <span class="badge" style="background: var(--accent-subtle); color: var(--accent);">Verse 12</span>
+                        <span class="badge" style="background: var(--bg-elevated); color: var(--text-secondary);">Draft</span>
+                        <span class="badge" style="background: var(--primary); color: var(--bg-body);">Published</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5.5: Loading Animations -->
+        <section>
+            <div style="max-width: 1200px; width: 100%;">
+                <h2 class="title-lg reveal" style="margin-bottom: 1rem; text-align: center;">Loading Animations</h2>
+                <p class="reveal reveal-d1" style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem;">
+                    Various loading states and skeleton screens for better user experience
+                </p>
+                
+                <div class="loading-examples reveal reveal-d2">
+                    <div class="loading-card">
+                        <h4>Spinner</h4>
+                        <div class="spinner"></div>
+                    </div>
+
+                    <div class="loading-card">
+                        <h4>Pulse</h4>
+                        <div class="pulse-loader"></div>
+                    </div>
+
+                    <div class="loading-card">
+                        <h4>Dots</h4>
+                        <div class="dots-loader">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                    </div>
+
+                    <div class="loading-card">
+                        <h4>Bar Progress</h4>
+                        <div class="bar-loader">
+                            <div class="bar-progress"></div>
+                        </div>
+                    </div>
+
+                    <div class="loading-card">
+                        <h4>Ring</h4>
+                        <div class="ring-loader"></div>
+                    </div>
+
+                    <div class="loading-card">
+                        <h4>Orbit</h4>
+                        <div class="orbit-loader">
+                            <div class="orbit-center"></div>
+                            <div class="orbit-dot"></div>
+                        </div>
+                    </div>
+
+                    <div class="loading-card">
+                        <h4>Wave</h4>
+                        <div class="wave-loader">
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                        </div>
+                    </div>
+
+                    <div class="loading-card">
+                        <h4>Sanskrit</h4>
+                        <div class="sanskrit-loader">ॐ</div>
+                    </div>
+
+                    <div class="loading-card">
+                        <h4>Skeleton</h4>
+                        <div class="skeleton-loader">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 3rem; text-align: center;">
+                    <button class="btn btn-primary" onclick="toggleFullscreenLoader()">
+                        Show Fullscreen Loader
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5.6: Modal Dialog -->
+        <section>
+            <h2 class="title-lg reveal" style="margin-bottom: 2rem;">Modal & Dialogs</h2>
+            <div class="reveal reveal-d1" style="max-width: 800px; width: 100%;">
+                <div class="card" style="text-align: center;">
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Click below to see a modal dialog example</p>
+                    <button class="btn btn-primary" onclick="toggleModal()">Open Save Dialog</button>
+                </div>
+                
+                <!-- Modal Example (shown in the slide) -->
+                <div style="margin-top: 3rem; position: relative;">
+                    <div style="background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); padding: 3rem; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                        <div class="modal" style="transform: scale(1) translateY(0); position: relative;">
+                            <div class="modal-header">
+                                <h3 class="modal-title">Save Changes?</h3>
+                                <button class="icon-btn" style="width: 32px; height: 32px;">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M18 6L6 18M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <p>You have unsaved changes in "Bhagavad_Gita_Ch1.skt". Do you want to save your changes before closing?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary">Don't Save</button>
+                                <button class="btn btn-secondary">Cancel</button>
+                                <button class="btn btn-primary">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: Editor Interface -->
+        <section>
+            <div class="reveal" style="margin-bottom: 2rem; text-align: center;">
+                <h2 class="title-lg" style="margin-bottom: 0.5rem;">The Editor</h2>
+                <p style="color: var(--text-secondary);">A distraction-free workspace for Sanskrit composition</p>
+            </div>
+            
+            <div class="editor-window reveal reveal-d1">
+                <div class="editor-titlebar">
+                    <div class="editor-dots">
+                        <div class="editor-dot" style="background: #ff5f57;"></div>
+                        <div class="editor-dot" style="background: #febc2e;"></div>
+                        <div class="editor-dot" style="background: #28c840;"></div>
+                    </div>
+                    <div style="flex: 1; text-align: center; font-size: 0.875rem; font-weight: 500;">
+                        Bhagavad_Gita_Ch1.skt
+                    </div>
+                    <span class="badge" style="background: var(--primary-subtle); color: var(--primary);">Saved</span>
+                </div>
+                
+                <div class="editor-content">
+                    <div class="editor-sidebar">
+                        <h4 style="font-size: 0.75rem; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.05em; margin-bottom: 1rem; text-transform: uppercase;">
+                            Document
+                        </h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            <div class="tree-item active">
+                                <span>📄</span> Chapter 1
+                            </div>
+                            <div class="tree-item" style="padding-left: 1.5rem;">
+                                Verses 1-10
+                            </div>
+                            <div class="tree-item" style="padding-left: 1.5rem;">
+                                Verses 11-20
+                            </div>
+                            <div class="tree-item" style="padding-left: 1.5rem;">
+                                Verses 21-30
+                            </div>
+                            <div class="tree-item" style="opacity: 0.5;">
+                                <span>📄</span> Chapter 2
+                            </div>
+                            <div class="tree-item" style="opacity: 0.5;">
+                                <span>📄</span> Chapter 3
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="editor-main">
+                        <h2 class="sanskrit" style="font-size: 1.75rem; margin-bottom: 2rem; font-weight: 500; color: var(--primary);">
+                            अर्जुनविषादयोग
+                        </h2>
+                        <div class="sanskrit" style="font-size: 1.25rem; line-height: 2; color: var(--text-primary);">
+                            <p style="margin-bottom: 1.5rem;">
+                                धर्मक्षेत्रे कुरुक्षेत्रे समवेता युयुत्सवः ।<br>
+                                मामकाः पाण्डवाश्चैव किमकुर्वत सञ्जय ॥ १ ॥
+                            </p>
+                            <p style="margin-bottom: 1.5rem;">
+                                सञ्जय उवाच ।<br>
+                                दृष्ट्वा तु पाण्डवानीकं व्यूढं दुर्योधनस्तदा ।<br>
+                                आचार्यमुपसङ्गम्य राजा वचनमब्रवीत् ॥ २ ॥
+                            </p>
+                        </div>
+                        
+                        <!-- Floating action button -->
+                        <button class="btn btn-primary" style="position: absolute; bottom: 2rem; right: 2rem; border-radius: 50%; width: 56px; height: 56px; padding: 0; box-shadow: var(--shadow-lg);">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // Theme Toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // Slide Management
+        const sections = document.querySelectorAll('section');
+        const progressDots = document.querySelectorAll('.progress-dot');
+        const scroller = document.getElementById('scroller');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        let currentSlide = 0;
+
+        function updateSlideState() {
+            // Update buttons
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === sections.length - 1;
+            
+            // Update progress dots
+            progressDots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+        }
+
+        function scrollToSlide(index) {
+            if (index >= 0 && index < sections.length) {
+                currentSlide = index;
+                sections[index].scrollIntoView({ behavior: 'smooth' });
+                updateSlideState();
+            }
+        }
+
+        function navigateSlide(direction) {
+            const newSlide = currentSlide + direction;
+            scrollToSlide(newSlide);
+        }
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.5,
+            rootMargin: '0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    currentSlide = Array.from(sections).indexOf(entry.target);
+                    updateSlideState();
+                } else {
+                    entry.target.classList.remove('in-view');
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                navigateSlide(1);
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                navigateSlide(-1);
+            }
+        });
+
+        // Initial state
+        updateSlideState();
+
+        // Modal Toggle
+        function toggleModal() {
+            const modal = document.getElementById('modalOverlay');
+            modal.classList.toggle('active');
+        }
+
+        // Close modal on overlay click
+        document.getElementById('modalOverlay')?.addEventListener('click', (e) => {
+            if (e.target.id === 'modalOverlay') {
+                toggleModal();
+            }
+        });
+
+        // Dropdown functionality (for demo)
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('active');
+                });
+            }
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
+        });
+
+        // Tab switching (for demo)
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                tab.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
+        // Fullscreen loader toggle
+        function toggleFullscreenLoader() {
+            const loader = document.getElementById('fullscreenLoader');
+            loader.classList.add('active');
+            setTimeout(() => {
+                loader.classList.remove('active');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

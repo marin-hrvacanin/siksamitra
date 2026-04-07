@@ -1,0 +1,61 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# === Virtual environment ===
+.venv/
+venv/
+env/
+
+# === Cache & temp files ===
+cache/
+*.tmp
+*.log
+debug.log
+
+# === User preferences (contains local paths) ===
+preferences.json
+
+# === Library documents (user data, large binaries) ===
+Library/
+
+# === Media uploads ===
+media/
+
+# === Test / scratch files ===
+Untitled.html
+test_dirgham.html
+combiningMark.html
+*.smdoc
+
+# === User documents in documents/ (keep only .md docs) ===
+documents/*.docx
+documents/*.pdf
+documents/*.smdoc
+
+# === Large original / exported HTML files ===
+*_original.html
+
+# === IDE & editor metadata ===
+.vscode/
+.VSCodeCounter/
+*.code-workspace
+
+# === Claude Code config ===
+CLAUDE.md
+
+# === OS files ===
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# === Old / deprecated assets ===
+icon_old.ico
+logo_old.png
+icon_data_uri.txt
+icon_data_uri_chunks.txt
