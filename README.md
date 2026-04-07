@@ -1,12 +1,12 @@
 # śikṣāmitra
 
-**śikṣāmitra** (Sanskrit: *śikṣā* "phonetics" + *mitra* "friend") -- a specialized desktop editor for Vedic and classical Sanskrit text.
+**śikṣāmitra** (Sanskrit: *śikṣā* "phonetics" + *mitra* "friend") – a specialized desktop editor for Vedic and classical Sanskrit text.
 
 ---
 
-śikṣāmitra is a desktop application for transcribing, annotating, and studying Vedic texts in IAST transliteration. It implements the principles of **Śikṣā** -- the Vedāṅga (auxiliary science) of phonetics -- covering *varṇa* (letters), *svara* (pitch/accent), *mātrā* (duration), *balam* (force), *sāma* (linking), and *santāna* (continuity). Developed by [Veda Union](https://vedaunion.org).
+śikṣāmitra is a desktop application for transcribing, annotating, and studying Vedic texts in IAST transliteration. It implements the principles of **Śikṣā** – the Vedāṅga (auxiliary science) of phonetics – covering *varṇa* (letters), *svara* (pitch/accent), *mātrā* (duration), *balam* (force), *sāma* (linking), and *santāna* (continuity). Developed by Marin Hrvacanin inspired by the work of Davor Virkes.
 
-<!-- TODO: Add screenshot -->
+<!– TODO: Add screenshot –>
 
 ---
 
@@ -24,11 +24,11 @@
 Source-aware phonological rule engine supporting multiple Vedic traditions:
 
 | Rule | Description |
-|------|-------------|
+| --- | --- |
 | Anusvara transformations | Nasal assimilation based on following consonant class; tradition-specific behavior for Rgveda, Yajurveda, Krsna Yajurveda, and Smrti |
 | Visarga sandhi | Automatic transformation of visarga based on following consonant and preceding vowel |
-| Svarabhakti epenthesis | Insertion of middle dot after `r` before sibilants, `h`, or `r` |
-| Pause detection | Short (`\|`) and long (`\|\|`) pauses at word boundaries based on vowel length |
+| Svarabhakti epenthesis | Insertion of middle dot after r before sibilants, h, or r |
+| Pause detection | Short (`\ | ) and long (\ | \ | `) pauses at word boundaries based on vowel length |
 | Special insertions | Vedic pronunciation rules: jn to jgn, sv to suv, vy to vuy |
 
 ### Svara Accent System
@@ -36,10 +36,10 @@ Source-aware phonological rule engine supporting multiple Vedic traditions:
 Three Vedic pitch accents rendered as Unicode combining diacritics:
 
 | Accent | Unicode | Display | Description |
-|--------|---------|---------|-------------|
-| Anudatta | U+0331 | a̱ | Low pitch -- combining macron below |
-| Svarita | U+030D | a̍ | Rising pitch -- vertical stroke above |
-| Udatta | U+030E | a̎ | Extra high pitch -- double vertical stroke above |
+| --- | --- | --- | --- |
+| Anudatta | U+0331 | a̱ | Low pitch – combining macron below |
+| Svarita | U+030D | a̍ | Rising pitch – vertical stroke above |
+| Udatta | U+030E | a̎ | Extra high pitch – double vertical stroke above |
 | Candrabindu | U+0310 | m̐ | Nasalized resonance (Rgvedic) |
 
 ### Holdings (Samyukta Marking)
@@ -47,7 +47,7 @@ Three Vedic pitch accents rendered as Unicode combining diacritics:
 Visual border markers applied to the first consonant of a consonant cluster:
 
 | Type | Appearance | Condition |
-|------|------------|-----------|
+| --- | --- | --- |
 | Short holding | Thin green border | Preceding vowel is short (a, i, u, r, l) |
 | Long holding | Thick green border | Preceding vowel is long (a, i, u, r, l, e, ai, o, au) |
 
@@ -74,8 +74,8 @@ Consonants that cannot host a holding: ṅ ñ ṇ n m ṁ ṃ r ś ṣ s.
 
 ### Themes
 
-- **Light** -- "Ochre and Saffron" palette (ochre primary, saffron accent, warm paper background)
-- **Dark** -- deep black background with softened ochre and green tones
+- **Light** – "Ochre and Saffron" palette (ochre primary, saffron accent, warm paper background)
+- **Dark** – deep black background with softened ochre and green tones
 - System theme detection supported
 
 ### Document Format (.smdoc)
@@ -119,7 +119,7 @@ The application starts a local Flask server on a dynamically assigned port and o
 ### Keyboard Shortcuts
 
 | Shortcut | Action |
-|----------|--------|
+| --- | --- |
 | Ctrl+N | New document |
 | Ctrl+O | Open document |
 | Ctrl+S | Save document |
@@ -133,12 +133,12 @@ The application starts a local Flask server on a dynamically assigned port and o
 ## Tech Stack
 
 | Layer | Technology |
-|-------|------------|
+| --- | --- |
 | Desktop shell | Python 3.x + PyQt6 (QWebEngineView) |
 | Local API | Flask |
 | Frontend | HTML5 + JavaScript (ES2020+) + CSS3 |
 | Rich text editor | Quill.js with custom blots |
-| Document format | `.smdoc` (LZMA-compressed JSON) |
+| Document format | .smdoc (LZMA-compressed JSON) |
 | Fonts | URW Palladio ITU, Gentium Plus, IBM Plex Sans |
 
 No build step, no bundler, no transpiler. JavaScript runs directly in the embedded browser.
@@ -193,7 +193,7 @@ Documents are saved as `.smdoc` files containing a JSON structure:
 }
 ```
 
-The `styles` and `audio` fields are omitted when empty. The `content` field stores only the Quill editor innerHTML -- the full HTML document shell is reconstructed at export time.
+The `styles` and `audio` fields are omitted when empty. The `content` field stores only the Quill editor innerHTML – the full HTML document shell is reconstructed at export time.
 
 **Compression**: Current files use LZMA at preset 9 + EXTREME with a 4-byte `SMDI` magic prefix. Legacy files with the `SMDC` prefix (zlib) and plain-text JSON files are transparently decompressed on read.
 
@@ -202,13 +202,13 @@ The `styles` and `audio` fields are omitted when empty. The `content` field stor
 ## Grammar Rules Overview
 
 | Rule | Engine Method | Summary |
-|------|--------------|---------|
-| Pre-processing | `preProcessRawText` | Normalize Unicode, lowercase, convert dandas and svara variants |
-| Anusvara | `applyAnusvaraTransformations` | Nasal assimilation by consonant class; source-specific behavior for sibilants |
-| Visarga | `applyVisargaTransformations` | Sandhi rules for visarga based on following/preceding phonemes |
-| Svarabhakti | `applySvarabhaktiTransformations` | Epenthetic dot after r + sibilant/glottal/r |
-| Holdings | `findAllHoldings` | Samyukta detection with dvivarcana and cross-word rules |
-| Pauses | `findAllPauses` | Word-boundary pause marks based on vowel length |
+| --- | --- | --- |
+| Pre-processing | preProcessRawText | Normalize Unicode, lowercase, convert dandas and svara variants |
+| Anusvara | applyAnusvaraTransformations | Nasal assimilation by consonant class; source-specific behavior for sibilants |
+| Visarga | applyVisargaTransformations | Sandhi rules for visarga based on following/preceding phonemes |
+| Svarabhakti | applySvarabhaktiTransformations | Epenthetic dot after r + sibilant/glottal/r |
+| Holdings | findAllHoldings | Samyukta detection with dvivarcana and cross-word rules |
+| Pauses | findAllPauses | Word-boundary pause marks based on vowel length |
 
 Full rule specifications are documented in `CLAUDE.md`.
 
@@ -228,7 +228,7 @@ Please ensure all Sanskrit terminology follows IAST conventions.
 
 ## License
 
-<!-- TODO: Add license -->
+<!– TODO: Add license –>
 
 ---
 
