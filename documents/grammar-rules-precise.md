@@ -1,6 +1,6 @@
 # Grammar Rules — Precise Specification
 
-This document describes every grammar transformation rule implemented in the śikṣāmitra editor, with exact input→output for every case and source variant. It is derived directly from the code in `sanskrit_rules.js` and `editor-quill.js`.
+This document describes every grammar transformation rule implemented in the śikṣāmitra editor, with exact input/output for every case and source variant. It is derived directly from the code in `sanskrit_rules.js` and `editor-quill.js`. See also `grammar-rules.md` for the combined reference with traditional context.
 
 ---
 

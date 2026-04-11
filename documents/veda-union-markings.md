@@ -57,7 +57,16 @@ Vedic Sanskrit uses three pitch accents. The śikṣāmitra editor represents th
 
 - Marked with `ql-dirgha-char` CSS class
 - Rendered as a blue overline above the character (CSS `::before` pseudo-element)
-- Used for prolonged svarita occurring on long vowels
+- Applies only in Ṛgveda mode (`applyRigvedaSvaritaRules`)
+- **Long vowel rule**: Svarita (U+030D) on a long vowel (ā, ī, ū, ṝ, ḹ, e, ai, o, au) is replaced with dīrgha svarita (U+030E)
+- **Short vowel rule**: Svarita on a short vowel (a, i, u, ṛ, ḷ) applies `dirgha-char` blue overline formatting — unless a holding is already applied to an adjacent consonant cluster
+- **Anusvara svarita rule**: Svarita on ṁ with a preceding short vowel is replaced with dīrgha svarita
+
+### Final M Tick Mark
+
+- **Unicode**: U+02CE (MODIFIER LETTER LOW GRAVE) = ˎ
+- Inserted after `m` (and any combining marks) at segment endings (before newlines, dandas)
+- Applied by `applyFinalMEndingTick()` as the last step in the automation pipeline
 
 ---
 
@@ -238,7 +247,21 @@ These apply to entire paragraphs and define document structure:
 
 ---
 
-## 9. Audio Attachments
+## 9. Bīja Mantra Preservation
+
+When the `skipBija` setting is enabled (default), common bīja mantras (sacred seed syllables) at the start of a line are excluded from anusvara transformation. Their ṁ remains unchanged.
+
+### Recognized bīja mantras
+
+oṁ, auṁ, hrīṁ, śrīṁ, klīṁ, aiṁ, sauṁ, krīṁ, hlīṁ, strīṁ, blūṁ, glauṁ, hauṁ, huṁ, phaṭ, dūṁ, gaṁ, drāṁ, grīṁ, kṣrauṁ
+
+### Detection
+
+The text from the start of the line up to and including the ṁ is trimmed, lowercased, and checked against the `BIJA_MANTRAS` set. If it matches, the anusvara transformation is skipped for that occurrence.
+
+---
+
+## 10. Audio Attachments
 
 Documents may embed audio recitation files:
 - Stored as base64 data URIs in the `.smdoc` file

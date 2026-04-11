@@ -369,3 +369,105 @@ SVARA_MARKS = {U+0331, U+030D, U+030E, U+02CE, ·}
 | । | U+0964 | Devanagari danda | Sentence-end pause |
 | ॥ | U+0965 | Devanagari double danda | Verse-end pause |
 | ऽ | U+093D | Devanagari avagraha | Missing letter marker |
+| U+A8F3 | ꣳ Vedic tiryak | Vedic anusvara variant (normalized to ṁ) |
+
+---
+
+## Transliteration (`devanagariToIAST`)
+
+The Devanagari-to-IAST transliterator converts selected Devanagari text to IAST while preserving Quill formatting attributes.
+
+### Vedic svara mark handling
+
+After each transliterated syllable (consonant+vowel or independent vowel), a `drainVedicMarks()` helper consumes any immediately following Vedic combining marks and emits the corresponding IAST combining marks attached to the last character of that syllable:
+
+| Devanagari mark | Unicode | IAST combining mark | Unicode |
+|----------------|---------|---------------------|---------|
+| ॒ (anudātta) | U+0952 | ̱ (macron below) | U+0331 |
+| ॑ (svarita) | U+0951 | ̍ (vertical line above) | U+030D |
+| ᳚ (double svarita) | U+1CDA | ̎ (double vertical line above) | U+030E |
+
+Example: `पु॒` = प(p) + उ(u) + ॒ → `pu̱` (the ̱ attaches to u)
+
+### Special character mappings
+
+| Devanagari | IAST |
+|-----------|------|
+| ं (anusvara, U+0902) | ṁ |
+| ꣳ (Vedic tiryak, U+A8F3) | ṁ |
+| ः (visarga) | ḥ |
+| ँ (candrabindu) | m̐ |
+| ऽ (avagraha) | ' |
+| । (danda) | \| |
+| ॥ (double danda) | \|\| |
+| ॐ (om) | oṁ |
+| ०-९ (digits) | 0-9 |
+
+### Conjuncts
+
+Virama (्) + consonant chains are followed without inserting inherent `a` between consonants. Bracket annotations `[text]` are passed through unchanged.
+
+---
+
+## Ṛgveda Svarita Adjustments (`applyRigvedaSvaritaRules`)
+
+Only runs when text source is `rigveda`. Has two passes:
+
+### Pass A — Accent swapping (text change)
+
+Walks through the text looking for svarita marks (U+030D). For each svarita found:
+
+**Rule 1 — Long vowel svarita → dīrgha svarita:**
+If the svarita is on a long vowel (ā, ī, ū, ṝ, ḹ, e, ai, o, au), replace the svarita (U+030D) with dīrgha svarita / udātta (U+030E).
+
+Example: `hotā̍raṁ` → `hotā̎raṁ` (the ̍ on long ā becomes ̎)
+
+**Rule 2 — Anusvara svarita with preceding short vowel:**
+If the svarita is on an ṁ and the vowel before the ṁ is short (a, i, u, ṛ, ḷ), replace svarita with dīrgha svarita.
+
+Example: `taṁ̍` with preceding short vowel → `taṁ̎`
+
+### Pass B — Dīrgha-char formatting (format change only)
+
+Walks through the text looking for remaining svarita marks (U+030D) that are on **short vowels** (a, i, u, ṛ, ḷ):
+
+**Rule 3 — Short vowel svarita → add dīrgha formatting:**
+If the svarita is on a short vowel, apply `dirgha-char` CSS formatting (blue horizontal overline) to that vowel.
+
+**Exception:** If immediately after the short vowel there is a consonant cluster (samyukta) that already has a holding applied, do NOT add the dīrgha formatting. The holding takes precedence.
+
+---
+
+## Final M Ending Tick (`applyFinalMEndingTick`)
+
+Scans through the text looking for segment boundaries (newlines, dandas). If a segment ends with `m` (possibly followed by combining marks), insert a tick mark ˎ (U+02CE) after the m and its combining marks.
+
+The tick is inserted only at actual segment endings, not mid-word.
+
+---
+
+## Visual Styling Summary
+
+| Element | CSS class | Visual |
+|---------|-----------|--------|
+| Short holding | `short-holding` | Thin green border (1px solid) |
+| Long holding | `long-holding` | Thick green border (2px solid) |
+| Change style | `change` (tag: `<change>`) | Italic, blue |
+| Superscript | `script: super` | Raised text |
+| Short pause | `ql-short-pause` | Blue `|`, bold |
+| Long pause | `ql-long-pause` | Red `||`, bold |
+| Svarabhakti dot | `ql-svara-char` | Red, bold, Palladio font |
+| Svara accent mark | `ql-svara-char` | Red, weight 800 |
+| Dīrgha overline | `ql-dirgha-char` | Blue horizontal line above (via ::before pseudo-element) |
+| Candrabindu | m + U+0310 | Change-style (m̐) |
+
+---
+
+## Source Variants
+
+| Source value | Tradition | Key differences |
+|-------------|-----------|----------------|
+| `yajurveda` | Yajurveda (Śukla) | Full m̐[gṁ]/m̐[g]/m̐[gg] anusvara patterns; ṁ[u]/ṁ[l]/ṁ[i] before semivowels |
+| `kṛṣṇayajurveda` | Kṛṣṇa Yajurveda | Same as yajurveda |
+| `rigveda` | Ṛgveda | Preserve candrabindu before ś/ṣ/s/h/r (no conversion); svarita adjustment rules apply |
+| `smriti` / default | Classical | Highlight anusvara only (no Vedic patterns); no svarita adjustments |

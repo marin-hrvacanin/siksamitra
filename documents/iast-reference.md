@@ -193,10 +193,13 @@ Characters accepted as input that get normalized:
 | Input | Normalized to | Reason |
 |-------|--------------|--------|
 | ṃ | ṁ | Both are anusvara; dot above is canonical |
+| U+A8F3 (ꣳ) | ṁ | Vedic tiryak — anusvara variant |
 | ō | o | Devanagari-romanization long o |
 | ē | e | Devanagari-romanization long e |
 | U+0951 | U+030D | Svarita — Unicode variant |
 | U+0952 | U+0331 | Anudātta — Devanagari stress sign |
 | U+0332 | U+0331 | Anudātta — combining low line |
+| U+0320 | U+0331 | Anudātta — combining minus sign below |
+| U+0321 | U+0331 | Anudātta — combining latin small letter i below |
 | U+1CDA | U+030E | Udātta — South Asian combining mark |
 | U+0341 | U+030E | Udātta — combining acute tone |

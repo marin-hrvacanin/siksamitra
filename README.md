@@ -175,8 +175,9 @@ editor/
 ├── lib/                       -- Vendored libraries (Quill.js)
 ├── icons/                     -- SVG icon set
 ├── Library/                   -- Sample .smdoc documents
-├── documents/                 -- User documents
+├── documents/                 -- Technical documentation (architecture, grammar, format specs)
 ├── media/                     -- Audio and image attachments
+├── design/                    -- Design assets
 └── cache/                     -- Temporary files (safe to clear)
 ```
 

@@ -283,6 +283,37 @@ For Export:
 
 ---
 
+## SanskritDocuments.org Integration
+
+The editor proxies requests to SanskritDocuments.org through Flask endpoints, providing category browsing, search, and text extraction.
+
+### Architecture
+
+```
+editor-quill.js (Shloka Search Panel)
+    ├── Source dropdown: Shlokam.org | SanskritDocuments.org
+    │   └── Selection persisted in localStorage ('siksamitra-shloka-source')
+    ├── Category dropdown (custom dropdown, populated from /api/sanskritdocs/categories)
+    └── Search/Fetch flow:
+        JS → fetch('/api/sanskritdocs/index/<cat>?q=...') → Flask → sanskritdocuments.org
+        JS → fetch('/api/sanskritdocs/fetch/<cat>/<file>') → Flask → fetch HTML → parse
+```
+
+### Text extraction (`sanskritdocs_fetch`)
+
+1. Fetch raw HTML from `sanskritdocuments.org/<category>/<filename>.html`
+2. Strip `<script>` and `<style>` tags, convert `<br>` to newlines
+3. Filter lines by Devanagari character density (>30%, min 3 chars)
+4. Remove footer metadata (encoded/proofread notices)
+5. Separate preamble (lines without Vedic svara marks U+0951/U+0952/U+1CDA) from mantra text
+6. Return `{ text, preamble, title, filename, category, url }`
+
+### Verse splitting (JavaScript)
+
+The fetched text is split into individual verses by detecting verse-ending patterns matching the regex: `[।॥]\s*[\d०-९][.\d०-९]*\s*[॥]?\s*$`
+
+---
+
 ## Session Management
 
 `cache/_last_session.json`:
