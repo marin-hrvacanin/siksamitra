@@ -5,292 +5,365 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>śikṣāmitra</title>
 <meta name="description" content="A desktop editor for Vedic and classical Sanskrit text with automatic phonological rules.">
-<link rel="icon" href="https://raw.githubusercontent.com/marin-hrvacanin/siksamitra/main/icon.ico" type="image/x-icon">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gentium+Plus:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=Noto+Sans+Devanagari:wght@300;400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
-/* Light by default, dark only via toggle or preference */
 :root{
-  --primary:#b8813d;
-  --primary-soft:rgba(184,129,61,0.07);
-  --bg:#f5f3f0;
-  --surface:#f5f3f0;
-  --text:#1a1816;
-  --text2:#78716c;
-  --text3:#a8a29e;
-  --border:#d6d3d1;
-  --content-bg:rgba(245,243,240,0.88);
-  --deva-opacity:0.04;
+  --pri:#b8813d;--pri-s:rgba(184,129,61,0.07);
+  --bg:#f5f3f0;--text:#1a1816;--text2:#78716c;--text3:#a8a29e;
+  --border:#d6d3d1;--green:#10b981;--red:#dc2626;--blue:#2563eb;
+  --surface:rgba(245,243,240,0.92);
 }
-[data-theme="dark"]{
-  --primary:#d4a574;
-  --primary-soft:rgba(212,165,116,0.06);
-  --bg:#0c0a09;
-  --surface:#0c0a09;
-  --text:#e7e5e4;
-  --text2:#a8a29e;
-  --text3:#57534e;
-  --border:#292524;
-  --content-bg:rgba(12,10,9,0.9);
-  --deva-opacity:0.035;
-}
-
+@media(prefers-color-scheme:dark){:root{
+  --pri:#d4a574;--pri-s:rgba(212,165,116,0.06);
+  --bg:#0c0a09;--text:#e7e5e4;--text2:#a8a29e;--text3:#57534e;
+  --border:#292524;--green:#34d399;--red:#f87171;--blue:#60a5fa;
+  --surface:rgba(12,10,9,0.93);
+}}
 html{scroll-behavior:smooth}
-body{
-  font-family:'Gentium Plus','IBM Plex Sans',Georgia,serif;
-  background:var(--bg);
-  color:var(--text);
-  line-height:1.7;
-  overflow-x:hidden;
-}
+body{font-family:'Gentium Plus',Georgia,serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
 
-/* ── Devanagari background: dense flowing text ── */
-.deva-river{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  pointer-events:none;z-index:0;overflow:hidden;
-  opacity:0;animation:riverIn 2s ease-out 0.3s forwards;
+/* ── Devanagari river ── */
+.river{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;overflow:hidden}
+.river-line{
+  position:absolute;white-space:nowrap;
+  font-family:'Noto Sans Devanagari',serif;font-size:10px;font-weight:300;
+  color:var(--text);opacity:0.03;user-select:none;line-height:2.4;letter-spacing:1px;
+  animation:drift var(--d) linear infinite;animation-delay:var(--dl);
 }
-@keyframes riverIn{to{opacity:1}}
+@keyframes drift{from{transform:translateX(-100%)}to{transform:translateX(0)}}
 
-.deva-line{
-  position:absolute;
-  white-space:nowrap;
-  font-family:'Noto Sans Devanagari',serif;
-  font-size:11px;
-  font-weight:300;
-  color:var(--text);
-  opacity:var(--deva-opacity);
-  user-select:none;
-  line-height:2.2;
-  letter-spacing:0.5px;
-  animation:flowRight var(--dur) linear infinite;
-  animation-delay:var(--delay);
-}
-@keyframes flowRight{
-  from{transform:translateX(-50%)}
-  to{transform:translateX(0%)}
-}
-
-/* ── Page content sits above the river ── */
+/* ── Layout ── */
 .page{position:relative;z-index:1}
-
-/* Content sections get a faded bg so text reads over the devanagari */
-.content-block{
-  background:var(--content-bg);
-}
-
-.wrap{max-width:720px;margin:0 auto;padding:0 2rem}
-a{color:var(--primary);text-decoration:none}
+.block{background:var(--surface)}
+.wrap{max-width:700px;margin:0 auto;padding:0 2rem}
+a{color:var(--pri);text-decoration:none}
 a:hover{text-decoration:underline}
+.sep{border:none;border-top:1px solid var(--border);margin:0}
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity 0.8s,transform 0.8s}
+.fade-in.visible{opacity:1;transform:none}
 
-/* ── Hero ── */
-.hero{
-  padding:7rem 0 5rem;text-align:center;
-  animation:fadeUp 1s ease-out both;
-}
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-.hero-logo{width:64px;height:64px;margin-bottom:1.5rem;border-radius:10px}
-.hero-title{
-  font-family:'Gentium Plus',Georgia,serif;
-  font-size:3.4rem;font-weight:400;letter-spacing:-0.01em;
-  margin-bottom:0.15rem;
-}
-.hero-sub{
-  font-size:0.9rem;color:var(--text2);font-style:italic;
-  margin-bottom:2.5rem;letter-spacing:0.02em;
-}
-.hero-desc{
-  font-size:1.05rem;color:var(--text2);max-width:480px;
-  margin:0 auto 2.5rem;line-height:1.8;
-}
+/* ── Buttons ── */
 .btn{
-  display:inline-block;padding:0.6rem 1.8rem;font-size:0.85rem;
+  display:inline-block;padding:0.55rem 1.6rem;font-size:0.82rem;
   font-weight:500;font-family:'IBM Plex Sans',sans-serif;
-  color:#fff;background:var(--primary);border:1px solid var(--primary);
+  color:#fff;background:var(--pri);border:1px solid var(--pri);
   border-radius:5px;cursor:pointer;transition:opacity 0.2s;
 }
 .btn:hover{text-decoration:none;opacity:0.85}
-.btn-ghost{background:transparent;color:var(--primary)}
-.btn-ghost:hover{background:var(--primary-soft);opacity:1}
-.hero-buttons{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap}
+.btn-g{background:transparent;color:var(--pri)}
+.btn-g:hover{background:var(--pri-s);opacity:1}
+
+/* ── Hero ── */
+.hero{padding:6rem 0 4.5rem;text-align:center}
+.hero-logo{width:56px;height:56px;margin-bottom:1.2rem;border-radius:10px}
+.hero h1{font-size:3.2rem;font-weight:400;letter-spacing:-0.01em;margin-bottom:0.1rem}
+.hero .sub{font-size:0.88rem;color:var(--text2);font-style:italic;margin-bottom:2rem}
+.hero .desc{font-size:0.98rem;color:var(--text2);max-width:460px;margin:0 auto 2.2rem;line-height:1.8}
+.hero-btns{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap}
+
+/* ── Demo animations ── */
+.demo{padding:3.5rem 0;overflow:hidden}
+.demo-title{font-family:'IBM Plex Sans',sans-serif;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:1.5rem;text-align:center}
+
+/* Shared demo card */
+.demo-card{
+  max-width:480px;margin:0 auto;padding:2rem 2.5rem;
+  border:1px solid var(--border);border-radius:8px;
+  background:var(--bg);text-align:center;
+  font-size:1.8rem;line-height:2;letter-spacing:0.02em;
+  position:relative;overflow:hidden;
+  font-family:'Gentium Plus',Georgia,serif;
+}
+
+/* Holding animation */
+.hold-char{display:inline;position:relative}
+.hold-char .border-anim{
+  position:absolute;bottom:-2px;left:0;right:0;height:0;
+  border:0 solid var(--green);border-radius:2px;
+  transition:all 0.6s ease;
+}
+.hold-char.active .border-anim{height:100%;border-width:1px}
+.hold-char.active.long .border-anim{border-width:2px}
+
+/* Anusvara animation */
+.anu-step{display:inline;transition:all 0.5s ease}
+.anu-step.hidden{opacity:0;max-width:0;overflow:hidden;display:inline-block}
+.anu-step.change{color:var(--blue);font-style:italic}
+.anu-step.super{font-size:0.6em;vertical-align:super;color:var(--blue);font-style:italic}
+
+/* Svara animation */
+.svara-mark{color:var(--red);font-weight:700;opacity:0;transition:opacity 0.5s ease}
+.svara-mark.show{opacity:1}
+
+/* Pause animation */
+.pause-mark{font-weight:700;opacity:0;transition:opacity 0.4s ease}
+.pause-mark.show{opacity:1}
+.pause-short{color:var(--blue)}
+.pause-long{color:var(--red)}
 
 /* ── Sections ── */
-.section{padding:3.5rem 0}
-.section-title{
-  font-family:'Gentium Plus',Georgia,serif;
-  font-size:1.4rem;font-weight:400;margin-bottom:1rem;
-}
+.sect{padding:3rem 0}
+.sect h2{font-size:1.3rem;font-weight:400;margin-bottom:0.8rem}
+.sect p{font-size:0.9rem;color:var(--text2);line-height:1.75;max-width:560px}
 
-/* ── Capabilities ── */
-.cap-list{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:1.2rem 2.5rem}
-.cap-list li{font-size:0.9rem;line-height:1.6}
-.cap-list strong{display:block;font-size:0.85rem;font-weight:600;
-  font-family:'IBM Plex Sans',sans-serif;margin-bottom:0.1rem;color:var(--text)}
-.cap-list span{color:var(--text2);font-size:0.84rem}
+.cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem 2rem;margin-top:1rem}
+.cap-grid dt{font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;font-weight:600}
+.cap-grid dd{font-size:0.8rem;color:var(--text2);margin:0 0 0.2rem}
 
 /* ── Download ── */
-.download{text-align:center;padding:4rem 0}
-.download .section-title{margin-bottom:0.4rem}
-.dl-sub{font-size:0.85rem;color:var(--text2);margin-bottom:1.8rem}
-.dl-buttons{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap}
-.dl-links{margin-top:1.2rem;font-size:0.78rem;color:var(--text3)}
-.dl-links a{color:var(--text2)}
+.dl{text-align:center;padding:3.5rem 0}
+.dl h2{font-size:1.3rem;font-weight:400;margin-bottom:0.3rem}
+.dl .note{font-size:0.82rem;color:var(--text2);margin-bottom:1.5rem}
+.dl-btns{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap}
+.dl-extra{margin-top:1rem;font-size:0.75rem;color:var(--text3)}
+.dl-extra a{color:var(--text2)}
 
 /* ── Credits ── */
-.credits{text-align:center;padding:3rem 0}
-.credit-row{
-  display:flex;justify-content:center;gap:3rem;flex-wrap:wrap;
-  margin-top:1rem;
-}
-.credit-item .name{font-size:0.9rem;font-weight:600;
-  font-family:'IBM Plex Sans',sans-serif}
-.credit-item .role{font-size:0.78rem;color:var(--text3);margin-top:0.1rem}
+.cred{text-align:center;padding:2.5rem 0}
+.cred-row{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;margin-top:0.5rem}
+.cred-item .n{font-family:'IBM Plex Sans',sans-serif;font-size:0.85rem;font-weight:500}
+.cred-item .r{font-size:0.75rem;color:var(--text3);margin-top:0.05rem}
 
-/* ── Separator ── */
-.sep{border:none;border-top:1px solid var(--border);margin:0}
-
-/* ── Footer ── */
-footer{padding:1.5rem 0;text-align:center;font-size:0.78rem;color:var(--text3)}
+footer{padding:1.2rem 0;text-align:center;font-size:0.75rem;color:var(--text3)}
 footer a{color:var(--text2)}
 
 @media(max-width:600px){
-  .hero{padding:4.5rem 0 3rem}
-  .hero-title{font-size:2.5rem}
-  .cap-list{grid-template-columns:1fr}
-  .credit-row{flex-direction:column;align-items:center;gap:1.2rem}
-  .wrap{padding:0 1.25rem}
+  .hero{padding:4rem 0 3rem}
+  .hero h1{font-size:2.4rem}
+  .cap-grid{grid-template-columns:1fr}
+  .cred-row{flex-direction:column;align-items:center;gap:1rem}
+  .demo-card{font-size:1.4rem;padding:1.5rem}
 }
 </style>
 </head>
 <body>
 
-<!-- Dense flowing Devanagari river — Puruṣa Sūkta text repeated -->
-<div class="deva-river" aria-hidden="true">
-<div class="deva-line" style="top:2%;--dur:180s;--delay:0s">ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः यदन्नेनातिरोहति ॥ ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः यदन्नेनातिरोहति ॥</div>
-<div class="deva-line" style="top:8%;--dur:200s;--delay:-40s">एतावानस्य महिमा अतो ज्यायाꣳश्च पूरुषः । पादोऽस्य विश्वा भूतानि त्रिपादस्यामृतं दिवि ॥ त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः । ततो विश्वङ्व्यक्रामत् साशनानशने अभि ॥ एतावानस्य महिमा अतो ज्यायाꣳश्च पूरुषः । पादोऽस्य विश्वा भूतानि त्रिपादस्यामृतं दिवि ॥ त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः ।</div>
-<div class="deva-line" style="top:15%;--dur:170s;--delay:-80s">तस्माद्विराडजायत विराजो अधि पूरुषः । स जातो अत्यरिच्यत पश्चाद्भूमिमथो पुरः ॥ यत्पुरुषेण हविषा देवा यज्ञमतन्वत । वसन्तो अस्यासीदाज्यम् ग्रीष्म इध्मः शरद्धविः ॥ तस्माद्विराडजायत विराजो अधि पूरुषः । स जातो अत्यरिच्यत पश्चाद्भूमिमथो पुरः ॥ यत्पुरुषेण हविषा देवा यज्ञमतन्वत ।</div>
-<div class="deva-line" style="top:22%;--dur:190s;--delay:-20s">सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः । देवा यद्यज्ञं तन्वानाः अबध्नन्पुरुषं पशुम् ॥ तं यज्ञं बर्हिषि प्रौक्षन् पुरुषं जातमग्रतः । तेन देवा अयजन्त साध्या ऋषयश्च ये ॥ सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः । देवा यद्यज्ञं तन्वानाः अबध्नन्पुरुषं पशुम् ॥ तं यज्ञं बर्हिषि प्रौक्षन् ।</div>
-<div class="deva-line" style="top:29%;--dur:210s;--delay:-60s">तस्माद्यज्ञात्सर्वहुतः संभृतं पृषदाज्यम् । पशूꣳस्ताꣳश्चक्रे वायव्यान् आरण्यान्ग्राम्याश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः ऋचः सामानि जज्ञिरे । छन्दाꣳसि जज्ञिरे तस्मात् यजुस्तस्मादजायत ॥ तस्माद्यज्ञात्सर्वहुतः संभृतं पृषदाज्यम् । पशूꣳस्ताꣳश्चक्रे वायव्यान् आरण्यान्ग्राम्याश्च ये ॥</div>
-<div class="deva-line" style="top:36%;--dur:175s;--delay:-100s">तस्मादश्वा अजायन्त ये के चोभयादतः । गावो ह जज्ञिरे तस्मात् तस्माज्जाता अजावयः ॥ यत्पुरुषं व्यदधुः कतिधा व्यकल्पयन् । मुखं किमस्य कौ बाहू कावूरू पादावुच्येते ॥ तस्मादश्वा अजायन्त ये के चोभयादतः । गावो ह जज्ञिरे तस्मात् तस्माज्जाता अजावयः ॥ यत्पुरुषं व्यदधुः कतिधा व्यकल्पयन् ।</div>
-<div class="deva-line" style="top:43%;--dur:195s;--delay:-30s">ब्राह्मणोऽस्य मुखमासीद् बाहू राजन्यः कृतः । ऊरू तदस्य यद्वैश्यः पद्भ्यां शूद्रो अजायत ॥ चन्द्रमा मनसो जातः चक्षोः सूर्यो अजायत । मुखादिन्द्रश्चाग्निश्च प्राणाद्वायुरजायत ॥ ब्राह्मणोऽस्य मुखमासीद् बाहू राजन्यः कृतः । ऊरू तदस्य यद्वैश्यः पद्भ्यां शूद्रो अजायत ॥ चन्द्रमा मनसो जातः ।</div>
-<div class="deva-line" style="top:50%;--dur:185s;--delay:-70s">नाभ्या आसीदन्तरिक्षम् शीर्ष्णो द्यौः समवर्तत । पद्भ्यां भूमिर्दिशः श्रोत्रात् तथा लोकाँ अकल्पयन् ॥ वेदाहमेतं पुरुषं महान्तम् आदित्यवर्णं तमसस्तु पारे । सर्वाणि रूपाणि विचित्य धीरः नामानि कृत्वाऽभिवदन्यदास्ते ॥ नाभ्या आसीदन्तरिक्षम् शीर्ष्णो द्यौः समवर्तत ।</div>
-<div class="deva-line" style="top:57%;--dur:205s;--delay:-50s">धाता पुरस्ताद्यमुदाजहार शक्रः प्रविद्वान्प्रदिशश्चतस्रः । तमेवं विद्वानमृत इह भवति नान्यः पन्था अयनाय विद्यते ॥ यज्ञेन यज्ञमयजन्त देवाः तानि धर्माणि प्रथमान्यासन् ॥ धाता पुरस्ताद्यमुदाजहार शक्रः प्रविद्वान्प्रदिशश्चतस्रः । तमेवं विद्वानमृत इह भवति नान्यः पन्था अयनाय विद्यते ॥</div>
-<div class="deva-line" style="top:64%;--dur:165s;--delay:-90s">ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः यदन्नेनातिरोहति ॥ एतावानस्य महिमा अतो ज्यायाꣳश्च पूरुषः । पादोऽस्य विश्वा भूतानि त्रिपादस्यामृतं दिवि ॥</div>
-<div class="deva-line" style="top:71%;--dur:220s;--delay:-10s">त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः । ततो विश्वङ्व्यक्रामत् साशनानशने अभि ॥ तस्माद्विराडजायत विराजो अधि पूरुषः । स जातो अत्यरिच्यत पश्चाद्भूमिमथो पुरः ॥ यत्पुरुषेण हविषा देवा यज्ञमतन्वत । वसन्तो अस्यासीदाज्यम् ग्रीष्म इध्मः शरद्धविः ॥</div>
-<div class="deva-line" style="top:78%;--dur:185s;--delay:-45s">सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः । देवा यद्यज्ञं तन्वानाः अबध्नन्पुरुषं पशुम् ॥ तं यज्ञं बर्हिषि प्रौक्षन् पुरुषं जातमग्रतः । तेन देवा अयजन्त साध्या ऋषयश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः संभृतं पृषदाज्यम् ।</div>
-<div class="deva-line" style="top:85%;--dur:195s;--delay:-75s">पशूꣳस्ताꣳश्चक्रे वायव्यान् आरण्यान्ग्राम्याश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः ऋचः सामानि जज्ञिरे । छन्दाꣳसि जज्ञिरे तस्मात् यजुस्तस्मादजायत ॥ तस्मादश्वा अजायन्त ये के चोभयादतः । गावो ह जज्ञिरे तस्मात् तस्माज्जाता अजावयः ॥ यत्पुरुषं व्यदधुः कतिधा व्यकल्पयन् ।</div>
-<div class="deva-line" style="top:92%;--dur:175s;--delay:-55s">मुखं किमस्य कौ बाहू कावूरू पादावुच्येते ॥ ब्राह्मणोऽस्य मुखमासीद् बाहू राजन्यः कृतः । ऊरू तदस्य यद्वैश्यः पद्भ्यां शूद्रो अजायत ॥ चन्द्रमा मनसो जातः चक्षोः सूर्यो अजायत । मुखादिन्द्रश्चाग्निश्च प्राणाद्वायुरजायत ॥ नाभ्या आसीदन्तरिक्षम् शीर्ष्णो द्यौः समवर्तत ।</div>
+<!-- Devanagari river -->
+<div class="river" aria-hidden="true">
+<div class="river-line" style="top:1%;--d:200s;--dl:0s">ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः यदन्नेनातिरोहति ॥ एतावानस्य महिमा अतो ज्यायाꣳश्च पूरुषः । पादोऽस्य विश्वा भूतानि त्रिपादस्यामृतं दिवि ॥ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् ।</div>
+<div class="river-line" style="top:9%;--d:220s;--dl:-50s">त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः । ततो विश्वङ्व्यक्रामत् साशनानशने अभि ॥ तस्माद्विराडजायत विराजो अधि पूरुषः । स जातो अत्यरिच्यत पश्चाद्भूमिमथो पुरः ॥ यत्पुरुषेण हविषा देवा यज्ञमतन्वत । वसन्तो अस्यासीदाज्यम् ग्रीष्म इध्मः शरद्धविः ॥</div>
+<div class="river-line" style="top:17%;--d:190s;--dl:-90s">सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः । देवा यद्यज्ञं तन्वानाः अबध्नन्पुरुषं पशुम् ॥ तं यज्ञं बर्हिषि प्रौक्षन् पुरुषं जातमग्रतः । तेन देवा अयजन्त साध्या ऋषयश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः संभृतं पृषदाज्यम् ।</div>
+<div class="river-line" style="top:25%;--d:210s;--dl:-30s">पशूꣳस्ताꣳश्चक्रे वायव्यान् आरण्यान्ग्राम्याश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः ऋचः सामानि जज्ञिरे । छन्दाꣳसि जज्ञिरे तस्मात् यजुस्तस्मादजायत ॥ तस्मादश्वा अजायन्त ये के चोभयादतः । गावो ह जज्ञिरे तस्मात् तस्माज्जाता अजावयः ॥</div>
+<div class="river-line" style="top:33%;--d:180s;--dl:-70s">यत्पुरुषं व्यदधुः कतिधा व्यकल्पयन् । मुखं किमस्य कौ बाहू कावूरू पादावुच्येते ॥ ब्राह्मणोऽस्य मुखमासीद् बाहू राजन्यः कृतः । ऊरू तदस्य यद्वैश्यः पद्भ्यां शूद्रो अजायत ॥ चन्द्रमा मनसो जातः चक्षोः सूर्यो अजायत ।</div>
+<div class="river-line" style="top:41%;--d:230s;--dl:-110s">मुखादिन्द्रश्चाग्निश्च प्राणाद्वायुरजायत ॥ नाभ्या आसीदन्तरिक्षम् शीर्ष्णो द्यौः समवर्तत । पद्भ्यां भूमिर्दिशः श्रोत्रात् तथा लोकाँ अकल्पयन् ॥ वेदाहमेतं पुरुषं महान्तम् आदित्यवर्णं तमसस्तु पारे ।</div>
+<div class="river-line" style="top:49%;--d:195s;--dl:-20s">सर्वाणि रूपाणि विचित्य धीरः नामानि कृत्वाऽभिवदन्यदास्ते ॥ धाता पुरस्ताद्यमुदाजहार शक्रः प्रविद्वान्प्रदिशश्चतस्रः । तमेवं विद्वानमृत इह भवति नान्यः पन्था अयनाय विद्यते ॥</div>
+<div class="river-line" style="top:57%;--d:215s;--dl:-80s">यज्ञेन यज्ञमयजन्त देवाः तानि धर्माणि प्रथमान्यासन् । ते ह नाकं महिमानः सचन्ते यत्र पूर्वे साध्याः सन्ति देवाः ॥ ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा ।</div>
+<div class="river-line" style="top:65%;--d:185s;--dl:-40s">अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः यदन्नेनातिरोहति ॥ एतावानस्य महिमा अतो ज्यायाꣳश्च पूरुषः । पादोऽस्य विश्वा भूतानि त्रिपादस्यामृतं दिवि ॥</div>
+<div class="river-line" style="top:73%;--d:205s;--dl:-100s">त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः । ततो विश्वङ्व्यक्रामत् साशनानशने अभि ॥ तस्माद्विराडजायत विराजो अधि पूरुषः । स जातो अत्यरिच्यत पश्चाद्भूमिमथो पुरः ॥</div>
+<div class="river-line" style="top:81%;--d:175s;--dl:-60s">यत्पुरुषेण हविषा देवा यज्ञमतन्वत । वसन्तो अस्यासीदाज्यम् ग्रीष्म इध्मः शरद्धविः ॥ सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः । देवा यद्यज्ञं तन्वानाः अबध्नन्पुरुषं पशुम् ॥</div>
+<div class="river-line" style="top:89%;--d:225s;--dl:-15s">तं यज्ञं बर्हिषि प्रौक्षन् पुरुषं जातमग्रतः । तेन देवा अयजन्त साध्या ऋषयश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः संभृतं पृषदाज्यम् । पशूꣳस्ताꣳश्चक्रे वायव्यान् आरण्यान्ग्राम्याश्च ये ॥</div>
 </div>
 
 <div class="page">
 
-<div class="content-block">
-<header class="hero">
-  <div class="wrap">
-    <img src="https://raw.githubusercontent.com/marin-hrvacanin/siksamitra/main/logo.png" alt="" class="hero-logo">
-    <h1 class="hero-title">śikṣāmitra</h1>
-    <p class="hero-sub">śikṣā "phonetics" + mitra "friend"</p>
-    <p class="hero-desc">A desktop editor for transcribing and studying Vedic texts in IAST. Traditional phonological rules applied automatically — so you can focus on the text itself.</p>
-    <div class="hero-buttons">
-      <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest" class="btn" id="hero-dl">Download</a>
-      <a href="https://github.com/marin-hrvacanin/siksamitra" class="btn btn-ghost">Source Code</a>
-    </div>
+<!-- HERO -->
+<div class="block">
+<header class="hero fade-in">
+<div class="wrap">
+  <img src="logo.png" alt="" class="hero-logo">
+  <h1>śikṣāmitra <span style="font-family:'IBM Plex Sans',sans-serif;font-size:0.3em;font-weight:500;color:var(--pri);vertical-align:super;letter-spacing:0.05em">BETA</span></h1>
+  <p class="sub">śikṣā "phonetics" + mitra "friend"</p>
+  <p class="desc">A desktop editor for Vedic Sanskrit text. Traditional phonological rules — applied automatically.</p>
+  <div class="hero-btns">
+    <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest" class="btn" id="hero-dl">Download</a>
+    <a href="https://github.com/marin-hrvacanin/siksamitra" class="btn btn-g">Source</a>
   </div>
+</div>
 </header>
 </div>
 
-<main>
-
-<div class="content-block">
-<hr class="sep">
-<section class="section">
-  <div class="wrap">
-    <p style="font-size:1rem;color:var(--text2);line-height:1.85;max-width:600px">śikṣāmitra implements <strong>Śikṣā</strong> — the Vedāṅga of phonetics. It handles <em>varṇa</em>, <em>svara</em>, <em>mātrā</em>, <em>balam</em>, <em>sāma</em>, and <em>santāna</em>. Transliterate Devanagari to IAST, apply anusvāra sandhi, visarga rules, samyukta holdings, svarabhakti, and svara accents — all according to the Vedic tradition you select.</p>
+<!-- DEMO 1: Holdings appearing on consonant clusters -->
+<div class="block"><hr class="sep">
+<section class="demo fade-in">
+  <div class="demo-title">Samyukta Holdings</div>
+  <div class="demo-card" id="demo-hold">
+    a<span class="hold-char" data-delay="800"><span class="border-anim"></span>g</span>nimīḻe
+    purohitaṁ
   </div>
 </section>
 </div>
 
-<div class="content-block">
-<hr class="sep">
-<section class="section">
-  <div class="wrap">
-    <h2 class="section-title">Capabilities</h2>
-    <ul class="cap-list">
-      <li><strong>Grammar Engine</strong><span>Anusvāra, visarga sandhi, samyukta holdings, svarabhakti, pauses</span></li>
-      <li><strong>Svara Accents</strong><span>Anudātta, svarita, udātta — proper Unicode combining marks</span></li>
-      <li><strong>Source-Aware</strong><span>Ṛgveda, Yajurveda, Kṛṣṇayajurveda, Smṛti modes</span></li>
-      <li><strong>Import &amp; Export</strong><span>Import Devanagari texts from various sources. Export to formatted HTML or DOCX for sharing and publication</span></li>
-      <li><strong>Offline</strong><span>Runs locally. No cloud, no accounts, no telemetry</span></li>
-    </ul>
+<!-- DEMO 2: Anusvara transformation step-by-step -->
+<div class="block"><hr class="sep">
+<section class="demo fade-in">
+  <div class="demo-title">Anusvāra Transformation</div>
+  <div class="demo-card" id="demo-anu">
+    <span>ta</span><span class="anu-step" id="anu-orig">ṁ</span><span class="anu-step hidden" id="anu-new"><span class="change">ṅ</span></span> <span>gacchati</span>
   </div>
 </section>
 </div>
 
-<div class="content-block">
-<hr class="sep">
-<section class="section download">
-  <div class="wrap">
-    <h2 class="section-title">Download</h2>
-    <p class="dl-sub" id="os-detect">Windows, macOS, and Linux.</p>
-    <div class="dl-buttons">
-      <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/SiksamitraSetup.exe" class="btn" id="dl-win">Windows</a>
-      <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/SiksamitraEditor-macOS.dmg" class="btn btn-ghost" id="dl-mac">macOS</a>
-      <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/SiksamitraEditor-Linux.tar.gz" class="btn btn-ghost" id="dl-linux">Linux</a>
-    </div>
-    <p class="dl-links">
-      <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/SiksamitraEditor-Windows-Portable.zip">Portable ZIP</a>
-      · <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest">All releases</a>
-      · <a href="https://github.com/marin-hrvacanin/siksamitra">Source code</a>
-    </p>
+<!-- DEMO 3: Svara accents appearing -->
+<div class="block"><hr class="sep">
+<section class="demo fade-in">
+  <div class="demo-title">Svara Accents</div>
+  <div class="demo-card" id="demo-svara">
+    <span>a</span><span class="svara-mark" data-delay="600">̱</span><span>gnimī</span><span class="svara-mark" data-delay="1200">̎</span><span>ḻe</span>
+    <span> </span>
+    <span>pu</span><span class="svara-mark" data-delay="1800">̱</span><span>rohi</span><span class="svara-mark" data-delay="2400">̍</span><span>taṁ</span>
   </div>
 </section>
 </div>
 
-<div class="content-block">
-<hr class="sep">
-<section class="section credits">
-  <div class="wrap">
-    <div class="credit-row">
-      <div class="credit-item">
-        <div class="name">Marin Hrvaćanin</div>
-        <div class="role">Author</div>
-      </div>
-      <div class="credit-item">
-        <div class="name">Davor Virkes</div>
-        <div class="role">Vedic recitation methodology</div>
-      </div>
-      <div class="credit-item">
-        <div class="name"><a href="https://vedaunion.org">Veda Union</a></div>
-        <div class="role">Vedic education</div>
-      </div>
-    </div>
+<!-- DEMO 4: Pause marks -->
+<div class="block"><hr class="sep">
+<section class="demo fade-in">
+  <div class="demo-title">Pause Detection</div>
+  <div class="demo-card" id="demo-pause">
+    oṁ <span class="pause-mark pause-short" data-delay="1000">|</span> namaḥ
+    śivāya <span class="pause-mark pause-long" data-delay="2000">||</span>
   </div>
 </section>
 </div>
 
-</main>
-
-<footer>
-  <div class="wrap">
-    <a href="https://github.com/marin-hrvacanin/siksamitra">GitHub</a>
-  </div>
-</footer>
-
+<!-- ABOUT -->
+<div class="block"><hr class="sep">
+<section class="sect fade-in">
+<div class="wrap">
+  <p>śikṣāmitra implements <strong>Śikṣā</strong> — the Vedāṅga of phonetics. Transliterate Devanagari to IAST, apply anusvāra sandhi, visarga rules, samyukta holdings, svarabhakti, pause detection, and svara accents — all according to the tradition you select.</p>
 </div>
+</section>
+</div>
+
+<!-- CAPABILITIES -->
+<div class="block"><hr class="sep">
+<section class="sect fade-in">
+<div class="wrap">
+  <h2>Capabilities</h2>
+  <dl class="cap-grid">
+    <div><dt>Grammar Engine</dt><dd>Anusvāra, visarga, holdings, svarabhakti, pauses</dd></div>
+    <div><dt>Svara Accents</dt><dd>Anudātta, svarita, udātta with Unicode marks</dd></div>
+    <div><dt>Source-Aware</dt><dd>Ṛgveda, Yajurveda, Kṛṣṇayajurveda, Smṛti</dd></div>
+    <div><dt>Import &amp; Export</dt><dd>Import Devanagari from various sources. Export to HTML or DOCX</dd></div>
+    <div><dt>Rich Editing</dt><dd>Paragraph styles, holdings, annotations, audio</dd></div>
+    <div><dt>Offline</dt><dd>No cloud, no accounts. Everything stays local</dd></div>
+  </dl>
+</div>
+</section>
+</div>
+
+<!-- DOWNLOAD -->
+<div class="block"><hr class="sep">
+<section class="dl fade-in">
+<div class="wrap">
+  <h2>Download</h2>
+  <p class="note" id="os-detect">Windows, macOS, and Linux.</p>
+  <div class="dl-btns">
+    <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/SiksamitraSetup.exe" class="btn" id="dl-win">Windows</a>
+    <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/SiksamitraEditor-macOS.dmg" class="btn btn-g" id="dl-mac">macOS</a>
+    <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/SiksamitraEditor-Linux.tar.gz" class="btn btn-g" id="dl-linux">Linux</a>
+  </div>
+  <p class="dl-extra">
+    <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/SiksamitraEditor-Windows-Portable.zip">Portable ZIP</a>
+    · <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest">All releases</a>
+    · <a href="https://github.com/marin-hrvacanin/siksamitra">Source code</a>
+  </p>
+  <p style="margin-top:1.2rem;font-size:0.72rem;color:var(--text3);max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6">This is a beta release. Some features are still being refined and bugs may be present. Feedback and contributions are welcome on <a href="https://github.com/marin-hrvacanin/siksamitra/issues" style="color:var(--text2)">GitHub</a>.</p>
+</div>
+</section>
+</div>
+
+<!-- CREDITS -->
+<div class="block"><hr class="sep">
+<section class="cred fade-in">
+<div class="wrap">
+  <div class="cred-row">
+    <div class="cred-item"><div class="n">Marin Hrvaćanin</div><div class="r">Author</div></div>
+    <div class="cred-item"><div class="n">Davor Virkes</div><div class="r">Vedic recitation methodology</div></div>
+    <div class="cred-item"><div class="n"><a href="https://vedaunion.org">Veda Union</a></div><div class="r">Vedic education</div></div>
+  </div>
+</div>
+</section>
+</div>
+
+</div><!-- .page -->
+
+<footer><div class="wrap"><a href="https://github.com/marin-hrvacanin/siksamitra">GitHub</a></div></footer>
 
 <script>
+// OS detection
 (function(){
-  var ua=navigator.userAgent||'',os='',p='dl-win';
-  if(/Mac|iPhone|iPad/.test(ua)){os='macOS';p='dl-mac'}
-  else if(/Linux/.test(ua)){os='Linux';p='dl-linux'}
-  else if(/Win/.test(ua)){os='Windows';p='dl-win'}
-  if(os){var d=document.getElementById('os-detect');if(d)d.textContent=os+' detected.'}
-  document.querySelectorAll('.dl-buttons .btn').forEach(function(b){
-    if(b.id===p)b.classList.remove('btn-ghost');else b.classList.add('btn-ghost');
+  var ua=navigator.userAgent||'',p='dl-win';
+  if(/Mac|iPhone|iPad/.test(ua))p='dl-mac';
+  else if(/Linux/.test(ua))p='dl-linux';
+  document.querySelectorAll('.dl-btns .btn').forEach(function(b){
+    if(b.id===p)b.classList.remove('btn-g');else b.classList.add('btn-g');
   });
+  var d=document.getElementById('os-detect');
+  if(d&&p==='dl-mac')d.textContent='macOS detected.';
+  else if(d&&p==='dl-linux')d.textContent='Linux detected.';
+  else if(d)d.textContent='Windows detected.';
+})();
+
+// Intersection Observer for fade-in
+var obs=new IntersectionObserver(function(entries){
+  entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});
+},{threshold:0.15});
+document.querySelectorAll('.fade-in').forEach(function(el){obs.observe(el)});
+
+// Demo: Holdings animation (looping)
+(function(){
+  var el=document.querySelector('#demo-hold .hold-char');
+  if(!el)return;
+  function cycle(){
+    el.classList.add('active');
+    setTimeout(function(){el.classList.remove('active')},2500);
+    setTimeout(cycle,4000);
+  }
+  setTimeout(cycle,1200);
+})();
+
+// Demo: Anusvara animation (looping)
+(function(){
+  var orig=document.getElementById('anu-orig');
+  var nw=document.getElementById('anu-new');
+  if(!orig||!nw)return;
+  function cycle(){
+    // Show transformation
+    orig.style.opacity='0';orig.style.maxWidth='0';orig.style.overflow='hidden';orig.style.display='inline-block';
+    nw.classList.remove('hidden');nw.style.opacity='1';
+    setTimeout(function(){
+      // Reset
+      nw.classList.add('hidden');nw.style.opacity='';
+      orig.style.opacity='';orig.style.maxWidth='';orig.style.overflow='';orig.style.display='';
+    },2500);
+    setTimeout(cycle,4500);
+  }
+  setTimeout(cycle,2000);
+})();
+
+// Demo: Svara accents appearing one by one (looping)
+(function(){
+  var marks=document.querySelectorAll('#demo-svara .svara-mark');
+  if(!marks.length)return;
+  function cycle(){
+    marks.forEach(function(m){m.classList.remove('show')});
+    marks.forEach(function(m,i){
+      var d=parseInt(m.getAttribute('data-delay'))||i*600;
+      setTimeout(function(){m.classList.add('show')},d);
+    });
+    setTimeout(cycle,5000);
+  }
+  setTimeout(cycle,800);
+})();
+
+// Demo: Pause marks appearing (looping)
+(function(){
+  var marks=document.querySelectorAll('#demo-pause .pause-mark');
+  if(!marks.length)return;
+  function cycle(){
+    marks.forEach(function(m){m.classList.remove('show')});
+    marks.forEach(function(m){
+      var d=parseInt(m.getAttribute('data-delay'))||1000;
+      setTimeout(function(){m.classList.add('show')},d);
+    });
+    setTimeout(cycle,5000);
+  }
+  setTimeout(cycle,1500);
 })();
 </script>
 
