@@ -26,16 +26,19 @@ a{color:var(--pri);text-decoration:none}a:hover{text-decoration:underline}
 /* ═══ HERO ═══ */
 .hero{position:relative;padding:6rem 0 5rem;text-align:center;overflow:hidden}
 
-/* Dense Devanagari — right to left, already filling the section on load */
+/* Dense Devanagari — continuous right-to-left scroll, each line at different speed.
+   Each .rl contains the text TWICE so when the first copy scrolls away, the second
+   is already in view — creating a seamless infinite loop. The animation shifts by
+   exactly -50% (one copy's worth), then resets instantly. */
 .hero-bg{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none;z-index:0}
 .rl{
   display:block;white-space:nowrap;
   font-family:'Noto Sans Devanagari',serif;font-size:12px;font-weight:400;
   color:#1a1816;opacity:0.18;user-select:none;line-height:1.65;letter-spacing:0.2px;
   animation:rtl var(--d) linear infinite;
+  will-change:transform;
 }
-/* Start mid-stream so the background is already filled */
-@keyframes rtl{0%{transform:translateX(0)}100%{transform:translateX(50%)}}
+@keyframes rtl{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
 /* Soft cloud behind hero content so text is readable over the river */
 .hero .wrap{position:relative;z-index:1}
@@ -66,10 +69,10 @@ a{color:var(--pri);text-decoration:none}a:hover{text-decoration:underline}
   font-family:'Gentium Plus',Georgia,serif;font-size:1.5rem;
   opacity:0.18;white-space:nowrap;letter-spacing:0.02em;
 }
-.sd-tl{top:1.5rem;left:2rem}
-.sd-bl{bottom:1.5rem;left:1.5rem}
-.sd-tr{top:1.5rem;right:2rem}
-.sd-br{bottom:1.5rem;right:1.5rem}
+.sd-tl{top:2rem;left:3.5rem}
+.sd-bl{bottom:2rem;left:3rem}
+.sd-tr{top:2rem;right:3.5rem}
+.sd-br{bottom:2rem;right:3rem}
 
 /* Holding animation */
 .hc{display:inline;position:relative}
@@ -100,7 +103,7 @@ a{color:var(--pri);text-decoration:none}a:hover{text-decoration:underline}
 footer{position:relative;padding:1.5rem 0 1.5rem 0;overflow:hidden}
 footer .wrap{display:flex;align-items:center;justify-content:center;gap:1rem}
 .foot-img{
-  width:60px;height:auto;
+  width:140px;height:auto;
   opacity:0.12;
   filter:grayscale(1) sepia(0.6) saturate(0.4) brightness(1.1);
   -webkit-mask-image:radial-gradient(ellipse at center,black 40%,transparent 75%);
@@ -124,18 +127,18 @@ footer a{color:var(--t2)}
 <!-- ═══ HERO ═══ -->
 <header class="hero">
 <div class="hero-bg" aria-hidden="true">
-<span class="rl" style="--d:130s">ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः यदन्नेनातिरोहति ॥ एतावानस्य महिमा अतो ज्यायाꣳश्च पूरुषः । पादोऽस्य विश्वा भूतानि त्रिपादस्यामृतं दिवि ॥ ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥</span>
-<span class="rl" style="--d:145s">त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः । ततो विश्वङ्व्यक्रामत् साशनानशने अभि ॥ तस्माद्विराडजायत विराजो अधि पूरुषः । स जातो अत्यरिच्यत पश्चाद्भूमिमथो पुरः ॥ यत्पुरुषेण हविषा देवा यज्ञमतन्वत । वसन्तो अस्यासीदाज्यम् ग्रीष्म इध्मः शरद्धविः ॥ त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः ।</span>
-<span class="rl" style="--d:115s">सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः । देवा यद्यज्ञं तन्वानाः अबध्नन्पुरुषं पशुम् ॥ तं यज्ञं बर्हिषि प्रौक्षन् पुरुषं जातमग्रतः । तेन देवा अयजन्त साध्या ऋषयश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः संभृतं पृषदाज्यम् । सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः ।</span>
-<span class="rl" style="--d:140s">पशूꣳस्ताꣳश्चक्रे वायव्यान् आरण्यान्ग्राम्याश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः ऋचः सामानि जज्ञिरे । छन्दाꣳसि जज्ञिरे तस्मात् यजुस्तस्मादजायत ॥ तस्मादश्वा अजायन्त ये के चोभयादतः । गावो ह जज्ञिरे तस्मात् तस्माज्जाता अजावयः ॥ पशूꣳस्ताꣳश्चक्रे वायव्यान् ।</span>
-<span class="rl" style="--d:125s">यत्पुरुषं व्यदधुः कतिधा व्यकल्पयन् । मुखं किमस्य कौ बाहू कावूरू पादावुच्येते ॥ ब्राह्मणोऽस्य मुखमासीद् बाहू राजन्यः कृतः । ऊरू तदस्य यद्वैश्यः पद्भ्यां शूद्रो अजायत ॥ चन्द्रमा मनसो जातः चक्षोः सूर्यो अजायत । यत्पुरुषं व्यदधुः कतिधा व्यकल्पयन् ।</span>
-<span class="rl" style="--d:150s">मुखादिन्द्रश्चाग्निश्च प्राणाद्वायुरजायत ॥ नाभ्या आसीदन्तरिक्षम् शीर्ष्णो द्यौः समवर्तत । पद्भ्यां भूमिर्दिशः श्रोत्रात् तथा लोकाँ अकल्पयन् ॥ वेदाहमेतं पुरुषं महान्तम् आदित्यवर्णं तमसस्तु पारे । मुखादिन्द्रश्चाग्निश्च प्राणाद्वायुरजायत ॥</span>
-<span class="rl" style="--d:118s">सर्वाणि रूपाणि विचित्य धीरः नामानि कृत्वाऽभिवदन्यदास्ते ॥ धाता पुरस्ताद्यमुदाजहार शक्रः प्रविद्वान्प्रदिशश्चतस्रः । तमेवं विद्वानमृत इह भवति नान्यः पन्था अयनाय विद्यते ॥ सर्वाणि रूपाणि विचित्य धीरः नामानि कृत्वाऽभिवदन्यदास्ते ॥</span>
-<span class="rl" style="--d:135s">यज्ञेन यज्ञमयजन्त देवाः तानि धर्माणि प्रथमान्यासन् ॥ ते ह नाकं महिमानः सचन्ते यत्र पूर्वे साध्याः सन्ति देवाः ॥ ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ यज्ञेन यज्ञमयजन्त देवाः तानि धर्माणि प्रथमान्यासन् ॥</span>
-<span class="rl" style="--d:142s">पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः यदन्नेनातिरोहति ॥ एतावानस्य महिमा अतो ज्यायाꣳश्च पूरुषः । पादोऽस्य विश्वा भूतानि त्रिपादस्यामृतं दिवि ॥ पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः ।</span>
-<span class="rl" style="--d:128s">त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः । ततो विश्वङ्व्यक्रामत् साशनानशने अभि ॥ तस्माद्विराडजायत विराजो अधि पूरुषः । स जातो अत्यरिच्यत पश्चाद्भूमिमथो पुरः ॥ त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः ।</span>
-<span class="rl" style="--d:148s">यत्पुरुषेण हविषा देवा यज्ञमतन्वत । वसन्तो अस्यासीदाज्यम् ग्रीष्म इध्मः शरद्धविः ॥ सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः । देवा यद्यज्ञं तन्वानाः अबध्नन्पुरुषं पशुम् ॥ यत्पुरुषेण हविषा देवा यज्ञमतन्वत ।</span>
-<span class="rl" style="--d:120s">तं यज्ञं बर्हिषि प्रौक्षन् पुरुषं जातमग्रतः । तेन देवा अयजन्त साध्या ऋषयश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः संभृतं पृषदाज्यम् । पशूꣳस्ताꣳश्चक्रे वायव्यान् आरण्यान्ग्राम्याश्च ये ॥ तं यज्ञं बर्हिषि प्रौक्षन् पुरुषं जातमग्रतः ।</span>
+<span class="rl" style="--d:80s">ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः यदन्नेनातिरोहति ॥ एतावानस्य महिमा ॥ ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् यद्भूतं यच्च भव्यम् । उतामृतत्वस्येशानः यदन्नेनातिरोहति ॥ एतावानस्य महिमा ॥</span>
+<span class="rl" style="--d:95s">त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः । ततो विश्वङ्व्यक्रामत् साशनानशने अभि ॥ तस्माद्विराडजायत विराजो अधि पूरुषः । स जातो अत्यरिच्यत पश्चाद्भूमिमथो पुरः ॥ त्रिपादूर्ध्व उदैत्पुरुषः पादोऽस्येहाऽऽभवात्पुनः । ततो विश्वङ्व्यक्रामत् साशनानशने अभि ॥ तस्माद्विराडजायत विराजो अधि पूरुषः । स जातो अत्यरिच्यत पश्चाद्भूमिमथो पुरः ॥</span>
+<span class="rl" style="--d:70s">यत्पुरुषेण हविषा देवा यज्ञमतन्वत । वसन्तो अस्यासीदाज्यम् ग्रीष्म इध्मः शरद्धविः ॥ सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः ॥ यत्पुरुषेण हविषा देवा यज्ञमतन्वत । वसन्तो अस्यासीदाज्यम् ग्रीष्म इध्मः शरद्धविः ॥ सप्तास्यासन्परिधयः त्रिः सप्त समिधः कृताः ॥</span>
+<span class="rl" style="--d:110s">देवा यद्यज्ञं तन्वानाः अबध्नन्पुरुषं पशुम् ॥ तं यज्ञं बर्हिषि प्रौक्षन् पुरुषं जातमग्रतः । तेन देवा अयजन्त साध्या ऋषयश्च ये ॥ देवा यद्यज्ञं तन्वानाः अबध्नन्पुरुषं पशुम् ॥ तं यज्ञं बर्हिषि प्रौक्षन् पुरुषं जातमग्रतः । तेन देवा अयजन्त साध्या ऋषयश्च ये ॥</span>
+<span class="rl" style="--d:85s">तस्माद्यज्ञात्सर्वहुतः संभृतं पृषदाज्यम् । पशूꣳस्ताꣳश्चक्रे वायव्यान् आरण्यान्ग्राम्याश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः ऋचः सामानि जज्ञिरे ॥ तस्माद्यज्ञात्सर्वहुतः संभृतं पृषदाज्यम् । पशूꣳस्ताꣳश्चक्रे वायव्यान् आरण्यान्ग्राम्याश्च ये ॥ तस्माद्यज्ञात्सर्वहुतः ऋचः सामानि जज्ञिरे ॥</span>
+<span class="rl" style="--d:100s">छन्दाꣳसि जज्ञिरे तस्मात् यजुस्तस्मादजायत ॥ तस्मादश्वा अजायन्त ये के चोभयादतः । गावो ह जज्ञिरे तस्मात् तस्माज्जाता अजावयः ॥ छन्दाꣳसि जज्ञिरे तस्मात् यजुस्तस्मादजायत ॥ तस्मादश्वा अजायन्त ये के चोभयादतः । गावो ह जज्ञिरे तस्मात् तस्माज्जाता अजावयः ॥</span>
+<span class="rl" style="--d:75s">यत्पुरुषं व्यदधुः कतिधा व्यकल्पयन् । मुखं किमस्य कौ बाहू कावूरू पादावुच्येते ॥ ब्राह्मणोऽस्य मुखमासीद् बाहू राजन्यः कृतः ॥ यत्पुरुषं व्यदधुः कतिधा व्यकल्पयन् । मुखं किमस्य कौ बाहू कावूरू पादावुच्येते ॥ ब्राह्मणोऽस्य मुखमासीद् बाहू राजन्यः कृतः ॥</span>
+<span class="rl" style="--d:115s">ऊरू तदस्य यद्वैश्यः पद्भ्यां शूद्रो अजायत ॥ चन्द्रमा मनसो जातः चक्षोः सूर्यो अजायत । मुखादिन्द्रश्चाग्निश्च प्राणाद्वायुरजायत ॥ ऊरू तदस्य यद्वैश्यः पद्भ्यां शूद्रो अजायत ॥ चन्द्रमा मनसो जातः चक्षोः सूर्यो अजायत । मुखादिन्द्रश्चाग्निश्च प्राणाद्वायुरजायत ॥</span>
+<span class="rl" style="--d:90s">नाभ्या आसीदन्तरिक्षम् शीर्ष्णो द्यौः समवर्तत । पद्भ्यां भूमिर्दिशः श्रोत्रात् तथा लोकाँ अकल्पयन् ॥ वेदाहमेतं पुरुषं महान्तम् ॥ नाभ्या आसीदन्तरिक्षम् शीर्ष्णो द्यौः समवर्तत । पद्भ्यां भूमिर्दिशः श्रोत्रात् तथा लोकाँ अकल्पयन् ॥ वेदाहमेतं पुरुषं महान्तम् ॥</span>
+<span class="rl" style="--d:105s">आदित्यवर्णं तमसस्तु पारे । सर्वाणि रूपाणि विचित्य धीरः नामानि कृत्वाऽभिवदन्यदास्ते ॥ धाता पुरस्ताद्यमुदाजहार शक्रः प्रविद्वान्प्रदिशश्चतस्रः ॥ आदित्यवर्णं तमसस्तु पारे । सर्वाणि रूपाणि विचित्य धीरः नामानि कृत्वाऽभिवदन्यदास्ते ॥ धाता पुरस्ताद्यमुदाजहार शक्रः प्रविद्वान्प्रदिशश्चतस्रः ॥</span>
+<span class="rl" style="--d:88s">तमेवं विद्वानमृत इह भवति नान्यः पन्था अयनाय विद्यते ॥ यज्ञेन यज्ञमयजन्त देवाः तानि धर्माणि प्रथमान्यासन् ॥ ते ह नाकं महिमानः सचन्ते ॥ तमेवं विद्वानमृत इह भवति नान्यः पन्था अयनाय विद्यते ॥ यज्ञेन यज्ञमयजन्त देवाः तानि धर्माणि प्रथमान्यासन् ॥ ते ह नाकं महिमानः सचन्ते ॥</span>
+<span class="rl" style="--d:120s">यत्र पूर्वे साध्याः सन्ति देवाः ॥ ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् ॥ यत्र पूर्वे साध्याः सन्ति देवाः ॥ ॐ सहस्रशीर्षा पुरुषः सहस्राक्षः सहस्रपात् । स भूमिं विश्वतो वृत्वा अत्यतिष्ठद्दशाङ्गुलम् ॥ पुरुष एवेदꣳ सर्वम् ॥</span>
 </div>
 <div class="wrap">
   <img src="logo.png" alt="" class="hero-logo">
@@ -223,6 +226,27 @@ footer a{color:var(--t2)}
 </footer>
 
 <script>
+// Fill hero background — duplicate lines to cover full height with varied speeds
+!function(){
+  var bg=document.querySelector('.hero-bg');
+  if(!bg)return;
+  var lines=Array.from(bg.querySelectorAll('.rl'));
+  var heroH=bg.parentElement.offsetHeight||600;
+  var lineH=20; // approx height per line
+  var needed=Math.ceil(heroH/lineH);
+  while(bg.children.length<needed){
+    var src=lines[bg.children.length%lines.length];
+    var cl=src.cloneNode(true);
+    // Vary the speed randomly between 60s and 130s
+    cl.style.setProperty('--d',(60+Math.floor(Math.random()*70))+'s');
+    bg.appendChild(cl);
+  }
+  // Also triple each line's text content for wider coverage
+  bg.querySelectorAll('.rl').forEach(function(el){
+    el.textContent=el.textContent+' '+el.textContent+' '+el.textContent;
+  });
+}();
+
 // OS detection
 !function(){var u=navigator.userAgent||'',p='dl-win';if(/Mac|iPhone|iPad/.test(u))p='dl-mac';else if(/Linux/.test(u))p='dl-linux';document.querySelectorAll('.dlb .btn').forEach(function(b){b.id===p?b.classList.remove('btn-g'):b.classList.add('btn-g')})}();
 
