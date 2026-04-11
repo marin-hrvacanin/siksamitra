@@ -119,12 +119,15 @@ jobs:
         shell: cmd
 
       - name: Install NSIS
-        run: choco install nsis -y
-        shell: cmd
+        run: |
+          choco install nsis -y --no-progress
+          echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
+        shell: pwsh
 
       - name: Build installer
-        run: makensis installer.nsi
-        shell: cmd
+        run: |
+          & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+        shell: pwsh
 
       - name: Also create portable ZIP
         run: Compress-Archive -Path "dist\SiksamitraEditor" -DestinationPath "SiksamitraEditor-Windows-Portable.zip"
