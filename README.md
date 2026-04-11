@@ -14,10 +14,12 @@
 
 ### Text Processing
 
-- Devanagari to IAST transliteration support
+- Bidirectional Devanagari/IAST transliteration with proper handling of Vedic svara combining marks (U+0951, U+0952, U+1CDA) — marks are drained after each syllable and emitted on the correct IAST character
+- Support for U+A8F3 (ꣳ Vedic tiryak) mapped to ṁ
 - Unicode normalization and character standardization
 - Automatic pre-processing: lowercasing, danda conversion (`.` to `।`, `..` to `॥`), ṃ/ṁ normalization
 - Canonical svara mark conversion (U+0951, U+0952, U+1CDA variants normalized to standard forms)
+- Bīja mantra preservation: common seed syllables (oṁ, hrīṁ, śrīṁ, klīṁ, etc.) at line start are excluded from anusvara transformation
 
 ### Vedic Grammar Engine
 
@@ -29,7 +31,7 @@ Source-aware phonological rule engine supporting multiple Vedic traditions:
 | Visarga sandhi | Automatic transformation of visarga based on following consonant and preceding vowel |
 | Svarabhakti epenthesis | Insertion of middle dot after r before sibilants, h, or r |
 | Pause detection | Short (`\ | ) and long (\ | \ | `) pauses at word boundaries based on vowel length |
-| Special insertions | Vedic pronunciation rules: jn to jgn, sv to suv, vy to vuy |
+| Special insertions | Vedic pronunciation rules: jñ → jgñ, sv → suv, vy → vuy (walks Quill positions directly to handle combining marks) |
 
 ### Svara Accent System
 
@@ -66,10 +68,16 @@ Consonants that cannot host a holding: ṅ ñ ṇ n m ṁ ṃ r ś ṣ s.
 - Embed recitation audio directly in `.smdoc` documents
 - Audio stored as base64 data URIs within the document file
 
+### Text Import
+
+- **SanskritDocuments.org**: Browse and import texts by category (Veda, Upaniṣad, Stotra, etc.) with automatic verse splitting, preamble separation, and Devanagari text extraction
+- **Shlokam.org**: Search and import individual ślokas
+- Import source selection persisted in localStorage
+- **DOCX import**: Import `.docx` files via python-docx (optional dependency)
+
 ### Export
 
 - Standalone HTML export with embedded fonts and complete styling
-- DOCX import/export support
 - Full-fidelity viewer with all holdings, pauses, and svara marks preserved
 
 ### Themes
@@ -204,13 +212,15 @@ The `styles` and `audio` fields are omitted when empty. The `content` field stor
 | Rule | Engine Method | Summary |
 | --- | --- | --- |
 | Pre-processing | preProcessRawText | Normalize Unicode, lowercase, convert dandas and svara variants |
-| Anusvara | applyAnusvaraTransformations | Nasal assimilation by consonant class; source-specific behavior for sibilants |
+| Anusvara | applyAnusvaraTransformations | Nasal assimilation by consonant class; source-specific behavior for sibilants; bīja mantra exclusion |
 | Visarga | applyVisargaTransformations | Sandhi rules for visarga based on following/preceding phonemes |
-| Svarabhakti | applySvarabhaktiTransformations | Epenthetic dot after r + sibilant/glottal/r |
+| Transliteration | devanagariToIAST | Devanagari → IAST with Vedic svara mark draining |
+| Insertions | applyAutomaticInsertions | jñ/sv/vy insertions via Quill position walking |
+| Svarabhakti | applySvarabhaktiTransformations | Epenthetic dot after r + sibilant/glottal/ṛ |
 | Holdings | findAllHoldings | Samyukta detection with dvivarcana and cross-word rules |
 | Pauses | findAllPauses | Word-boundary pause marks based on vowel length |
 
-Full rule specifications are documented in `CLAUDE.md`.
+Full rule specifications are documented in `CLAUDE.md` and `documents/grammar-rules.md`.
 
 ---
 

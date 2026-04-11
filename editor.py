@@ -1172,6 +1172,232 @@ def list_media():
     return jsonify(files)
 
 
+# --- Sanskrit Documents Proxy ---
+
+SANSKRITDOCS_BASE = 'https://sanskritdocuments.org'
+SANSKRITDOCS_CATEGORIES = [
+    ('doc_veda', 'Veda'),
+    ('doc_upanishhat', 'Upaniṣad'),
+    ('doc_vishhnu', 'Viṣṇu'),
+    ('doc_shiva', 'Śiva'),
+    ('doc_devii', 'Devī'),
+    ('doc_ganesha', 'Gaṇeśa'),
+    ('doc_giitaa', 'Gītā'),
+    ('doc_raama', 'Rāma'),
+    ('doc_hanumaana', 'Hanumān'),
+    ('doc_surya', 'Sūrya'),
+    ('doc_gurudev', 'Guru'),
+    ('doc_subhaashita', 'Subhāṣita'),
+    ('doc_z_misc_shlokas', 'Ślokas'),
+    ('doc_z_misc_general', 'General'),
+    ('doc_z_misc_major_works', 'Major Works'),
+    ('doc_z_misc_navagraha', 'Navagraha'),
+    ('doc_z_misc_purana', 'Purāṇa'),
+    ('doc_z_misc_articles', 'Articles'),
+]
+
+_sanskritdocs_index_cache = {}  # category -> [(filename, devanagari_title, romanized_title)]
+
+
+def _fetch_url(url, timeout=15):
+    """Fetch a URL and return decoded text."""
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'SiksamitraEditor/1.0',
+        'Accept': 'text/html,application/xhtml+xml,*/*',
+    })
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode('utf-8', errors='replace')
+
+
+def _parse_index_page(html, category):
+    """Parse a category index page and extract document entries.
+
+    The index pages use a structure like:
+      <a href="/doc_veda/puruSukta.html" title="...">
+        <em lang="sa">पुरुषसूक्तम्</em></a> | <em itemprop="name">Purushasukta</em>
+    We need to extract:
+      - filename from the href
+      - Devanagari title from inside the <a> tag (may be in <em> child)
+      - Romanized title from <em itemprop="name"> or the title attribute
+    """
+    entries = []
+    seen = set()
+
+    # Match <a> tags linking to .html in this category, capturing their full inner HTML
+    link_pattern = re.compile(
+        r'<a[^>]+href=["\'](?:[^"\']*?' + re.escape(category) + r'/)?' +
+        r'([^"\']+?)\.html["\'][^>]*>(.*?)</a>' +
+        r'(?:\s*\|?\s*(?:<em[^>]*>([^<]*)</em>))?',
+        re.IGNORECASE | re.DOTALL
+    )
+
+    for match in link_pattern.finditer(html):
+        filename = match.group(1).strip()
+        inner_html = match.group(2).strip()
+        itemprop_name = (match.group(3) or '').strip()
+
+        if not filename or filename.startswith('http') or '/' in filename:
+            continue
+        if filename in seen:
+            continue
+        if filename in ('index', 'home', 'favicon'):
+            continue
+
+        # Extract text from inner HTML (strip tags)
+        inner_text = re.sub(r'<[^>]+>', '', inner_html).strip()
+
+        # Skip empty icon-only links (just whitespace)
+        if not inner_text and not itemprop_name:
+            continue
+
+        # Build the display title: prefer Devanagari, fall back to romanized
+        title = inner_text if inner_text else itemprop_name
+        romanized = itemprop_name if itemprop_name else filename
+
+        seen.add(filename)
+        entries.append((filename, title, romanized))
+
+    return entries
+
+
+@app.route('/api/sanskritdocs/categories', methods=['GET'])
+def sanskritdocs_categories():
+    """Return the list of document categories."""
+    return jsonify([{'id': cid, 'name': cname} for cid, cname in SANSKRITDOCS_CATEGORIES])
+
+
+@app.route('/api/sanskritdocs/index/<category>', methods=['GET'])
+def sanskritdocs_index(category):
+    """Fetch and parse the index page for a category, with caching."""
+    # Validate category
+    valid_ids = {c[0] for c in SANSKRITDOCS_CATEGORIES}
+    if category not in valid_ids:
+        return jsonify({'error': 'Invalid category'}), 400
+
+    if category in _sanskritdocs_index_cache:
+        entries = _sanskritdocs_index_cache[category]
+    else:
+        try:
+            html = _fetch_url(f'{SANSKRITDOCS_BASE}/{category}/')
+            entries = _parse_index_page(html, category)
+            _sanskritdocs_index_cache[category] = entries
+        except Exception as e:
+            return jsonify({'error': f'Failed to fetch index: {e}'}), 502
+
+    # Search filter
+    query = request.args.get('q', '').strip().lower()
+    if query:
+        results = []
+        for filename, title, romanized in entries:
+            search_text = f'{title} {romanized} {filename}'.lower()
+            if query in search_text:
+                results.append((filename, title, romanized))
+                continue
+            # Fuzzy: check if all words in query appear somewhere
+            words = query.split()
+            if all(w in search_text for w in words):
+                results.append((filename, title, romanized))
+        entries = results
+
+    return jsonify([
+        {'filename': f, 'title': t, 'romanized': r, 'category': category}
+        for f, t, r in entries
+    ])
+
+
+@app.route('/api/sanskritdocs/fetch/<category>/<filename>', methods=['GET'])
+def sanskritdocs_fetch(category, filename):
+    """Fetch a specific document's HTML and extract the Sanskrit text."""
+    valid_ids = {c[0] for c in SANSKRITDOCS_CATEGORIES}
+    if category not in valid_ids:
+        return jsonify({'error': 'Invalid category'}), 400
+
+    # Sanitize filename
+    filename = re.sub(r'[^a-zA-Z0-9_\-]', '', filename)
+    if not filename:
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    try:
+        html = _fetch_url(f'{SANSKRITDOCS_BASE}/{category}/{filename}.html')
+    except Exception as e:
+        return jsonify({'error': f'Failed to fetch document: {e}'}), 502
+
+    # Extract Sanskrit text from HTML
+    import html as html_mod
+    text = html
+    text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<br\s*/?\s*>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</p>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</div>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<[^>]+>', '', text)
+    text = html_mod.unescape(text)
+
+    # Filter to lines with substantial Devanagari content
+    # This removes navigation ("Home", "ITX", "PDF") while keeping actual text
+    content_lines = []
+    for line in text.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        dev_chars = len(re.findall(r'[\u0900-\u097F]', line))
+        total_chars = len(line.replace(' ', ''))
+        if dev_chars >= 3 and (dev_chars / max(total_chars, 1)) > 0.3:
+            content_lines.append(line)
+
+    # Remove footer metadata lines
+    footer_keywords = [
+        'encoded', 'proofread', 'send corrections',
+        'sanskritdocuments.org', 'last updated', 'latest update',
+        '% text title', '% file name'
+    ]
+    while content_lines:
+        if any(kw in content_lines[-1].lower() for kw in footer_keywords):
+            content_lines.pop()
+        else:
+            break
+
+    # Separate preamble (title, ṛṣi/chandas metadata) from mantra text.
+    # Preamble lines typically contain commas, latin chars, or lack Vedic
+    # svara marks (U+0951, U+0952, U+1CDA). Actual mantras have svara marks.
+    mantra_lines = []
+    preamble_lines = []
+    has_svara = lambda l: bool(re.search(r'[\u0951\u0952\u1CDA]', l))
+
+    # Find where mantra text begins (first line with svara marks)
+    mantra_started = False
+    for line in content_lines:
+        if not mantra_started:
+            if has_svara(line):
+                mantra_started = True
+                mantra_lines.append(line)
+            else:
+                preamble_lines.append(line)
+        else:
+            mantra_lines.append(line)
+
+    # If no svara marks found at all (non-Vedic text), use all lines
+    if not mantra_lines:
+        mantra_lines = content_lines
+        preamble_lines = []
+
+    full_text = '\n'.join(mantra_lines)
+    preamble_text = '\n'.join(preamble_lines)
+
+    # Extract title from the page
+    title_match = re.search(r'<title[^>]*>([^<]+)</title>', html, re.IGNORECASE)
+    title = title_match.group(1).strip() if title_match else filename
+
+    return jsonify({
+        'text': full_text,
+        'preamble': preamble_text,
+        'title': title,
+        'filename': filename,
+        'category': category,
+        'url': f'{SANSKRITDOCS_BASE}/{category}/{filename}.html'
+    })
+
+
 # --- Flask Server Thread ---
 class FlaskServerThread(threading.Thread):
     def __init__(self, flask_app, host='127.0.0.1', port=0):

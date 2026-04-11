@@ -2119,7 +2119,7 @@ body.hide-comments .ql-comment-style {
   width: 260px;
   min-width: 200px;
   max-width: 500px;
-  background: var(--bg-surface);
+  background: var(--bg-body);
   border-right: 1px solid var(--border-subtle);
   overflow-y: auto;
   overflow-x: hidden;
@@ -2134,9 +2134,10 @@ body.hide-comments .ql-comment-style {
 }
 
 .nav-panel.collapsed {
-  width: 40px;
-  min-width: 40px;
+  width: 28px;
+  min-width: 28px;
   overflow: hidden;
+  border-right: none;
 }
 
 .nav-panel.collapsed .nav-tree {
@@ -2151,12 +2152,11 @@ body.hide-comments .ql-comment-style {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 12px;
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--bg-surface);
+  background: var(--bg-body);
 }
 
 .nav-header h3 {
@@ -2185,7 +2185,6 @@ body.hide-comments .ql-comment-style {
 }
 
 .nav-toggle-btn:hover {
-  background: var(--bg-elevated);
   color: var(--text-primary);
 }
 
@@ -2298,8 +2297,8 @@ body.hide-comments .ql-comment-style {
 
 /* Resize Handle */
 .nav-resize-handle {
-  width: 3px;
-  background: var(--border-subtle);
+  width: 2px;
+  background: transparent;
   cursor: col-resize;
   transition: background-color 0.2s ease, opacity 0.3s ease;
   position: relative;

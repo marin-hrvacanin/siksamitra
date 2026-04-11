@@ -6,15 +6,20 @@ This document provides the complete specification of all Sanskrit phonological r
 
 ## The Phonological Pipeline
 
-When the user triggers "Run Agent" (automation), the editor applies rules in this order to the selected text:
+When the user triggers "Run Agent" (automation), the editor applies rules in this exact order to the selected text. Each step receives the text as modified by all previous steps, and the Quill selection is updated after each step to reflect the new text length.
 
-1. **Pre-processing** — Normalize Unicode representations
-2. **Anusvara transformations** — Nasal assimilation
-3. **Visarga transformations** — Aspirate sandhi
-4. **Svarabhakti** — Epenthetic vowel insertion
-5. **Holdings** — Samyukta cluster detection and marking
-6. **Pauses** — Word-boundary pause detection
-7. **Special insertions** — jñ → jgñ, sv → suv, vy → vuy
+1. **Transliterate** — Devanagari → IAST (with Vedic svara mark draining)
+2. **Standardize** — Normalize Unicode, lowercase, danda conversion
+3. **Insert g in jñ** — jñ → j[g]ñ
+4. **Insert u in sv** — sv → s[u]v
+5. **Insert u in vy** — vy → v[u]y
+6. **Svarabhakti** — Insert · after r before sibilant/h/ṛ
+7. **Pauses** — Insert | or || at word boundaries
+8. **Holdings** — Mark consonant clusters with short/long borders
+9. **Anusvara** — Transform ṁ based on following consonant and source
+10. **Visarga** — Transform ḥ based on following consonant
+11. **Ṛgveda svarita adjustments** — Accent mark adjustments (only for Ṛgveda source)
+12. **Final m tick** — Add tick mark (ˎ) at segment-ending m
 
 Each rule stage returns a list of replacement operations (index, deleteCount, parts) which are then applied to the Quill editor's delta operations.
 
@@ -36,6 +41,7 @@ Standardizes input before all other rules run.
 | U+1CDA (combining latin small letter u below) | U+030E | Udatta mark |
 | U+0341 (combining acute tone mark) | U+030E | Udatta mark |
 | ṃ (U+1E43, dot below) | ṁ (U+1E41, dot above) | Anusvara normalization |
+| U+A8F3 (ꣳ Vedic tiryak) | ṁ | Vedic anusvara variant |
 | ō (macron o) | o | Devanagari-style long o → standard |
 | ē (macron e) | e | Devanagari-style long e → standard |
 
@@ -52,6 +58,10 @@ All text is lowercased first.
 ---
 
 ## 2. Anusvāra Transformations (`applyAnusvaraTransformations`)
+
+### Bīja mantra exclusion
+
+When `skipBija` is enabled (default), common bīja mantras at the start of a line are preserved unchanged — their anusvara is not transformed. The set `BIJA_MANTRAS` includes: oṁ, auṁ, hrīṁ, śrīṁ, klīṁ, aiṁ, sauṁ, krīṁ, hlīṁ, strīṁ, blūṁ, glauṁ, hauṁ, huṁ, phaṭ, dūṁ, gaṁ, drāṁ, grīṁ, kṣrauṁ.
 
 ### Traditional rule
 
@@ -261,27 +271,31 @@ Pause marks are visual-only inline elements (`ql-short-pause` or `ql-long-pause`
 
 ---
 
-## 8. Special Insertions
+## 8. Special Insertions (`applyAutomaticInsertions`)
 
-### jña → jgña (`findJnaInsertions`)
+These insertions use a Quill-position-walking algorithm instead of regex on extracted text. The algorithm walks through Quill positions character by character using `quill.getText(i, 1)`, skipping combining marks (U+0300-U+036F, U+0310) between the first and second characters of each digraph. This avoids offset mismatches caused by combining marks in the extracted text.
+
+Inserted characters are formatted as superscript in change-style (italic blue). The operation is idempotent — if the superscript character is already present at the target position, it is skipped.
+
+### jñ → jgñ
 
 In traditional Sanskrit pronunciation, the sequence `jñ` is pronounced with an intermediate `g`:
-- Regex: `/jñ/g`
-- Insert `g` at position after `j`
+- Walk positions to find `j` followed by `ñ` (skipping combining marks)
+- Insert `g` in superscript change-style before `ñ`
 - Result: `jgñ`
 
-### sva → suva (`findSvInsertions`)
+### sv → suv
 
 Vedic pronunciation of `sv`:
-- Regex: `/sv/g`
-- Insert `u` at position after `s`
+- Walk positions to find `s` followed by `v` (skipping combining marks)
+- Insert `u` in superscript change-style before `v`
 - Result: `suv`
 
-### vya → vuya (`findVyInsertions`)
+### vy → vuy
 
 Vedic pronunciation of `vy`:
-- Regex: `/vy/g`
-- Insert `u` at position after `v`
+- Walk positions to find `v` followed by `y` (skipping combining marks)
+- Insert `u` in superscript change-style before `y`
 - Result: `vuy`
 
 ---

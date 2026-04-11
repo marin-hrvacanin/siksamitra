@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sikshamitra — Friend of Phonetic Learning</title>
+<meta name="description" content="A desktop editor for Vedic and classical Sanskrit text with automatic phonological rules. By Veda Union.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#b8813d;
+  --accent:#d97706;
+  --bg-body:#f5f3f0;
+  --bg-surface:#ffffff;
+  --text-primary:#1a1816;
+  --text-secondary:#6b6560;
+  --border:#dddde1;
+  --border-subtle:#e8e8ec;
+  --holding-green:#10b981;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --primary:#d4a574;
+    --accent:#ff9933;
+    --bg-body:#0d0d0d;
+    --bg-surface:#1a1a1a;
+    --text-primary:#e8e8e8;
+    --text-secondary:#9a9590;
+    --border:#333338;
+    --border-subtle:#2a2a2e;
+    --holding-green:#34d399;
+  }
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  background:var(--bg-body);
+  color:var(--text-primary);
+  line-height:1.6;
+  animation:fadeIn .6s ease-out;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:860px;margin:0 auto;padding:0 1.5rem}
+
+/* ── Hero ── */
+.hero{
+  padding:5rem 0 4rem;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.hero-title{
+  font-family:'IBM Plex Serif',Georgia,serif;
+  font-size:3rem;
+  font-weight:600;
+  letter-spacing:-.02em;
+  color:var(--text-primary);
+  margin-bottom:.25rem;
+}
+.hero-meaning{
+  font-size:.95rem;
+  color:var(--text-secondary);
+  font-style:italic;
+  margin-bottom:1.25rem;
+}
+.hero-desc{
+  font-size:1.1rem;
+  color:var(--text-secondary);
+  max-width:540px;
+  margin:0 auto 2rem;
+  line-height:1.7;
+}
+.btn{
+  display:inline-block;
+  padding:.7rem 1.8rem;
+  font-size:.9rem;
+  font-weight:500;
+  font-family:inherit;
+  color:var(--bg-surface);
+  background:var(--primary);
+  border:1px solid var(--primary);
+  border-radius:4px;
+  cursor:pointer;
+  letter-spacing:.01em;
+}
+.btn-outline{
+  background:transparent;
+  color:var(--primary);
+}
+
+/* ── Section ── */
+section{padding:3.5rem 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+.section-title{
+  font-family:'IBM Plex Serif',Georgia,serif;
+  font-size:1.5rem;
+  font-weight:600;
+  margin-bottom:.75rem;
+  color:var(--text-primary);
+}
+.section-subtitle{
+  font-size:1rem;
+  color:var(--text-secondary);
+  max-width:600px;
+  margin-bottom:2rem;
+  line-height:1.7;
+}
+
+/* ── Features grid ── */
+.features-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:1.25rem;
+}
+.feature-card{
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:1.25rem 1.25rem 1rem;
+  background:var(--bg-surface);
+}
+.feature-card h3{
+  font-size:.95rem;
+  font-weight:600;
+  margin-bottom:.4rem;
+  color:var(--text-primary);
+}
+.feature-card p{
+  font-size:.85rem;
+  color:var(--text-secondary);
+  line-height:1.55;
+}
+
+/* ── Screenshot ── */
+.screenshot-placeholder{
+  border:1px solid var(--border);
+  border-radius:4px;
+  background:var(--bg-surface);
+  padding:4rem 2rem;
+  text-align:center;
+  color:var(--text-secondary);
+  font-size:.9rem;
+}
+
+/* ── Download ── */
+.download-section{text-align:center}
+.download-section .section-subtitle{margin-left:auto;margin-right:auto}
+.download-grid{display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem}
+.btn-secondary{background:transparent;color:var(--primary);border:1px solid var(--primary)}
+.btn-secondary:hover{background:var(--primary);color:#fff}
+
+/* ── Tech ── */
+.tech-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.6rem;
+  list-style:none;
+}
+.tech-list li{
+  font-size:.85rem;
+  padding:.35rem .85rem;
+  border:1px solid var(--border);
+  border-radius:3px;
+  color:var(--text-secondary);
+  background:var(--bg-surface);
+}
+
+/* ── Footer ── */
+footer{
+  padding:2.5rem 0;
+  border-top:1px solid var(--border);
+  text-align:center;
+  font-size:.85rem;
+  color:var(--text-secondary);
+}
+footer a{color:var(--primary)}
+footer p+p{margin-top:.35rem}
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .hero{padding:3.5rem 0 3rem}
+  .hero-title{font-size:2.25rem}
+  .features-grid{grid-template-columns:1fr}
+  section{padding:2.5rem 0}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1 class="hero-title">sikshamitra</h1>
+    <p class="hero-meaning">Sanskrit: "friend of phonetic learning"</p>
+    <p class="hero-desc">A desktop editor for Vedic and classical Sanskrit text, with automatic application of traditional phonological rules rooted in the Siksha tradition.</p>
+    <a href="https://github.com/USER/sikshamitra-editor/releases/latest" class="btn" id="hero-dl">Download</a>
+  </div>
+</header>
+
+<main>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">What it is</h2>
+      <p class="section-subtitle">sikshamitra is a specialized desktop editor built for scholars, students, and practitioners working with Vedic and classical Sanskrit. It automatically applies the phonological rules described in the Siksha texts and Paninian grammar tradition -- anusvara transformations, visarga sandhi, svarabhakti, holdings, pauses, and svara accents -- so you can focus on the text, not the mechanics.</p>
+      <p class="section-subtitle">Developed by <a href="https://vedaunion.org">Veda Union</a>.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">Features</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3>Vedic Grammar Engine</h3>
+          <p>Automatic anusvara and visarga transformations, samyukta holdings, and pause detection -- all rooted in traditional Siksha principles.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Svara Accent System</h3>
+          <p>Full support for the three Vedic pitch accents: anudatta, svarita, and udatta, rendered with proper combining diacritics.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Multiple Text Sources</h3>
+          <p>Tradition-aware processing for Rigveda, Yajurveda, Krishnayajurveda, and Smriti texts, each with distinct phonological behavior.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Import &amp; Export</h3>
+          <p>Import from sanskritdocuments.org and DOCX files. Export to richly formatted HTML or DOCX for publication and sharing.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Rich Text Editing</h3>
+          <p>Built on Quill.js with custom blots for holdings, change-style annotations, and svara accents. Paragraph styles for titles, translations, and comments.</p>
+        </div>
+        <div class="feature-card">
+          <h3>.smdoc Format</h3>
+          <p>Custom document format with LZMA compression for efficient storage. Full support for audio attachments, metadata, and styling.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Light &amp; Dark Themes</h3>
+          <p>Ochre and saffron palette with full dark mode support. Designed for extended reading sessions with minimal eye strain.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Offline &amp; Private</h3>
+          <p>Runs entirely on your desktop. No cloud, no accounts, no telemetry. Your texts stay on your machine.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">Screenshot</h2>
+      <div class="screenshot-placeholder">
+        <p>Screenshot coming soon</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="download-section">
+    <div class="wrap">
+      <h2 class="section-title">Download</h2>
+      <p class="section-subtitle" id="os-detect"></p>
+      <div class="download-grid">
+        <a href="https://github.com/USER/sikshamitra-editor/releases/latest/download/SiksamitraSetup.exe" class="btn" id="dl-win">Windows Installer</a>
+        <a href="https://github.com/USER/sikshamitra-editor/releases/latest/download/SiksamitraEditor-macOS.dmg" class="btn btn-secondary" id="dl-mac">macOS</a>
+        <a href="https://github.com/USER/sikshamitra-editor/releases/latest/download/SiksamitraEditor-Linux.tar.gz" class="btn btn-secondary" id="dl-linux">Linux</a>
+      </div>
+      <p style="margin-top:1.5rem;font-size:0.85rem;color:var(--text-secondary)">
+        <a href="https://github.com/USER/sikshamitra-editor/releases/latest/download/SiksamitraEditor-Windows-Portable.zip" style="color:var(--text-secondary)">Windows Portable (ZIP)</a>
+        &nbsp;&middot;&nbsp;
+        <a href="https://github.com/USER/sikshamitra-editor/releases/latest" style="color:var(--text-secondary)">All releases</a>
+        &nbsp;&middot;&nbsp;
+        <a href="https://github.com/USER/sikshamitra-editor" style="color:var(--text-secondary)">View source code</a>
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">Tech Stack</h2>
+      <ul class="tech-list">
+        <li>Python 3</li>
+        <li>PyQt6</li>
+        <li>Flask</li>
+        <li>Quill.js</li>
+        <li>HTML5 / CSS3 / JS</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Developed by <a href="https://vedaunion.org">Veda Union</a></p>
+    <p><a href="https://github.com/USER/sikshamitra-editor">Source code on GitHub</a></p>
+  </div>
+</footer>
+
+<script>
+// Detect OS and highlight the appropriate download button
+(function() {
+  var ua = navigator.userAgent || navigator.platform || '';
+  var os = 'your platform';
+  var primary = 'dl-win';
+  if (/Mac|iPhone|iPad/.test(ua)) { os = 'macOS'; primary = 'dl-mac'; }
+  else if (/Linux|Ubuntu|Fedora|Debian/.test(ua)) { os = 'Linux'; primary = 'dl-linux'; }
+  else if (/Win/.test(ua)) { os = 'Windows'; primary = 'dl-win'; }
+
+  var detect = document.getElementById('os-detect');
+  if (detect) detect.textContent = 'Detected: ' + os + '. Choose your download below.';
+
+  // Swap primary styling
+  var btns = document.querySelectorAll('.download-grid .btn');
+  btns.forEach(function(b) {
+    if (b.id === primary) {
+      b.classList.remove('btn-secondary');
+    } else {
+      b.classList.add('btn-secondary');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

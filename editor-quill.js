@@ -3243,7 +3243,9 @@ class SiksamitraEditor {
                 'paraFontWeightDropdown': 'paraFontWeight',
                 'paraAlignmentDropdown': 'paraAlignment',
                 'paraTextTransformDropdown': 'paraTextTransform',
-                'paraFontStyleDropdown': 'paraFontStyle'
+                'paraFontStyleDropdown': 'paraFontStyle',
+                'shlokaSourceDropdown': 'shlokaSearchSource',
+                'sdocsCategoryDropdown': 'sdocsCategorySelect'
             };
             
             const selectId = selectMap[dropdown.id];
@@ -3261,35 +3263,35 @@ class SiksamitraEditor {
                 dropdown.classList.toggle('open');
             });
             
-            // Handle option selection
-            options.forEach(option => {
-                option.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    
-                    if (option.classList.contains('disabled')) return;
-                    
-                    const value = option.dataset.value;
-                    const text = option.textContent;
-                    
-                    // Update trigger text
-                    trigger.textContent = text;
-                    
-                    // Update selection state
-                    options.forEach(opt => opt.classList.remove('selected'));
-                    option.classList.add('selected');
-                    
-                    // Store value on dropdown
-                    dropdown.dataset.value = value;
-                    
-                    // Update hidden select and trigger change
-                    if (hiddenSelect) {
-                        hiddenSelect.value = value;
-                        hiddenSelect.dispatchEvent(new Event('change'));
-                    }
-                    
-                    // Close dropdown
-                    dropdown.classList.remove('open');
-                });
+            // Handle option selection (delegated so dynamically added options work)
+            menu.addEventListener('click', (e) => {
+                const option = e.target.closest('.custom-dropdown-option');
+                if (!option) return;
+                e.stopPropagation();
+
+                if (option.classList.contains('disabled')) return;
+
+                const value = option.dataset.value;
+                const text = option.textContent;
+
+                // Update trigger text
+                trigger.textContent = text;
+
+                // Update selection state
+                menu.querySelectorAll('.custom-dropdown-option').forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+
+                // Store value on dropdown
+                dropdown.dataset.value = value;
+
+                // Update hidden select and trigger change
+                if (hiddenSelect) {
+                    hiddenSelect.value = value;
+                    hiddenSelect.dispatchEvent(new Event('change'));
+                }
+
+                // Close dropdown
+                dropdown.classList.remove('open');
             });
         });
         
@@ -3805,6 +3807,11 @@ class SiksamitraEditor {
         this.shlokaSearchElements = {
             overlay,
             form: document.getElementById('shlokaSearchForm'),
+            sourceSelect: document.getElementById('shlokaSearchSource'),
+            sourceDropdown: document.getElementById('shlokaSourceDropdown'),
+            categoryRow: document.getElementById('sdocsCategoryRow'),
+            categorySelect: document.getElementById('sdocsCategorySelect'),
+            categoryDropdown: document.getElementById('sdocsCategoryDropdown'),
             queryInput: document.getElementById('shlokaSearchQuery'),
             status: document.getElementById('shlokaSearchStatus'),
             resultsList: document.getElementById('shlokaSearchResults'),
@@ -3813,6 +3820,8 @@ class SiksamitraEditor {
             includeDevanagari: document.getElementById('shlokaIncludeDevanagari'),
             includeTransliteration: document.getElementById('shlokaIncludeTransliteration'),
             includeTranslation: document.getElementById('shlokaIncludeTranslation'),
+            transliterationLabel: document.getElementById('shlokaTransliterationLabel'),
+            translationLabel: document.getElementById('shlokaTranslationLabel'),
             insertAllButton: document.getElementById('shlokaInsertAllButton')
         };
 
@@ -3822,6 +3831,18 @@ class SiksamitraEditor {
             activeResultUrl: null,
             activeResultTitle: null
         };
+
+        this._sdocsCategoriesLoaded = false;
+
+        // Listen for source changes (fired by the custom dropdown via the hidden select)
+        if (this.shlokaSearchElements.sourceSelect) {
+            this.shlokaSearchElements.sourceSelect.addEventListener('change', () => {
+                const val = this.shlokaSearchElements.sourceSelect.value;
+                this._onShlokaSourceChange(val);
+                // Persist the selected source
+                try { localStorage.setItem('siksamitra-shloka-source', val); } catch (_) {}
+            });
+        }
 
         if (!this.handleShlokaSearchKeydown) {
             this.handleShlokaSearchKeydown = (event) => {
@@ -3911,6 +3932,29 @@ class SiksamitraEditor {
             selectedTitle.textContent = 'Select a result to preview the verses';
         }
 
+        // Restore last-used source from localStorage
+        let savedSource = 'shlokam';
+        try { savedSource = localStorage.getItem('siksamitra-shloka-source') || 'shlokam'; } catch (_) {}
+
+        // Update the hidden select and custom dropdown to the saved value
+        const sourceSelect = this.shlokaSearchElements.sourceSelect;
+        const sourceDropdown = this.shlokaSearchElements.sourceDropdown;
+        if (sourceSelect) sourceSelect.value = savedSource;
+        if (sourceDropdown) {
+            sourceDropdown.dataset.value = savedSource;
+            const trigger = sourceDropdown.querySelector('.custom-dropdown-trigger');
+            const opts = sourceDropdown.querySelectorAll('.custom-dropdown-option');
+            opts.forEach(opt => {
+                if (opt.dataset.value === savedSource) {
+                    opt.classList.add('selected');
+                    if (trigger) trigger.textContent = opt.textContent;
+                } else {
+                    opt.classList.remove('selected');
+                }
+            });
+        }
+        this._onShlokaSourceChange(savedSource);
+
         this.setShlokaStatus('Enter a search phrase to begin.');
 
         if (insertAllButton) {
@@ -3972,8 +4016,15 @@ class SiksamitraEditor {
             this.shlokaSearchElements.insertAllButton.disabled = true;
         }
 
+        const source = this.shlokaSearchElements.sourceSelect?.value || 'shlokam';
+
         try {
-            const results = await this.fetchShlokaSearchResults(query);
+            let results;
+            if (source === 'sanskritdocs') {
+                results = await this.fetchSanskritDocsSearch(query);
+            } else {
+                results = await this.fetchShlokaSearchResults(query);
+            }
             this.shlokaSearchState.results = results;
             this.shlokaSearchState.activeResultUrl = null;
             this.renderShlokaSearchResults(results);
@@ -4079,6 +4130,232 @@ class SiksamitraEditor {
         return this._decodeHtmlTextarea.value;
     }
 
+    // --- Śloka dialog helpers ---
+
+    _onShlokaSourceChange(source) {
+        const els = this.shlokaSearchElements;
+        if (!els) return;
+
+        const isSanskritDocs = (source === 'sanskritdocs');
+
+        // Show/hide category row
+        if (els.categoryRow) els.categoryRow.hidden = !isSanskritDocs;
+
+        // Update placeholder
+        if (els.queryInput) {
+            els.queryInput.placeholder = isSanskritDocs
+                ? 'e.g. purusha sukta, agni, narayana'
+                : 'e.g. yogah karmasu kausalam';
+        }
+
+        // Load categories if needed
+        if (isSanskritDocs) this._ensureSanskritDocsCategories();
+
+        // Adapt insert options — sanskritdocs only has Devanagari
+        if (els.transliterationLabel) {
+            els.transliterationLabel.style.display = isSanskritDocs ? 'none' : '';
+        }
+        if (els.translationLabel) {
+            els.translationLabel.style.display = isSanskritDocs ? 'none' : '';
+        }
+        // When switching to sanskritdocs, ensure devanagari is checked
+        if (isSanskritDocs && els.includeDevanagari) {
+            els.includeDevanagari.checked = true;
+        }
+
+        // Clear results when switching source
+        if (els.resultsList) els.resultsList.innerHTML = '';
+        if (els.detailsList) els.detailsList.innerHTML = '';
+        if (els.selectedTitle) els.selectedTitle.textContent = 'Select a result to preview the verses';
+        if (els.insertAllButton) els.insertAllButton.disabled = true;
+        this.shlokaSearchState.results = [];
+        this.shlokaSearchState.shlokas = [];
+        this.setShlokaStatus('Enter a search phrase to begin.');
+    }
+
+    // --- SanskritDocuments.org import ---
+
+    async _ensureSanskritDocsCategories() {
+        if (this._sdocsCategoriesLoaded) return;
+        const sel = this.shlokaSearchElements.categorySelect;
+        const dropdown = this.shlokaSearchElements.categoryDropdown;
+        if (!sel) return;
+        try {
+            const resp = await fetch('/api/sanskritdocs/categories');
+            if (!resp.ok) return;
+            const cats = await resp.json();
+            // Update hidden native select
+            sel.innerHTML = '<option value="">All Categories</option>';
+            cats.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                sel.appendChild(opt);
+            });
+            // Update custom dropdown menu
+            if (dropdown) {
+                const menu = dropdown.querySelector('.custom-dropdown-menu');
+                if (menu) {
+                    menu.innerHTML = '<div class="custom-dropdown-option selected" data-value="">All Categories</div>';
+                    cats.forEach(c => {
+                        const div = document.createElement('div');
+                        div.className = 'custom-dropdown-option';
+                        div.dataset.value = c.id;
+                        div.textContent = c.name;
+                        menu.appendChild(div);
+                    });
+                }
+            }
+            this._sdocsCategoriesLoaded = true;
+        } catch (e) {
+            console.warn('Failed to load SanskritDocuments categories:', e);
+        }
+    }
+
+    async fetchSanskritDocsSearch(query) {
+        const category = this.shlokaSearchElements.categorySelect?.value || '';
+
+        // Normalize query: handle IAST → approximate match patterns
+        // e.g. "śiva" should match "shiva", "puruṣa" should match "puruSha"
+        const normalizedQuery = this._normalizeForSanskritDocsSearch(query);
+
+        if (category) {
+            // Search within a specific category
+            const url = `/api/sanskritdocs/index/${category}?q=${encodeURIComponent(normalizedQuery)}`;
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(`Search failed: ${resp.status}`);
+            const entries = await resp.json();
+            return entries.map(e => ({
+                id: e.filename,
+                title: e.title,
+                url: `https://sanskritdocuments.org/${e.category}/${e.filename}.html`,
+                subtype: 'sanskritdocs',
+                _source: 'sanskritdocs',
+                _category: e.category,
+                _filename: e.filename
+            }));
+        } else {
+            // Search across all categories in parallel
+            const resp = await fetch('/api/sanskritdocs/categories');
+            if (!resp.ok) throw new Error('Failed to load categories');
+            const cats = await resp.json();
+
+            const allResults = [];
+            const fetches = cats.map(async (cat) => {
+                try {
+                    const url = `/api/sanskritdocs/index/${cat.id}?q=${encodeURIComponent(normalizedQuery)}`;
+                    const r = await fetch(url);
+                    if (!r.ok) return;
+                    const entries = await r.json();
+                    entries.forEach(e => {
+                        allResults.push({
+                            id: e.filename,
+                            title: e.title,
+                            url: `https://sanskritdocuments.org/${e.category}/${e.filename}.html`,
+                            subtype: 'sanskritdocs',
+                            _source: 'sanskritdocs',
+                            _category: e.category,
+                            _filename: e.filename,
+                            _catName: cat.name
+                        });
+                    });
+                } catch (_) { /* skip failed categories */ }
+            });
+
+            await Promise.all(fetches);
+            // Deduplicate by filename and limit
+            const seen = new Set();
+            const unique = [];
+            for (const r of allResults) {
+                const key = `${r._category}/${r._filename}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    unique.push(r);
+                }
+            }
+            return unique.slice(0, 50);
+        }
+    }
+
+    _normalizeForSanskritDocsSearch(query) {
+        // Convert IAST diacritics to ITRANS-like patterns for fuzzy matching
+        // This lets users type "śiva" or "shiva" and find results in both cases
+        let q = query.toLowerCase();
+        const map = {
+            'ā': 'a', 'ī': 'i', 'ū': 'u', 'ṛ': 'r', 'ṝ': 'r',
+            'ḷ': 'l', 'ḹ': 'l', 'ṁ': 'm', 'ṃ': 'm', 'ḥ': 'h',
+            'ś': 'sh', 'ṣ': 'sh', 'ṭ': 't', 'ḍ': 'd', 'ṅ': 'n',
+            'ñ': 'n', 'ṇ': 'n', 'ḻ': 'l',
+        };
+        for (const [from, to] of Object.entries(map)) {
+            q = q.replaceAll(from, to);
+        }
+        return q;
+    }
+
+    async fetchSanskritDocsDocument(result) {
+        const { _category, _filename } = result;
+        if (!_category || !_filename) return [];
+
+        const url = `/api/sanskritdocs/fetch/${_category}/${_filename}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Fetch failed: ${resp.status}`);
+        const data = await resp.json();
+
+        if (data.error) throw new Error(data.error);
+
+        const shlokas = [];
+
+        // Add preamble as a separate entry if present (title, ṛṣi, chandas info)
+        const preamble = (data.preamble || '').trim();
+        if (preamble) {
+            shlokas.push({
+                devanagari: preamble,
+                transliteration: '',
+                translation: '',
+                _isPreamble: true
+            });
+        }
+
+        const text = data.text || '';
+        if (!text.trim()) return shlokas;
+
+        // Split mantra text into verses.
+        // Verse-ending patterns: "। N" or "॥ N॥" or "॥ N.NNN.NN"
+        const lines = text.split('\n');
+        let currentVerse = [];
+        const verseEndPattern = /[।॥]\s*[\d०-९][.\d०-९]*\s*[॥]?\s*$/;
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            currentVerse.push(trimmed);
+
+            if (verseEndPattern.test(trimmed)) {
+                shlokas.push({
+                    devanagari: currentVerse.join('\n'),
+                    transliteration: '',
+                    translation: ''
+                });
+                currentVerse = [];
+            }
+        }
+
+        // Remaining lines (verse without number, or closing text)
+        if (currentVerse.length > 0) {
+            const remaining = currentVerse.join('\n').trim();
+            if (remaining) {
+                shlokas.push({
+                    devanagari: remaining,
+                    transliteration: '',
+                    translation: ''
+                });
+            }
+        }
+
+        return shlokas;
+    }
+
     renderShlokaSearchResults(results) {
         if (!this.shlokaSearchElements || !this.shlokaSearchElements.resultsList) {
             return;
@@ -4110,7 +4387,9 @@ class SiksamitraEditor {
 
             const urlSpan = document.createElement('span');
             urlSpan.className = 'result-url';
-            urlSpan.textContent = result.url;
+            urlSpan.textContent = result._catName
+                ? `${result._catName} — ${result._filename}`
+                : result.url;
 
             button.appendChild(titleSpan);
             button.appendChild(urlSpan);
@@ -4150,7 +4429,12 @@ class SiksamitraEditor {
         }
 
         try {
-            const shlokas = await this.fetchShlokaDetails(result);
+            let shlokas;
+            if (result._source === 'sanskritdocs') {
+                shlokas = await this.fetchSanskritDocsDocument(result);
+            } else {
+                shlokas = await this.fetchShlokaDetails(result);
+            }
             const enrichedShlokas = shlokas.map(entry => ({ ...entry, sourceTitle: result.title }));
             this.shlokaSearchState.shlokas = enrichedShlokas;
             if (enrichedShlokas.length) {
@@ -4204,7 +4488,7 @@ class SiksamitraEditor {
 
             const heading = document.createElement('div');
             heading.className = 'shloka-card-heading';
-            heading.textContent = `Verse ${index + 1}`;
+            heading.textContent = shloka._isPreamble ? 'Preamble' : `Verse ${index + 1 - (shlokas[0]?._isPreamble ? 1 : 0)}`;
             card.appendChild(heading);
 
             if (shloka.devanagari) {
@@ -4792,20 +5076,19 @@ class SiksamitraEditor {
      * Convert Devanagari text to IAST transliteration
      */
     devanagariToIAST(text) {
-        // Mapping of Devanagari characters to IAST
         const vowels = {
             'अ': 'a', 'आ': 'ā', 'इ': 'i', 'ई': 'ī', 'उ': 'u', 'ऊ': 'ū',
             'ऋ': 'ṛ', 'ॠ': 'ṝ', 'ऌ': 'ḷ', 'ॡ': 'ḹ',
             'ए': 'e', 'ऐ': 'ai', 'ओ': 'o', 'औ': 'au',
-            'ॐ': 'oṁ'  // Om symbol
+            'ॐ': 'oṁ'
         };
-        
+
         const vowelSigns = {
             'ा': 'ā', 'ि': 'i', 'ी': 'ī', 'ु': 'u', 'ू': 'ū',
             'ृ': 'ṛ', 'ॄ': 'ṝ', 'ॢ': 'ḷ', 'ॣ': 'ḹ',
             'े': 'e', 'ै': 'ai', 'ो': 'o', 'ौ': 'au'
         };
-        
+
         const consonants = {
             'क': 'k', 'ख': 'kh', 'ग': 'g', 'घ': 'gh', 'ङ': 'ṅ',
             'च': 'c', 'छ': 'ch', 'ज': 'j', 'झ': 'jh', 'ञ': 'ñ',
@@ -4814,20 +5097,7 @@ class SiksamitraEditor {
             'प': 'p', 'फ': 'ph', 'ब': 'b', 'भ': 'bh', 'म': 'm',
             'य': 'y', 'र': 'r', 'ल': 'l', 'व': 'v',
             'श': 'ś', 'ष': 'ṣ', 'स': 's', 'ह': 'h',
-            'ळ': 'ḻ', 'क्ष': 'kṣ', 'ज्ञ': 'jñ'
-        };
-        
-        const special = {
-            'ं': 'ṁ',     // Anusvara
-            'ः': 'ḥ',     // Visarga
-            ':': 'ḥ',     // Colon as Visarga
-            'ँ': 'm̐',    // Candrabindu
-            'ऽ': '\'',    // Avagraha
-            '।': '|',     // Danda
-            '॥': '||',    // Double danda
-            '॑': '\u030d', // Svarita
-            '॒': '\u0331', // Anudatta
-            '᳚': '\u030e'  // Double Svarita
+            'ळ': 'ḻ'
         };
 
         const digits = {
@@ -4835,142 +5105,139 @@ class SiksamitraEditor {
             '५': '5', '६': '6', '७': '7', '८': '8', '९': '9'
         };
 
-        const isWordBoundary = (char) => {
-            if (!char) return true;
-            if (/\s/.test(char) || char === '\u00A0' || char === '\u202F' || char === '\u2009') return true;
-            if (/[.,;:!?\-—()|।॥]/.test(char)) return true;
-            return false;
+        // Vedic svara / accent marks — these are combining marks that attach
+        // to the preceding syllable. They must be emitted immediately after the
+        // IAST character they belong to.
+        const vedicMarks = {
+            '\u0951': '\u030d', // Devanagari svarita  → IAST combining vertical line above
+            '\u0952': '\u0331', // Devanagari anudatta → IAST combining macron below
+            '\u1CDA': '\u030e', // Devanagari double svarita → IAST combining double vertical line above
         };
-        
+
+        // Helper: consume any Vedic combining marks at position i,
+        // append their IAST equivalents to result, return new i.
+        const drainVedicMarks = (pos) => {
+            let marks = '';
+            while (pos < text.length && vedicMarks[text[pos]]) {
+                marks += vedicMarks[text[pos]];
+                pos++;
+            }
+            return { marks, pos };
+        };
+
         let result = '';
         let i = 0;
-        let pendingCandrabinduAnnotation = false;
-        
-        while (i < text.length) {
-            let char = text[i];
-            let matched = false;
 
+        while (i < text.length) {
+            const char = text[i];
+
+            // --- Bracket annotations [like this] — pass through ---
             if (char === '[') {
                 const end = text.indexOf(']', i + 1);
-                if (end !== -1) {
-                    result += text.slice(i, end + 1);
-                    i = end + 1;
-                } else {
-                    result += char;
-                    i++;
-                }
-                pendingCandrabinduAnnotation = false;
+                if (end !== -1) { result += text.slice(i, end + 1); i = end + 1; }
+                else { result += char; i++; }
                 continue;
             }
-            
-            // Check for Om symbol first
+
+            // --- Om ---
             if (char === 'ॐ') {
                 result += 'oṁ';
-                matched = true;
                 i++;
+                const d = drainVedicMarks(i); result += d.marks; i = d.pos;
                 continue;
             }
 
-            // Digits
+            // --- Devanagari digits ---
             if (digits[char] !== undefined) {
-                result += digits[char];
-                matched = true;
-                i++;
-                continue;
+                result += digits[char]; i++; continue;
             }
-            
-            // Check for two-character combinations (like क्ष, ज्ञ)
-            if (i < text.length - 1) {
-                let twoChar = char + text[i + 1];
-                if (consonants[twoChar]) {
-                    result += consonants[twoChar];
-                    i += 2;
-                    // Check what follows
-                    if (i < text.length) {
-                        let nextChar = text[i];
-                        if (vowelSigns[nextChar]) {
-                            result += vowelSigns[nextChar];
-                            i++;
-                        } else if (nextChar !== '्') {
-                            result += 'a';
-                        }
-                    } else {
-                        result += 'a';
-                    }
-                    matched = true;
-                    continue;
-                }
-            }
-            
-            // Check vowels
+
+            // --- Independent vowels ---
             if (vowels[char]) {
                 result += vowels[char];
-                matched = true;
+                i++;
+                const d = drainVedicMarks(i); result += d.marks; i = d.pos;
+                continue;
             }
-            // Check consonants
-            else if (consonants[char]) {
+
+            // --- Consonants ---
+            if (consonants[char]) {
                 result += consonants[char];
-                // Check if followed by vowel sign or virama
-                if (i + 1 < text.length) {
-                    let nextChar = text[i + 1];
-                    if (vowelSigns[nextChar]) {
-                        result += vowelSigns[nextChar];
-                        i++;
-                    } else if (nextChar === '्') {
-                        // Virama - check if it's followed by another consonant (conjunct)
-                        if (i + 2 < text.length && consonants[text[i + 2]]) {
-                            // It's a conjunct, skip the virama (don't add 'a' or apostrophe)
-                            i++; // Skip virama
-                        } else {
-                            // Standalone virama at end or before non-consonant
-                            // Skip the virama but don't add 'a'
-                            i++; // Skip virama
-                        }
-                    } else if (!(pendingCandrabinduAnnotation && nextChar === 'ं')) {
-                        // Add inherent 'a' if no vowel sign or virama follows and we're not in annotation
-                        result += 'a';
-                    }
-                } else {
-                    // Consonant at end of text still carries inherent 'a'
-                    result += 'a';
+                i++;
+
+                // Consume conjuncts: virama + consonant chains
+                while (i < text.length && text[i] === '्' && i + 1 < text.length && consonants[text[i + 1]]) {
+                    i++; // skip virama
+                    result += consonants[text[i]];
+                    i++; // skip consonant
                 }
 
-                if (!(pendingCandrabinduAnnotation && i < text.length && text[i] === 'ं')) {
-                    pendingCandrabinduAnnotation = false;
+                // After the last consonant in the cluster, determine the vowel
+                if (i < text.length) {
+                    if (vowelSigns[text[i]]) {
+                        result += vowelSigns[text[i]];
+                        i++;
+                    } else if (text[i] === '्') {
+                        // Trailing virama — no vowel
+                        i++;
+                    } else if (!vedicMarks[text[i]] || true) {
+                        // No vowel sign and not virama — add inherent 'a'
+                        // But NOT if the next thing is anusvara/visarga that consumed the vowel
+                        // (anusvara/visarga follow the vowel, so 'a' is still correct)
+                        if (text[i] !== 'ं' && text[i] !== 'ः' && text[i] !== 'ँ') {
+                            result += 'a';
+                        } else {
+                            result += 'a'; // anusvara/visarga come after the vowel
+                        }
+                    }
+                } else {
+                    result += 'a'; // end of text
                 }
-                matched = true;
+
+                // Drain any Vedic marks after the syllable
+                const d = drainVedicMarks(i); result += d.marks; i = d.pos;
+                continue;
             }
-            // Check vowel signs (standalone, shouldn't happen but handle it)
-            else if (vowelSigns[char]) {
+
+            // --- Vowel signs (standalone — shouldn't normally happen) ---
+            if (vowelSigns[char]) {
                 result += vowelSigns[char];
-                matched = true;
+                i++;
+                const d = drainVedicMarks(i); result += d.marks; i = d.pos;
+                continue;
             }
-            // Check special characters (but skip virama as it's handled with consonants)
-            else if (char !== '्' && special[char]) {
-                result += special[char];
-                if (char === 'ँ') {
-                    pendingCandrabinduAnnotation = true;
-                } else if (char === 'ं') {
-                    pendingCandrabinduAnnotation = false;
-                }
-                matched = true;
+
+            // --- Vedic marks appearing without a preceding syllable ---
+            if (vedicMarks[char]) {
+                result += vedicMarks[char];
+                i++;
+                continue;
             }
-            // Skip virama completely - it should never appear in IAST output
-            else if (char === '्') {
-                matched = true;
-            }
-            
-            // If no match, keep original character
-            if (!matched) {
-                result += char;
-                if (isWordBoundary(char)) {
-                    pendingCandrabinduAnnotation = false;
-                }
-            }
-            
+
+            // --- Anusvara (regular U+0902 and Vedic variant U+A8F3) ---
+            if (char === 'ं' || char === '\uA8F3') { result += 'ṁ'; i++; const d = drainVedicMarks(i); result += d.marks; i = d.pos; continue; }
+
+            // --- Visarga ---
+            if (char === 'ः') { result += 'ḥ'; i++; const d = drainVedicMarks(i); result += d.marks; i = d.pos; continue; }
+
+            // --- Candrabindu ---
+            if (char === 'ँ') { result += 'm̐'; i++; const d = drainVedicMarks(i); result += d.marks; i = d.pos; continue; }
+
+            // --- Avagraha ---
+            if (char === 'ऽ') { result += '\''; i++; continue; }
+
+            // --- Dandas ---
+            if (char === '।') { result += '|'; i++; continue; }
+            if (char === '॥') { result += '||'; i++; continue; }
+
+            // --- Virama (should be consumed by consonant logic, but just in case) ---
+            if (char === '्') { i++; continue; }
+
+            // --- Everything else (spaces, punctuation, latin chars) — pass through ---
+            result += char;
             i++;
         }
-        
+
         return result;
     }
 
@@ -6636,6 +6903,7 @@ ${className} {
             insertJna: true,
             insertSv: true,
             insertVy: true,
+            skipBija: true,
             textSource: 'yajurveda', // yajurveda, smriti, or rigveda
             styleFilters: {
                 title: false,
@@ -8841,6 +9109,9 @@ ${className} {
                 processor.source = 'kṛṣṇayajurveda'; // keep existing Vedic behavior
             }
 
+            // Pass skipBija setting to processor
+            processor.skipBija = !!effectiveSettings.skipBija;
+
             const startIndex = selection.index;
             let workingLength = selection.length;
 
@@ -8962,50 +9233,46 @@ ${className} {
         const selection = this.quill.getSelection();
         if (!selection || selection.length === 0) return false;
 
-        const processor = new SanskritProcessor();
-        const text = this.quill.getText(selection.index, selection.length);
-        
-        let insertions = [];
-        if (type === 'jna') {
-            insertions = processor.findJnaInsertions(text);
-        } else if (type === 'sv') {
-            insertions = processor.findSvInsertions(text);
-        } else if (type === 'vy') {
-            insertions = processor.findVyInsertions(text);
+        // Define what we're looking for based on type
+        let firstChar, secondChar, insertChar;
+        if (type === 'jna') { firstChar = 'j'; secondChar = 'ñ'; insertChar = 'g'; }
+        else if (type === 'sv') { firstChar = 's'; secondChar = 'v'; insertChar = 'u'; }
+        else if (type === 'vy') { firstChar = 'v'; secondChar = 'y'; insertChar = 'u'; }
+        else return true;
+
+        // Walk through the Quill text character by character to find patterns.
+        // This correctly handles combining marks between characters by checking
+        // actual character values at Quill positions, not regex on extracted text.
+        const isCombining = (ch) => {
+            if (!ch) return false;
+            const code = ch.charCodeAt(0);
+            return (code >= 0x0300 && code <= 0x036F) || code === 0x0310;
+        };
+
+        const insertions = [];
+        const end = selection.index + selection.length;
+
+        for (let i = selection.index; i < end; i++) {
+            const ch = this.quill.getText(i, 1);
+            if (ch !== firstChar) continue;
+
+            // Found first char — skip past any combining marks to find second char
+            let j = i + 1;
+            while (j < end && isCombining(this.quill.getText(j, 1))) j++;
+
+            if (j < end && this.quill.getText(j, 1) === secondChar) {
+                // Found the digraph! Insert position is j (right before second char)
+                insertions.push({ pos: j, text: insertChar });
+            }
         }
 
         if (insertions.length === 0) return true;
 
-        // Process insertions from end to start to avoid index shifting
-        insertions.sort((a, b) => b.position - a.position);
+        // Process from end to start so earlier positions aren't shifted
+        insertions.sort((a, b) => b.pos - a.pos);
 
         for (const insertion of insertions) {
-            const relativePos = Number.isFinite(insertion.position)
-                ? insertion.position
-                : (Number.isFinite(insertion.index) ? insertion.index : 0);
-
-            let insertPos = selection.index + relativePos;
-
-            // Defensive: ensure insertion point is after the first character of the digraph,
-            // even if indices drift due to formatting/combining marks.
-            const atChar = this.quill.getText(insertPos, 1);
-            const nextChar = this.quill.getText(insertPos + 1, 1);
-            if (type === 'sv') {
-                // Want s[u]v. If we're at the 's' of 'sv', shift right.
-                if (atChar === 's' && nextChar === 'v') {
-                    insertPos += 1;
-                }
-            } else if (type === 'vy') {
-                // Want v[u]y. If we're at the 'v' of 'vy', shift right.
-                if (atChar === 'v' && nextChar === 'y') {
-                    insertPos += 1;
-                }
-            } else if (type === 'jna') {
-                // Want j[g]ñ. If we're at the 'j' of 'jñ', shift right.
-                if (atChar === 'j' && nextChar === 'ñ') {
-                    insertPos += 1;
-                }
-            }
+            let insertPos = insertion.pos;
 
             // Idempotency: if the superscript is already present at the target point, skip.
             const existingChar = this.quill.getText(insertPos, 1);
@@ -9023,10 +9290,17 @@ ${className} {
             this.quill.formatText(insertPos, insertion.text.length, 'holding', false, Quill.sources.SILENT);
         }
         
+        // Update selection to reflect the new text length after insertions
+        const currentSel = this.quill.getSelection();
+        if (currentSel) {
+            // Each insertion added one character, so total length increased by count
+            this.quill.setSelection(selection.index, selection.length + insertions.length, Quill.sources.SILENT);
+        }
+
         if (!silent) {
             this.log(`Applied ${insertions.length} insertions for ${type}.`, 'success');
         }
-        
+
         return true;
     }
 

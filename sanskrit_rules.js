@@ -68,6 +68,16 @@ class SanskritRules {
         // Svarabhakti triggers
         this.SVARABHAKTI_TRIGGERS = new Set(['s', 'ś', 'ṣ', 'h', 'ṛ']);
 
+        // Bīja mantras — sacred seed syllables that should not be transformed.
+        // Each ends with ṁ which should remain as-is (no anusvara conversion).
+        // A short pause is added after the bīja when followed by a word.
+        this.BIJA_MANTRAS = new Set([
+            'oṁ', 'auṁ',
+            'hrīṁ', 'śrīṁ', 'klīṁ', 'aiṁ', 'sauṁ',
+            'krīṁ', 'hlīṁ', 'strīṁ', 'blūṁ', 'glauṁ',
+            'hauṁ', 'huṁ', 'phaṭ', 'dūṁ', 'gaṁ',
+            'drāṁ', 'grīṁ', 'kṣrauṁ',
+        ]);
     }
     
     /**
@@ -152,6 +162,7 @@ class SanskritProcessor {
         
         // Standardize anusvara and visarga
         text = text.replace(/ṃ/g, 'ṁ');
+        text = text.replace(/\uA8F3/g, 'ṁ');  // Vedic tiryak (ꣳ) → anusvara
         text = text.replace(/ō/g, 'o');
         text = text.replace(/ē/g, 'e');
         
@@ -631,6 +642,16 @@ class SanskritProcessor {
                 continue;
             }
 
+            // Skip bīja mantras: if this ṁ is at the end of a bīja mantra
+            // at the beginning of a line, don't transform it.
+            if (this.skipBija) {
+                let lineStart = text.lastIndexOf('\n', i - 1) + 1;
+                const beforeṁ = text.substring(lineStart, i + 1).trim().toLowerCase();
+                if (this.rules.BIJA_MANTRAS.has(beforeṁ)) {
+                    continue;
+                }
+            }
+
             const prev = this.findPreviousLetter(text, i) || '';
             const nextInfo = this.findNextLetterInfo(text, i);
             const next = nextInfo.letter || '';
@@ -901,7 +922,7 @@ class SanskritProcessor {
             if (vowel) {
                 // Move past this vowel and any svara marks
                 let nextPos = i + vowel.length;
-                while (nextPos < text.length && this.rules.isSvaraMark(nextPos)) {
+                while (nextPos < text.length && this.rules.isSvaraMark(text[nextPos])) {
                     nextPos++;
                 }
                 
@@ -911,7 +932,7 @@ class SanskritProcessor {
                     nextPos++;
                     
                     // Skip any svara marks after space
-                    while (nextPos < text.length && this.rules.isSvaraMark(nextPos)) {
+                    while (nextPos < text.length && this.rules.isSvaraMark(text[nextPos])) {
                         nextPos++;
                     }
                     

@@ -711,6 +711,11 @@
                                         <span class="switch-slider"><span class="switch-knob"></span></span>
                                         <span class="switch-label">Insert 'u' in vy (v[u]y)</span>
                                     </label>
+                                    <label class="switch-checkbox">
+                                        <input type="checkbox" data-setting="skipBija" checked>
+                                        <span class="switch-slider"><span class="switch-knob"></span></span>
+                                        <span class="switch-label">Skip bīja mantras (oṁ, hrīṁ, etc.)</span>
+                                    </label>
                                 </div>
 
                                 <h3 class="settings-section-title">Configuration</h3>
@@ -1008,9 +1013,30 @@
                 <div class="modal-body">
                     <form id="shlokaSearchForm" class="shloka-search-form">
                         <div class="form-row">
-                            <label for="shlokaSearchSource">Source</label>
-                            <select id="shlokaSearchSource" disabled>
+                            <label>Source</label>
+                            <div class="custom-dropdown modal-dropdown" id="shlokaSourceDropdown" data-value="shlokam">
+                                <div class="custom-dropdown-trigger">Shlokam.org</div>
+                                <div class="custom-dropdown-menu">
+                                    <div class="custom-dropdown-option selected" data-value="shlokam">Shlokam.org</div>
+                                    <div class="custom-dropdown-option" data-value="sanskritdocs">SanskritDocuments.org</div>
+                                </div>
+                            </div>
+                            <select id="shlokaSearchSource" style="display:none">
                                 <option value="shlokam" selected>Shlokam.org</option>
+                                <option value="sanskritdocs">SanskritDocuments.org</option>
+                            </select>
+                        </div>
+                        <!-- Category selector (only visible for sanskritdocs) -->
+                        <div class="form-row" id="sdocsCategoryRow" hidden>
+                            <label>Category</label>
+                            <div class="custom-dropdown modal-dropdown" id="sdocsCategoryDropdown" data-value="">
+                                <div class="custom-dropdown-trigger">All Categories</div>
+                                <div class="custom-dropdown-menu">
+                                    <div class="custom-dropdown-option selected" data-value="">All Categories</div>
+                                </div>
+                            </div>
+                            <select id="sdocsCategorySelect" style="display:none">
+                                <option value="">All Categories</option>
                             </select>
                         </div>
                         <div class="form-row query-row">
@@ -1029,11 +1055,11 @@
                         </div>
                         <div class="shloka-details">
                             <div class="section-heading" id="shlokaSelectedTitle">Select a result to preview the verses</div>
-                            <div class="shloka-insert-options">
+                            <div class="shloka-insert-options" id="shlokaInsertOptions">
                                 <span>Include:</span>
                                 <label><input type="checkbox" id="shlokaIncludeDevanagari" checked> Devanagari</label>
-                                <label><input type="checkbox" id="shlokaIncludeTransliteration" checked> Transliteration</label>
-                                <label><input type="checkbox" id="shlokaIncludeTranslation"> Translation</label>
+                                <label id="shlokaTransliterationLabel"><input type="checkbox" id="shlokaIncludeTransliteration" checked> Transliteration</label>
+                                <label id="shlokaTranslationLabel"><input type="checkbox" id="shlokaIncludeTranslation"> Translation</label>
                                 <button type="button" id="shlokaInsertAllButton" class="shloka-insert-all-button" disabled>Insert All</button>
                             </div>
                             <div id="shlokaDetailsList" class="shloka-details-list"></div>

@@ -108,10 +108,32 @@ Loading order in `editor.html` must respect these dependencies.
 | `/api/file/read` | POST | `{ path: string }` | `.smdoc` JSON (decompressed) |
 | `/api/file/save` | POST | `{ path: string, content: string }` | Success/error |
 | `/api/file/browser` | GET | — | List of recent files |
-| `/api/file/view` | GET | `?path=...` | Opens preview window |
 | `/uploads/<filename>` | GET | — | File from `media/` |
+| `/api/file/delete` | POST | `{ path: string }` | Delete a file |
 | `/api/file/import-docx` | POST | `{ path: string }` | Import `.docx` as `.smdoc` JSON |
-| `/api/file/export-docx` | POST | `{ path: string, content: string }` | Export document to `.docx` |
+| `/api/recents/remove` | POST | `{ path: string }` | Remove from recent files |
+| `/api/library` | GET | — | List library documents |
+| `/api/library/browse` | GET | — | Browse library folder structure |
+| `/api/library/folder` | POST | `{ path: string }` | Create a library folder |
+| `/api/library/rename` | POST | `{ path, newName }` | Rename a library item |
+| `/api/library/move` | POST | `{ path, destination }` | Move a library item |
+| `/api/library/delete` | POST | `{ path: string }` | Delete a library item |
+| `/api/library/save` | POST | `{ path, content }` | Save to library |
+| `/api/library/read` | POST | `{ path: string }` | Read from library |
+| `/api/library/import` | POST | `{ path: string }` | Import file into library |
+| `/api/scratch/save` | POST | `{ content: string }` | Save scratch pad |
+| `/api/scratch/load` | GET | — | Load scratch pad |
+| `/api/scratch/clear` | POST | — | Clear scratch pad |
+| `/api/cache/untitled` | GET/POST/DELETE | — | Auto-save backup management |
+| `/api/cache/session` | GET/POST | — | Session state persistence |
+| `/api/session/state` | GET/POST | — | Session state (alternate) |
+| `/api/preferences` | GET/POST | — | Read/write preferences |
+| `/api/preferences/<key>` | GET/PUT | — | Individual preference keys |
+| `/api/media/upload` | POST | multipart file | Upload media files |
+| `/api/media/list` | GET | — | List available media |
+| `/api/sanskritdocs/categories` | GET | — | SanskritDocuments.org categories |
+| `/api/sanskritdocs/index/<cat>` | GET | `?q=query` | Search documents in category |
+| `/api/sanskritdocs/fetch/<cat>/<file>` | GET | — | Fetch and extract document text |
 
 ### Compression
 
@@ -241,7 +263,7 @@ User presses Ctrl+S
     → cache/_last_session.json: update session state
 ```
 
-### Exporting to HTML
+### Exporting to HTML / Viewing
 
 ```
 User clicks Export / View
@@ -249,8 +271,14 @@ User clicks Export / View
     → SMDocFormat.toHTML(doc, { fontDataURI, defaultCSS })
     → Full standalone HTML with all CSS and fonts embedded
     → Uses the same ochre/saffron design system as the editor
-    → Flask /api/file/view: write temp HTML to cache/viewer_temp/
-    → QWebEngineView or system browser opens the file
+
+For View:
+    → pyqt-bridge.js sends viewerWindowRequested signal via QWebChannel
+    → Python ViewerWindow class writes temp HTML to cache/viewer_temp/
+    → Opens in a separate QWebEngineView window
+
+For Export:
+    → File is saved to user-specified location
 ```
 
 ---
