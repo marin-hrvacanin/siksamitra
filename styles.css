@@ -6169,3 +6169,402 @@ select:focus {
   font-weight: 700;
   color: #dc2626;
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SANSKRIT ON-SCREEN KEYBOARD  (keyboard.html / keyboard.js)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Root & layout ──────────────────────────────────────────────────────────── */
+
+#kb-root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-body);
+    color: var(--text-primary);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+
+.kb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 10px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 12px;
+    user-select: none;
+}
+
+.kb-script-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.kb-label {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* Compact dropdowns in keyboard header */
+.kb-dropdown .custom-dropdown-trigger {
+    font-size: 0.75rem;
+    padding: 3px 22px 3px 8px;
+    height: 26px;
+    min-width: 78px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-body);
+    color: var(--text-primary);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.kb-dropdown .custom-dropdown-trigger::after {
+    content: '▾';
+    position: absolute;
+    right: 6px;
+    font-size: 0.65rem;
+    color: var(--text-tertiary);
+    pointer-events: none;
+}
+
+.kb-dropdown .custom-dropdown-menu {
+    top: calc(100% + 2px);
+    font-size: 0.75rem;
+    min-width: 100px;
+}
+
+.kb-dropdown .custom-dropdown-option {
+    padding: 5px 10px;
+}
+
+/* Insert mode pill */
+.kb-insert-mode {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.kb-mode-pills {
+    display: flex;
+    background: var(--bg-body);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.kb-mode-btn {
+    font-size: 0.7rem;
+    padding: 3px 9px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+    white-space: nowrap;
+}
+
+.kb-mode-btn.on {
+    background: var(--primary);
+    color: #fff;
+    font-weight: 500;
+}
+
+.kb-mode-btn:not(.on):hover {
+    background: var(--button-hover-bg, var(--bg-elevated));
+    color: var(--text-primary);
+}
+
+/* ── Body (left consonants + right vowels) ──────────────────────────────────── */
+
+.kb-body {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    padding: 5px 6px 5px 6px;
+    gap: 5px;
+}
+
+/* ── Consonant section (left) ───────────────────────────────────────────────── */
+
+.kb-consonants {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 4px;
+}
+
+.kb-row {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    gap: 4px;
+}
+
+/* All keys share the same base style */
+.kb-key {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    padding: 2px 3px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    transition: background 0.08s, border-color 0.08s, transform 0.07s;
+    user-select: none;
+    outline: none;
+    box-shadow: 0 1px 0 var(--border);
+}
+
+.kb-key:hover {
+    background: var(--bg-elevated);
+    border-color: var(--primary);
+}
+
+.kb-key:active {
+    transform: translateY(1px);
+    box-shadow: none;
+    background: var(--primary-subtle, rgba(184,129,61,0.1));
+}
+
+/* Active consonant (currently selected — vowel panel shows its combinations) */
+.kb-key.kb-key-active {
+    background: var(--primary);
+    border-color: var(--primary);
+    box-shadow: none;
+}
+
+.kb-key.kb-key-active .kb-key-primary,
+.kb-key.kb-key-active .kb-key-secondary {
+    color: #fff;
+}
+
+/* Special row (accents + space) */
+.kb-row-special .kb-key-space {
+    flex: 5;
+}
+
+.kb-row-special .kb-key-wide {
+    flex: 1.5;
+}
+
+.kb-key-primary {
+    font-size: 17px;
+    line-height: 1;
+    color: var(--text-primary);
+    pointer-events: none;
+}
+
+.kb-key-secondary {
+    font-size: 9px;
+    line-height: 1;
+    color: var(--text-tertiary);
+    font-family: 'Gentium Plus', 'IBM Plex Sans', serif;
+    pointer-events: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Special / utility key labels (accents, ⌫, ⎵, ↵) — smaller, lighter */
+.kb-key-special .kb-key-primary {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+}
+
+/* Tamil approximation badge */
+.kb-no-equiv-badge {
+    position: absolute;
+    top: 2px;
+    right: 3px;
+    font-size: 7px;
+    color: var(--accent);
+    line-height: 1;
+    pointer-events: none;
+}
+
+/* ── Script-specific fonts ───────────────────────────────────────────────────── */
+
+[data-script='devanagari'] .kb-key-primary,
+[data-script='devanagari'] .kb-vkey-primary {
+    font-family: 'Noto Serif Devanagari', 'Noto Sans Devanagari', serif;
+    font-size: 18px;
+}
+
+[data-script='telugu'] .kb-key-primary,
+[data-script='telugu'] .kb-vkey-primary {
+    font-family: 'Noto Serif Telugu', 'Noto Sans Telugu', serif;
+    font-size: 17px;
+}
+
+[data-script='tamil'] .kb-key-primary,
+[data-script='tamil'] .kb-vkey-primary {
+    font-family: 'Noto Serif Tamil', 'Noto Sans Tamil', serif;
+    font-size: 17px;
+}
+
+[data-script='iast'] .kb-key-primary,
+[data-script='itrans'] .kb-key-primary,
+[data-script='iast'] .kb-vkey-primary,
+[data-script='itrans'] .kb-vkey-primary {
+    font-family: 'Gentium Plus', 'IBM Plex Sans', serif;
+    font-size: 17px;
+}
+
+/* ── Vowel section (right) ───────────────────────────────────────────────────── */
+
+.kb-vowels {
+    display: flex;
+    flex-direction: column;
+    width: 195px;
+    flex-shrink: 0;
+    gap: 4px;
+}
+
+.kb-vrow {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    gap: 4px;
+}
+
+.kb-vkey {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    padding: 2px 2px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    transition: background 0.08s, border-color 0.08s, transform 0.07s;
+    user-select: none;
+    outline: none;
+    box-shadow: 0 1px 0 var(--border-subtle);
+}
+
+.kb-vkey:hover:not(:disabled) {
+    background: var(--bg-surface);
+    border-color: var(--primary);
+}
+
+.kb-vkey:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: none;
+    background: var(--primary-subtle, rgba(184,129,61,0.1));
+}
+
+.kb-vkey:disabled {
+    opacity: 0.3;
+    cursor: default;
+    box-shadow: none;
+}
+
+/* Bare consonant slot — dashed border to signal "special" */
+.kb-vkey-bare {
+    border-style: dashed;
+}
+
+/* 'a' in Indic mode — inherent vowel, dimmed since it's a no-op */
+.kb-vkey-inherent {
+    opacity: 0.5;
+}
+
+.kb-vkey-primary {
+    font-size: 17px;
+    line-height: 1;
+    color: var(--text-primary);
+    pointer-events: none;
+}
+
+.kb-vkey-secondary {
+    font-size: 8.5px;
+    line-height: 1;
+    color: var(--text-tertiary);
+    font-family: 'Gentium Plus', 'IBM Plex Sans', serif;
+    pointer-events: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Vowel section header label (shown when consonant is active) */
+.kb-vowels-label {
+    font-size: 0.65rem;
+    color: var(--text-tertiary);
+    text-align: center;
+    padding: 1px 0;
+    flex-shrink: 0;
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────────── */
+
+[data-theme='dark'] .kb-key {
+    background: var(--bg-elevated);
+    border-color: var(--border);
+    box-shadow: 0 1px 0 #000;
+}
+
+[data-theme='dark'] .kb-key:hover {
+    background: var(--bg-surface);
+}
+
+[data-theme='dark'] .kb-vkey {
+    background: var(--bg-body);
+    border-color: var(--border-subtle);
+}
+
+[data-theme='dark'] .kb-vkey:hover:not(:disabled) {
+    background: var(--bg-elevated);
+}
+
+/* Collapse empty secondary label spans so they take no space */
+.kb-key-secondary:empty,
+.kb-vkey-secondary:empty {
+    display: none;
+}
+
+/* ── Keyboard toggle button in editor ribbon ─────────────────────────────────── */
+
+#keyboardToggleBtn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+

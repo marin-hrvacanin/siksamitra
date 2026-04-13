@@ -196,6 +196,14 @@
                 if (bridge) {
                     bridge.confirmClose(!!can_close);
                 }
+            },
+
+            // Toggle the floating on-screen Sanskrit keyboard window
+            toggle_keyboard: function() {
+                return new Promise(function(resolve) {
+                    var call = function() { bridge.toggleKeyboard(); resolve(true); };
+                    if (bridge) { call(); } else { pendingCalls.push(call); }
+                });
             }
         }
     };

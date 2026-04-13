@@ -1174,6 +1174,12 @@ class SiksamitraEditor {
         this.audioLibrary = []; // Store all uploaded audio files for reuse
         this.autoSaveInterval = null;
 
+        // BroadcastChannel for on-screen keyboard (null = keyboard is closed)
+        this._keyboardBc = null;
+        // Last known Quill cursor index — updated on every selection-change,
+        // used as fallback if quill.getSelection() returns null during keyboard insert
+        this._lastKnownCursorIndex = null;
+
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
@@ -1868,8 +1874,10 @@ class SiksamitraEditor {
 
         // Update button states on selection change (exact logic from example.html)
         this.quill.on('selection-change', (range, oldRange, source) => {
+            // Track last known cursor index for keyboard insertion fallback
+            if (range) this._lastKnownCursorIndex = range.index;
             // Don't update if title is being edited or if modal is active
-            if (document.activeElement.id !== 'titleEdit' && 
+            if (document.activeElement.id !== 'titleEdit' &&
                 document.activeElement.id !== 'titleEditHeader' &&
                 !this.isModalOverlayActive()) {
                 this.updateButtonStates(range || oldRange || null);
@@ -3761,6 +3769,12 @@ class SiksamitraEditor {
             openDialogBtn.addEventListener('click', () => this.openIastDialog());
         }
 
+        // On-screen keyboard toggle
+        const kbdBtn = document.getElementById('keyboardToggleBtn');
+        if (kbdBtn) {
+            kbdBtn.addEventListener('click', () => this._toggleKeyboard());
+        }
+
         const registerClose = (element) => {
             if (!element) return;
             element.addEventListener('click', () => this.closeIastDialog());
@@ -4802,6 +4816,114 @@ class SiksamitraEditor {
         this.log(`Inserted ${insertedVerses} ${insertedVerses === 1 ? 'verse' : 'verses'} from ${sourceTitle}`, 'success');
     }
 
+    // ─── ON-SCREEN KEYBOARD ───────────────────────────────────────────────────
+
+    /**
+     * Toggle the floating on-screen Sanskrit keyboard window.
+     * Opens or closes the BroadcastChannel listener and updates the button state.
+     */
+    _toggleKeyboard() {
+        const btn = document.getElementById('keyboardToggleBtn');
+        if (window.pywebview && window.pywebview.api) {
+            window.pywebview.api.toggle_keyboard();
+            if (!this._keyboardBc) {
+                this._startKeyboardListener();
+                if (btn) btn.classList.add('active');
+            } else {
+                this._stopKeyboardListener();
+                if (btn) btn.classList.remove('active');
+            }
+        }
+    }
+
+    /**
+     * Open a BroadcastChannel and listen for keyboard insert messages.
+     * The keyboard window posts { type: 'insert', char } for every key press.
+     * Characters are inserted at the current Quill cursor with zero latency.
+     */
+    _startKeyboardListener() {
+        if (this._keyboardBc) return;
+        try {
+            this._keyboardBc = new BroadcastChannel('siksamitra-kb');
+            this._keyboardBc.onmessage = (evt) => {
+                const msg = evt.data;
+                if (!msg) return;
+                if (msg.type === 'insert' && msg.char) {
+                    this._insertKeyboardChar(msg.char);
+                } else if (msg.type === 'backspace') {
+                    this._keyboardBackspace();
+                }
+            };
+        } catch (e) {
+            console.warn('[editor] BroadcastChannel unavailable for keyboard');
+            this._keyboardBc = null;
+        }
+    }
+
+    /**
+     * Close the BroadcastChannel listener.
+     */
+    _stopKeyboardListener() {
+        if (this._keyboardBc) {
+            this._keyboardBc.close();
+            this._keyboardBc = null;
+        }
+    }
+
+    /**
+     * Insert a character from the keyboard at the current Quill cursor.
+     * Falls back to the last known cursor index if getSelection() returns null
+     * (can happen if something else briefly stole OS focus).
+     */
+    _insertKeyboardChar(char) {
+        if (!char || !this.quill) return;
+
+        let range = this.quill.getSelection(true);
+        if (!range && this._lastKnownCursorIndex !== null) {
+            range = { index: this._lastKnownCursorIndex, length: 0 };
+        }
+        if (!range) {
+            // Last resort: append at end
+            range = { index: this.quill.getLength() - 1, length: 0 };
+        }
+
+        // Delete any selected text first
+        if (range.length > 0) {
+            this.quill.deleteText(range.index, range.length, 'user');
+        }
+
+        // Insert with current paragraph format (no special markup — plain text)
+        this.quill.insertText(range.index, char, 'user');
+        this.quill.setSelection(range.index + char.length, 0, 'silent');
+        this._lastKnownCursorIndex = range.index + char.length;
+
+        this.setDirty(true);
+    }
+
+    /**
+     * Handle a backspace event from the on-screen keyboard.
+     */
+    _keyboardBackspace() {
+        if (!this.quill) return;
+
+        let range = this.quill.getSelection(true);
+        if (!range && this._lastKnownCursorIndex !== null) {
+            range = { index: this._lastKnownCursorIndex, length: 0 };
+        }
+        if (!range) return;
+
+        if (range.length > 0) {
+            this.quill.deleteText(range.index, range.length, 'user');
+            this.quill.setSelection(range.index, 0, 'silent');
+            this._lastKnownCursorIndex = range.index;
+        } else if (range.index > 0) {
+            this.quill.deleteText(range.index - 1, 1, 'user');
+            this.quill.setSelection(range.index - 1, 0, 'silent');
+            this._lastKnownCursorIndex = range.index - 1;
+        }
+        this.setDirty(true);
+    }
+
     /**
      * Setup danda insertion buttons
      */
@@ -5218,7 +5340,10 @@ class SiksamitraEditor {
             if (char === 'ं' || char === '\uA8F3') { result += 'ṁ'; i++; const d = drainVedicMarks(i); result += d.marks; i = d.pos; continue; }
 
             // --- Visarga ---
-            if (char === 'ः') { result += 'ḥ'; i++; const d = drainVedicMarks(i); result += d.marks; i = d.pos; continue; }
+            // Svara marks cannot sit on visarga in IAST — drain them first so they
+            // attach to the preceding vowel (the last character already in result),
+            // then append ḥ after.
+            if (char === 'ः') { i++; const d = drainVedicMarks(i); result += d.marks + 'ḥ'; i = d.pos; continue; }
 
             // --- Candrabindu ---
             if (char === 'ँ') { result += 'm̐'; i++; const d = drainVedicMarks(i); result += d.marks; i = d.pos; continue; }

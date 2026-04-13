@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanskrit Keyboard — śikṣāmitra</title>
+    <!-- Apply theme immediately from localStorage to prevent flash -->
+    <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('siksamitra-theme') || 'light';
+                if (t === 'system') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Script fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@400;500&family=Noto+Serif+Telugu:wght@400;500&family=Noto+Serif+Tamil:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+        #kb-root { display: flex; flex-direction: column; height: 100%; background: var(--bg-body); color: var(--text-primary); font-family: 'IBM Plex Sans', -apple-system, sans-serif; }
+    </style>
+</head>
+<body>
+<div id="kb-root">
+
+    <!-- ── HEADER ──────────────────────────────────────────────────────────── -->
+    <div class="kb-header">
+        <div class="kb-script-controls">
+            <span class="kb-label">Script</span>
+            <div class="custom-dropdown kb-dropdown" id="primaryScriptDropdown" data-value="iast">
+                <div class="custom-dropdown-trigger" id="primaryScriptTrigger">IAST</div>
+                <div class="custom-dropdown-menu" id="primaryScriptMenu">
+                    <div class="custom-dropdown-option selected" data-value="iast">IAST</div>
+                    <div class="custom-dropdown-option" data-value="devanagari">Devanagari</div>
+                    <div class="custom-dropdown-option" data-value="telugu">Telugu</div>
+                    <div class="custom-dropdown-option" data-value="tamil">Tamil</div>
+                    <div class="custom-dropdown-option" data-value="itrans">ITRANS</div>
+                </div>
+            </div>
+
+            <span class="kb-label" style="margin-left:8px">+</span>
+            <div class="custom-dropdown kb-dropdown" id="secondaryScriptDropdown" data-value="none">
+                <div class="custom-dropdown-trigger" id="secondaryScriptTrigger">None</div>
+                <div class="custom-dropdown-menu" id="secondaryScriptMenu">
+                    <div class="custom-dropdown-option selected" data-value="none">None</div>
+                    <div class="custom-dropdown-option" data-value="iast">IAST</div>
+                    <div class="custom-dropdown-option" data-value="devanagari">Devanagari</div>
+                    <div class="custom-dropdown-option" data-value="telugu">Telugu</div>
+                    <div class="custom-dropdown-option" data-value="tamil">Tamil</div>
+                    <div class="custom-dropdown-option" data-value="itrans">ITRANS</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="kb-insert-mode">
+            <span class="kb-label">Insert as</span>
+            <div class="kb-mode-pills">
+                <button class="kb-mode-btn on" id="modeInsertPrimary" data-mode="primary">Primary</button>
+                <button class="kb-mode-btn" id="modeInsertIast" data-mode="iast">IAST</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── KEYBOARD BODY ───────────────────────────────────────────────────── -->
+    <div class="kb-body">
+        <!-- Left: consonant + special rows -->
+        <div class="kb-consonants" id="kbConsonants">
+            <!-- Populated by keyboard.js -->
+        </div>
+        <!-- Right: vowel grid (updates in-place when consonant is active) -->
+        <div class="kb-vowels" id="kbVowels">
+            <!-- Populated by keyboard.js -->
+        </div>
+    </div>
+
+</div><!-- /#kb-root -->
+
+<script src="transliteration-tables.js"></script>
+<script src="keyboard.js"></script>
+</body>
+</html>

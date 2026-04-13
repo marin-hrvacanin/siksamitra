@@ -37,6 +37,9 @@ jobs:
             --name "SiksamitraEditor" ^
             --icon "icon.ico" ^
             --add-data "editor.html;." ^
+            --add-data "keyboard.html;." ^
+            --add-data "keyboard.js;." ^
+            --add-data "transliteration-tables.js;." ^
             --add-data "styles.css;." ^
             --add-data "editor-quill.js;." ^
             --add-data "editor-main.js;." ^
@@ -166,6 +169,9 @@ jobs:
           pyinstaller --noconfirm --onedir --windowed \
             --name "SiksamitraEditor" \
             --add-data "editor.html:." \
+            --add-data "keyboard.html:." \
+            --add-data "keyboard.js:." \
+            --add-data "transliteration-tables.js:." \
             --add-data "styles.css:." \
             --add-data "editor-quill.js:." \
             --add-data "editor-main.js:." \
@@ -233,6 +239,9 @@ jobs:
           pyinstaller --noconfirm --onedir \
             --name "SiksamitraEditor" \
             --add-data "editor.html:." \
+            --add-data "keyboard.html:." \
+            --add-data "keyboard.js:." \
+            --add-data "transliteration-tables.js:." \
             --add-data "styles.css:." \
             --add-data "editor-quill.js:." \
             --add-data "editor-main.js:." \

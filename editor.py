@@ -415,6 +415,11 @@ def remove_recent(filepath):
 # We handle static files explicitly with the catch-all route at the end
 app = Flask(__name__, static_folder=None)
 
+# ─── On-screen keyboard: shared in-memory character queue ───────────────────
+import collections as _collections
+_keyboard_queue = _collections.deque()
+_keyboard_queue_lock = threading.Lock()
+
 
 @app.route('/')
 def index():
@@ -1436,6 +1441,7 @@ class JsBridge(QObject):
     fileDialogResult = pyqtSignal(str)
     viewerWindowRequested = pyqtSignal(str, str)  # filepath, title
     closeConfirmed = pyqtSignal(bool)  # For unsaved changes check
+    keyboardToggleRequested = pyqtSignal()  # Toggle on-screen keyboard
     
     def __init__(self, main_window):
         super().__init__()
@@ -1525,6 +1531,11 @@ class JsBridge(QObject):
     def confirmClose(self, can_close):
         """Called from JS to confirm if window can close."""
         self.closeConfirmed.emit(can_close)
+
+    @pyqtSlot()
+    def toggleKeyboard(self):
+        """Toggle the floating on-screen keyboard window."""
+        self.keyboardToggleRequested.emit()
 
 
 # --- Document Viewer Window ---
@@ -2966,6 +2977,59 @@ class ViewerWindow(QMainWindow):
         self.web_view.setHtml(error_html)
 
 
+# --- On-Screen Keyboard Window ---
+class KeyboardWindow(QMainWindow):
+    """
+    Floating on-screen Sanskrit keyboard.
+
+    Window flags:
+      - WindowDoesNotAcceptFocus: clicking keys NEVER steals focus from the main
+        editor, so the Quill cursor position is preserved throughout.
+      - WindowStaysOnTopHint: always floats above the main window.
+      - Tool: thin title bar, excluded from taskbar.
+
+    IMPORTANT: these flags must be passed to super().__init__() — setting them
+    later via setWindowFlags() causes a hide/show cycle on Windows (Qt 6 quirk).
+    """
+
+    def __init__(self, server_url: str, parent=None):
+        super().__init__(
+            parent,
+            Qt.WindowType.WindowDoesNotAcceptFocus |
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool
+        )
+        self.server_url = server_url
+        self.setWindowTitle('Sanskrit Keyboard — śikṣāmitra')
+        self.resize(940, 430)
+        self.setMinimumSize(640, 320)
+
+        if os.path.exists(ICON_PATH):
+            self.setWindowIcon(QIcon(ICON_PATH))
+        elif os.path.exists(LOGO_PATH):
+            self.setWindowIcon(QIcon(LOGO_PATH))
+
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.web_view = QWebEngineView()
+        self.web_view.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
+        settings = self.web_view.settings()
+        settings.setAttribute(
+            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
+        )
+        layout.addWidget(self.web_view)
+
+        self.web_view.setUrl(QUrl(f'{server_url}/keyboard'))
+
+    def closeEvent(self, event):
+        # Hide rather than destroy — avoids QWebEngine teardown cost on re-open.
+        event.ignore()
+        self.hide()
+
+
 # --- Main Window ---
 class MainWindow(QMainWindow):
     """Main application window."""
@@ -3028,7 +3092,11 @@ class MainWindow(QMainWindow):
         # Connect signals
         self.bridge.viewerWindowRequested.connect(self._open_viewer_window)
         self.bridge.closeConfirmed.connect(self._on_close_confirmed)
-        
+        self.bridge.keyboardToggleRequested.connect(self._toggle_keyboard)
+
+        # On-screen keyboard window (created lazily on first toggle)
+        self._keyboard_window = None
+
         # Load app
         self.web_view.setUrl(QUrl(server_url))
     
@@ -3066,7 +3134,27 @@ class MainWindow(QMainWindow):
         if can_close:
             self._close_confirmed = True
             self.close()  # Re-trigger close, this time it will succeed
-    
+
+    def _toggle_keyboard(self):
+        """Toggle the floating on-screen Sanskrit keyboard."""
+        if self._keyboard_window is None:
+            self._keyboard_window = KeyboardWindow(self.server_url, parent=None)
+            # Position: centred horizontally above the main window's bottom edge
+            geo = self.geometry()
+            kw, kh = 980, 340
+            kx = geo.left() + max(0, (geo.width() - kw) // 2)
+            ky = max(0, geo.bottom() - kh - 40)
+            self._keyboard_window.setGeometry(kx, ky, kw, kh)
+
+        if self._keyboard_window.isVisible():
+            self._keyboard_window.hide()
+        else:
+            self._keyboard_window.show()
+            # Immediately reclaim focus for the main editor.
+            # WindowDoesNotAcceptFocus prevents most focus theft, but an
+            # explicit setFocus() after show() ensures the Quill cursor stays visible.
+            self.web_view.setFocus()
+
     def closeEvent(self, event):
         """Handle close event with unsaved changes confirmation."""
         # If already confirmed by JS, allow close
@@ -3076,6 +3164,14 @@ class MainWindow(QMainWindow):
                     v.close()
                 except Exception:
                     pass
+            # Close keyboard window if open
+            if self._keyboard_window is not None:
+                try:
+                    self._keyboard_window.web_view.setUrl(QUrl('about:blank'))
+                    self._keyboard_window.destroy()
+                except Exception:
+                    pass
+                self._keyboard_window = None
             event.accept()
             return
         
@@ -3172,6 +3268,41 @@ def main():
     # Cleanup
     server.shutdown()
     return result
+
+
+# ─── On-screen keyboard routes ───────────────────────────────────────────────
+# These must appear before the catch-all serve_static route.
+
+@app.route('/keyboard')
+def serve_keyboard():
+    """Serve the on-screen Sanskrit keyboard page."""
+    keyboard_path = os.path.join(BASE_DIR, 'keyboard.html')
+    try:
+        with open(keyboard_path, 'r', encoding='utf-8') as f:
+            html = f.read()
+        return Response(html, mimetype='text/html')
+    except FileNotFoundError:
+        return Response('<h1>keyboard.html not found</h1>', status=404, mimetype='text/html')
+
+
+@app.route('/api/keyboard/insert', methods=['POST'])
+def keyboard_insert():
+    """Receive a character from the on-screen keyboard and queue it for the editor."""
+    data = request.get_json(force=True, silent=True) or {}
+    char = data.get('char', '')
+    if char:
+        with _keyboard_queue_lock:
+            _keyboard_queue.append(char)
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/api/keyboard/poll', methods=['GET'])
+def keyboard_poll():
+    """Return and drain all pending keyboard characters for the editor to insert."""
+    with _keyboard_queue_lock:
+        chars = list(_keyboard_queue)
+        _keyboard_queue.clear()
+    return jsonify({'chars': chars})
 
 
 @app.route('/<path:filename>')
