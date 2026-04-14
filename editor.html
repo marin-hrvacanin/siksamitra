@@ -567,9 +567,12 @@
             <!-- Resize Handle -->
             <div class="nav-resize-handle" id="navResizeHandle"></div>
 
-            <!-- Document Container (like main2.pyw paper background) -->
-            <div class="container" id="editorContainer">
-                <div id="editor" spellcheck="false"></div>
+            <!-- Paper canvas — flex:1 centering wrapper, also scrolls the paper -->
+            <div class="paper-canvas" id="paperCanvas">
+                <!-- Document Container (like main2.pyw paper background) -->
+                <div class="container" id="editorContainer">
+                    <div id="editor" spellcheck="false"></div>
+                </div>
             </div>
         </div>
         
@@ -1218,6 +1221,13 @@
             <span>Special thanks to Davor Virkes</span>
             <span class="separator">|</span>
             <a href="#" id="aboutLink">About</a>
+        </div>
+        <div class="statusbar-right">
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoomOutBtn" title="Zoom out (Ctrl+-)">−</button>
+                <span class="zoom-label" id="zoomLabel">100%</span>
+                <button class="zoom-btn" id="zoomInBtn" title="Zoom in (Ctrl+=)">+</button>
+            </div>
         </div>
     </div>
 

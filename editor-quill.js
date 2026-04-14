@@ -1174,11 +1174,14 @@ class SiksamitraEditor {
         this.audioLibrary = []; // Store all uploaded audio files for reuse
         this.autoSaveInterval = null;
 
-        // BroadcastChannel for on-screen keyboard (null = keyboard is closed)
-        this._keyboardBc = null;
+        // Poll timer for on-screen keyboard (null = keyboard is closed)
+        this._keyboardPollTimer = null;
         // Last known Quill cursor index — updated on every selection-change,
         // used as fallback if quill.getSelection() returns null during keyboard insert
         this._lastKnownCursorIndex = null;
+
+        // Poll timer for dialog window actions (always running while pywebview is ready)
+        this._dialogActionPollTimer = null;
 
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
@@ -1247,6 +1250,26 @@ class SiksamitraEditor {
         if (msgEl && typeof message !== 'undefined') msgEl.textContent = String(message || '');
     }
 
+    /**
+     * Position the blocking-loader popup centered over the paper canvas.
+     * Falls back to viewport center if the canvas element is not found.
+     */
+    _centerBlockingPopup() {
+        const popup = document.getElementById('fileLoadingPopup');
+        if (!popup) return;
+        const canvas = document.getElementById('paperCanvas');
+        if (canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            popup.style.left = `${cx}px`;
+            popup.style.top  = `${cy}px`;
+        } else {
+            popup.style.left = '50%';
+            popup.style.top  = '50%';
+        }
+    }
+
     showBlockingLoader({ title, message } = {}) {
         const overlay = document.getElementById('fileLoadingOverlay');
         const popup = document.getElementById('fileLoadingPopup');
@@ -1256,6 +1279,7 @@ class SiksamitraEditor {
             this.setBlockingLoaderText({ title, message });
         }
 
+        this._centerBlockingPopup();
         overlay.classList.add('active');
         popup.classList.add('active');
 
@@ -1303,10 +1327,13 @@ class SiksamitraEditor {
             this.setupAboutLink();
             this.isInitialized = true;
             
-            // Track changes for dirty state
+            // Track changes for dirty state and re-classify script per paragraph
             this.quill.on('text-change', () => {
                 this.isDirty = true;
                 this.updateTitle();
+                // Debounce script classification (runs every 800ms after typing stops)
+                if (this._scriptClassDebounce) clearTimeout(this._scriptClassDebounce);
+                this._scriptClassDebounce = setTimeout(() => this.applyScriptClasses(), 800);
                 // If autosave is enabled for a path-backed doc, save shortly after edits.
                 if (typeof this.scheduleAutoSave === 'function') {
                     this.scheduleAutoSave();
@@ -2723,6 +2750,8 @@ class SiksamitraEditor {
         this.setupAutoSvaraButtons();
         this.setupParagraphStylesButton();
         this.setupTitleInput();
+        this.setupZoomControls();
+        this._startDialogPoll();
         this.setupDevConsole();
     }
 
@@ -3898,6 +3927,10 @@ class SiksamitraEditor {
     }
 
     openShlokaSearchDialog() {
+        if (window.pywebview?.api?.open_dialog) {
+            window.pywebview.api.open_dialog('shloka');
+            return;
+        }
         if (!this.shlokaSearchElements) {
             return;
         }
@@ -4713,12 +4746,12 @@ class SiksamitraEditor {
         return offset;
     }
 
-    insertShlokaIntoEditor(shloka) {
+    insertShlokaIntoEditor(shloka, explicitOptions) {
         if (!this.quill || !shloka) {
             return;
         }
 
-        const options = this.getShlokaInsertOptions();
+        const options = explicitOptions || this.getShlokaInsertOptions();
         const segments = this.buildShlokaSegments(shloka, options);
 
         if (!segments.length) {
@@ -4757,7 +4790,7 @@ class SiksamitraEditor {
         this.log(`Inserted śloka from ${shloka.sourceTitle || 'Shlokam.org'}`, 'success');
     }
 
-    insertAllShlokasIntoEditor(shlokas) {
+    insertAllShlokasIntoEditor(shlokas, explicitOptions) {
         if (!this.quill) {
             return;
         }
@@ -4767,7 +4800,7 @@ class SiksamitraEditor {
             return;
         }
 
-        const options = this.getShlokaInsertOptions();
+        const options = explicitOptions || this.getShlokaInsertOptions();
         const selection = this.quill.getSelection();
         let insertIndex = this.quill.getLength();
 
@@ -4826,47 +4859,94 @@ class SiksamitraEditor {
         const btn = document.getElementById('keyboardToggleBtn');
         if (window.pywebview && window.pywebview.api) {
             window.pywebview.api.toggle_keyboard();
-            if (!this._keyboardBc) {
-                this._startKeyboardListener();
+            if (!this._keyboardPollTimer) {
+                this._startKeyboardPoll();
                 if (btn) btn.classList.add('active');
             } else {
-                this._stopKeyboardListener();
+                this._stopKeyboardPoll();
                 if (btn) btn.classList.remove('active');
             }
         }
     }
 
     /**
-     * Open a BroadcastChannel and listen for keyboard insert messages.
-     * The keyboard window posts { type: 'insert', char } for every key press.
-     * Characters are inserted at the current Quill cursor with zero latency.
+     * Start polling /api/keyboard/poll every 50ms while the keyboard is open.
+     * The keyboard window posts characters via /api/keyboard/insert (HTTP).
      */
-    _startKeyboardListener() {
-        if (this._keyboardBc) return;
-        try {
-            this._keyboardBc = new BroadcastChannel('siksamitra-kb');
-            this._keyboardBc.onmessage = (evt) => {
-                const msg = evt.data;
-                if (!msg) return;
-                if (msg.type === 'insert' && msg.char) {
-                    this._insertKeyboardChar(msg.char);
-                } else if (msg.type === 'backspace') {
-                    this._keyboardBackspace();
+    _startKeyboardPoll() {
+        if (this._keyboardPollTimer) return;
+        this._keyboardPollTimer = setInterval(async () => {
+            try {
+                const data = await fetch('/api/keyboard/poll').then(r => r.json());
+                for (const ch of (data.chars || [])) {
+                    if (ch === '\x08') {
+                        this._keyboardBackspace();
+                    } else {
+                        this._insertKeyboardChar(ch);
+                    }
                 }
-            };
-        } catch (e) {
-            console.warn('[editor] BroadcastChannel unavailable for keyboard');
-            this._keyboardBc = null;
+            } catch (e) {}
+        }, 50);
+    }
+
+    /**
+     * Stop the keyboard poll timer.
+     */
+    _stopKeyboardPoll() {
+        if (this._keyboardPollTimer) {
+            clearInterval(this._keyboardPollTimer);
+            this._keyboardPollTimer = null;
+        }
+    }
+
+    // ─── DIALOG WINDOW ACTION POLLING ────────────────────────────────────────
+
+    /**
+     * Start polling /api/dialog/actions every 200ms.
+     * Handles actions posted by popup dialog windows (autorun, shloka, iast).
+     */
+    _startDialogPoll() {
+        if (this._dialogActionPollTimer) return;
+        this._dialogActionPollTimer = setInterval(async () => {
+            try {
+                const data = await fetch('/api/dialog/actions').then(r => r.json());
+                for (const action of (data.actions || [])) {
+                    this._handleDialogAction(action);
+                }
+            } catch (e) {}
+        }, 200);
+    }
+
+    /**
+     * Stop the dialog action poll timer.
+     */
+    _stopDialogPoll() {
+        if (this._dialogActionPollTimer) {
+            clearInterval(this._dialogActionPollTimer);
+            this._dialogActionPollTimer = null;
         }
     }
 
     /**
-     * Close the BroadcastChannel listener.
+     * Dispatch a dialog action received from a popup window.
      */
-    _stopKeyboardListener() {
-        if (this._keyboardBc) {
-            this._keyboardBc.close();
-            this._keyboardBc = null;
+    _handleDialogAction(action) {
+        if (!action || !action.type) return;
+        switch (action.type) {
+            case 'run_agent':
+                this.runAutomationPipeline(action.settings);
+                break;
+            case 'insert_shloka':
+                this.insertShlokaIntoEditor(action.shloka, action.options);
+                break;
+            case 'insert_all_shlokas':
+                this.insertAllShlokasIntoEditor(action.shlokas, action.options);
+                break;
+            case 'insert_char':
+                if (action.char) this.insertIASTCharacter(action.char);
+                break;
+            default:
+                break;
         }
     }
 
@@ -4897,7 +4977,7 @@ class SiksamitraEditor {
         this.quill.setSelection(range.index + char.length, 0, 'silent');
         this._lastKnownCursorIndex = range.index + char.length;
 
-        this.setDirty(true);
+        this.isDirty = true;
     }
 
     /**
@@ -4921,7 +5001,69 @@ class SiksamitraEditor {
             this.quill.setSelection(range.index - 1, 0, 'silent');
             this._lastKnownCursorIndex = range.index - 1;
         }
-        this.setDirty(true);
+        this.isDirty = true;
+    }
+
+    // ── Zoom ────────────────────────────────────────────────────────────────────
+
+    /**
+     * Initialize zoom controls in the statusbar.
+     * Zoom only scales the paper (.container); all other UI remains unchanged.
+     * The CSS `zoom` property is used because, unlike `transform: scale`, it
+     * actually affects layout so the scroll area expands/contracts correctly.
+     */
+    setupZoomControls() {
+        const zoomIn  = document.getElementById('zoomInBtn');
+        const zoomOut = document.getElementById('zoomOutBtn');
+        const label   = document.getElementById('zoomLabel');
+        if (!zoomIn || !zoomOut || !label) return;
+
+        // Load persisted zoom level (default 100%)
+        const ZOOM_KEY = 'siksamitra-zoom';
+        const ZOOM_STEP = 0.1;
+        const ZOOM_MIN  = 0.5;
+        const ZOOM_MAX  = 2.0;
+
+        let level = parseFloat(localStorage.getItem(ZOOM_KEY) || '1');
+        level = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, level));
+
+        const applyZoom = (z) => {
+            const container = document.getElementById('editorContainer');
+            if (!container) return;
+            container.style.zoom = z;
+            label.textContent = `${Math.round(z * 100)}%`;
+            localStorage.setItem(ZOOM_KEY, String(z));
+        };
+
+        applyZoom(level);
+
+        zoomIn.addEventListener('click', () => {
+            level = Math.min(ZOOM_MAX, parseFloat((level + ZOOM_STEP).toFixed(2)));
+            applyZoom(level);
+        });
+
+        zoomOut.addEventListener('click', () => {
+            level = Math.max(ZOOM_MIN, parseFloat((level - ZOOM_STEP).toFixed(2)));
+            applyZoom(level);
+        });
+
+        // Ctrl+= zoom in, Ctrl+- zoom out, Ctrl+0 reset
+        document.addEventListener('keydown', (e) => {
+            if (!e.ctrlKey) return;
+            if (e.key === '=' || e.key === '+') {
+                e.preventDefault();
+                level = Math.min(ZOOM_MAX, parseFloat((level + ZOOM_STEP).toFixed(2)));
+                applyZoom(level);
+            } else if (e.key === '-') {
+                e.preventDefault();
+                level = Math.max(ZOOM_MIN, parseFloat((level - ZOOM_STEP).toFixed(2)));
+                applyZoom(level);
+            } else if (e.key === '0') {
+                e.preventDefault();
+                level = 1;
+                applyZoom(level);
+            }
+        });
     }
 
     /**
@@ -5714,6 +5856,265 @@ class SiksamitraEditor {
             }
         }
         
+        return result;
+    }
+
+    // =====================================================================
+    // MULTI-SCRIPT SUPPORT
+    // =====================================================================
+
+    /**
+     * Detect the dominant Unicode script of a text string.
+     * Returns: 'devanagari' | 'telugu' | 'tamil' | 'kannada' | 'latin' | null
+     */
+    detectDominantScript(text) {
+        const counts = { devanagari: 0, telugu: 0, tamil: 0, kannada: 0, latin: 0 };
+        for (const ch of text) {
+            const cp = ch.codePointAt(0);
+            if (cp >= 0x0900 && cp <= 0x097F) counts.devanagari++;
+            else if (cp >= 0x0C00 && cp <= 0x0C7F) counts.telugu++;
+            else if (cp >= 0x0B80 && cp <= 0x0BFF) counts.tamil++;
+            else if (cp >= 0x0C80 && cp <= 0x0CFF) counts.kannada++;
+            else if ((cp >= 0x0041 && cp <= 0x007A) ||
+                     (cp >= 0x00C0 && cp <= 0x024F) ||
+                     (cp >= 0x0300 && cp <= 0x036F)) counts.latin++;
+        }
+        const total = Object.values(counts).reduce((a, b) => a + b, 0);
+        if (total === 0) return null;
+        const [dom, cnt] = Object.entries(counts).reduce((a, b) => b[1] > a[1] ? b : a);
+        return cnt / total >= 0.20 ? dom : null;
+    }
+
+    /**
+     * Walk all paragraphs in the editor and add/remove ql-script-* classes
+     * based on their text content. Called on content load and on text change.
+     */
+    applyScriptClasses() {
+        const editor = this.quill.root;
+        const paras = editor.querySelectorAll('p');
+        paras.forEach(p => {
+            // Remove any existing script class
+            p.classList.remove(
+                'ql-script-devanagari', 'ql-script-telugu',
+                'ql-script-tamil', 'ql-script-kannada'
+            );
+            const script = this.detectDominantScript(p.textContent || '');
+            if (script && script !== 'latin') {
+                p.classList.add(`ql-script-${script}`);
+            }
+        });
+    }
+
+    /**
+     * Transliterate IAST → Telugu using TransliterationTables (if available).
+     */
+    iastToTelugu(text) {
+        if (typeof TransliterationTables !== 'undefined') {
+            return this._iastToScriptViaTable(text, 'telugu');
+        }
+        return text; // fallback: no change
+    }
+
+    /**
+     * Transliterate IAST → Tamil using TransliterationTables (if available).
+     */
+    iastToTamil(text) {
+        if (typeof TransliterationTables !== 'undefined') {
+            return this._iastToScriptViaTable(text, 'tamil');
+        }
+        return text;
+    }
+
+    /**
+     * Transliterate IAST → Kannada using TransliterationTables (if available).
+     */
+    iastToKannada(text) {
+        if (typeof TransliterationTables !== 'undefined') {
+            return this._iastToScriptViaTable(text, 'kannada');
+        }
+        return text;
+    }
+
+    /**
+     * General IAST → target-script transliteration using TransliterationTables.
+     * Handles consonants (+ inherent a), consonant + vowel mātrā, independent vowels,
+     * special chars, and passes through unknowns unchanged.
+     */
+    _iastToScriptViaTable(text, toScript) {
+        const T = TransliterationTables;
+        const consonants = T.getByType('consonant').map(p => p.iast)
+            .sort((a, b) => b.length - a.length); // longest first for greedy match
+        const vowels = T.getByType('vowel').map(p => p.iast)
+            .sort((a, b) => b.length - a.length);
+        const specials = T.getByType('special').map(p => p.iast)
+            .sort((a, b) => b.length - a.length);
+
+        const virama = T.VIRAMA[toScript] || '';
+
+        let result = '';
+        let i = 0;
+        while (i < text.length) {
+            let matched = false;
+
+            // Try specials first
+            for (const sp of specials) {
+                if (text.startsWith(sp, i)) {
+                    const ch = T.convert(sp, toScript);
+                    result += ch !== null ? (ch || '') : sp;
+                    i += sp.length;
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) continue;
+
+            // Try consonant + optional vowel
+            let consMatch = null;
+            for (const c of consonants) {
+                if (text.startsWith(c, i)) { consMatch = c; break; }
+            }
+            if (consMatch) {
+                i += consMatch.length;
+                // Skip combining/accent chars after consonant
+                while (i < text.length) {
+                    const cp = text.codePointAt(i);
+                    if ((cp >= 0x0300 && cp <= 0x036F) || cp === 0x0331 ||
+                        cp === 0x030D || cp === 0x030E || cp === 0x02CE) {
+                        i++; continue;
+                    }
+                    break;
+                }
+                // Check for following vowel (mātrā)
+                let vowMatch = null;
+                for (const v of vowels) {
+                    if (text.startsWith(v, i)) { vowMatch = v; break; }
+                }
+                if (vowMatch) {
+                    result += T.convertSyllable(consMatch, vowMatch, toScript) || consMatch;
+                    i += vowMatch.length;
+                } else {
+                    // Bare consonant → consonant + virama (halanta) in Indic
+                    const consChar = T.convert(consMatch, toScript);
+                    if (consChar !== null) {
+                        result += (consChar || '') + virama;
+                    } else {
+                        result += consMatch; // no equivalent
+                    }
+                }
+                matched = true;
+            }
+            if (matched) continue;
+
+            // Try independent vowel
+            for (const v of vowels) {
+                if (text.startsWith(v, i)) {
+                    const ch = T.convert(v, toScript);
+                    result += ch !== null ? (ch || '') : v;
+                    i += v.length;
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) continue;
+
+            // Pass through (spaces, punctuation, digits, Vedic combining marks, etc.)
+            result += text[i];
+            i++;
+        }
+        return result;
+    }
+
+    /**
+     * Telugu → IAST (reverse transliteration using TransliterationTables).
+     */
+    teluguToIAST(text) {
+        return this._indicToIAST(text, 'telugu');
+    }
+
+    /**
+     * Tamil → IAST.
+     */
+    tamilToIAST(text) {
+        return this._indicToIAST(text, 'tamil');
+    }
+
+    /**
+     * Kannada → IAST.
+     */
+    kannadaToIAST(text) {
+        return this._indicToIAST(text, 'kannada');
+    }
+
+    /**
+     * General Indic script → IAST reverse transliteration using TransliterationTables.
+     * Handles: independent vowels, vowel signs (mātrās), consonants, virama, specials.
+     */
+    _indicToIAST(text, fromScript) {
+        if (typeof TransliterationTables === 'undefined') return text;
+
+        const T = TransliterationTables;
+        const virama = T.VIRAMA[fromScript] || '';
+
+        // Build reverse lookup: script-char → IAST
+        const allPhonemes = T.PHONEMES;
+        const charToIAST = new Map();
+        const signToIAST = new Map(); // vowel signs (mātrā) → IAST vowel
+
+        for (const p of allPhonemes) {
+            const ch = p[fromScript];
+            if (ch) charToIAST.set(ch, p.iast);
+        }
+        // Vowel signs (mātrās) — property name is just the script name (e.g. 'devanagari')
+        if (T.VOWEL_SIGNS) {
+            for (const vs of T.VOWEL_SIGNS) {
+                const sign = vs[fromScript];  // e.g. vs.devanagari = 'ा'
+                if (sign) signToIAST.set(sign, vs.iast);
+            }
+        }
+
+        let result = '';
+        let i = 0;
+        while (i < text.length) {
+            const ch = text[i];
+
+            // Check if it's a virama (halanta) — suppress inherent 'a'
+            if (virama && text.startsWith(virama, i)) {
+                // Remove the inherent 'a' we added for the previous consonant
+                if (result.endsWith('a')) result = result.slice(0, -1);
+                i += virama.length;
+                continue;
+            }
+
+            // Check vowel sign (mātrā) — replaces inherent 'a' of previous consonant
+            let sigMatch = null;
+            for (const [sign, iast] of signToIAST) {
+                if (text.startsWith(sign, i)) { sigMatch = { sign, iast }; break; }
+            }
+            if (sigMatch) {
+                // Remove inherent 'a' from result
+                if (result.endsWith('a')) result = result.slice(0, -1);
+                result += sigMatch.iast;
+                i += sigMatch.sign.length;
+                continue;
+            }
+
+            // Check consonant / vowel / special
+            const iast = charToIAST.get(ch);
+            if (iast !== undefined) {
+                const p = allPhonemes.find(p => p[fromScript] === ch);
+                if (p && p.type === 'consonant') {
+                    result += iast + 'a'; // consonant gets inherent 'a' (removed by virama/mātrā)
+                } else {
+                    result += iast;
+                }
+                i++;
+                continue;
+            }
+
+            // Pass through (Vedic combining marks, spaces, punctuation, etc.)
+            result += ch;
+            i++;
+        }
         return result;
     }
 
@@ -8143,9 +8544,13 @@ ${className} {
     }
 
     openAutoRunDialog() {
+        if (window.pywebview?.api?.open_dialog) {
+            window.pywebview.api.open_dialog('autorun');
+            return;
+        }
+        // Fallback: in-page modal
         const dialog = document.getElementById('autoRunDialog');
         if (!dialog) return;
-
         this.applyAutoRunSettingsToForm();
         dialog.hidden = false;
     }
@@ -8167,11 +8572,92 @@ ${className} {
         this.focusEditorIfAppropriate();
     }
 
+    /**
+     * Detect the dominant script of the current Quill selection text.
+     * Returns: 'devanagari' | 'telugu' | 'tamil' | 'kannada' | 'latin' | null
+     */
+    _detectSelectionScript() {
+        const sel = this.quill.getSelection();
+        if (!sel || sel.length === 0) return null;
+        const text = this.quill.getText(sel.index, sel.length);
+        return this.detectDominantScript(text);
+    }
+
+    /**
+     * Transliterate the current Quill selection from any supported Indic script → IAST.
+     * Handles Devanagari, Telugu, Tamil, Kannada.
+     */
+    _transliterateSelectionToIAST(script) {
+        const sel = this.quill.getSelection();
+        if (!sel || sel.length === 0) return false;
+        const fnMap = {
+            devanagari: (t) => this.devanagariToIAST(t),
+            telugu:     (t) => this.teluguToIAST(t),
+            tamil:      (t) => this.tamilToIAST(t),
+            kannada:    (t) => this.kannadaToIAST(t),
+        };
+        const fn = fnMap[script];
+        if (!fn) return false;
+
+        const delta = this.quill.getContents(sel.index, sel.length);
+        const newOps = delta.ops.map(op => {
+            if (typeof op.insert === 'string') {
+                return { insert: fn(op.insert), attributes: op.attributes };
+            }
+            return op;
+        });
+        this.quill.updateContents({
+            ops: [{ retain: sel.index }, { delete: sel.length }, ...newOps]
+        });
+        const newLen = newOps.reduce((l, op) =>
+            l + (typeof op.insert === 'string' ? op.insert.length : 1), 0);
+        this.quill.setSelection(sel.index, newLen);
+        return true;
+    }
+
+    /**
+     * Transliterate the current Quill selection from IAST → target Indic script.
+     */
+    _transliterateSelectionFromIAST(toScript) {
+        const sel = this.quill.getSelection();
+        if (!sel || sel.length === 0) return false;
+        const fnMap = {
+            devanagari: (t) => this.iastToDevanagari(t),
+            telugu:     (t) => this.iastToTelugu(t),
+            tamil:      (t) => this.iastToTamil(t),
+            kannada:    (t) => this.iastToKannada(t),
+        };
+        const fn = fnMap[toScript];
+        if (!fn) return false;
+
+        const delta = this.quill.getContents(sel.index, sel.length);
+        const newOps = delta.ops.map(op => {
+            if (typeof op.insert === 'string') {
+                return { insert: fn(op.insert), attributes: op.attributes };
+            }
+            return op;
+        });
+        this.quill.updateContents({
+            ops: [{ retain: sel.index }, { delete: sel.length }, ...newOps]
+        });
+        const newLen = newOps.reduce((l, op) =>
+            l + (typeof op.insert === 'string' ? op.insert.length : 1), 0);
+        this.quill.setSelection(sel.index, newLen);
+        return true;
+    }
+
     async runAutomationPipeline(settingsOverride) {
         const activeSelection = this.quill.getSelection();
         if (!activeSelection || activeSelection.length === 0) {
             this.log('Run Agent requires a text selection.', 'warning');
             return;
+        }
+
+        // Detect script BEFORE running so we can transliterate back afterwards
+        const originalScript = this._detectSelectionScript();
+        const needsRoundTrip = originalScript && originalScript !== 'latin';
+        if (needsRoundTrip) {
+            this.log(`Run Agent: detected ${originalScript} script — will transliterate to IAST, apply rules, then transliterate back.`, 'info');
         }
 
         const settings = this.getEffectiveAutoRunSettings(settingsOverride);
@@ -8196,8 +8682,12 @@ ${className} {
         const steps = [
             {
                 key: 'transliterate',
-                label: 'Transliterate Devanagari → IAST',
-                action: () => this.transliterateDevanagariToIAST({ silent: true })
+                label: needsRoundTrip
+                    ? `Transliterate ${originalScript} → IAST`
+                    : 'Transliterate Devanagari → IAST',
+                action: () => needsRoundTrip
+                    ? this._transliterateSelectionToIAST(originalScript)
+                    : this.transliterateDevanagariToIAST({ silent: true })
             },
             {
                 key: 'standardize',
@@ -8255,7 +8745,14 @@ ${className} {
                 label: 'Add final m tick (ˎ)',
                 always: true,
                 action: () => this.applyFinalMEndingTick({ silent: true })
-            }
+            },
+            // Transliterate IAST back to original Indic script (only when round-trip needed)
+            ...(needsRoundTrip ? [{
+                key: '_transliterateBack',
+                label: `Transliterate IAST → ${originalScript}`,
+                always: true,
+                action: () => this._transliterateSelectionFromIAST(originalScript)
+            }] : []),
         ];
 
         try {
@@ -8306,6 +8803,9 @@ ${className} {
 
             this.focusEditorIfAppropriate();
             this.log('Run Agent completed successfully.', 'success');
+
+            // Re-apply script classes after pipeline (content may have changed scripts)
+            requestAnimationFrame(() => this.applyScriptClasses());
         } finally {
             this.hideBlockingLoader();
         }
@@ -8809,9 +9309,13 @@ ${className} {
     }
 
     openIastDialog() {
+        if (window.pywebview?.api?.open_dialog) {
+            window.pywebview.api.open_dialog('iast');
+            return;
+        }
+        // Fallback: in-page modal
         const dialog = document.getElementById('iastDialog');
         if (!dialog) return;
-
         dialog.hidden = false;
     }
 
@@ -11612,6 +12116,10 @@ ${embeddedStyles}
         this.applySvaraFormattingInRange(0, this.quill.getLength());
         this.applyDirghaFormattingInRange(0, this.quill.getLength());
         this.refreshAudioAttachments();
+
+        // Classify paragraphs by script (adds ql-script-devanagari etc. classes)
+        // Use rAF to let Quill finish DOM rendering first
+        requestAnimationFrame(() => this.applyScriptClasses());
     }
 
     /**

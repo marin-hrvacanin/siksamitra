@@ -259,19 +259,47 @@ class FileOperations {
     }
 
     /**
-     * Export as DOCX (placeholder - requires additional library)
+     * Export editor content as a .docx Word document.
+     * Uses the Flask /api/file/export-docx endpoint which calls python-docx.
+     * Produces a document matching real Veda Union document layout:
+     *   A4, Arial 16pt, 24pt line-height, Veda Union margins.
      */
     async exportDocx() {
         try {
-            // This would require a library like docx.js or similar
-            const content = this.quill.root.innerText;
-            const fileName = `${this.currentFileName.replace(/\.[^/.]+$/, '')}_export.txt`;
-            
-            await this.downloadFile(content, fileName, 'text/plain');
-            this.showNotification('Exported as text (DOCX export requires additional setup)', 'warning');
+            const html    = this.quill.root.innerHTML;
+            const title   = this.currentFileName.replace(/\.[^/.]+$/, '');
+            const sugName = `${title}.docx`;
+
+            // Ask the native save dialog for a path
+            let savePath = '';
+            if (window.pywebview && window.pywebview.api &&
+                typeof window.pywebview.api.save_file_dialog === 'function') {
+                savePath = await window.pywebview.api.save_file_dialog(sugName);
+            }
+            if (!savePath) {
+                // User cancelled or no bridge — nothing to do
+                return;
+            }
+
+            const resp = await fetch('/api/file/export-docx', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: html, path: savePath, title }),
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.error || `HTTP ${resp.status}`);
+            }
+
+            this.showNotification(`Exported: ${savePath}`, 'success');
         } catch (error) {
             console.error('Error exporting DOCX:', error);
-            this.showNotification('Error exporting DOCX', 'error');
+            if (window.ModalDialogs) {
+                ModalDialogs.alert(`DOCX export failed: ${error.message}`, 'Export Error', 'error');
+            } else {
+                this.showNotification('DOCX export failed: ' + error.message, 'error');
+            }
         }
     }
 

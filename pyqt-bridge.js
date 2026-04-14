@@ -204,6 +204,14 @@
                     var call = function() { bridge.toggleKeyboard(); resolve(true); };
                     if (bridge) { call(); } else { pendingCalls.push(call); }
                 });
+            },
+
+            // Open a popup dialog window by name ('autorun', 'shloka', 'iast')
+            open_dialog: function(name) {
+                return new Promise(function(resolve) {
+                    var call = function() { bridge.openDialog(name); resolve(true); };
+                    if (bridge) { call(); } else { pendingCalls.push(call); }
+                });
             }
         }
     };

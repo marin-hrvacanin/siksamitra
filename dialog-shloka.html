@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insert Śloka — śikṣāmitra</title>
+    <script>
+        (function() {
+            try {
+                var mode = '__SIKSAMITRA_INITIAL_THEME_MODE__';
+                var stored = localStorage.getItem('siksamitra-theme') || '';
+                var t = stored || mode || 'light';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; font-size: 14px; }
+        /* Override popup-content defaults for shloka layout */
+        .popup-content {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .shloka-search-form { margin-bottom: 10px; }
+        .shloka-search-content {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .shloka-results { overflow: hidden; display: flex; flex-direction: column; }
+        .shloka-results-list { flex: 1; min-height: 0; max-height: none; overflow-y: auto; }
+        .shloka-details { overflow: hidden; display: flex; flex-direction: column; }
+        .shloka-details-list { flex: 1; min-height: 0; max-height: none; overflow-y: auto; }
+    </style>
+</head>
+<body class="popup-page">
+
+<!-- Titlebar -->
+<div class="popup-titlebar">
+    <div class="popup-titlebar-title">
+        <img src="logo.png" class="popup-titlebar-logo" alt="">
+        Insert Śloka
+    </div>
+    <button class="popup-titlebar-close" id="closeBtn" title="Close">✕</button>
+</div>
+
+<!-- Content -->
+<div class="popup-content">
+    <form id="shlokaSearchForm" class="shloka-search-form">
+        <!-- Source row -->
+        <div class="form-row">
+            <label>Source</label>
+            <div class="custom-dropdown modal-dropdown" id="sourceDropdown" data-value="shlokam">
+                <div class="custom-dropdown-trigger">Shlokam.org</div>
+                <div class="custom-dropdown-menu">
+                    <div class="custom-dropdown-option selected" data-value="shlokam">Shlokam.org</div>
+                    <div class="custom-dropdown-option" data-value="sanskritdocs">SanskritDocuments.org</div>
+                </div>
+            </div>
+            <select id="sourceSelect" style="display:none">
+                <option value="shlokam" selected>Shlokam.org</option>
+                <option value="sanskritdocs">SanskritDocuments.org</option>
+            </select>
+        </div>
+        <!-- Category row (sanskritdocs only) -->
+        <div class="form-row" id="categoryRow" hidden>
+            <label>Category</label>
+            <div class="custom-dropdown modal-dropdown" id="categoryDropdown" data-value="">
+                <div class="custom-dropdown-trigger">All Categories</div>
+                <div class="custom-dropdown-menu">
+                    <div class="custom-dropdown-option selected" data-value="">All Categories</div>
+                </div>
+            </div>
+            <select id="categorySelect" style="display:none">
+                <option value="">All Categories</option>
+            </select>
+        </div>
+        <!-- Query row -->
+        <div class="form-row query-row">
+            <label for="queryInput">Query</label>
+            <div class="query-input-group">
+                <input type="text" id="queryInput" placeholder="e.g. yogah karmasu kausalam" required>
+                <button type="submit" class="primary">Search</button>
+            </div>
+        </div>
+    </form>
+
+    <div id="searchStatus" class="shloka-search-status">Enter a search phrase to begin.</div>
+
+    <div class="shloka-search-content">
+        <div class="shloka-results">
+            <div class="section-heading">Results</div>
+            <div id="resultsList" class="shloka-results-list"></div>
+        </div>
+        <div class="shloka-details">
+            <div class="section-heading" id="selectedTitle">Select a result to preview the verses</div>
+            <div class="shloka-insert-options" id="insertOptions">
+                <span>Include:</span>
+                <label><input type="checkbox" id="includeDevanagari" checked> Devanagari</label>
+                <label id="transliterationLabel"><input type="checkbox" id="includeTransliteration" checked> Transliteration</label>
+                <label id="translationLabel"><input type="checkbox" id="includeTranslation"> Translation</label>
+                <button type="button" id="insertAllBtn" class="shloka-insert-all-button" disabled>Insert All</button>
+            </div>
+            <div id="detailsList" class="shloka-details-list"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="popup-footer">
+    <span class="popup-footer-status" id="statusMsg"></span>
+    <button type="button" id="closeFooterBtn">Close</button>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
+    results: [],
+    shlokas: [],
+    activeResultUrl: null,
+    activeResultTitle: null,
+    sdocsCategoriesLoaded: false
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function decodeHtmlEntities(text) {
+    if (!text) return '';
+    const ta = document.createElement('textarea');
+    ta.innerHTML = text;
+    return ta.value;
+}
+
+function setStatus(msg, isError = false) {
+    const el = document.getElementById('searchStatus');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('error', Boolean(isError));
+}
+
+function setFooterStatus(msg, success = false) {
+    const el = document.getElementById('statusMsg');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'popup-footer-status' + (success ? ' success' : '');
+    if (msg) setTimeout(() => { el.textContent = ''; el.className = 'popup-footer-status'; }, 3000);
+}
+
+// ── Action posting ────────────────────────────────────────────────────────────
+async function postAction(type, data) {
+    try {
+        await fetch('/api/dialog/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, ...data })
+        });
+    } catch(e) { console.error('postAction error:', e); }
+}
+
+// ── Source change ─────────────────────────────────────────────────────────────
+function onSourceChange(source) {
+    const isSanskritDocs = source === 'sanskritdocs';
+    document.getElementById('categoryRow').hidden = !isSanskritDocs;
+    document.getElementById('queryInput').placeholder = isSanskritDocs
+        ? 'e.g. purusha sukta, agni, narayana'
+        : 'e.g. yogah karmasu kausalam';
+    document.getElementById('transliterationLabel').style.display = isSanskritDocs ? 'none' : '';
+    document.getElementById('translationLabel').style.display = isSanskritDocs ? 'none' : '';
+    if (isSanskritDocs) document.getElementById('includeDevanagari').checked = true;
+    if (isSanskritDocs) ensureSanskritDocsCategories();
+    // Clear results
+    document.getElementById('resultsList').innerHTML = '';
+    document.getElementById('detailsList').innerHTML = '';
+    document.getElementById('selectedTitle').textContent = 'Select a result to preview the verses';
+    document.getElementById('insertAllBtn').disabled = true;
+    state.results = [];
+    state.shlokas = [];
+    setStatus('Enter a search phrase to begin.');
+    try { localStorage.setItem('siksamitra-shloka-source', source); } catch(_) {}
+}
+
+// ── SanskritDocs categories ───────────────────────────────────────────────────
+async function ensureSanskritDocsCategories() {
+    if (state.sdocsCategoriesLoaded) return;
+    try {
+        const resp = await fetch('/api/sanskritdocs/categories');
+        if (!resp.ok) return;
+        const cats = await resp.json();
+        const sel = document.getElementById('categorySelect');
+        sel.innerHTML = '<option value="">All Categories</option>';
+        cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            sel.appendChild(opt);
+        });
+        const dropdown = document.getElementById('categoryDropdown');
+        const menu = dropdown.querySelector('.custom-dropdown-menu');
+        if (menu) {
+            menu.innerHTML = '<div class="custom-dropdown-option selected" data-value="">All Categories</div>';
+            cats.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'custom-dropdown-option';
+                div.dataset.value = c.id;
+                div.textContent = c.name;
+                menu.appendChild(div);
+            });
+            // Re-wire new options
+            wireDropdownOptions(dropdown);
+        }
+        state.sdocsCategoriesLoaded = true;
+    } catch(e) { console.warn('Failed to load categories:', e); }
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+function normalizeForSanskritDocs(query) {
+    const map = {
+        'ā':'a','ī':'i','ū':'u','ṛ':'r','ṝ':'r','ḷ':'l','ḹ':'l',
+        'ṁ':'m','ṃ':'m','ḥ':'h','ś':'sh','ṣ':'sh','ṭ':'t','ḍ':'d',
+        'ṅ':'n','ñ':'n','ṇ':'n','ḻ':'l'
+    };
+    let q = query.toLowerCase();
+    for (const [from, to] of Object.entries(map)) q = q.replaceAll(from, to);
+    return q;
+}
+
+async function fetchShlokamResults(query) {
+    const resp = await fetch(
+        `https://shlokam.org/wp-json/wp/v2/search?search=${encodeURIComponent(query)}&per_page=20`,
+        { headers: { 'Accept': 'application/json' }, mode: 'cors', credentials: 'omit' }
+    );
+    if (!resp.ok) throw new Error(`Status ${resp.status}`);
+    const payload = await resp.json();
+    if (!Array.isArray(payload)) return [];
+    return payload.filter(i => i && (i.url || i.link)).map(i => ({
+        id: i.id,
+        title: decodeHtmlEntities(i.title || i.title_plain || ''),
+        url: i.url || i.link,
+        subtype: i.subtype || i.type || 'post'
+    }));
+}
+
+async function fetchSanskritDocsResults(query) {
+    const category = document.getElementById('categorySelect').value || '';
+    const nq = normalizeForSanskritDocs(query);
+    if (category) {
+        const resp = await fetch(`/api/sanskritdocs/index/${category}?q=${encodeURIComponent(nq)}`);
+        if (!resp.ok) throw new Error(`Status ${resp.status}`);
+        const entries = await resp.json();
+        return entries.map(e => ({
+            id: e.filename, title: e.title,
+            url: `https://sanskritdocuments.org/${e.category}/${e.filename}.html`,
+            subtype: 'sanskritdocs', _source: 'sanskritdocs',
+            _category: e.category, _filename: e.filename
+        }));
+    } else {
+        const catResp = await fetch('/api/sanskritdocs/categories');
+        if (!catResp.ok) throw new Error('Failed to load categories');
+        const cats = await catResp.json();
+        const allResults = [];
+        await Promise.all(cats.map(async cat => {
+            try {
+                const r = await fetch(`/api/sanskritdocs/index/${cat.id}?q=${encodeURIComponent(nq)}`);
+                if (!r.ok) return;
+                const entries = await r.json();
+                entries.forEach(e => allResults.push({
+                    id: e.filename, title: e.title,
+                    url: `https://sanskritdocuments.org/${e.category}/${e.filename}.html`,
+                    subtype: 'sanskritdocs', _source: 'sanskritdocs',
+                    _category: e.category, _filename: e.filename, _catName: cat.name
+                }));
+            } catch(_) {}
+        }));
+        const seen = new Set();
+        const unique = [];
+        for (const r of allResults) {
+            const key = `${r._category}/${r._filename}`;
+            if (!seen.has(key)) { seen.add(key); unique.push(r); }
+        }
+        return unique.slice(0, 50);
+    }
+}
+
+async function performSearch() {
+    const query = (document.getElementById('queryInput').value || '').trim();
+    if (!query) { setStatus('Please enter a search query.', true); return; }
+    setStatus('Searching…');
+    document.getElementById('resultsList').innerHTML = '';
+    document.getElementById('detailsList').innerHTML = '';
+    document.getElementById('selectedTitle').textContent = 'Select a result to preview the verses';
+    document.getElementById('insertAllBtn').disabled = true;
+    state.results = [];
+    state.shlokas = [];
+    const source = document.getElementById('sourceSelect').value || 'shlokam';
+    try {
+        const results = source === 'sanskritdocs'
+            ? await fetchSanskritDocsResults(query)
+            : await fetchShlokamResults(query);
+        state.results = results;
+        renderResults(results);
+        if (!results.length) {
+            setStatus('No results found. Try a different query.', true);
+        } else {
+            setStatus(`Found ${results.length} ${results.length === 1 ? 'result' : 'results'}.`);
+        }
+    } catch(e) {
+        console.error('Search failed:', e);
+        setStatus('Unable to retrieve results. Please try again.', true);
+    }
+}
+
+// ── Fetch details ─────────────────────────────────────────────────────────────
+async function fetchShlokamDetails(result) {
+    const collection = (result.subtype && result.subtype !== 'post') ? `${result.subtype}s` : 'posts';
+    const resp = await fetch(
+        `https://shlokam.org/wp-json/wp/v2/${collection}/${result.id}?_fields=content.rendered,title.rendered,link`,
+        { headers: { 'Accept': 'application/json' }, mode: 'cors', credentials: 'omit' }
+    );
+    if (!resp.ok) throw new Error(`Status ${resp.status}`);
+    const data = await resp.json();
+    const doc = new DOMParser().parseFromString(data?.content?.rendered || '', 'text/html');
+    const devNodes = Array.from(doc.querySelectorAll('div.verse_sanskrit'));
+    const translitNodes = Array.from(doc.querySelectorAll('div.verse_trans'));
+    const translationNodes = Array.from(doc.querySelectorAll('div.verse_meaning'));
+    const maxLen = Math.max(devNodes.length, translitNodes.length, translationNodes.length);
+    const shlokas = [];
+    for (let i = 0; i < maxLen; i++) {
+        const dev = (devNodes[i]?.textContent || '').trim();
+        const translit = (translitNodes[i]?.textContent || '').trim();
+        const transl = (translationNodes[i]?.textContent || '').trim();
+        if (dev || translit || transl) shlokas.push({ devanagari: dev, transliteration: translit, translation: transl });
+    }
+    return shlokas;
+}
+
+async function fetchSanskritDocsDocument(result) {
+    const { _category, _filename } = result;
+    if (!_category || !_filename) return [];
+    const resp = await fetch(`/api/sanskritdocs/fetch/${_category}/${_filename}`);
+    if (!resp.ok) throw new Error(`Status ${resp.status}`);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    const shlokas = [];
+    const preamble = (data.preamble || '').trim();
+    if (preamble) shlokas.push({ devanagari: preamble, transliteration: '', translation: '', _isPreamble: true });
+    const text = data.text || '';
+    if (!text.trim()) return shlokas;
+    const lines = text.split('\n');
+    let currentVerse = [];
+    const verseEndPattern = /[।॥]\s*[\d०-९][.\d०-९]*\s*[॥]?\s*$/;
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        currentVerse.push(trimmed);
+        if (verseEndPattern.test(trimmed)) {
+            shlokas.push({ devanagari: currentVerse.join('\n'), transliteration: '', translation: '' });
+            currentVerse = [];
+        }
+    }
+    if (currentVerse.length) {
+        const remaining = currentVerse.join('\n').trim();
+        if (remaining) shlokas.push({ devanagari: remaining, transliteration: '', translation: '' });
+    }
+    return shlokas;
+}
+
+// ── Render results ────────────────────────────────────────────────────────────
+function renderResults(results) {
+    const list = document.getElementById('resultsList');
+    list.innerHTML = '';
+    if (!results || !results.length) {
+        const empty = document.createElement('div');
+        empty.className = 'shloka-empty';
+        empty.textContent = 'No results to display.';
+        list.appendChild(empty);
+        return;
+    }
+    results.forEach(result => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'shloka-result-item';
+        if (state.activeResultUrl === result.url) btn.classList.add('active');
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'result-title';
+        titleSpan.textContent = result.title || 'Untitled result';
+        const urlSpan = document.createElement('span');
+        urlSpan.className = 'result-url';
+        urlSpan.textContent = result._catName
+            ? `${result._catName} — ${result._filename}`
+            : result.url;
+        btn.appendChild(titleSpan);
+        btn.appendChild(urlSpan);
+        btn.addEventListener('click', () => selectResult(result));
+        list.appendChild(btn);
+    });
+}
+
+async function selectResult(result) {
+    if (!result || !result.url) return;
+    state.activeResultUrl = result.url;
+    state.activeResultTitle = result.title || 'Śloka';
+    state.shlokas = [];
+    document.getElementById('insertAllBtn').disabled = true;
+    renderResults(state.results);
+    setStatus(`Loading verses from ${result.title}…`);
+    document.getElementById('selectedTitle').textContent = result.title || 'Śloka';
+    const detList = document.getElementById('detailsList');
+    detList.innerHTML = '';
+    const loading = document.createElement('div');
+    loading.className = 'shloka-empty';
+    loading.textContent = 'Loading verses…';
+    detList.appendChild(loading);
+    try {
+        let shlokas = result._source === 'sanskritdocs'
+            ? await fetchSanskritDocsDocument(result)
+            : await fetchShlokamDetails(result);
+        shlokas = shlokas.map(s => ({ ...s, sourceTitle: result.title }));
+        state.shlokas = shlokas;
+        if (shlokas.length) {
+            setStatus(`Loaded ${shlokas.length} ${shlokas.length === 1 ? 'verse' : 'verses'} from ${result.title}.`);
+        } else {
+            setStatus('No structured verses available for this result.', true);
+        }
+        renderDetails(shlokas, result);
+    } catch(e) {
+        console.error('Failed to load details:', e);
+        setStatus('Unable to load the selected result.', true);
+        state.shlokas = [];
+        renderDetails([], result);
+    }
+}
+
+function renderDetails(shlokas, result) {
+    const list = document.getElementById('detailsList');
+    list.innerHTML = '';
+    document.getElementById('insertAllBtn').disabled = !shlokas || !shlokas.length;
+    if (!shlokas || !shlokas.length) {
+        const empty = document.createElement('div');
+        empty.className = 'shloka-empty';
+        empty.textContent = 'No verses available to preview for this entry.';
+        list.appendChild(empty);
+        return;
+    }
+    shlokas.forEach((shloka, index) => {
+        const card = document.createElement('div');
+        card.className = 'shloka-card';
+        const heading = document.createElement('div');
+        heading.className = 'shloka-card-heading';
+        heading.textContent = shloka._isPreamble ? 'Preamble' : `Verse ${index + 1 - (shlokas[0]?._isPreamble ? 1 : 0)}`;
+        card.appendChild(heading);
+        if (shloka.devanagari) {
+            const dp = document.createElement('div');
+            dp.className = 'shloka-part devanagari';
+            dp.textContent = shloka.devanagari;
+            card.appendChild(dp);
+        }
+        if (shloka.transliteration) {
+            const tp = document.createElement('div');
+            tp.className = 'shloka-part transliteration';
+            tp.textContent = shloka.transliteration;
+            card.appendChild(tp);
+        }
+        if (shloka.translation) {
+            const trp = document.createElement('div');
+            trp.className = 'shloka-part translation';
+            trp.textContent = shloka.translation;
+            card.appendChild(trp);
+        }
+        const footer = document.createElement('div');
+        footer.className = 'shloka-card-footer';
+        const insertBtn = document.createElement('button');
+        insertBtn.type = 'button';
+        insertBtn.className = 'shloka-insert-button';
+        insertBtn.textContent = 'Insert';
+        insertBtn.addEventListener('click', () => insertShloka(shloka));
+        footer.appendChild(insertBtn);
+        card.appendChild(footer);
+        list.appendChild(card);
+    });
+}
+
+// ── Insert ────────────────────────────────────────────────────────────────────
+function getOptions() {
+    return {
+        includeDevanagari:     Boolean(document.getElementById('includeDevanagari').checked),
+        includeTransliteration: Boolean(document.getElementById('includeTransliteration').checked),
+        includeTranslation:    Boolean(document.getElementById('includeTranslation').checked)
+    };
+}
+
+async function insertShloka(shloka) {
+    const options = getOptions();
+    if (!options.includeDevanagari && !options.includeTransliteration && !options.includeTranslation) {
+        setFooterStatus('Select at least one component to insert.', false);
+        return;
+    }
+    await postAction('insert_shloka', { shloka, options });
+    setFooterStatus(`Inserted verse from ${shloka.sourceTitle || 'Shlokam.org'}.`, true);
+}
+
+async function insertAllShlokas() {
+    const options = getOptions();
+    if (!state.shlokas.length) {
+        setFooterStatus('Select a result first.', false);
+        return;
+    }
+    if (!options.includeDevanagari && !options.includeTransliteration && !options.includeTranslation) {
+        setFooterStatus('Select at least one component to insert.', false);
+        return;
+    }
+    await postAction('insert_all_shlokas', { shlokas: state.shlokas, options });
+    setFooterStatus(`Inserted ${state.shlokas.length} verses from ${state.activeResultTitle || 'source'}.`, true);
+}
+
+// ── Dropdown wiring ───────────────────────────────────────────────────────────
+function wireDropdownOptions(dd) {
+    const trigger = dd.querySelector('.custom-dropdown-trigger');
+    const menu    = dd.querySelector('.custom-dropdown-menu');
+    if (!trigger || !menu) return;
+    menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        // Clone to remove old listeners
+        const newOpt = opt.cloneNode(true);
+        opt.parentNode.replaceChild(newOpt, opt);
+        newOpt.addEventListener('click', () => {
+            dd.dataset.value = newOpt.dataset.value;
+            trigger.textContent = newOpt.textContent;
+            menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+            newOpt.classList.add('selected');
+            menu.classList.remove('open');
+            // Sync hidden select
+            const selectId = dd.id === 'sourceDropdown' ? 'sourceSelect'
+                : dd.id === 'categoryDropdown' ? 'categorySelect' : null;
+            if (selectId) {
+                const sel = document.getElementById(selectId);
+                if (sel) {
+                    sel.value = newOpt.dataset.value;
+                    sel.dispatchEvent(new Event('change'));
+                }
+            }
+        });
+    });
+}
+
+function wireDropdowns() {
+    document.querySelectorAll('.custom-dropdown').forEach(dd => {
+        const trigger = dd.querySelector('.custom-dropdown-trigger');
+        const menu    = dd.querySelector('.custom-dropdown-menu');
+        if (!trigger || !menu) return;
+        trigger.addEventListener('click', e => {
+            e.stopPropagation();
+            menu.classList.toggle('open');
+        });
+        wireDropdownOptions(dd);
+    });
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.custom-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+    });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    wireDropdowns();
+
+    // Restore last-used source
+    let savedSource = 'shlokam';
+    try { savedSource = localStorage.getItem('siksamitra-shloka-source') || 'shlokam'; } catch(_) {}
+    const sourceSelect = document.getElementById('sourceSelect');
+    const sourceDropdown = document.getElementById('sourceDropdown');
+    sourceSelect.value = savedSource;
+    sourceDropdown.dataset.value = savedSource;
+    sourceDropdown.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        const sel = opt.dataset.value === savedSource;
+        opt.classList.toggle('selected', sel);
+        if (sel) sourceDropdown.querySelector('.custom-dropdown-trigger').textContent = opt.textContent;
+    });
+    onSourceChange(savedSource);
+
+    // Source select listener
+    sourceSelect.addEventListener('change', () => onSourceChange(sourceSelect.value));
+
+    // Form submit
+    document.getElementById('shlokaSearchForm').addEventListener('submit', e => {
+        e.preventDefault();
+        performSearch();
+    });
+
+    // Insert all
+    document.getElementById('insertAllBtn').addEventListener('click', insertAllShlokas);
+
+    // Close buttons
+    document.getElementById('closeBtn').addEventListener('click', () => window.close());
+    document.getElementById('closeFooterBtn').addEventListener('click', () => window.close());
+
+    // Focus query input
+    setTimeout(() => document.getElementById('queryInput')?.focus(), 50);
+});
+</script>
+</body>
+</html>

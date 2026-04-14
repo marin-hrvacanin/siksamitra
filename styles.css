@@ -110,6 +110,7 @@ input[type="radio"] {
 
 html, body {
   height: 100%;
+  overflow: hidden;  /* paper-canvas handles scrolling */
 }
 
 body {
@@ -119,7 +120,7 @@ body {
   line-height: 1.55;
   color: var(--text-primary);
   background: var(--bg-body);
-  min-height: 100vh;
+  height: 100vh;
   margin: 0;
   padding: 0;
   transition: background-color 0.3s var(--transition), color 0.3s var(--transition);
@@ -183,7 +184,8 @@ body {
 /* ==================== APP CONTAINER ==================== */
 .app-container {
     background: var(--bg-body);
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     transition: background-color 0.3s ease;
@@ -2111,7 +2113,24 @@ body.hide-comments .ql-comment-style {
   display: flex;
   position: relative;
   flex: 1;
-  overflow: visible;
+  min-height: 0;       /* allow flex shrink so paper-canvas can control scroll */
+  overflow: hidden;
+  background: var(--bg-body);  /* grey area around the paper */
+}
+
+/* ==================== PAPER CANVAS — scroll container, centers the paper ==================== */
+.paper-canvas {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;      /* center paper horizontally within canvas */
+  padding: 0 0 30px;        /* bottom pad clears fixed statusbar */
+  position: relative;       /* stacking context for absolute child overlays */
+  scrollbar-gutter: stable; /* prevent layout shift when scrollbar appears */
 }
 
 /* Navigation Panel */
@@ -2126,11 +2145,9 @@ body.hide-comments .ql-comment-style {
   transition: width 0.2s var(--transition);
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 165px);
+  height: 100%;            /* fill document-workspace height */
   max-height: none;
-  position: sticky;
-  top: 165px;
-  align-self: flex-start;
+  flex-shrink: 0;
 }
 
 .nav-panel.collapsed {
@@ -2392,20 +2409,31 @@ body.hide-comments .ql-comment-style {
   margin: 6px 8px;
 }
 
-/* ==================== DOCUMENT CONTAINER (main2.pyw style) ==================== */
+/* ==================== DOCUMENT CONTAINER — A4 paper sheet ==================== */
+/*
+  Matches real Veda Union document layout (measured from .docx files):
+    Page: 210mm × 297mm (ISO A4)
+    Left margin:   25mm  (consistent across all docs)
+    Right margin:   9mm  (IAST docs — narrow, text runs to near right edge)
+    Top margin:    20mm
+    Bottom margin: 20mm (plus extra for scroll breathing room)
+  Content column: 210 − 25 − 9 = 176mm wide
+*/
 .container {
-  flex: 1;
-  max-width: 1000px;
-  width: 100%;
-  margin: 2rem auto;
-  margin-bottom: 2rem; /* Match top margin for symmetry */
-  padding: 3rem;
-  padding-bottom: 80px; /* Space for statusbar */
+  width: 210mm;
+  max-width: 210mm;
+  min-width: 210mm;
+  padding: 16mm 16mm 40px 16mm;  /* symmetric — text centered on paper */
   background: var(--bg-surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  min-height: calc(100vh - 250px);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.10);
+  margin: 20px 0;      /* paper-canvas aligns center, no auto margin needed */
+  border-radius: 2px;
+  min-height: 150mm;
   overflow: visible;
+  position: relative;
+  flex-shrink: 0;      /* prevent shrinking when canvas is narrow */
+  transform-origin: top center;
+  /* zoom applied via JS: style.zoom = level */
 }
 
 /* ==================== EDITOR STYLES (matching main2.pyw) ==================== */
@@ -2420,21 +2448,28 @@ body.hide-comments .ql-comment-style {
 }
 
 /* ==================== QUILL OVERRIDES ==================== */
+/*
+  Font: Arial 16pt — matches "Translit" style in all Veda Union .docx files
+  Line-height: 24pt exact — matches lineRule=exact 480twips in Translit style.
+    This fixed line height is critical: Vedic combining diacritics (U+0331 anudātta,
+    U+030D svarita, U+030E udātta) sit above AND below glyphs, requiring fixed clearance.
+  At 96 dpi screen: 16pt = 21.3px, 24pt = 32px.
+*/
 .ql-container {
   font-family: Arial, sans-serif !important;
-  font-size: 28px !important;
-    border: none !important;
+  font-size: 16pt !important;
+  border: none !important;
 }
 
 .ql-editor {
-    padding: 0 !important;
-    color: var(--text-primary) !important;
-    background: transparent !important;
-  line-height: 1.5 !important;
-  font-size: 28px !important;
-    font-family: Arial, sans-serif !important;
-    min-height: 60vh !important;
-    border: none !important;
+  padding: 0 !important;
+  color: var(--text-primary) !important;
+  background: transparent !important;
+  line-height: 24pt !important;
+  font-size: 16pt !important;
+  font-family: Arial, sans-serif !important;
+  min-height: 100mm !important;
+  border: none !important;
   overflow-wrap: break-word;
   word-break: normal;
   tab-size: 3;
@@ -2457,18 +2492,38 @@ body.hide-comments .ql-comment-style {
 .ql-editor.ql-blank::before {
   font-style: normal !important;
   color: var(--text-tertiary) !important;
-  font-size: 28px !important;
-    left: 0 !important;
+  font-size: 16pt !important;
+  left: 0 !important;
 }
 
 /* Paragraph positioning for audio buttons */
 .ql-editor p {
   position: relative;
   margin: 0;
+  line-height: 24pt;   /* Default: IAST/ITRANS — matches Translit style 24pt exact */
+  font-size: 16pt;
 }
 
 .ql-editor p:last-child {
   margin-bottom: 0;
+}
+
+/*
+  Indic script paragraphs need taller line height.
+  Devanagari/Telugu/Tamil glyphs have larger ascenders/descenders than Latin IAST,
+  and their combining vowel signs extend further above and below.
+  32pt matches the lineRule=exact 640twips used in .docx Devanagari/Telugu styles.
+  Class ql-script-devanagari / ql-script-telugu / ql-script-tamil is applied
+  by applyScriptClasses() in editor-quill.js based on Unicode block detection.
+*/
+.ql-editor p.ql-script-devanagari,
+.ql-editor p.ql-script-telugu,
+.ql-editor p.ql-script-tamil,
+.ql-editor p.ql-script-kannada {
+  line-height: 32pt;
+  font-family: 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil',
+               'Noto Sans Devanagari', 'Noto Sans Telugu', 'Noto Sans Tamil',
+               serif !important;
 }
 
 
@@ -2530,9 +2585,10 @@ body.hide-comments .ql-comment-style {
 .ql-translation-style {
   font-style: italic;
   color: var(--translation-text-color);
+  font-family: 'Times New Roman', 'Georgia', serif;
   white-space: pre-wrap;
-  font-size: 0.8em;
-  line-height: 1.35;
+  font-size: 0.6875em;      /* 11pt */
+  line-height: 1.5;
   display: inline;
 }
 
@@ -2540,11 +2596,12 @@ body.hide-comments .ql-comment-style {
 .ql-doc-translation {
   font-style: italic;
   color: var(--translation-text-color);
+  font-family: 'Times New Roman', 'Georgia', serif;  /* matches Prijevod style in docs */
   white-space: pre-wrap;
-  font-size: 0.8em;
-  line-height: 1.35;
+  font-size: 0.6875em;      /* 11pt — Prijevod style in docs */
+  line-height: 1.5;
   display: block;
-  margin: 0.55em 0 0.55em;
+  margin: 0.4em 0 0.4em;
 }
 
 .ql-editor br.soft-break,
@@ -3021,16 +3078,25 @@ br.soft-break {
 
 
 /* ==================== DOCUMENT PARAGRAPH STYLES - Compact Ochre Design ==================== */
+/*
+  Font sizes match Veda Union .docx heading hierarchy (Arial):
+    Title   → 24pt (Heading 1 in some docs, or Title style)
+    Section → 24pt bold (Heading 1)
+    Subsect → 22pt bold (Heading 2)
+    Body    → 16pt (Translit — handled by .ql-editor base)
+    Transl  → 11pt italic gray (Prijevod)
+  em units are relative to .ql-editor base font-size (16pt), so 1em = 16pt.
+*/
 .ql-editor .ql-doc-title,
 .ql-doc-title {
-  font-size: 1.75em;
-  font-weight: 600;
+  font-size: 1.5em;         /* 24pt at 16pt base */
+  font-weight: 700;
   letter-spacing: -0.01em;
   margin: 0.5em 0 0.3em;
   text-align: left;
   color: #92400e;
   display: block;
-  line-height: 1.25;
+  line-height: 40pt;        /* matches Title lineRule=exact 800twips in docs */
   text-transform: none;
   border-bottom: 2px solid #d97706;
   padding-bottom: 0.2em;
@@ -3050,13 +3116,13 @@ br.soft-break {
 
 .ql-editor .ql-doc-subtitle,
 .ql-doc-subtitle {
-  font-size: 0.85em;
+  font-size: 0.875em;       /* 14pt — subtitle/secondary heading */
   font-weight: 500;
   margin: 0 0 0.8em;
   color: #78716c;
   text-align: left;
   display: block;
-  line-height: 1.3;
+  line-height: 24pt;
   font-style: normal;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -3069,13 +3135,13 @@ br.soft-break {
 
 .ql-editor .ql-doc-section,
 .ql-doc-section {
-  font-size: 1.15em;
-  font-weight: 600;
-  margin: 1em 0 0.3em;
+  font-size: 1.5em;         /* 24pt — Heading 1 in docs */
+  font-weight: 700;
+  margin: 0.8em 0 0.3em;
   color: #b45309;
   text-transform: none;
   display: block;
-  line-height: 1.3;
+  line-height: 32pt;        /* Heading line height */
   border-left: 3px solid #d97706;
   padding-left: 0.5em;
   letter-spacing: 0;
@@ -3089,16 +3155,16 @@ br.soft-break {
 
 .ql-editor .ql-doc-subsection,
 .ql-doc-subsection {
-  font-size: 0.85em;
+  font-size: 1.375em;       /* 22pt — Heading 2 in docs */
   font-weight: 600;
-  margin: 0.8em 0 0.2em;
+  margin: 0.6em 0 0.2em;
   color: #78716c;
   display: block;
-  line-height: 1.3;
-  letter-spacing: 0.02em;
+  line-height: 32pt;
+  letter-spacing: 0;
   border-left: 2px solid #d4a574;
   padding-left: 0.5em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 [data-theme='dark'] .ql-editor .ql-doc-subsection,
@@ -3213,32 +3279,20 @@ br.soft-break {
 }
 
 /* ==================== RESPONSIVE DESIGN ==================== */
-@media (max-width: 768px) {
-  body {
-    padding: 1rem;
-    font-size: 24px;
-  }
-  
+@media (max-width: 900px) {
+  /* On small screens let the paper shrink gracefully */
   .container {
-    margin: 1rem auto;
-    padding: 2rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 10mm 10mm 40px 10mm;
+    margin: 8px auto;
+    border-radius: 0;
   }
-  
-  #editor,
-  .ql-editor {
-    font-size: 24px !important;
-  }
-  
+
   .ribbon-groups {
     flex-wrap: wrap;
     gap: 10px;
-  }
-  
-  .theme-toggle {
-    top: 8px;
-    right: 8px;
-    font-size: 12px;
-    padding: 4px 8px;
   }
 }
 
@@ -4946,6 +5000,7 @@ input[type="text"],
   pointer-events: all;
 }
 
+/* Popup is repositioned dynamically by JS to center over paper-canvas */
 .file-loading-popup {
   position: fixed;
   top: 50%;
@@ -4960,7 +5015,7 @@ input[type="text"],
   z-index: 10000;
   opacity: 0;
   pointer-events: none;
-  transition: all 0.3s var(--transition);
+  transition: opacity 0.3s var(--transition), transform 0.3s var(--transition);
   text-align: center;
 }
 
@@ -4968,6 +5023,46 @@ input[type="text"],
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
   pointer-events: all;
+}
+
+/* ==================== ZOOM CONTROLS (in statusbar) ==================== */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+
+.zoom-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 5px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  min-width: 18px;
+}
+
+.zoom-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.zoom-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  min-width: 36px;
+  text-align: center;
+  cursor: default;
 }
 
 .file-loading-title {
@@ -6249,44 +6344,6 @@ select:focus {
     padding: 5px 10px;
 }
 
-/* Insert mode pill */
-.kb-insert-mode {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
-}
-
-.kb-mode-pills {
-    display: flex;
-    background: var(--bg-body);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-}
-
-.kb-mode-btn {
-    font-size: 0.7rem;
-    padding: 3px 9px;
-    height: 26px;
-    border: none;
-    background: transparent;
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: background 0.1s, color 0.1s;
-    white-space: nowrap;
-}
-
-.kb-mode-btn.on {
-    background: var(--primary);
-    color: #fff;
-    font-weight: 500;
-}
-
-.kb-mode-btn:not(.on):hover {
-    background: var(--button-hover-bg, var(--bg-elevated));
-    color: var(--text-primary);
-}
 
 /* ── Body (left consonants + right vowels) ──────────────────────────────────── */
 
@@ -6567,4 +6624,128 @@ select:focus {
     border-color: var(--primary);
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   POPUP DIALOG WINDOWS  (dialog-*.html)
+   Each dialog HTML loads styles.css and uses these classes for its chrome.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Reset for popup pages */
+.popup-page {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-body);
+    color: var(--text-primary);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+}
+
+/* ── Titlebar strip at the top of each popup window ────────────────────────── */
+.popup-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    height: 34px;
+    min-height: 34px;
+    background: var(--bg-surface);
+    border-bottom: 2px solid var(--primary);  /* ochre accent line */
+    flex-shrink: 0;
+    user-select: none;
+    -webkit-app-region: drag;  /* allows dragging the window by this bar */
+}
+
+.popup-titlebar-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.popup-titlebar-logo {
+    height: 16px;
+    width: auto;
+    opacity: 0.8;
+}
+
+.popup-titlebar-close {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+    -webkit-app-region: no-drag;
+    line-height: 1;
+    padding: 0;
+}
+
+.popup-titlebar-close:hover {
+    background: #ef4444;
+    color: #fff;
+}
+
+/* ── Content area ───────────────────────────────────────────────────────────── */
+.popup-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    background: var(--bg-body);
+}
+
+/* Section titles inside popups */
+.popup-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 10px;
+}
+
+/* ── Footer action bar ──────────────────────────────────────────────────────── */
+.popup-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+/* Status message in footer left side */
+.popup-footer-status {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.popup-footer-status.success { color: #10b981; }
+.popup-footer-status.error   { color: #ef4444; }
+.popup-footer-status.warning { color: var(--primary); }
+
+/* ── Dark-mode overrides ────────────────────────────────────────────────────── */
+[data-theme='dark'] .popup-titlebar {
+    border-bottom-color: var(--primary);
+}
 

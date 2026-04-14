@@ -103,29 +103,135 @@ def is_smdoc_file(filepath: str) -> bool:
 
 # --- .docx Import ---
 
-# Map Word paragraph styles → editor paragraph CSS classes
+# Map Word paragraph styles → editor paragraph CSS classes.
+# Keys are matched exactly first, then by startswith prefix.
+# Empty string '' = body text (plain <p>, no class).
 _DOCX_PARA_STYLE_MAP = {
-    'Heading 1': 'ql-doc-title',
-    'Heading 2': 'ql-doc-subtitle',
-    'Heading 3': 'ql-doc-section',
-    'Heading 4': 'ql-doc-subsection',
-    'Title':     'ql-doc-title',
-    'Subtitle':  'ql-doc-subtitle',
-    'Prijevod':  'ql-doc-translation',
-    'Translation': 'ql-doc-translation',
+    'Title':         'ql-doc-title',
+    'Subtitle':      'ql-doc-subtitle',
+    'Heading 1':     'ql-doc-section',    # chapter/section header — large bold
+    'Heading 2':     'ql-doc-subsection', # sub-section header
+    'Heading 3':     'ql-doc-subsection',
+    'Heading 4':     'ql-doc-subsection',
+    'Prijevod':      'ql-doc-translation',
+    'Translation':   'ql-doc-translation',
+    # Primary mantra/text styles — plain body text (script detected separately)
+    'Normal':        '',
+    'Translit':      '',   # the "Translit" style used in IAST docs
+    'Devanagari':    '',   # Devanagari text paragraphs
+    'Telugu':        '',
+    'Tamil':         '',
+    'Kannada':       '',
+    'Malayalam':     '',
+    'Default':       '',
+    'Body Text':     '',
 }
 
 # Map Word character styles → editor inline formatting
 # Values: (css_class, wrapper_type)
 #   wrapper_type: 'span' = <span class="...">
 _DOCX_CHAR_STYLE_MAP = {
-    'Holding':   ('ql-holding-short', 'span'),
-    '2Holding':  ('ql-holding-long', 'span'),
-    'Svara':     ('ql-svara-char', 'span'),
-    'Virama':    ('ql-svara-char', 'span'),
-    'Anusvara':  ('ql-change-style', 'span'),
-    'Comment':   ('ql-comment-style', 'span'),
+    # Holdings (from w:bdr borders or legacy named styles in IAST docs)
+    'Holding':          ('ql-holding-short', 'span'),
+    '2Holding':         ('ql-holding-long',  'span'),
+    # Vedic accent marks
+    'Svara':            ('ql-svara-char',    'span'),
+    'Virama':           ('ql-svara-char',    'span'),
+    # Superscript insertions (g in jñ, ś from ḥ, etc.) in IAST docs
+    'Anusvara':         ('ql-change-style',  'span'),
+    # Commentary runs
+    'Comment':          ('ql-comment-style', 'span'),
+    # Pause marks used in Devanagari/Indic sahasranāma docs:
+    #   Long   = single vertical bar = short pause (|)
+    #   Longer = double vertical bar = long pause  (||)
+    'Long':             ('ql-short-pause',   'span'),
+    'Longer':           ('ql-long-pause',    'span'),
 }
+
+# Maps IAST annotation characters → Devanagari equivalents for Insert/change-style
+# runs inside Devanagari paragraphs.  The Veda Union DOCX format uses Latin/IAST
+# chars as annotations even in Indic-script documents; we convert them on import
+# so the editor shows native-script annotations.
+# Consonants that cluster with the following char use virama (U+094D = ्).
+# Vowels use the independent form (e.g. उ, not the mātrā ु) for clarity.
+# Unknown chars pass through unchanged (identity) — so re-imported Devanagari
+# annotations survive a second import without corruption.
+_IAST_TO_DEV_ANNOTATION = {
+    # Special Vedic insertions
+    'g':  'ग',    # g in jñ → jgñ
+    'u':  'उ',    # u in sv → suv / vy → vuy
+    'i':  'इ',    # i insertion
+    # Visarga transformation results (inline, half-form to cluster with next consonant)
+    'ś':  'श\u094d',   # ḥ → ś before c/ch
+    'ṣ':  'ष\u094d',   # ḥ → ṣ before ṭ/ṭh
+    's':  'स\u094d',   # ḥ → s before t/th
+    'r':  'र',          # ḥ → r before voiced (no virama — pre-vocalic)
+    # Anusvara transformation results (half-form consonants)
+    'ṅ':  'ङ\u094d',   # ṁ → ṅ before ka-varga
+    'ñ':  'ञ\u094d',   # ṁ → ñ before ca-varga
+    'ṇ':  'ण\u094d',   # ṁ → ṇ before ṭa-varga
+    'n':  'न\u094d',   # ṁ → n before ta-varga
+    'm':  'म\u094d',   # ṁ → m before pa-varga
+}
+
+
+def _detect_script(text):
+    """Detect the dominant Unicode script of text.
+
+    Returns one of: 'devanagari', 'telugu', 'tamil', 'kannada', 'malayalam',
+    'latin' (covers IAST), or None (empty / no dominant script).
+
+    A script is considered dominant when its characters make up >25% of
+    the alphanumeric character count.
+    """
+    counts = {
+        'devanagari': 0,
+        'telugu':     0,
+        'tamil':      0,
+        'kannada':    0,
+        'malayalam':  0,
+        'latin':      0,
+    }
+    for ch in text:
+        cp = ord(ch)
+        if 0x0900 <= cp <= 0x097F or 0xA8E0 <= cp <= 0xA8FF:
+            counts['devanagari'] += 1
+        elif 0x0C00 <= cp <= 0x0C7F:
+            counts['telugu'] += 1
+        elif 0x0B80 <= cp <= 0x0BFF:
+            counts['tamil'] += 1
+        elif 0x0C80 <= cp <= 0x0CFF:
+            counts['kannada'] += 1
+        elif 0x0D00 <= cp <= 0x0D7F:
+            counts['malayalam'] += 1
+        elif (0x0041 <= cp <= 0x007A or   # basic Latin
+              0x00C0 <= cp <= 0x024F or   # Latin extended (IAST diacritics)
+              0x0300 <= cp <= 0x036F):    # combining diacritical marks (Vedic accents)
+            counts['latin'] += 1
+
+    total = sum(counts.values())
+    if total == 0:
+        return None
+
+    dominant, count = max(counts.items(), key=lambda kv: kv[1])
+    if count / total >= 0.25:
+        return dominant
+    return None
+
+
+def _para_style_class(style_name):
+    """Map a Word paragraph style name to an editor CSS class.
+
+    Tries exact match first, then prefix match (e.g. 'Heading 1 Char' → 'Heading 1').
+    Returns empty string for body-text styles.
+    """
+    if style_name in _DOCX_PARA_STYLE_MAP:
+        return _DOCX_PARA_STYLE_MAP[style_name]
+    # Prefix match
+    for key, val in _DOCX_PARA_STYLE_MAP.items():
+        if style_name.startswith(key):
+            return val
+    return None   # None = unknown style, treat as body text
 
 
 def _html_escape(text):
@@ -193,8 +299,9 @@ def convert_docx_to_html(filepath):
 
     Maps Word styles to śikṣāmitra editor CSS classes:
     - Paragraph styles → ql-doc-title, ql-doc-section, etc.
-    - Character styles → short-holding, long-holding, ql-svara-char, change, etc.
-    - Run formatting → bold, italic, underline, superscript, font classes
+    - Script detection → ql-script-devanagari / ql-script-telugu / ql-script-tamil
+    - Character styles → ql-holding-short, ql-holding-long, ql-svara-char, ql-change-style
+    - Run formatting → bold, italic, underline, superscript, font-size for 'Insert' runs
     """
     if not HAS_DOCX:
         raise ImportError("python-docx is required for Word import")
@@ -203,37 +310,51 @@ def convert_docx_to_html(filepath):
     html_parts = []
 
     for idx, para in enumerate(doc.paragraphs):
-        # Skip completely empty paragraphs (spacers)
+        # Skip completely empty paragraphs (spacers between sections)
         if not para.text.strip() and not para.runs:
             continue
 
-        # Determine paragraph class from style
+        # Determine paragraph class from style name
         style_name = para.style.name if para.style else 'Normal'
-        para_class = _DOCX_PARA_STYLE_MAP.get(style_name, '')
+        para_class = _para_style_class(style_name)
 
-        # Detect title from formatting if style is Normal
-        if not para_class and style_name == 'Normal' and _detect_title_paragraph(para, idx):
+        # Unknown style (None) → treat as body text
+        if para_class is None:
+            para_class = ''
+
+        # For very first Normal-looking paragraphs that look like a title, promote
+        if not para_class and _detect_title_paragraph(para, idx):
             para_class = 'ql-doc-title'
+
+        # Detect Unicode script of this paragraph's text
+        script = _detect_script(para.text)
+        script_class = f'ql-script-{script}' if script and script != 'latin' else ''
 
         # Build the inner HTML from runs
         hanging = _para_has_hanging_indent(para)
-        inner_html = _convert_runs_to_html(para.runs, hanging_indent=hanging)
+        inner_html = _convert_runs_to_html(para.runs, hanging_indent=hanging, para_script=script)
 
         # If paragraph is empty after conversion, add <br>
         if not inner_html.strip():
             inner_html = '<br>'
 
-        # Build the <p> tag
-        if para_class:
-            html_parts.append(f'<p class="{para_class}">{inner_html}</p>')
+        # Build the <p> tag — combine paragraph class + script class
+        classes = ' '.join(c for c in [para_class, script_class] if c)
+        if classes:
+            html_parts.append(f'<p class="{classes}">{inner_html}</p>')
         else:
             html_parts.append(f'<p>{inner_html}</p>')
 
     return '\n'.join(html_parts)
 
 
-def _format_run_text(escaped_text, run):
-    """Apply inline formatting to an already-escaped text fragment based on its run."""
+def _format_run_text(escaped_text, run, para_script=None):
+    """Apply inline formatting to an already-escaped text fragment based on its run.
+
+    para_script — the dominant script of the paragraph ('devanagari', 'telugu', …,
+    'latin', or None).  Used to convert IAST annotation characters to their native-
+    script equivalents when the paragraph is written in an Indic script.
+    """
     char_style = None
     if run.style and run.style.name:
         char_style = run.style.name
@@ -243,10 +364,48 @@ def _format_run_text(escaped_text, run):
 
     result = escaped_text
 
+    # ── Detect Insert / annotation runs ──────────────────────────────────────
+    # These are Vedic insertions (g in jñ, u in sv, ś from ḥ visarga, ṅ from anusvara …).
+    # Detection priority:
+    #   1. Named 'Insert'/'insert' character style
+    #   2. Explicit small font (≤ 9pt) with no recognised char style
+    #   3. Explicit superscript flag with no recognised char style
+    cs_lower = char_style.lower() if char_style else ''
+    is_insert = cs_lower.startswith('insert')
+    if not is_insert and not (char_style and char_style in _DOCX_CHAR_STYLE_MAP):
+        try:
+            if run.font.size is not None and run.font.size.pt is not None and run.font.size.pt <= 9:
+                is_insert = True
+        except Exception:
+            pass
+    if not is_insert and run.font.superscript:
+        is_insert = not (char_style and char_style in _DOCX_CHAR_STYLE_MAP)
+
+    if is_insert:
+        # For Indic-script paragraphs, convert IAST annotation chars → native script.
+        # e.g. 'ś' → 'श्', 'g' → 'ग', 'ṅ' → 'ङ्'  (Devanagari)
+        # Unknown chars pass through unchanged — so re-imported native annotations
+        # (already Devanagari) survive a second import without corruption.
+        display = escaped_text
+        if para_script == 'devanagari':
+            display = ''.join(_IAST_TO_DEV_ANNOTATION.get(c, c) for c in escaped_text)
+        # (Telugu / Tamil equivalents can be added here when needed)
+
+        # Superscript insertions (anusvara results, jñ/sv/vy insertions) use <sup>.
+        # Non-superscript insertions (inline visarga replacement like ḥ → ś) stay inline.
+        if run.font.superscript:
+            result = f'<sup><span class="ql-change-style">{display}</span></sup>'
+        else:
+            result = f'<span class="ql-change-style">{display}</span>'
+        return result
+
     # Apply character style mapping
     if char_style and char_style in _DOCX_CHAR_STYLE_MAP:
         cls, _ = _DOCX_CHAR_STYLE_MAP[char_style]
-        result = f'<span class="{cls}">{result}</span>'
+        # Don't wrap whitespace-only text in style spans — it produces noise
+        # (e.g. Svara-style \xa0 spacing runs should stay as plain spaces)
+        if escaped_text.strip():
+            result = f'<span class="{cls}">{result}</span>'
     elif has_border:
         if border_sz > 6:
             result = f'<span class="ql-holding-long">{result}</span>'
@@ -262,43 +421,115 @@ def _format_run_text(escaped_text, run):
         if run.underline:
             result = f'<u>{result}</u>'
 
-    # Superscript / subscript (always apply)
-    if run.font.superscript:
-        result = f'<sup>{result}</sup>'
-    if run.font.subscript:
-        result = f'<sub>{result}</sub>'
-
     return result
 
 
-def _convert_runs_to_html(runs, hanging_indent=False):
-    """Convert a list of Word runs to HTML with proper inline formatting."""
-    html = []
-    # Indent string to insert after line breaks when paragraph has hanging indent
-    # Use em-spaces (U+2003) since Quill strips tab characters
+# Character styles that encode holding markers using Unicode combining characters
+# (U+034C, U+0342, etc.) rather than w:bdr borders.  The characters themselves
+# render as rectangles in browsers; instead, the adjacent base run gets wrapped
+# in a CSS holding span and the combining character is dropped.
+_DOCX_HOLD_STYLES = frozenset({'hold', '2hold'})
+# Character styles that carry reference/footnote markers (f, n, r, m, l …)
+# rather than actual text content — skip entirely on import.
+_DOCX_SKIP_STYLES = frozenset({
+    'phonetic', 'footnote reference', 'endnote reference',
+    'footnote text', 'endnote text',
+    # Name counters (e.g. '1', '2' in sahasranāma numbering)
+    'nāma', 'nama',
+    # Empty formatting-only runs
+    'pause',
+})
+# Segments whose raw text is only whitespace or separators should not receive a
+# holding — the Hold marker in that position is a look-ahead for the NEXT consonant.
+import re as _re
+_HOLDING_SEP_RE = _re.compile(r'^[\s\-\xa0\u2002\u2003\u2004]+$')
+
+
+def _convert_runs_to_html(runs, hanging_indent=False, para_script=None):
+    """Convert a list of Word runs to HTML with proper inline formatting.
+
+    Handles Veda Union DOCX character-style encoding:
+
+    Hold / 2Hold runs
+      Contain Unicode combining chars (U+034C, U+0342, …) that mark the next
+      consonant cluster.  The Hold always precedes its target (look-ahead):
+      pending_holding is set and applied to the next non-whitespace base segment.
+      The combining character itself is never output (renders as a rectangle).
+
+    Phonetic / footnote reference runs
+      Contain annotation markers (f, n, r, m, l …) — skipped entirely.
+    """
     tab = '\u2003\u2003' if hanging_indent else ''
 
+    # Flat segment list built before final rendering so look-back is possible.
+    # Each entry: {'html': str, 'text': str, 'holdable': bool, 'has_holding': bool}
+    segments = []
+    pending_holding = None   # look-ahead: holding to apply to next base segment
+
     for run in runs:
+        char_style_name = run.style.name if run.style else 'Default Paragraph Font'
+        cs_lower = char_style_name.lower()
+
+        # ── Hold / 2Hold ──────────────────────────────────────────────────────
+        # In the Veda Union DOCX encoding, the Hold combining character
+        # (U+034C / U+0342) is always placed BEFORE the consonant cluster it
+        # marks — it follows the preceding vowel/syllable run, not the target
+        # consonant.  Pure look-ahead: set pending_holding and apply it to the
+        # next non-whitespace base segment.
+        if cs_lower in _DOCX_HOLD_STYLES:
+            pending_holding = ('ql-holding-long' if '2' in cs_lower
+                               else 'ql-holding-short')
+            continue   # never output the combining character itself
+
+        # ── Skip annotation / reference markers ───────────────────────────────
+        if cs_lower in _DOCX_SKIP_STYLES:
+            continue
+
+        text = run.text
         br_elements = run._element.findall(qn('w:br'))
         has_line_break = len(br_elements) > 0
 
-        text = run.text
         if not text and not has_line_break:
             continue
 
-        # If run contains <w:br/>, walk child elements in order
+        # "Holdable" = plain base text with no special character style and not
+        # superscript.  Svara/accent runs are NOT holdable so the look-back skips
+        # them and finds the actual consonant run.
+        is_plain_base = (
+            cs_lower in ('default paragraph font', '')
+            and not run.font.superscript
+        )
+
+        def _make_seg(raw_text, formatted_html):
+            nonlocal pending_holding
+            seg_html = formatted_html
+            # Apply look-ahead pending holding to first real (non-separator) base seg
+            if (pending_holding and is_plain_base
+                    and raw_text.strip()
+                    and not _HOLDING_SEP_RE.match(raw_text)):
+                seg_html = f'<span class="{pending_holding}">{seg_html}</span>'
+                pending_holding = None
+            segments.append({
+                'html': seg_html,
+                'text': raw_text,
+                'holdable': is_plain_base,
+                'has_holding': seg_html != formatted_html,
+            })
+
         if has_line_break:
             for child in run._element:
                 tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
                 if tag == 'br':
-                    html.append(f'<br>{tab}')
+                    segments.append({'html': f'<br>{tab}', 'text': '\n',
+                                     'holdable': False, 'has_holding': False})
                 elif tag == 't' and child.text:
-                    html.append(_format_run_text(_html_escape(child.text), run))
+                    _make_seg(child.text,
+                              _format_run_text(_html_escape(child.text), run, para_script))
             continue
 
-        html.append(_format_run_text(_html_escape(text), run))
+        _make_seg(text, _format_run_text(_html_escape(text), run, para_script))
 
-    return ''.join(html)
+    return ''.join(seg['html'] for seg in segments)
 
 
 def _atomic_write_text(path, content, encoding='utf-8'):
@@ -420,6 +651,11 @@ import collections as _collections
 _keyboard_queue = _collections.deque()
 _keyboard_queue_lock = threading.Lock()
 
+# ─── Popup dialog: action queue (dialog → main editor) ──────────────────────
+# Popup dialog windows POST events here; the main editor polls and executes them.
+_dialog_action_queue = _collections.deque()
+_dialog_action_lock = threading.Lock()
+
 
 @app.route('/')
 def index():
@@ -532,6 +768,370 @@ def import_docx_api():
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Failed to import .docx: {str(e)}'}), 500
+
+
+# ---------------------------------------------------------------------------
+# DOCX Export
+# ---------------------------------------------------------------------------
+
+# Reverse map: editor CSS class → Word paragraph style name
+_EDITOR_CLASS_TO_WORD_STYLE = {
+    'ql-doc-title':      'Title',
+    'ql-doc-subtitle':   'Subtitle',
+    'ql-doc-section':    'Heading 1',
+    'ql-doc-subsection': 'Heading 2',
+    'ql-doc-translation':'Prijevod',
+}
+
+# Script → (font-name, line-height-pt)
+_SCRIPT_FONT_MAP = {
+    'devanagari': ('Noto Serif Devanagari', 32),
+    'telugu':     ('Noto Serif Telugu',     32),
+    'tamil':      ('Noto Serif Tamil',      32),
+    'kannada':    ('Noto Serif Kannada',    32),
+    'malayalam':  ('Noto Serif Malayalam',  32),
+}
+
+# Default body font matches "Translit" style in Veda Union docs
+_BODY_FONT     = 'Arial'
+_BODY_SIZE_PT  = 16
+_BODY_LH_PT    = 24   # Translit line-height: lineRule=exact 480 twips
+_HEADING_FONT  = 'Arial'
+
+
+def _docx_set_para_line_height(para, pt):
+    """Set exact line height on a python-docx paragraph (in points).
+    Uses python-docx's paragraph_format API for reliability."""
+    from docx.shared import Pt as _Pt
+    from docx.enum.text import WD_LINE_SPACING as _WD_LS
+    pf = para.paragraph_format
+    pf.line_spacing = _Pt(pt)
+    pf.line_spacing_rule = _WD_LS.EXACTLY
+
+
+def _docx_set_para_spacing(para, before_pt=0, after_pt=0):
+    """Set space-before and space-after on a paragraph."""
+    from docx.shared import Pt as _Pt
+    pf = para.paragraph_format
+    pf.space_before = _Pt(before_pt)
+    pf.space_after  = _Pt(after_pt)
+
+
+def _docx_run_set_border(run, size_eighths=4):
+    """Add a character border to a run (for holdings)."""
+    from docx.oxml.ns import qn as _qn
+    import lxml.etree as _etree
+    rPr = run._r.get_or_add_rPr()
+    bdr = _etree.SubElement(rPr, _qn('w:bdr'))
+    bdr.set(_qn('w:val'), 'single')
+    bdr.set(_qn('w:sz'), str(size_eighths))
+    bdr.set(_qn('w:space'), '0')
+    bdr.set(_qn('w:color'), '000000')
+
+
+class _HtmlToDocxParser:
+    """Minimal HTML → python-docx paragraph builder.
+
+    Parses the subset of HTML that śikṣāmitra's Quill editor produces:
+      <p [class="..."]>  inline content  </p>
+      Inline: <strong>, <em>, <u>, <sup>, <sub>,
+              <span class="ql-holding-short|ql-holding-long|ql-change-style|
+                          ql-svara-char|ql-doc-translation|ql-translation-style">,
+              text nodes, &amp; &lt; &gt; &nbsp;
+    """
+
+    def __init__(self, doc):
+        self.doc = doc
+        self._paragraphs = []   # list of {classes: [...], frags: [...]}
+        self._parse_called = False
+
+    # ------------------------------------------------------------------
+    def parse(self, html):
+        """Parse html string and fill self._paragraphs."""
+        import html as _html_mod
+        import re
+
+        # Normalise self-closing tags, strip <br> (treated as space)
+        html = html.replace('<br>', ' ').replace('<br/>', ' ').replace('<br />', ' ')
+
+        para_pat = re.compile(
+            r'<p(?:\s+class=["\']([^"\']*)["\'])?\s*>(.*?)</p>',
+            re.DOTALL | re.IGNORECASE
+        )
+
+        for m in para_pat.finditer(html):
+            classes = (m.group(1) or '').split()
+            inner   = m.group(2) or ''
+            frags   = self._parse_inline(inner)
+            self._paragraphs.append({'classes': classes, 'frags': frags})
+
+    # ------------------------------------------------------------------
+    def _parse_inline(self, html):
+        """Return list of frag dicts: {text, bold, italic, underline,
+        superscript, subscript, classes}."""
+        import html as _html_mod
+        import re
+
+        frags = []
+        # Stack: list of active open tags with their class info
+        tag_stack = []
+
+        def current_state():
+            bold = italic = underline = superscript = subscript = False
+            cls = set()
+            for t, tclass in tag_stack:
+                if t == 'strong': bold = True
+                elif t == 'em':   italic = True
+                elif t == 'u':    underline = True
+                elif t == 'sup':  superscript = True
+                elif t == 'sub':  subscript = True
+                elif t == 'span' and tclass:
+                    for c in tclass.split():
+                        cls.add(c)
+            return bold, italic, underline, superscript, subscript, cls
+
+        # Tokenise
+        token_pat = re.compile(
+            r'(<(?P<close>/)?(?P<tag>strong|em|u|sup|sub|span)(?P<attrs>[^>]*)>)'
+            r'|(?P<text>[^<]+)',
+            re.DOTALL | re.IGNORECASE
+        )
+
+        for m in token_pat.finditer(html):
+            if m.group('text') is not None:
+                text = _html_mod.unescape(m.group('text'))
+                bold, italic, underline, sup, sub, cls = current_state()
+                frags.append({
+                    'text': text,
+                    'bold': bold,
+                    'italic': italic,
+                    'underline': underline,
+                    'superscript': sup,
+                    'subscript': sub,
+                    'classes': set(cls),
+                })
+            elif m.group('close'):
+                # Closing tag — pop matching from stack
+                tag = m.group('tag').lower()
+                for i in range(len(tag_stack) - 1, -1, -1):
+                    if tag_stack[i][0] == tag:
+                        tag_stack.pop(i)
+                        break
+            else:
+                # Opening tag
+                tag = m.group('tag').lower()
+                attrs = m.group('attrs') or ''
+                cls_m = re.search(r'class=["\']([^"\']*)["\']', attrs)
+                tclass = cls_m.group(1) if cls_m else ''
+                tag_stack.append((tag, tclass))
+
+        return frags
+
+    # ------------------------------------------------------------------
+    def build(self, body_font=_BODY_FONT, body_size_pt=_BODY_SIZE_PT,
+              body_lh_pt=_BODY_LH_PT):
+        """Write parsed paragraphs into self.doc."""
+        from docx.shared import Pt, RGBColor
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+        for pdata in self._paragraphs:
+            classes  = pdata['classes']
+            frags    = pdata['frags']
+
+            # Determine Word paragraph style
+            word_style = 'Normal'
+            for cls in classes:
+                if cls in _EDITOR_CLASS_TO_WORD_STYLE:
+                    word_style = _EDITOR_CLASS_TO_WORD_STYLE[cls]
+                    break
+
+            # Determine script (for font selection)
+            script_cls = next((c.replace('ql-script-', '')
+                               for c in classes if c.startswith('ql-script-')), None)
+            is_translation = ('ql-doc-translation' in classes or
+                              'ql-translation-style' in classes)
+
+            # Choose font and line height for this paragraph
+            if script_cls and script_cls in _SCRIPT_FONT_MAP:
+                para_font, para_lh = _SCRIPT_FONT_MAP[script_cls]
+            elif is_translation:
+                para_font, para_lh = ('Times New Roman', 18)
+            elif word_style.startswith('Heading'):
+                para_font, para_lh = (_HEADING_FONT, 32)
+            elif word_style == 'Title':
+                para_font, para_lh = (_HEADING_FONT, 40)
+            else:
+                para_font, para_lh = (body_font, body_lh_pt)
+
+            # Add paragraph (use Normal to avoid inheriting heading numbering etc.)
+            try:
+                para = self.doc.add_paragraph(style=word_style)
+            except Exception:
+                para = self.doc.add_paragraph(style='Normal')
+
+            _docx_set_para_line_height(para, para_lh)
+            _docx_set_para_spacing(para, before_pt=0, after_pt=0)
+
+            # Add runs
+            for frag in frags:
+                if not frag['text']:
+                    continue
+                run = para.add_run(frag['text'])
+
+                # Font
+                run.font.name = para_font
+                if script_cls and script_cls in _SCRIPT_FONT_MAP:
+                    run.font.name = _SCRIPT_FONT_MAP[script_cls][0]
+
+                # Size
+                frag_size = body_size_pt
+                if is_translation:
+                    frag_size = 11
+                elif frag['superscript'] or 'ql-change-style' in frag['classes']:
+                    frag_size = 8
+                elif word_style == 'Heading 1':
+                    frag_size = 24
+                elif word_style == 'Heading 2':
+                    frag_size = 22
+                elif word_style == 'Title':
+                    frag_size = 24
+                run.font.size = Pt(frag_size)
+
+                # Basic formatting
+                fclasses = frag['classes']
+                run.bold      = frag['bold']
+                run.italic    = (frag['italic'] or is_translation or
+                                 'ql-change-style' in fclasses or
+                                 'ql-translation-style' in fclasses)
+                run.underline = frag['underline']
+                run.font.superscript = frag['superscript']
+                run.font.subscript   = frag['subscript']
+
+                # Holdings → character border
+                if 'ql-holding-long' in fclasses:
+                    _docx_run_set_border(run, size_eighths=8)
+                elif 'ql-holding-short' in fclasses:
+                    _docx_run_set_border(run, size_eighths=4)
+
+                # Svara accent → red bold
+                if 'ql-svara-char' in fclasses or 'ql-svara' in fclasses:
+                    run.bold = True
+                    run.font.color.rgb = RGBColor(0xCC, 0x1B, 0x1B)
+
+                # Change style → blue italic
+                if 'ql-change-style' in fclasses:
+                    run.italic = True
+                    run.font.color.rgb = RGBColor(0x1D, 0x4E, 0xD8)
+
+                # Translation → gray
+                if is_translation or 'ql-translation-style' in fclasses:
+                    run.italic = True
+                    run.font.color.rgb = RGBColor(0x80, 0x80, 0x80)
+
+
+def convert_html_to_docx(html_content, title=''):
+    """Convert śikṣāmitra editor HTML to a .docx file (as bytes).
+
+    Produces a document matching the Veda Union layout:
+      - A4 page (210mm × 297mm)
+      - Margins: left 25mm, right 9mm, top 20mm, bottom 15mm
+      - Body text: Arial 16pt, exact 24pt line height (Translit style)
+      - Indic script paragraphs: Noto Serif font, 32pt line height
+      - Headings: Arial, sizes per _EDITOR_CLASS_TO_WORD_STYLE mapping
+      - Translations: Times New Roman 11pt italic gray
+    """
+    if not HAS_DOCX:
+        raise ImportError("python-docx is required for DOCX export")
+
+    from docx.shared import Mm, Pt, RGBColor
+    from io import BytesIO
+
+    doc = DocxDocument()
+
+    # --- Page layout: A4, Veda Union margins ---
+    section = doc.sections[0]
+    section.page_width  = Mm(210)
+    section.page_height = Mm(297)
+    section.left_margin   = Mm(25)
+    section.right_margin  = Mm(9)
+    section.top_margin    = Mm(20)
+    section.bottom_margin = Mm(15)
+
+    # --- Define / override styles ---
+    styles = doc.styles
+
+    def _ensure_style(name, base='Normal'):
+        try:
+            return styles[name]
+        except KeyError:
+            from docx.enum.style import WD_STYLE_TYPE
+            return styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH, builtin=False)
+
+    # Translit (body mantra text) style
+    translit = _ensure_style('Translit', base='Normal')
+    translit.font.name = _BODY_FONT
+    translit.font.size = Pt(_BODY_SIZE_PT)
+    pf = translit.paragraph_format
+    pf.space_before = Pt(0)
+    pf.space_after  = Pt(0)
+    pf.line_spacing = Pt(_BODY_LH_PT)
+    from docx.enum.text import WD_LINE_SPACING as _WD_LS
+    pf.line_spacing_rule = _WD_LS.EXACTLY
+
+    # Prijevod (translation) style — only create if absent
+    prijevod = _ensure_style('Prijevod', base='Normal')
+    prijevod.font.name = 'Times New Roman'
+    prijevod.font.size = Pt(11)
+    prijevod.font.italic = True
+    prijevod.font.color.rgb = RGBColor(0x80, 0x80, 0x80)
+
+    # --- Parse and write paragraphs ---
+    parser = _HtmlToDocxParser(doc)
+    parser.parse(html_content)
+    parser.build(body_font=_BODY_FONT, body_size_pt=_BODY_SIZE_PT,
+                 body_lh_pt=_BODY_LH_PT)
+
+    # --- Remove the blank paragraph that python-docx adds by default ---
+    # (the first paragraph in a new document is always empty)
+    if doc.paragraphs and not doc.paragraphs[0].text:
+        p = doc.paragraphs[0]._element
+        p.getparent().remove(p)
+
+    out = BytesIO()
+    doc.save(out)
+    out.seek(0)
+    return out.read()
+
+
+@app.route('/api/file/export-docx', methods=['POST'])
+def export_docx_api():
+    """Export editor HTML content to a .docx file.
+
+    Request JSON: { "content": "<html>", "path": "/save/to.docx", "title": "..." }
+    Saves the file server-side and returns { "path": ... }.
+    """
+    data = request.json or {}
+    content  = data.get('content', '')
+    filepath = (data.get('path', '') or '').strip()
+    title    = data.get('title', '')
+
+    if not content:
+        return jsonify({'error': 'No content provided'}), 400
+    if not filepath:
+        return jsonify({'error': 'Path required'}), 400
+    if not HAS_DOCX:
+        return jsonify({'error': 'python-docx is not installed. Run: pip install python-docx'}), 500
+
+    try:
+        docx_bytes = convert_html_to_docx(content, title=title)
+        os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+        with open(filepath, 'wb') as f:
+            f.write(docx_bytes)
+        return jsonify({'path': filepath, 'size': len(docx_bytes)})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'DOCX export failed: {e}'}), 500
 
 
 @app.route('/api/file/save', methods=['POST'])
@@ -1442,6 +2042,7 @@ class JsBridge(QObject):
     viewerWindowRequested = pyqtSignal(str, str)  # filepath, title
     closeConfirmed = pyqtSignal(bool)  # For unsaved changes check
     keyboardToggleRequested = pyqtSignal()  # Toggle on-screen keyboard
+    openDialogRequested = pyqtSignal(str)   # Open a named popup dialog
     
     def __init__(self, main_window):
         super().__init__()
@@ -1536,6 +2137,11 @@ class JsBridge(QObject):
     def toggleKeyboard(self):
         """Toggle the floating on-screen keyboard window."""
         self.keyboardToggleRequested.emit()
+
+    @pyqtSlot(str)
+    def openDialog(self, dialog_id: str):
+        """Open (or raise) a named popup dialog window."""
+        self.openDialogRequested.emit(dialog_id)
 
 
 # --- Document Viewer Window ---
@@ -2978,6 +3584,90 @@ class ViewerWindow(QMainWindow):
 
 
 # --- On-Screen Keyboard Window ---
+def _set_titlebar_color(window, light_color=0xF0F3F5, dark_color=0x1A1A1A):
+    """
+    Set the Windows 11 titlebar caption colour via DWM.
+    DWMWA_CAPTION_COLOR = 35  (Windows 11 build ≥ 22000 only).
+    Silently does nothing on older Windows or non-Windows platforms.
+    Color value is a COLORREF: 0x00BBGGRR  (little-endian byte order).
+    """
+    try:
+        import ctypes
+        # Detect whether the window is in dark mode by checking its theme
+        try:
+            prefs = load_preferences() or {}
+            mode = str(prefs.get('theme_mode') or 'system').lower()
+            if mode == 'system':
+                try:
+                    import winreg
+                    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                        r'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize')
+                    val, _ = winreg.QueryValueEx(key, 'AppsUseLightTheme')
+                    is_dark = not bool(val)
+                except Exception:
+                    is_dark = False
+            else:
+                is_dark = (mode == 'dark')
+        except Exception:
+            is_dark = False
+
+        color = dark_color if is_dark else light_color
+        hwnd = int(window.winId())
+        # DWMWA_CAPTION_COLOR = 35
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(
+            hwnd, 35,
+            ctypes.byref(ctypes.c_int(color)),
+            ctypes.sizeof(ctypes.c_int)
+        )
+    except Exception:
+        pass  # Not Win11, or DWM not available — no-op
+
+
+class PopupDialog(QMainWindow):
+    """
+    A floating dialog window that hosts a QWebEngineView pointing at one of the
+    /dialog/* Flask pages.  Unlike the keyboard, this window ACCEPTS focus so the
+    user can interact with form controls.
+    """
+
+    def __init__(self, title: str, url: str, width: int, height: int,
+                 server_url: str, parent=None):
+        super().__init__(parent, Qt.WindowType.WindowStaysOnTopHint)
+        self.server_url = server_url
+        self.setWindowTitle(title)
+        self.resize(width, height)
+        self.setMinimumSize(400, 300)
+
+        if os.path.exists(ICON_PATH):
+            self.setWindowIcon(QIcon(ICON_PATH))
+        elif os.path.exists(LOGO_PATH):
+            self.setWindowIcon(QIcon(LOGO_PATH))
+
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.web_view = QWebEngineView()
+        self.web_view.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
+        settings = self.web_view.settings()
+        settings.setAttribute(
+            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
+        )
+        layout.addWidget(self.web_view)
+        self.web_view.setUrl(QUrl(url))
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # Apply titlebar colour after the window has an HWND
+        _set_titlebar_color(self)
+
+    def closeEvent(self, event):
+        # Hide rather than destroy — avoids QWebEngine teardown cost on re-open
+        event.ignore()
+        self.hide()
+
+
 class KeyboardWindow(QMainWindow):
     """
     Floating on-screen Sanskrit keyboard.
@@ -3023,6 +3713,10 @@ class KeyboardWindow(QMainWindow):
         layout.addWidget(self.web_view)
 
         self.web_view.setUrl(QUrl(f'{server_url}/keyboard'))
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        _set_titlebar_color(self)
 
     def closeEvent(self, event):
         # Hide rather than destroy — avoids QWebEngine teardown cost on re-open.
@@ -3093,9 +3787,12 @@ class MainWindow(QMainWindow):
         self.bridge.viewerWindowRequested.connect(self._open_viewer_window)
         self.bridge.closeConfirmed.connect(self._on_close_confirmed)
         self.bridge.keyboardToggleRequested.connect(self._toggle_keyboard)
+        self.bridge.openDialogRequested.connect(self._open_dialog)
 
         # On-screen keyboard window (created lazily on first toggle)
         self._keyboard_window = None
+        # Popup dialog windows, keyed by dialog_id
+        self._dialog_windows = {}
 
         # Load app
         self.web_view.setUrl(QUrl(server_url))
@@ -3155,6 +3852,35 @@ class MainWindow(QMainWindow):
             # explicit setFocus() after show() ensures the Quill cursor stays visible.
             self.web_view.setFocus()
 
+    def _open_dialog(self, dialog_id: str):
+        """Open (or raise) a popup dialog window by its ID."""
+        DIALOG_SPECS = {
+            'autorun': ('Run Agent — śikṣāmitra',  '/dialog/autorun', 720, 520),
+            'shloka':  ('Śloka Search — śikṣāmitra', '/dialog/shloka',  800, 560),
+            'iast':    ('IAST Characters — śikṣāmitra', '/dialog/iast',  700, 480),
+        }
+        if dialog_id not in DIALOG_SPECS:
+            return
+
+        title, path, w, h = DIALOG_SPECS[dialog_id]
+        url = f'{self.server_url}{path}'
+
+        win = self._dialog_windows.get(dialog_id)
+        if win is None:
+            win = PopupDialog(title, url, w, h, self.server_url, parent=None)
+            self._dialog_windows[dialog_id] = win
+            # Centre over the main window
+            geo = self.geometry()
+            dx = geo.left() + (geo.width()  - w) // 2
+            dy = geo.top()  + (geo.height() - h) // 2
+            win.setGeometry(dx, dy, w, h)
+
+        if win.isVisible():
+            win.raise_()
+            win.activateWindow()
+        else:
+            win.show()
+
     def closeEvent(self, event):
         """Handle close event with unsaved changes confirmation."""
         # If already confirmed by JS, allow close
@@ -3172,6 +3898,14 @@ class MainWindow(QMainWindow):
                 except Exception:
                     pass
                 self._keyboard_window = None
+            # Close all popup dialog windows
+            for dlg in list(self._dialog_windows.values()):
+                try:
+                    dlg.web_view.setUrl(QUrl('about:blank'))
+                    dlg.destroy()
+                except Exception:
+                    pass
+            self._dialog_windows.clear()
             event.accept()
             return
         
@@ -3303,6 +4037,62 @@ def keyboard_poll():
         chars = list(_keyboard_queue)
         _keyboard_queue.clear()
     return jsonify({'chars': chars})
+
+
+# ─── Popup dialog pages ──────────────────────────────────────────────────────
+
+def _serve_dialog_page(filename):
+    """Helper: read a dialog HTML, inject theme, return Response."""
+    path = os.path.join(BASE_DIR, filename)
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            html = f.read()
+        # Inject theme the same way the main editor does
+        try:
+            prefs = load_preferences() or {}
+            theme_mode = str(prefs.get('theme_mode') or 'system').lower()
+            if theme_mode not in ('light', 'dark', 'system'):
+                theme_mode = 'system'
+        except Exception:
+            theme_mode = 'system'
+        html = html.replace('__SIKSAMITRA_INITIAL_THEME_MODE__', theme_mode)
+        return Response(html, mimetype='text/html')
+    except FileNotFoundError:
+        return Response(f'<h1>{filename} not found</h1>', status=404, mimetype='text/html')
+
+
+@app.route('/dialog/autorun')
+def serve_dialog_autorun():
+    return _serve_dialog_page('dialog-autorun.html')
+
+
+@app.route('/dialog/shloka')
+def serve_dialog_shloka():
+    return _serve_dialog_page('dialog-shloka.html')
+
+
+@app.route('/dialog/iast')
+def serve_dialog_iast():
+    return _serve_dialog_page('dialog-iast.html')
+
+
+@app.route('/api/dialog/action', methods=['POST'])
+def dialog_action():
+    """Receive an action from a popup dialog and queue it for the main editor."""
+    data = request.get_json(force=True, silent=True) or {}
+    if data:
+        with _dialog_action_lock:
+            _dialog_action_queue.append(data)
+    return jsonify({'status': 'queued'})
+
+
+@app.route('/api/dialog/actions', methods=['GET'])
+def dialog_actions():
+    """Return and drain all pending dialog actions for the main editor."""
+    with _dialog_action_lock:
+        actions = list(_dialog_action_queue)
+        _dialog_action_queue.clear()
+    return jsonify({'actions': actions})
 
 
 @app.route('/<path:filename>')

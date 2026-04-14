@@ -88,10 +88,8 @@ class SanskritKeyboard {
     constructor() {
         this.primaryScript   = 'iast';
         this.secondaryScript = 'none';
-        this.insertMode      = 'primary';   // 'primary' | 'iast'
         this.activeConsonant = null;         // IAST value of selected consonant, or null
 
-        this._bc             = null;         // BroadcastChannel
         this._consonantBtns  = new Map();    // iastVal → <button>
         this._vowelBtns      = [];           // [{btn, vowelIAST}]
     }
@@ -99,10 +97,7 @@ class SanskritKeyboard {
     // ── INIT ──────────────────────────────────────────────────────────────
 
     init() {
-        try { this._bc = new BroadcastChannel('siksamitra-kb'); } catch(e) {}
-
         this._initDropdowns();
-        this._initInsertModeToggle();
         this._initKeyboardShortcuts();
         this._syncTheme();
         this.render();
@@ -173,28 +168,12 @@ class SanskritKeyboard {
         });
     }
 
-    // ── INSERT MODE ────────────────────────────────────────────────────────
-
-    _initInsertModeToggle() {
-        ['modeInsertPrimary','modeInsertIast'].forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) btn.addEventListener('click', () => {
-                this.insertMode = btn.dataset.mode;
-                document.querySelectorAll('.kb-mode-btn').forEach(b =>
-                    b.classList.toggle('on', b.dataset.mode === this.insertMode));
-                this.activeConsonant = null;
-                this.render();
-            });
-        });
-    }
-
     // ── KEYBOARD SHORTCUTS ─────────────────────────────────────────────────
 
     _initKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.activeConsonant = null;
-                this._updateConsonantHighlights();
                 this._rebuildVowelSection();
             }
         });
@@ -293,7 +272,12 @@ class SanskritKeyboard {
 
         if (this.secondaryScript !== 'none') {
             const secScript = this.secondaryScript;
-            const secDisplay = this._baseDisplay(iastVal, secScript);
+            // Use syllable form (consonant + inherent 'a') so secondary matches primary:
+            // e.g. Devanagari 'ख' primary → IAST secondary shows 'kha', not bare 'kh'
+            const T2 = TransliterationTables;
+            const secDisplay = T2.convertSyllable(iastVal, 'a', secScript)
+                               || T2.convert(iastVal, secScript)
+                               || iastVal;
             if (secDisplay && secDisplay !== display) {
                 const sSpan = document.createElement('span');
                 sSpan.className = 'kb-key-secondary';
@@ -404,18 +388,14 @@ class SanskritKeyboard {
                 btn.disabled = false;
                 btn.title = active + vowelIAST;
 
-                // Secondary label
+                // Secondary label — show just the vowel phoneme, not the full syllable
                 if (this.secondaryScript !== 'none') {
-                    const secSyllable = T.convertSyllable(active, vowelIAST, this.secondaryScript);
-                    if (secSyllable && secSyllable !== syllable) {
-                        sSpan.textContent = secSyllable;
+                    const secVowel = T.convert(vowelIAST, this.secondaryScript);
+                    if (secVowel && secVowel !== pSpan.textContent) {
+                        sSpan.textContent = secVowel;
                     }
                 }
 
-                // Dim the 'a' button in Indic (no-op — inherent vowel already inserted)
-                if (vowelIAST === 'a' && script !== 'iast' && script !== 'itrans') {
-                    btn.classList.add('kb-vkey-inherent');
-                }
             }
         } else {
             // Show standalone vowel
@@ -443,10 +423,7 @@ class SanskritKeyboard {
         const char = this._charForInsert(iastVal);
         this._broadcast({ type: 'insert', char });
 
-        // Set as active (clicking same key again keeps it active — natural repeat entry)
-        const prev = this.activeConsonant;
         this.activeConsonant = iastVal;
-        this._updateConsonantHighlights();
         this._rebuildVowelSection();
     }
 
@@ -501,7 +478,6 @@ class SanskritKeyboard {
 
     _clearActive() {
         this.activeConsonant = null;
-        this._updateConsonantHighlights();
         this._rebuildVowelSection();
     }
 
@@ -514,7 +490,7 @@ class SanskritKeyboard {
     // ── CHARACTER RESOLUTION ───────────────────────────────────────────────
 
     _effectiveScript() {
-        return this.insertMode === 'iast' ? 'iast' : this.primaryScript;
+        return this.primaryScript;
     }
 
     /**
@@ -610,21 +586,16 @@ class SanskritKeyboard {
         return parts.join(' · ') || iastVal;
     }
 
-    // ── BROADCAST ──────────────────────────────────────────────────────────
+    // ── SEND ──────────────────────────────────────────────────────────────
 
     _broadcast(msg) {
-        if (this._bc) {
-            this._bc.postMessage(msg);
-        } else {
-            // Fallback: HTTP (slower but safe if BroadcastChannel unavailable)
-            if (msg.type === 'insert') {
-                fetch('/api/keyboard/insert', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ char: msg.char }),
-                }).catch(() => {});
-            }
-        }
+        const char = msg.type === 'backspace' ? '\x08' : msg.char;
+        if (!char && msg.type !== 'backspace') return;
+        fetch('/api/keyboard/insert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ char: char || '\x08' }),
+        }).catch(() => {});
     }
 }
 

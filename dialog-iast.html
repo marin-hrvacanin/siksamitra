@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insert IAST Character — śikṣāmitra</title>
+    <script>
+        (function() {
+            try {
+                var mode = '__SIKSAMITRA_INITIAL_THEME_MODE__';
+                var stored = localStorage.getItem('siksamitra-theme') || '';
+                var t = stored || mode || 'light';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; font-size: 14px; }
+        .iast-dialog-body {
+            padding: 0;
+            overflow-y: auto;
+        }
+        .iast-menu-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 0 4px;
+        }
+        .iast-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .iast-table caption {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            padding-bottom: 4px;
+        }
+        .iast-table td { padding: 2px 3px; }
+        .popup-hint {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body class="popup-page">
+
+<!-- Titlebar -->
+<div class="popup-titlebar">
+    <div class="popup-titlebar-title">
+        <img src="logo.png" class="popup-titlebar-logo" alt="">
+        Insert IAST Character
+    </div>
+    <button class="popup-titlebar-close" id="closeBtn" title="Close">✕</button>
+</div>
+
+<!-- Content -->
+<div class="popup-content iast-dialog-body">
+    <div class="iast-menu-content">
+        <table class="iast-table">
+            <caption>Vowels &amp; Special</caption>
+            <tbody>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="ā" title="F9+a">ā</button></td>
+                    <td><button class="iast-char-btn" data-char="ī" title="F9+i">ī</button></td>
+                    <td><button class="iast-char-btn" data-char="ū" title="F9+u">ū</button></td>
+                    <td><button class="iast-char-btn" data-char="ṛ" title="F9+r">ṛ</button></td>
+                    <td><button class="iast-char-btn" data-char="ṝ" title="F9+R">ṝ</button></td>
+                </tr>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="ḷ" title="F9+l">ḷ</button></td>
+                    <td><button class="iast-char-btn" data-char="ḹ" title="F9+L">ḹ</button></td>
+                    <td><button class="iast-char-btn" data-char="ṁ" title="F9+m">ṁ</button></td>
+                    <td><button class="iast-char-btn" data-char="ḥ" title="F9+h">ḥ</button></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="iast-table">
+            <caption>Gutturals</caption>
+            <tbody>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="k">k</button></td>
+                    <td><button class="iast-char-btn" data-char="kh">kh</button></td>
+                    <td><button class="iast-char-btn" data-char="g">g</button></td>
+                    <td><button class="iast-char-btn" data-char="gh">gh</button></td>
+                    <td><button class="iast-char-btn" data-char="ṅ" title="F9+G">ṅ</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="iast-table">
+            <caption>Palatals</caption>
+            <tbody>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="c">c</button></td>
+                    <td><button class="iast-char-btn" data-char="ch">ch</button></td>
+                    <td><button class="iast-char-btn" data-char="j">j</button></td>
+                    <td><button class="iast-char-btn" data-char="jh">jh</button></td>
+                    <td><button class="iast-char-btn" data-char="ñ" title="F9+J">ñ</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="iast-table">
+            <caption>Retroflexes</caption>
+            <tbody>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="ṭ" title="F9+t">ṭ</button></td>
+                    <td><button class="iast-char-btn" data-char="ṭh" title="F9+T">ṭh</button></td>
+                    <td><button class="iast-char-btn" data-char="ḍ" title="F9+d">ḍ</button></td>
+                    <td><button class="iast-char-btn" data-char="ḍh" title="F9+D">ḍh</button></td>
+                    <td><button class="iast-char-btn" data-char="ṇ" title="F9+n">ṇ</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="iast-table">
+            <caption>Dentals</caption>
+            <tbody>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="t">t</button></td>
+                    <td><button class="iast-char-btn" data-char="th">th</button></td>
+                    <td><button class="iast-char-btn" data-char="d">d</button></td>
+                    <td><button class="iast-char-btn" data-char="dh">dh</button></td>
+                    <td><button class="iast-char-btn" data-char="n">n</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="iast-table">
+            <caption>Labials</caption>
+            <tbody>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="p">p</button></td>
+                    <td><button class="iast-char-btn" data-char="ph">ph</button></td>
+                    <td><button class="iast-char-btn" data-char="b">b</button></td>
+                    <td><button class="iast-char-btn" data-char="bh">bh</button></td>
+                    <td><button class="iast-char-btn" data-char="m">m</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="iast-table">
+            <caption>Semivowels &amp; Sibilants</caption>
+            <tbody>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="y">y</button></td>
+                    <td><button class="iast-char-btn" data-char="r">r</button></td>
+                    <td><button class="iast-char-btn" data-char="l">l</button></td>
+                    <td><button class="iast-char-btn" data-char="v">v</button></td>
+                    <td><button class="iast-char-btn" data-char="ś" title="F9+s">ś</button></td>
+                </tr>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="ṣ" title="F9+S">ṣ</button></td>
+                    <td><button class="iast-char-btn" data-char="s">s</button></td>
+                    <td><button class="iast-char-btn" data-char="h">h</button></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="iast-table">
+            <caption>Vedic &amp; Punctuation</caption>
+            <tbody>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="ḻ" title="Dravidian l">ḻ</button></td>
+                    <td><button class="iast-char-btn" data-char="ṃ" title="Alternate anusvara">ṃ</button></td>
+                    <td><button class="iast-char-btn" data-char="।" title="Danda">।</button></td>
+                    <td><button class="iast-char-btn" data-char="॥" title="Double danda">॥</button></td>
+                    <td><button class="iast-char-btn" data-char="ꣳ" title="Vedic tiryak">ꣳ</button></td>
+                </tr>
+                <tr>
+                    <td><button class="iast-char-btn" data-char="&#x0331;" title="Anudātta (U+0331)">a&#x0331;</button></td>
+                    <td><button class="iast-char-btn" data-char="&#x030D;" title="Svarita (U+030D)">a&#x030D;</button></td>
+                    <td><button class="iast-char-btn" data-char="&#x030E;" title="Udātta (U+030E)">a&#x030E;</button></td>
+                    <td><button class="iast-char-btn" data-char="&#x0310;" title="Candrabindu (U+0310)">m&#x0310;</button></td>
+                    <td><button class="iast-char-btn" data-char="ꣻ" title="Vedic anusvara above (U+A8FB)">ꣻ</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="popup-footer">
+    <span class="popup-hint">Tip: press F9 + a key to insert characters without opening this dialog.</span>
+    <button type="button" id="closeBtn2">Close</button>
+</div>
+
+<script>
+// ── Post char to editor ───────────────────────────────────────────────────────
+async function postChar(char) {
+    try {
+        await fetch('/api/dialog/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'insert_char', char })
+        });
+    } catch(e) { console.error('postChar error:', e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Wire all IAST char buttons
+    document.querySelectorAll('.iast-char-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const char = btn.dataset.char;
+            if (char) postChar(char);
+        });
+    });
+
+    document.getElementById('closeBtn').addEventListener('click', () => window.close());
+    document.getElementById('closeBtn2').addEventListener('click', () => window.close());
+});
+</script>
+</body>
+</html>
