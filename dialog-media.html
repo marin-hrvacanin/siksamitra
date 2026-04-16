@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embedded Media — śikṣāmitra</title>
+    <script>
+        (function() {
+            try {
+                var mode = '__SIKSAMITRA_INITIAL_THEME_MODE__';
+                var stored = localStorage.getItem('siksamitra-theme') || '';
+                var t = stored || mode || 'light';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; font-size: 14px; }
+        .media-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .media-status { font-size: 12px; color: var(--text-secondary); flex: 1; }
+        .file-list-container { overflow-y: auto; flex: 1; min-height: 0; }
+        .file-list-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .file-list-table th {
+            text-align: left;
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .file-list-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-subtle);
+            vertical-align: middle;
+        }
+        .file-list-table tr:hover td { background: var(--bg-elevated); }
+        .file-action-btn {
+            padding: 3px 10px;
+            font-size: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .file-action-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .media-empty {
+            text-align: center;
+            color: var(--text-tertiary);
+            padding: 32px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body class="popup-page">
+
+<!-- Content -->
+<div class="popup-content" style="display:flex;flex-direction:column;">
+    <div class="media-toolbar">
+        <button type="button" id="uploadBtn" class="custom-modal-btn custom-modal-btn-primary">Upload File</button>
+        <input type="file" id="uploadInput" accept="audio/*" style="display:none">
+        <span id="mediaStatus" class="media-status"></span>
+    </div>
+    <div class="file-list-container">
+        <table class="file-list-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Duration</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="fileList">
+                <tr><td colspan="3" class="media-empty">Loading…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="popup-footer">
+    <span class="popup-footer-status" id="statusMsg"></span>
+    <button type="button" id="refreshBtn">Refresh</button>
+    <button type="button" id="closeBtn">Close</button>
+</div>
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatDuration(secs) {
+    if (!secs || isNaN(secs)) return '—';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function setStatus(msg) {
+    const el = document.getElementById('mediaStatus');
+    if (el) el.textContent = msg;
+}
+
+function setFooterStatus(msg, success) {
+    const el = document.getElementById('statusMsg');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'popup-footer-status' + (success ? ' success' : '');
+    if (msg) setTimeout(() => { el.textContent = ''; el.className = 'popup-footer-status'; }, 3000);
+}
+
+async function postAction(type, data) {
+    try {
+        await fetch('/api/dialog/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, ...data })
+        });
+    } catch(e) { console.error('postAction error:', e); }
+}
+
+// ── Load file list ────────────────────────────────────────────────────────────
+async function loadFileList() {
+    const tbody = document.getElementById('fileList');
+    tbody.innerHTML = '<tr><td colspan="3" class="media-empty">Loading…</td></tr>';
+    try {
+        const resp = await fetch('/api/audio/embedded');
+        if (!resp.ok) throw new Error('Failed to load');
+        const data = await resp.json();
+        renderFileList(data.audio || []);
+    } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="3" class="media-empty" style="color:var(--accent)">Error loading media list</td></tr>`;
+    }
+}
+
+function renderFileList(files) {
+    const tbody = document.getElementById('fileList');
+    tbody.innerHTML = '';
+    if (!files || !files.length) {
+        const row = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 3;
+        td.className = 'media-empty';
+        td.textContent = 'No embedded media in this document.';
+        row.appendChild(td);
+        tbody.appendChild(row);
+        return;
+    }
+    files.forEach(file => {
+        const row = document.createElement('tr');
+
+        const nameTd = document.createElement('td');
+        nameTd.textContent = file.label || file.name || 'Audio';
+
+        const durTd = document.createElement('td');
+        durTd.textContent = formatDuration(file.duration);
+
+        const actTd = document.createElement('td');
+        const insertBtn = document.createElement('button');
+        insertBtn.className = 'file-action-btn';
+        insertBtn.textContent = 'Re-insert';
+        insertBtn.addEventListener('click', async () => {
+            await postAction('reinsert_audio', { audioId: file.id });
+            setFooterStatus(`Inserting "${file.label || file.name}"…`, true);
+        });
+        actTd.appendChild(insertBtn);
+
+        row.appendChild(nameTd);
+        row.appendChild(durTd);
+        row.appendChild(actTd);
+        tbody.appendChild(row);
+    });
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+async function uploadFile(file) {
+    setStatus(`Uploading "${file.name}"…`);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+        const resp = await fetch('/api/media/upload', { method: 'POST', body: formData });
+        if (!resp.ok) throw new Error(`Status ${resp.status}`);
+        const result = await resp.json();
+        setStatus('Uploaded. Click Re-insert to add to document.');
+        // Post insert action using the returned URL
+        if (result.url || result.path) {
+            await postAction('insert_audio_url', {
+                url: result.url || `/uploads/${result.filename}`,
+                filename: result.filename || file.name
+            });
+            setFooterStatus('Media uploaded and queued for insertion.', true);
+        }
+        setTimeout(() => setStatus(''), 3000);
+        await loadFileList();
+    } catch(e) {
+        setStatus(`Upload failed: ${e.message}`);
+    }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    loadFileList();
+
+    document.getElementById('uploadBtn').addEventListener('click', () => {
+        document.getElementById('uploadInput').click();
+    });
+    document.getElementById('uploadInput').addEventListener('change', e => {
+        if (e.target.files.length > 0) uploadFile(e.target.files[0]);
+    });
+    document.getElementById('refreshBtn').addEventListener('click', loadFileList);
+    document.getElementById('closeBtn').addEventListener('click', () => window.close());
+});
+</script>
+</body>
+</html>

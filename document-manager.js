@@ -90,24 +90,18 @@ Object.assign(SiksamitraEditor.prototype, {
         const quill = this.quill;
         if (!quill) return;
 
-        const silentSource = (typeof Quill !== 'undefined' && Quill.sources && Quill.sources.SILENT)
-            ? Quill.sources.SILENT
-            : 'silent';
+        // Single lightweight reconciliation after content load.
+        // Previously this called quill.update() + refreshAudioAttachments() +
+        // buildNavigationTree() five times (3 sync + 2 deferred), which on a
+        // 1000+ paragraph document took 30+ seconds. The repeated calls were a
+        // workaround for layout settling — replaced with one deferred pass.
+        try { this.refreshAudioAttachments?.(); } catch {}
 
-        const doOne = () => {
-            try { quill.update(silentSource); } catch {}
+        // Deferred pass: wait for fonts, tab switch, and layout to settle
+        setTimeout(() => {
             try { this.refreshAudioAttachments?.(); } catch {}
             try { this.buildNavigationTree?.(); } catch {}
-        };
-
-        // Run a few times to catch layout settling (tab switch, fonts, images).
-        doOne();
-        await this._nextFrame?.();
-        doOne();
-        await this._nextFrame?.();
-        doOne();
-        setTimeout(doOne, 120);
-        setTimeout(doOne, 300);
+        }, 300);
     },
 
     _openViewWindowForPath(path) {
@@ -1815,6 +1809,8 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                         try {
                             // Handle .docx import via server-side conversion
                             if (isDocx) {
+                                this.setBlockingLoaderText?.({ message: 'Server is converting Word document…' });
+
                                 const resp = await fetch('/api/file/import-docx', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
@@ -1823,21 +1819,35 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                                 const result = await resp.json();
                                 if (result.error) throw new Error(result.error);
 
-                                this.setHTML(result.content);
-                                this.currentFilePath = null; // Imported — not a native file yet
+                                const paraCount = result.paragraphs || '?';
+                                this.setBlockingLoaderText?.({
+                                    message: `Loading ${paraCount} paragraphs into editor…`
+                                });
+                                await this._nextFrame?.();
+
+                                // Enter batch mode to suppress per-keystroke handlers during the heavy paste
+                                if (typeof this._startBatch === 'function') this._startBatch();
+                                try {
+                                    this.setHTML(result.content);
+                                } finally {
+                                    this.setBlockingLoaderText?.({ message: 'Applying formatting…' });
+                                    await this._nextFrame?.();
+                                    if (typeof this._endBatch === 'function') this._endBatch();
+                                }
+
+                                this.currentFilePath = null;
                                 this.currentFileName = (result.title || 'Imported') + '.smdoc';
                                 this._scratchOpenedFromCache = false;
-                                this.isDirty = true; // Mark dirty so user is prompted to save
+                                this.isDirty = true;
                                 if (typeof this.updateTitle === 'function') this.updateTitle();
 
-                                // Switch to Edit tab
                                 const editTab = document.querySelector('[data-tab="edit"]');
                                 if (editTab) editTab.click();
                                 await this._nextFrame?.();
                                 await this._postContentLoadRefresh?.();
 
                                 setTimeout(() => this.hideBlockingLoader?.(), 150);
-                                console.log(`Imported .docx: ${filepath}`);
+                                console.log(`Imported .docx (${paraCount} paragraphs): ${filepath}`);
                                 return;
                             }
 
@@ -1846,39 +1856,48 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                                 throw new Error(content);
                             }
                             
-                            // Handle .smdoc format
-                            if (isSmdoc) {
-                                const smdoc = SMDocFormat.parse(content);
-                                this.setHTML(smdoc.content);
-                                
-                                // Apply theme if different from current
-                                if (smdoc.styles && smdoc.styles.theme) {
-                                    const currentTheme = document.body.getAttribute('data-theme') || 'light';
-                                    if (smdoc.styles.theme !== currentTheme) {
-                                        // Optionally apply the document's theme
-                                        // For now we just load content without changing app theme
+                            this.setBlockingLoaderText?.({
+                                message: isSmdoc ? 'Decompressing document…' : 'Parsing HTML…'
+                            });
+                            await this._nextFrame?.();
+
+                            // Batch mode: suppress expensive per-keystroke handlers during heavy paste
+                            if (typeof this._startBatch === 'function') this._startBatch();
+                            try {
+                                // Handle .smdoc format
+                                if (isSmdoc) {
+                                    const smdoc = SMDocFormat.parse(content);
+                                    this.setHTML(smdoc.content);
+
+                                    if (smdoc.styles && smdoc.styles.theme) {
+                                        const currentTheme = document.body.getAttribute('data-theme') || 'light';
+                                        if (smdoc.styles.theme !== currentTheme) {
+                                            // For now we just load content without changing app theme
+                                        }
                                     }
-                                }
-                                
-                                // Load audio attachments if present
-                                if (smdoc.audio && smdoc.audio.attachments && typeof this.loadAudioAttachments === 'function') {
-                                    this.loadAudioAttachments(smdoc.audio.attachments);
-                                }
-                            } else {
-                                // Handle HTML format
-                                const parser = new DOMParser();
-                                const doc = parser.parseFromString(content, 'text/html');
-                                const editorDiv = doc.querySelector('.ql-editor');
-                                if (editorDiv) {
-                                    let innerHTML = editorDiv.innerHTML.trim();
-                                    innerHTML = innerHTML.replace(/^(<p><br><\/p>\s*)+/, '');
-                                    this.setHTML(innerHTML);
+
+                                    if (smdoc.audio && smdoc.audio.attachments && typeof this.loadAudioAttachments === 'function') {
+                                        this.loadAudioAttachments(smdoc.audio.attachments);
+                                    }
                                 } else {
-                                    const bodyContent = doc.querySelector('body');
-                                    if (bodyContent) {
-                                        this.setHTML(bodyContent.innerHTML.trim());
+                                    // Handle HTML format
+                                    const parser = new DOMParser();
+                                    const doc = parser.parseFromString(content, 'text/html');
+                                    const editorDiv = doc.querySelector('.ql-editor');
+                                    if (editorDiv) {
+                                        let innerHTML = editorDiv.innerHTML.trim();
+                                        innerHTML = innerHTML.replace(/^(<p><br><\/p>\s*)+/, '');
+                                        this.setHTML(innerHTML);
+                                    } else {
+                                        const bodyContent = doc.querySelector('body');
+                                        if (bodyContent) {
+                                            this.setHTML(bodyContent.innerHTML.trim());
+                                        }
                                     }
                                 }
+                            } finally {
+                                this.setBlockingLoaderText?.({ message: 'Applying formatting…' });
+                                if (typeof this._endBatch === 'function') this._endBatch();
                             }
 
                             this.updateButtonStates(this.quill.getSelection(true));

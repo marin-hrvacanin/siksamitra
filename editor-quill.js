@@ -1183,6 +1183,13 @@ class SiksamitraEditor {
         // Poll timer for dialog window actions (always running while pywebview is ready)
         this._dialogActionPollTimer = null;
 
+        // ── Batch mode ──────────────────────────────────────────────────────
+        // When true, expensive per-keystroke handlers (audio refresh, svara
+        // formatting, button updates, script classification) are suppressed.
+        // Used during import, agent run, and other bulk operations.
+        // Always call _endBatch() after to reconcile.
+        this._batchMode = false;
+
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
@@ -1207,6 +1214,44 @@ class SiksamitraEditor {
     setFullscreenLoaderSubtitle(text) {
         const el = document.getElementById('fullscreenLoaderSubtitle');
         if (el) el.textContent = String(text || '');
+    }
+
+    /**
+     * Enter batch mode — suppresses expensive per-keystroke handlers during
+     * bulk operations (import, agent run, paste large content).
+     */
+    _startBatch() {
+        this._batchMode = true;
+    }
+
+    /**
+     * Exit batch mode and run a lightweight reconciliation pass.
+     *
+     * IMPORTANT: We deliberately skip the expensive full-document
+     * `applySvaraFormattingInRange(0, length)` and `applyDirghaFormattingInRange(0, length)`
+     * here. Those iterate every character in the doc and call `quill.formatText()` per
+     * svara/dīrgha mark — on a 1000+ paragraph document that takes 30-60+ seconds.
+     *
+     * File imports (smdoc, docx, html) already have correct CSS classes baked into the
+     * HTML, so the formatting is already present. For agent-run results, the pipeline
+     * steps apply formatting as they go. Only fresh user-typed text needs the per-char
+     * scan, which is handled by the per-keystroke `text-change` handler (not batch).
+     */
+    _endBatch() {
+        this._batchMode = false;
+        try {
+            this.refreshAudioAttachments();
+            this.updateButtonStates(this.quill.getSelection(true));
+            // Defer DOM-heavy work to next frame so the loader hides promptly
+            requestAnimationFrame(() => {
+                try {
+                    this.applyScriptClasses();
+                    this.buildNavigationTree();
+                } catch(e) { console.warn('_endBatch deferred error:', e); }
+            });
+        } catch(e) {
+            console.warn('_endBatch reconciliation error:', e);
+        }
     }
 
     showFullscreenLoader(subtitle) {
@@ -1248,6 +1293,18 @@ class SiksamitraEditor {
         const msgEl = document.getElementById('blockingLoaderMessage');
         if (titleEl && typeof title !== 'undefined') titleEl.textContent = String(title || '');
         if (msgEl && typeof message !== 'undefined') msgEl.textContent = String(message || '');
+
+        // Also update the OS loader window state so it reflects the new message
+        const payload = {};
+        if (typeof title   !== 'undefined') payload.title   = String(title   || '');
+        if (typeof message !== 'undefined') payload.message = String(message || '');
+        if (Object.keys(payload).length) {
+            fetch('/api/loader/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        }
     }
 
     /**
@@ -1273,28 +1330,35 @@ class SiksamitraEditor {
     showBlockingLoader({ title, message } = {}) {
         const overlay = document.getElementById('fileLoadingOverlay');
         const popup = document.getElementById('fileLoadingPopup');
-        if (!overlay || !popup) return;
+        if (!overlay) return;
 
         if (title || message) {
             this.setBlockingLoaderText({ title, message });
         }
 
-        this._centerBlockingPopup();
+        // Fade the editor (overlay only — the popup itself is now an OS window).
         overlay.classList.add('active');
-        popup.classList.add('active');
-
+        if (popup) popup.classList.remove('active');  // ensure old in-page popup stays hidden
         this._setLoaderBlurActive(true);
+
+        // Show OS-level blocking loader window (no close button)
+        if (window.pywebview?.api?.show_loader) {
+            window.pywebview.api.show_loader(title || 'Loading\u2026', message || '');
+        }
     }
 
     hideBlockingLoader() {
         const overlay = document.getElementById('fileLoadingOverlay');
         const popup = document.getElementById('fileLoadingPopup');
-        if (!overlay || !popup) return;
 
-        overlay.classList.remove('active');
-        popup.classList.remove('active');
-
+        if (overlay) overlay.classList.remove('active');
+        if (popup) popup.classList.remove('active');
         this._setLoaderBlurActive(false);
+
+        // Hide OS-level loader window
+        if (window.pywebview?.api?.hide_loader) {
+            window.pywebview.api.hide_loader();
+        }
     }
 
     /**
@@ -1327,9 +1391,11 @@ class SiksamitraEditor {
             this.setupAboutLink();
             this.isInitialized = true;
             
-            // Track changes for dirty state and re-classify script per paragraph
+            // Track changes for dirty state and re-classify script per paragraph.
+            // In batch mode, suppress autosaves and debounced work (reconciled later).
             this.quill.on('text-change', () => {
                 this.isDirty = true;
+                if (this._batchMode) return;
                 this.updateTitle();
                 // Debounce script classification (runs every 800ms after typing stops)
                 if (this._scriptClassDebounce) clearTimeout(this._scriptClassDebounce);
@@ -1911,20 +1977,23 @@ class SiksamitraEditor {
             }
         });
 
-        // Also update on text changes, but don't trigger focus
+        // Also update on text changes, but don't trigger focus.
+        // In batch mode (import, agent run) all of this is suppressed for performance;
+        // _endBatch() does a single reconciliation pass instead.
         this.quill.on('text-change', (delta, oldDelta, source) => {
+            if (this._batchMode) return;
             // Only update button states, never trigger focus from text changes
             if (!this.isModalOverlayActive()) {
                 this.updateButtonStates(this.quill.getSelection(true));
             }
             if (delta && source !== Quill.sources.SILENT) {
-                // First, apply correct formatting to svara and dīrgha marks
                 this.applySvaraFormattingFromDelta(delta);
                 this.applyDirghaFormattingFromDelta(delta);
-                // Then, strip non-typable formats from any non-mark characters that inherited them
                 this.stripNonTypableFormatsFromDelta(delta);
             }
-            this.refreshAudioAttachments();
+            // Debounce audio button refresh (DOM-heavy)
+            if (this._audioRefreshDebounce) clearTimeout(this._audioRefreshDebounce);
+            this._audioRefreshDebounce = setTimeout(() => this.refreshAudioAttachments(), 400);
         });
 
         this.setupWordClipboardHandling();
@@ -4945,9 +5014,267 @@ class SiksamitraEditor {
             case 'insert_char':
                 if (action.char) this.insertIASTCharacter(action.char);
                 break;
+            case 'apply_auto_svaras':
+                // Dialog already saved settings to localStorage; just apply them
+                this.applyAutomaticSvaras();
+                break;
+            case 'sync_paragraph_styles':
+                // Dialog saved styles to localStorage; reload and apply to document
+                this.loadSavedParagraphStyles();
+                break;
+            case 'reinsert_audio': {
+                // Re-insert an already-embedded audio item by its ID
+                const audioData = (this.audioLibrary || []).find(
+                    a => a.id === action.audioId || a.label === action.audioId
+                );
+                if (audioData && this.quill) {
+                    const range = this.quill.getSelection(true);
+                    if (range) {
+                        this.quill.insertEmbed(range.index, 'audio-attachment', audioData, 'user');
+                        this.quill.setSelection(range.index + 1, 0, 'silent');
+                        if (typeof this.refreshAudioAttachments === 'function') this.refreshAudioAttachments();
+                    }
+                }
+                break;
+            }
+            case 'insert_audio_url':
+                if (action.url && typeof this.insertAudioFromUrl === 'function') {
+                    this.insertAudioFromUrl(action.url, action.filename || 'Audio');
+                }
+                break;
+            case 'audio_picker_choose': {
+                // User selected an existing audio in the picker dialog.
+                const audio = (this.audioLibrary || []).find(a => a.id === action.audioId);
+                if (audio) this._continueWithAudio(audio);
+                break;
+            }
+            case 'audio_picker_upload': {
+                // User uploaded a new audio file in the picker dialog.
+                if (action.audio && action.audio.src) {
+                    // Add to library, then continue
+                    this.audioLibrary = this.audioLibrary || [];
+                    this.audioLibrary.push(action.audio);
+                    this._continueWithAudio(action.audio);
+                }
+                break;
+            }
+            case 'audio_editor_apply':
+                this._applyAudioEditorResult(action);
+                break;
+            case 'audio_editor_delete':
+                this._handleAudioEditorDelete(action);
+                break;
+            case 'audio_editor_request_sections':
+                // The editor dialog asks for the full list of sections for the picker.
+                this._postSectionsToServer().catch(() => {});
+                break;
+            case 'message_response': {
+                // OS-window modal dialog returned a value; resolve the waiting Promise.
+                if (typeof window._dispatchMessageResponse === 'function') {
+                    window._dispatchMessageResponse(action.messageId, action.value);
+                }
+                break;
+            }
             default:
                 break;
         }
+    }
+
+    /**
+     * After the picker resolves with a chosen audio, open the full editor for it.
+     * Handles both single-section and multi-section flows.
+     */
+    _continueWithAudio(audio) {
+        if (!audio) return;
+        const targets = Array.isArray(this._pendingAudioTargets) ? this._pendingAudioTargets : [];
+        const existing = this._pendingAudioExistingAttachment;
+
+        // Build regions per target. If the target already has an attachment with this audio,
+        // preserve its trim range. Otherwise default to full audio.
+        const lines = this.quill.getLines();
+        const regions = [];
+        targets.forEach((t, i) => {
+            let start = 0;
+            let end = audio.duration || 0;
+            // Look for an existing attachment on this line using same audio id
+            try {
+                const line = lines[t.lineIndex];
+                const att = line && line.domNode.querySelector('.ql-audio-attachment');
+                if (att && att.dataset.audioId === audio.id) {
+                    start = parseFloat(att.dataset.startTime) || 0;
+                    end = att.dataset.endTime ? parseFloat(att.dataset.endTime) : end;
+                } else if (i === 0 && existing && existing.dataset.audioId === audio.id) {
+                    // Replacing the existing attachment for target #0
+                    start = parseFloat(existing.dataset.startTime) || 0;
+                    end = existing.dataset.endTime ? parseFloat(existing.dataset.endTime) : end;
+                }
+            } catch(_) {}
+            regions.push({
+                start: Math.max(0, Math.min(start, audio.duration || 0)),
+                end: Math.max(0.05, Math.min(end, audio.duration || 0)),
+                label: t.text || `Region ${i + 1}`,
+                targetIndex: i,
+            });
+        });
+
+        // Post the section list so the editor's Add-Section picker can populate quickly
+        this._postSectionsToServer().catch(() => {});
+
+        this.openAudioEditorDialog(audio, targets, regions);
+    }
+
+    /**
+     * Apply the regions returned from the audio editor dialog.
+     *  - Removes any existing attachments on every target line FIRST
+     *    (so deleted-region cases actually erase the play button)
+     *  - Then inserts a new attachment for each region (one per target)
+     *  - Updates the audio library if a new audio was uploaded mid-edit
+     */
+    _applyAudioEditorResult(action) {
+        if (!action) return;
+
+        // Adopt the audio if needed (handles "uploaded inside the editor" edge case)
+        if (action.audio && action.audio.src) {
+            this.audioLibrary = this.audioLibrary || [];
+            const idx = this.audioLibrary.findIndex(a => a.id === action.audio.id);
+            if (idx === -1) this.audioLibrary.push(action.audio);
+            else this.audioLibrary[idx] = action.audio;
+        }
+
+        const audio = (this.audioLibrary || []).find(a => a.id === action.audioId);
+        if (!audio || !audio.src) {
+            console.warn('audio_editor_apply: no matching audio in library for', action.audioId);
+            return;
+        }
+
+        // Trust the editor-side targets list (it may differ from our snapshot if user added sections)
+        const targets = Array.isArray(action.targets) && action.targets.length
+            ? action.targets
+            : (this._pendingAudioTargets || []);
+        const regions = Array.isArray(action.regions) ? action.regions : [];
+
+        const lines = this.quill.getLines();
+
+        // STEP 1: clear any audio attachment on EVERY target line (using THIS audio).
+        // This is the critical fix: a deleted region must remove the existing attachment.
+        // We only remove attachments that share this audio id; other audio is left alone.
+        const targetLineIndices = new Set();
+        targets.forEach(t => {
+            if (typeof t.lineIndex === 'number') targetLineIndices.add(t.lineIndex);
+        });
+        // Also remove from any line that previously contained THIS audio anywhere in the doc,
+        // to keep the document consistent (avoids the "play still works after delete" bug).
+        const allAttachments = Array.from(this.quill.root.querySelectorAll('.ql-audio-attachment'));
+        for (const att of allAttachments) {
+            if (att.dataset.audioId !== audio.id) continue;
+            try {
+                const blot = Quill.find(att);
+                if (!blot) continue;
+                const lineForAtt = this.quill.getLines().findIndex(ln => ln.domNode.contains(att));
+                // Only remove if it's on a target line — otherwise we'd nuke unrelated uses.
+                if (targetLineIndices.has(lineForAtt) || this._pendingAudioExistingAttachment === att) {
+                    const idx = this.quill.getIndex(blot);
+                    this.quill.deleteText(idx, 1, Quill.sources.USER);
+                }
+            } catch(e) { console.warn('Failed to clean up attachment:', e); }
+        }
+
+        // STEP 2: insert new attachments for each region
+        // Re-fetch lines after deletions so indexes are fresh
+        const linesAfter = this.quill.getLines();
+        regions.forEach((region) => {
+            try {
+                let lineIndex = (typeof region.targetLineIndex === 'number')
+                    ? region.targetLineIndex
+                    : (region.targetIndex != null && targets[region.targetIndex]
+                        ? targets[region.targetIndex].lineIndex : null);
+                if (lineIndex == null) return;
+                if (lineIndex < 0 || lineIndex >= linesAfter.length) return;
+                const line = linesAfter[lineIndex];
+                if (!line) return;
+
+                const audioData = {
+                    id: audio.id,
+                    label: region.label || audio.label || 'Audio',
+                    src: audio.src,
+                    duration: audio.duration,
+                    startTime: Number(region.start) || 0,
+                    endTime: Number(region.end) || (audio.duration || 0),
+                };
+                const lineOffset = this.quill.getIndex(line);
+                this.quill.insertEmbed(lineOffset, 'audio-attachment', audioData, Quill.sources.USER);
+            } catch(e) {
+                console.warn('Failed to insert audio attachment:', e);
+            }
+        });
+
+        if (typeof this.refreshAudioAttachments === 'function') {
+            this.refreshAudioAttachments();
+        }
+
+        // Clear pending state
+        this._pendingAudioTargets = null;
+        this._pendingAudioExistingAttachment = null;
+    }
+
+    /**
+     * Handle the "Delete Audio" button from the editor dialog. Removes all
+     * attachments on the original target lines AND any line referencing this audio
+     * that was added/discovered during the edit session.
+     */
+    _handleAudioEditorDelete(action) {
+        const audioId = action?.audioId || null;
+        const actionTargets = Array.isArray(action?.targets) ? action.targets : null;
+        const targets = actionTargets || this._pendingAudioTargets || [];
+        const targetLineIndices = new Set();
+        targets.forEach(t => {
+            if (typeof t.lineIndex === 'number') targetLineIndices.add(t.lineIndex);
+        });
+
+        const allAttachments = Array.from(this.quill.root.querySelectorAll('.ql-audio-attachment'));
+        for (const att of allAttachments) {
+            try {
+                if (audioId && att.dataset.audioId !== audioId) continue;
+                const blot = Quill.find(att);
+                if (!blot) continue;
+                const lineForAtt = this.quill.getLines().findIndex(ln => ln.domNode.contains(att));
+                if (targetLineIndices.size && !targetLineIndices.has(lineForAtt)) continue;
+                const idx = this.quill.getIndex(blot);
+                this.quill.deleteText(idx, 1, Quill.sources.USER);
+            } catch(e) { console.warn('Failed to delete attachment:', e); }
+        }
+        if (typeof this.refreshAudioAttachments === 'function') {
+            this.refreshAudioAttachments();
+        }
+        this._pendingAudioTargets = null;
+        this._pendingAudioExistingAttachment = null;
+    }
+
+    /**
+     * Build a list of every "section" in the document (any line with text) along with
+     * its hierarchy level + estimated syllable count, and POST it to the server so
+     * the audio-editor's Add-Section picker can fetch it with a single GET.
+     */
+    async _postSectionsToServer() {
+        const lines = this.quill.getLines();
+        const sections = [];
+        lines.forEach((line, i) => {
+            const text = (line.domNode?.textContent || '').trim();
+            if (!text) return;
+            sections.push({
+                lineIndex: i,
+                text: this._summarizeLine(line),
+                level: this._getLineLevel(line),
+                syllables: this._countSyllables(text),
+            });
+        });
+        try {
+            await fetch('/api/audio/editor/sections', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sections }),
+            });
+        } catch(e) { console.warn('Failed to POST sections:', e); }
     }
 
     /**
@@ -5083,30 +5410,79 @@ class SiksamitraEditor {
         }
 
         if (insertAudioBtn) {
-            insertAudioBtn.addEventListener('click', () => {
-                // Find the paragraph where cursor is
-                const selection = this.quill.getSelection();
-                if (!selection) {
-                    if (window.ModalDialogs) {
-                        ModalDialogs.alert('Please place your cursor in the paragraph where you want to attach audio.', 'Insert Audio', 'info');
-                    }
-                    return;
-                }
-                
-                const [line] = this.quill.getLine(selection.index);
-                if (!line) {
-                    if (window.ModalDialogs) {
-                        ModalDialogs.alert('Could not determine the current paragraph.', 'Insert Audio', 'info');
-                    }
-                    return;
-                }
-
-                const lines = this.quill.getLines();
-                const lineIndex = lines.indexOf(line);
-                this.attachAudioToSection(lineIndex);
-            });
+            insertAudioBtn.addEventListener('click', () => this.attachAudioToCurrentSelection());
         }
 
+    }
+
+    /**
+     * Attach audio based on the current Quill selection.
+     *
+     *  - No selection / cursor only      → single-target (current line)
+     *  - Selection spans multiple lines  → multi-target (every line crossed,
+     *    skipping empty lines and lines where text isn't actually selected)
+     */
+    async attachAudioToCurrentSelection() {
+        const selection = this.quill.getSelection();
+        if (!selection) {
+            if (window.ModalDialogs) {
+                await ModalDialogs.alert(
+                    'Please place your cursor in the paragraph where you want to attach audio.',
+                    'Insert Audio', 'info'
+                );
+            }
+            return;
+        }
+
+        const lines = this.quill.getLines();
+        const length = selection.length || 0;
+
+        if (length === 0) {
+            // Cursor only — single line attach
+            const [line] = this.quill.getLine(selection.index);
+            if (!line) {
+                if (window.ModalDialogs) {
+                    await ModalDialogs.alert('Could not determine the current paragraph.', 'Insert Audio', 'info');
+                }
+                return;
+            }
+            const lineIndex = lines.indexOf(line);
+            this.attachAudioToSection(lineIndex);
+            return;
+        }
+
+        // Selection spans range [start, end). Collect every distinct line whose
+        // text overlaps the range.
+        const start = selection.index;
+        const end = selection.index + length;
+        const indices = [];
+        for (let i = 0; i < lines.length; i++) {
+            const ln = lines[i];
+            const lineStart = this.quill.getIndex(ln);
+            const lineLen = ln.length();
+            const lineEnd = lineStart + lineLen;
+            // Overlap test (strict — ignore lines only touched by the trailing newline)
+            const overlapStart = Math.max(start, lineStart);
+            const overlapEnd = Math.min(end, lineEnd);
+            if (overlapEnd > overlapStart) {
+                // Only include lines that have actual text (skip blank lines)
+                const text = (ln.domNode?.textContent || '').trim();
+                if (text) indices.push(i);
+            }
+        }
+
+        if (!indices.length) {
+            if (window.ModalDialogs) {
+                await ModalDialogs.alert('No text in the current selection.', 'Insert Audio', 'info');
+            }
+            return;
+        }
+
+        if (indices.length === 1) {
+            this.attachAudioToSection(indices[0]);
+        } else {
+            this.attachAudioToMultipleSections(indices);
+        }
     }
     
     /**
@@ -7038,9 +7414,12 @@ class SiksamitraEditor {
     }
 
     openParagraphStylesDialog() {
+        if (window.pywebview?.api?.open_dialog) {
+            window.pywebview.api.open_dialog('paragraphstyles');
+            return;
+        }
         const dialog = document.getElementById('paragraphStylesDialog');
         if (!dialog) return;
-
         // Load first style (title) by default
         this.loadParagraphStyleToForm('title');
         dialog.hidden = false;
@@ -7579,6 +7958,10 @@ ${className} {
     }
 
     openAutoSvaraDialog() {
+        if (window.pywebview?.api?.open_dialog) {
+            window.pywebview.api.open_dialog('autosvara');
+            return;
+        }
         const dialog = document.getElementById('autoSvaraDialog');
         if (!dialog) return;
 
@@ -8679,6 +9062,9 @@ ${className} {
         });
         await this._nextFrame();
 
+        // Enter batch mode so expensive per-keystroke handlers are suppressed
+        this._startBatch();
+
         const steps = [
             {
                 key: 'transliterate',
@@ -8763,8 +9149,11 @@ ${className} {
 
             const executedSteps = new Set();
             const orderedRanges = [...processableRanges].sort((a, b) => b.index - a.index);
+            const totalRanges = orderedRanges.length;
+            const enabledSteps = steps.filter(s => s.always || settings[s.key]);
 
-            for (const range of orderedRanges) {
+            for (let ri = 0; ri < orderedRanges.length; ri++) {
+                const range = orderedRanges[ri];
                 let workingRange = { ...range };
 
                 for (const step of steps) {
@@ -8777,7 +9166,8 @@ ${className} {
                         executedSteps.add(step.key);
                     }
 
-                    this.setBlockingLoaderText({ message: `${step.label}…` });
+                    const rangeLabel = totalRanges > 1 ? ` (${ri + 1}/${totalRanges})` : '';
+                    this.setBlockingLoaderText({ message: `${step.label}${rangeLabel}…` });
                     await this._nextFrame();
 
                     const result = this.runAutomationStepOnRange(step.action, workingRange);
@@ -8803,10 +9193,8 @@ ${className} {
 
             this.focusEditorIfAppropriate();
             this.log('Run Agent completed successfully.', 'success');
-
-            // Re-apply script classes after pipeline (content may have changed scripts)
-            requestAnimationFrame(() => this.applyScriptClasses());
         } finally {
+            this._endBatch();     // reconcile all per-keystroke work in one pass
             this.hideBlockingLoader();
         }
     }
@@ -12107,19 +12495,35 @@ ${embeddedStyles}
      * Set editor content - uses dangerouslyPasteHTML for proper format recognition
      */
     setHTML(html) {
-        // Clear the editor first
-        this.quill.setText('', Quill.sources.SILENT);
-        // Use dangerouslyPasteHTML to properly recognize all registered formats
-        this.quill.clipboard.dangerouslyPasteHTML(0, html, Quill.sources.SILENT);
+        // For large content (>50KB HTML), use fast direct DOM injection instead of
+        // Quill's dangerouslyPasteHTML which parses → diffs → applies (very slow on
+        // 1000+ paragraph documents). Direct injection + quill.update() is 10-50× faster.
+        const useFastPath = html && html.length > 50000;
 
-        // Apply special formatting for svara and dīrgha marks
-        this.applySvaraFormattingInRange(0, this.quill.getLength());
-        this.applyDirghaFormattingInRange(0, this.quill.getLength());
-        this.refreshAudioAttachments();
+        if (useFastPath) {
+            // Quill 2 fast path: inject HTML directly into the editor div,
+            // then tell Quill to synchronize its internal document model from the DOM.
+            this.quill.setText('', Quill.sources.SILENT);
+            this.quill.root.innerHTML = html;
+            // quill.update() reads the current DOM and rebuilds the internal Delta.
+            // This works because all custom blots (audio-attachment, short-holding,
+            // long-holding, change-style, etc.) are registered with Quill and
+            // matched by their tagName/className during DOM→Delta conversion.
+            this.quill.update(Quill.sources.SILENT);
+        } else {
+            // Standard path for small content — dangerouslyPasteHTML handles format
+            // conversion and clipboard matchers (important for pasted Word content).
+            this.quill.setText('', Quill.sources.SILENT);
+            this.quill.clipboard.dangerouslyPasteHTML(0, html, Quill.sources.SILENT);
+        }
 
-        // Classify paragraphs by script (adds ql-script-devanagari etc. classes)
-        // Use rAF to let Quill finish DOM rendering first
-        requestAnimationFrame(() => this.applyScriptClasses());
+        // In batch mode, skip the per-character formatting — _endBatch() handles it.
+        if (!this._batchMode) {
+            this.applySvaraFormattingInRange(0, this.quill.getLength());
+            this.applyDirghaFormattingInRange(0, this.quill.getLength());
+            this.refreshAudioAttachments();
+            requestAnimationFrame(() => this.applyScriptClasses());
+        }
     }
 
     /**
@@ -12204,9 +12608,9 @@ ${embeddedStyles}
         // Build initial tree
         this.buildNavigationTree();
         
-        // Rebuild on content change
+        // Rebuild on content change (suppressed during batch mode)
         this.quill.on('text-change', () => {
-            // Debounce the tree rebuild
+            if (this._batchMode) return;
             clearTimeout(this.navRebuildTimeout);
             this.navRebuildTimeout = setTimeout(() => {
                 this.buildNavigationTree();
@@ -12231,7 +12635,14 @@ ${embeddedStyles}
         
         // Handle context menu items
         document.getElementById('navMenuAttachAudio')?.addEventListener('click', () => {
-            this.attachAudioToSection(currentLineIndex);
+            // If multi-selection is active and the right-clicked line is part of it,
+            // attach a single audio to ALL selected sections at once.
+            const sel = this._navSelectedLineIndices;
+            if (sel && sel.size > 1 && sel.has(currentLineIndex)) {
+                this.attachAudioToMultipleSections(Array.from(sel).sort((a,b) => a - b));
+            } else {
+                this.attachAudioToSection(currentLineIndex);
+            }
             contextMenu.classList.remove('visible');
         });
 
@@ -12300,18 +12711,14 @@ ${embeddedStyles}
     }
 
     /**
-     * Attach audio to a section
+     * Attach audio to a section. If the line already has an attachment, the user
+     * is asked to confirm replacement; the picker then opens.
      */
     async attachAudioToSection(lineIndex) {
         const lines = this.quill.getLines();
-        if (lineIndex < 0 || lineIndex >= lines.length) {
-            return;
-        }
-
+        if (lineIndex < 0 || lineIndex >= lines.length) return;
         const line = lines[lineIndex];
-        if (!line) {
-            return;
-        }
+        if (!line) return;
 
         const existingAttachment = line.domNode.querySelector('.ql-audio-attachment');
         if (existingAttachment) {
@@ -12320,19 +12727,201 @@ ${embeddedStyles}
                 'Replace Audio',
                 'info'
             );
-            if (!shouldReplace) {
-                return;
-            }
+            if (!shouldReplace) return;
         }
 
-        // Show audio selection dialog
-        this.showAudioSelectionDialog(line, existingAttachment);
+        const target = this._buildTarget(lineIndex, line);
+        await this.openAudioPickerDialog([target], existingAttachment);
     }
 
     /**
-     * Show dialog to choose existing audio or upload new
+     * Attach a single audio file to multiple sections at once. Supports targets
+     * at any hierarchy level (titles, sections, subsections, etc.).
      */
-    showAudioSelectionDialog(line, existingAttachment) {
+    async attachAudioToMultipleSections(lineIndices) {
+        const lines = this.quill.getLines();
+        const validIndices = (lineIndices || []).filter(li =>
+            typeof li === 'number' && li >= 0 && li < lines.length && lines[li]
+        );
+        if (!validIndices.length) return;
+
+        // Confirm replacement if any of the target lines already has an audio
+        const conflicts = validIndices.filter(li =>
+            lines[li].domNode.querySelector('.ql-audio-attachment')
+        );
+        if (conflicts.length) {
+            const ok = await ModalDialogs.confirm(
+                `${conflicts.length} of the ${validIndices.length} selected sections already have audio. Replace them?`,
+                'Replace Existing Audio',
+                'warning'
+            );
+            if (!ok) return;
+        }
+
+        const targets = validIndices.map(li => this._buildTarget(li, lines[li]));
+        await this.openAudioPickerDialog(targets, null);
+    }
+
+    /**
+     * Build a target descriptor from a line index. Includes hierarchy level and
+     * estimated syllable count for use by the auto-align algorithm.
+     */
+    _buildTarget(lineIndex, line) {
+        return {
+            lineIndex,
+            text: this._summarizeLine(line),
+            level: this._getLineLevel(line),
+            syllables: this._countSyllables((line.domNode?.textContent || '')),
+        };
+    }
+
+    /**
+     * Summarize a Quill line for use as a target label in the audio editor.
+     */
+    _summarizeLine(line) {
+        try {
+            const txt = (line.domNode?.textContent || '').trim();
+            if (!txt) return '(empty line)';
+            return txt.length > 80 ? txt.slice(0, 77) + '…' : txt;
+        } catch(e) { return ''; }
+    }
+
+    /**
+     * Determine a line's hierarchy level from its CSS classes / tag.
+     * Returns one of: 'title', 'subtitle', 'section', 'subsection',
+     * 'translation', 'comment', 'line'.
+     */
+    _getLineLevel(line) {
+        try {
+            const node = line.domNode;
+            if (!node) return 'line';
+            const cls = node.className || '';
+            if (typeof cls !== 'string') {
+                // SVGAnimatedString or other; convert
+                const v = (cls.baseVal || '').toString();
+                return this._levelFromClassString(v);
+            }
+            return this._levelFromClassString(cls);
+        } catch(e) { return 'line'; }
+    }
+
+    _levelFromClassString(cls) {
+        if (cls.includes('ql-doc-title'))      return 'title';
+        if (cls.includes('ql-doc-subtitle'))   return 'subtitle';
+        if (cls.includes('ql-doc-section'))    return 'section';
+        if (cls.includes('ql-doc-subsection')) return 'subsection';
+        if (cls.includes('ql-doc-translation') || cls.includes('ql-translation-style')) return 'translation';
+        if (cls.includes('ql-comment-style'))  return 'comment';
+        return 'line';
+    }
+
+    /**
+     * Estimate syllable count for IAST + Devanagari Sanskrit text.
+     *
+     * IAST: each maximal run of vowel letters = 1 syllable nucleus.
+     *       (handles 'ai', 'au' diphthongs as one nucleus)
+     * Devanagari: consonants - viramas + independent vowels = nucleus count.
+     *
+     * The number is a hint, not a guarantee — used only for proportional weighting
+     * during auto-align. Returns 0 for empty or non-Sanskrit input.
+     */
+    _countSyllables(text) {
+        if (!text) return 0;
+        let count = 0;
+        let inVowel = false;
+        const IAST_VOWELS = 'aāiīuūṛṝḷḹeoAĀIĪUŪṚṜḶḸEO';
+
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            const code = ch.codePointAt(0);
+            // Devanagari independent vowels (U+0905–U+0914)
+            if (code >= 0x0905 && code <= 0x0914) {
+                count++;
+                inVowel = false;
+                continue;
+            }
+            // Devanagari consonants (U+0915–U+0939) — each carries inherent 'a'
+            if (code >= 0x0915 && code <= 0x0939) {
+                count++;
+                inVowel = false;
+                continue;
+            }
+            // Devanagari virama / halant (U+094D) — cancels inherent vowel
+            if (code === 0x094D) {
+                count = Math.max(0, count - 1);
+                continue;
+            }
+            // Devanagari vowel signs (mātrās) U+093A–U+094C — already counted with consonant
+            if (code >= 0x093A && code <= 0x094C) {
+                continue;
+            }
+            // IAST vowels (group adjacent vowels into one nucleus)
+            if (IAST_VOWELS.indexOf(ch) >= 0) {
+                if (!inVowel) { count++; inVowel = true; }
+            } else {
+                inVowel = false;
+            }
+        }
+        return Math.max(0, count);
+    }
+
+    /**
+     * Open the audio-picker OS dialog. `targets` is an array of
+     * { lineIndex, text } describing which sections will receive audio.
+     */
+    async openAudioPickerDialog(targets, existingAttachment) {
+        // Stash target info for post-picker flow
+        this._pendingAudioTargets = targets;
+        this._pendingAudioExistingAttachment = existingAttachment;
+
+        // Make sure library metadata (without base64) is sent to the popup
+        const library = (this.audioLibrary || []).map(a => ({
+            id: a.id,
+            label: a.label,
+            duration: a.duration,
+            size: (a.src || '').length,
+        }));
+        try {
+            await fetch('/api/audio/picker/state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ library, targets }),
+            });
+        } catch(e) { console.error('Failed to stage picker state:', e); }
+
+        if (window.pywebview?.api?.open_dialog) {
+            await window.pywebview.api.open_dialog('audio-picker');
+        }
+        // Dialog-action polling already running globally picks up events
+    }
+
+    /**
+     * Open the full audio-editor OS dialog for a given audio + targets.
+     * If `regions` is provided, they are pre-loaded; otherwise a default region is created.
+     */
+    async openAudioEditorDialog(audioData, targets, regions) {
+        try {
+            await fetch('/api/audio/editor/state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    audio: audioData,
+                    targets: targets || [],
+                    regions: regions || [],
+                }),
+            });
+        } catch(e) { console.error('Failed to stage editor state:', e); }
+
+        if (window.pywebview?.api?.open_dialog) {
+            await window.pywebview.api.open_dialog('audio-editor');
+        }
+    }
+
+    /**
+     * (DEPRECATED) Old in-page selection dialog. Kept as fallback if pywebview API
+     * is unavailable; new flow uses openAudioPickerDialog → OS popup window.
+     */
+    showAudioSelectionDialog_legacy(line, existingAttachment) {
         const dialog = document.createElement('div');
         dialog.className = 'audio-settings-popup';
         dialog.style.position = 'fixed';
@@ -12819,14 +13408,100 @@ ${embeddedStyles}
     }
 
     /**
-     * Show audio settings popup for trimming and configuration
+     * Show audio settings popup for trimming and configuration.
+     *
+     * When pywebview is available, opens the new OS-window audio editor.
+     * Otherwise falls back to the in-page popup (preserved as showAudioSettings_legacy).
+     *
+     * Multi-target detection: if multiple lines in the document have audio
+     * attachments with the same audio id, ALL of them are shown as targets,
+     * each with a pre-filled region matching its trim range. This supports the
+     * "one audio, many shlokas" workflow naturally.
      */
     showAudioSettings(attachmentNode, audioElement) {
-        // Stop any playing audio first
-        if (this.activeAudioElement) {
-            this.stopActiveAudio();
+        try {
+            if (this.activeAudioElement) this.stopActiveAudio();
+        } catch(_) {}
+
+        if (window.pywebview?.api?.open_dialog) {
+            const audioId = attachmentNode.dataset.audioId;
+            const audio = (this.audioLibrary || []).find(a => a.id === audioId)
+                       || this._reconstructAudioFromAttachment(attachmentNode);
+            if (!audio) {
+                console.warn('Could not locate audio in library for', audioId);
+                return this.showAudioSettings_legacy(attachmentNode, audioElement);
+            }
+
+            // Build targets[] from EVERY attachment in the doc that uses this audio id
+            const lines = this.quill.getLines();
+            const targets = [];
+            const regions = [];
+            const seenLineIndices = new Set();
+
+            const allAttachments = Array.from(this.quill.root.querySelectorAll('.ql-audio-attachment'));
+            for (const att of allAttachments) {
+                if (att.dataset.audioId !== audio.id) continue;
+                // Find which line owns this attachment
+                const lineIndex = lines.findIndex(ln => ln.domNode.contains(att));
+                if (lineIndex < 0 || seenLineIndices.has(lineIndex)) continue;
+                seenLineIndices.add(lineIndex);
+                const target = this._buildTarget(lineIndex, lines[lineIndex]);
+                const start = parseFloat(att.dataset.startTime) || 0;
+                const end = att.dataset.endTime ? parseFloat(att.dataset.endTime) : (audio.duration || 0);
+                regions.push({
+                    start, end,
+                    label: target.text || audio.label || 'Region',
+                    targetIndex: targets.length,
+                });
+                targets.push(target);
+            }
+
+            // Fallback: if the attachment isn't in the doc tree (rare), use just the clicked one
+            if (!targets.length) {
+                const lineIndex = lines.findIndex(ln => ln.domNode.contains(attachmentNode));
+                if (lineIndex >= 0) {
+                    const target = this._buildTarget(lineIndex, lines[lineIndex]);
+                    targets.push(target);
+                    const start = parseFloat(attachmentNode.dataset.startTime) || 0;
+                    const end = attachmentNode.dataset.endTime
+                        ? parseFloat(attachmentNode.dataset.endTime) : (audio.duration || 0);
+                    regions.push({ start, end, label: target.text || audio.label, targetIndex: 0 });
+                }
+            }
+
+            this._pendingAudioTargets = targets;
+            this._pendingAudioExistingAttachment = attachmentNode;
+            // Make section list available to the editor's "+ Section" picker
+            this._postSectionsToServer().catch(() => {});
+            this.openAudioEditorDialog(audio, targets, regions);
+            return;
         }
-        
+
+        // Fall back to legacy in-page popup
+        return this.showAudioSettings_legacy(attachmentNode, audioElement);
+    }
+
+    /**
+     * Build a minimal audio object from an attachment node, when audioLibrary doesn't have it.
+     */
+    _reconstructAudioFromAttachment(attachmentNode) {
+        const audioEl = attachmentNode.querySelector('audio');
+        const src = attachmentNode.dataset.audioSrc || (audioEl ? audioEl.src : '');
+        if (!src) return null;
+        return {
+            id: attachmentNode.dataset.audioId || `audio-${Date.now()}`,
+            label: attachmentNode.dataset.audioLabel || 'Audio',
+            src,
+            duration: audioEl ? (audioEl.duration || 0) : 0,
+        };
+    }
+
+    /**
+     * (DEPRECATED) Original in-page audio settings popup. Preserved as a fallback.
+     */
+    showAudioSettings_legacy(attachmentNode, audioElement) {
+        if (this.activeAudioElement) this.stopActiveAudio();
+
         // ** FIX: Disable Quill to prevent it from stealing focus **
         this.quill.enable(false);
 
@@ -13518,19 +14193,56 @@ ${embeddedStyles}
             navItem.appendChild(textSpan);
             navItem.title = text; // Full text with newlines on hover
             
-            // Click handler - scroll to this line
-            navItem.addEventListener('click', () => {
-                this.scrollToLine(index);
-                
-                // Highlight active item
+            // Click handler - scroll to this line, support multi-selection (Ctrl/Shift)
+            navItem.addEventListener('click', (e) => {
+                if (!this._navSelectedLineIndices) this._navSelectedLineIndices = new Set();
+                const set = this._navSelectedLineIndices;
+
+                if (e.shiftKey && this._navAnchorLineIndex != null) {
+                    // Range selection from anchor to this index (inclusive)
+                    const from = Math.min(this._navAnchorLineIndex, index);
+                    const to = Math.max(this._navAnchorLineIndex, index);
+                    set.clear();
+                    document.querySelectorAll('.nav-item').forEach(it => {
+                        const li = parseInt(it.getAttribute('data-line-index') || '-1', 10);
+                        if (li >= from && li <= to) set.add(li);
+                    });
+                } else if (e.ctrlKey || e.metaKey) {
+                    // Toggle this item in the selection
+                    if (set.has(index)) set.delete(index);
+                    else set.add(index);
+                    this._navAnchorLineIndex = index;
+                } else {
+                    // Plain click — single selection + scroll
+                    set.clear();
+                    set.add(index);
+                    this._navAnchorLineIndex = index;
+                    this.scrollToLine(index);
+                }
+
+                // Update visuals
                 document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
+                    const li = parseInt(item.getAttribute('data-line-index') || '-1', 10);
+                    item.classList.toggle('multi-selected', set.has(li));
+                    item.classList.toggle('active', li === this._navAnchorLineIndex);
                 });
-                navItem.classList.add('active');
             });
-            
+
             // Right-click handler - show context menu
             navItem.addEventListener('contextmenu', (e) => {
+                if (!this._navSelectedLineIndices) this._navSelectedLineIndices = new Set();
+                const set = this._navSelectedLineIndices;
+                // If clicked item isn't in the multi-selection, treat right-click as a single-select
+                if (!set.has(index)) {
+                    set.clear();
+                    set.add(index);
+                    this._navAnchorLineIndex = index;
+                    document.querySelectorAll('.nav-item').forEach(item => {
+                        const li = parseInt(item.getAttribute('data-line-index') || '-1', 10);
+                        item.classList.toggle('multi-selected', set.has(li));
+                        item.classList.toggle('active', li === this._navAnchorLineIndex);
+                    });
+                }
                 if (this.showNavigationContextMenu) {
                     this.showNavigationContextMenu(navItem, index, e);
                 }
@@ -13594,6 +14306,17 @@ ${embeddedStyles}
             
             navTree.appendChild(navItem);
         });
+
+        // Restore multi-selection visuals after rebuild (they live in this._navSelectedLineIndices)
+        if (this._navSelectedLineIndices && this._navSelectedLineIndices.size) {
+            const sel = this._navSelectedLineIndices;
+            const anchor = this._navAnchorLineIndex;
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const li = parseInt(item.getAttribute('data-line-index') || '-1', 10);
+                if (sel.has(li)) item.classList.add('multi-selected');
+                if (li === anchor) item.classList.add('active');
+            });
+        }
     }
 
     /**
@@ -13684,7 +14407,24 @@ ${embeddedStyles}
         }
     }
 
-    openFileManager() {
+    async openFileManager() {
+        if (window.pywebview?.api?.open_dialog) {
+            // Sync embedded audio metadata to server so the popup can display it
+            try {
+                const embedded = (this.getEmbeddedAudioFromDocument() || []).map(a => ({
+                    id: a.id || a.label,
+                    label: a.label || a.name || 'Audio',
+                    duration: a.duration || null
+                }));
+                await fetch('/api/audio/embedded', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ audio: embedded })
+                });
+            } catch(e) { /* non-fatal */ }
+            window.pywebview.api.open_dialog('media');
+            return;
+        }
         const dialog = document.getElementById('fileManagerDialog');
         if (dialog) {
             dialog.hidden = false;
@@ -13971,8 +14711,9 @@ ${embeddedStyles}
             lineCount.textContent = `Lines: ${Math.max(1, lines.length - 2)}`; // -2 for Quill's extra newlines
         };
         
-        // Update on text change
+        // Update on text change (suppressed during batch)
         this.quill.on('text-change', () => {
+            if (this._batchMode) return;
             updateStats();
         });
         

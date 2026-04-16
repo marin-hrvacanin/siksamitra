@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attach Audio — śikṣāmitra</title>
+    <script>
+        (function() {
+            try {
+                var mode = '__SIKSAMITRA_INITIAL_THEME_MODE__';
+                var stored = localStorage.getItem('siksamitra-theme') || '';
+                var t = stored || mode || 'light';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; font-size: 14px; }
+        .picker-target {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            font-size: 12px;
+        }
+        .picker-target-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            letter-spacing: .05em;
+            margin-bottom: 4px;
+        }
+        .picker-target-text {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .picker-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin: 16px 0 8px;
+        }
+        .audio-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 240px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+        .audio-list-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: background .15s, border-color .15s;
+        }
+        .audio-list-item:hover {
+            background: var(--bg-elevated);
+            border-color: var(--primary);
+        }
+        .audio-list-item-icon {
+            color: var(--primary);
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .audio-list-item-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .audio-list-item-label {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .audio-list-item-meta {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .audio-empty {
+            color: var(--text-tertiary);
+            font-size: 12px;
+            text-align: center;
+            padding: 20px;
+        }
+        .upload-btn {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--primary);
+            color: #fff;
+            border: 1px solid var(--primary);
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+        }
+        .upload-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .divider {
+            margin: 14px 0;
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 11px;
+            position: relative;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: var(--border-subtle);
+        }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+    </style>
+</head>
+<body class="popup-page">
+
+<div class="popup-content">
+    <div id="targetInfo" class="picker-target" hidden>
+        <div class="picker-target-label" id="targetLabel">Target</div>
+        <div class="picker-target-text" id="targetText"></div>
+    </div>
+
+    <div class="picker-section-title">Choose Existing Audio</div>
+    <div class="audio-list" id="audioList">
+        <div class="audio-empty">Loading…</div>
+    </div>
+
+    <div class="divider">— OR —</div>
+
+    <button type="button" class="upload-btn" id="uploadBtn">Upload New Audio File</button>
+    <input type="file" id="uploadInput" accept="audio/*" style="display:none">
+</div>
+
+<div class="popup-footer">
+    <span class="popup-footer-status" id="statusMsg"></span>
+    <button type="button" id="cancelBtn">Cancel</button>
+</div>
+
+<script>
+function formatDuration(secs) {
+    if (!secs || isNaN(secs)) return '—';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${String(s).padStart(2,'0')}`;
+}
+function formatSize(bytes) {
+    if (!bytes) return '';
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${mb.toFixed(2)} MB`;
+}
+function setStatus(msg, kind) {
+    const el = document.getElementById('statusMsg');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.className = 'popup-footer-status' + (kind ? ' ' + kind : '');
+    if (msg) setTimeout(() => {
+        if (el.textContent === msg) {
+            el.textContent = '';
+            el.className = 'popup-footer-status';
+        }
+    }, 3000);
+}
+
+async function postAction(type, data) {
+    try {
+        await fetch('/api/dialog/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, ...data })
+        });
+    } catch(e) { console.error('postAction error:', e); }
+}
+
+async function loadState() {
+    try {
+        const resp = await fetch('/api/audio/picker/state');
+        const data = await resp.json();
+        const lib = data.library || [];
+        const targets = data.targets || [];
+
+        // Target description
+        if (targets.length) {
+            const targetInfo = document.getElementById('targetInfo');
+            targetInfo.hidden = false;
+            document.getElementById('targetLabel').textContent =
+                targets.length === 1 ? 'Attaching to' : `Attaching to ${targets.length} sections`;
+            document.getElementById('targetText').textContent = targets.length === 1
+                ? (targets[0].text || `Line ${targets[0].lineIndex}`)
+                : targets.map(t => t.text || `Line ${t.lineIndex}`).slice(0, 3).join(' • ')
+                  + (targets.length > 3 ? ` …and ${targets.length - 3} more` : '');
+        }
+
+        // Audio library
+        renderLibrary(lib);
+    } catch(e) {
+        document.getElementById('audioList').innerHTML =
+            '<div class="audio-empty">Failed to load audio library.</div>';
+    }
+}
+
+function renderLibrary(library) {
+    const list = document.getElementById('audioList');
+    list.innerHTML = '';
+    if (!library.length) {
+        const empty = document.createElement('div');
+        empty.className = 'audio-empty';
+        empty.textContent = 'No audio files in library yet. Upload a new file below.';
+        list.appendChild(empty);
+        return;
+    }
+    library.forEach(audio => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'audio-list-item';
+        item.innerHTML = `
+            <span class="audio-list-item-icon">♪</span>
+            <div class="audio-list-item-body">
+                <div class="audio-list-item-label"></div>
+                <div class="audio-list-item-meta"></div>
+            </div>
+        `;
+        item.querySelector('.audio-list-item-label').textContent = audio.label || 'Audio';
+        item.querySelector('.audio-list-item-meta').textContent =
+            `Duration: ${formatDuration(audio.duration)}` +
+            (audio.size ? ` • Size: ${formatSize(audio.size)}` : '');
+        item.addEventListener('click', () => pickExisting(audio.id));
+        list.appendChild(item);
+    });
+}
+
+async function pickExisting(audioId) {
+    await postAction('audio_picker_choose', { audioId });
+    setStatus('Opening audio editor…', 'success');
+    setTimeout(() => window.close(), 400);
+}
+
+async function uploadFile(file) {
+    if (file.size > 200 * 1024 * 1024) {
+        setStatus('File too large (max 200 MB).', 'error');
+        return;
+    }
+    setStatus(`Reading "${file.name}"…`);
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const dataUrl = e.target?.result;
+        if (!dataUrl) { setStatus('Unable to read file.', 'error'); return; }
+        // Measure duration
+        const tempAudio = new Audio(dataUrl);
+        tempAudio.addEventListener('loadedmetadata', async () => {
+            const label = file.name.replace(/\.[^/.]+$/, '') || 'Audio';
+            const audioData = {
+                id: `audio-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+                label,
+                src: dataUrl,
+                duration: tempAudio.duration || 0,
+                size: file.size,
+                startTime: 0,
+                endTime: tempAudio.duration || 0
+            };
+            await postAction('audio_picker_upload', { audio: audioData });
+            setStatus('Uploaded. Opening editor…', 'success');
+            setTimeout(() => window.close(), 400);
+        });
+        tempAudio.addEventListener('error', () => {
+            setStatus('Could not decode audio file.', 'error');
+        });
+    };
+    reader.onerror = () => setStatus('Failed to read file.', 'error');
+    reader.readAsDataURL(file);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadState();
+    document.getElementById('uploadBtn').addEventListener('click', () => {
+        document.getElementById('uploadInput').click();
+    });
+    document.getElementById('uploadInput').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) uploadFile(file);
+    });
+    document.getElementById('cancelBtn').addEventListener('click', () => window.close());
+});
+</script>
+</body>
+</html>

@@ -206,10 +206,35 @@
                 });
             },
 
-            // Open a popup dialog window by name ('autorun', 'shloka', 'iast')
+            // Open a popup dialog window by name ('autorun', 'shloka', 'iast', 'audio-editor', etc.)
             open_dialog: function(name) {
                 return new Promise(function(resolve) {
                     var call = function() { bridge.openDialog(name); resolve(true); };
+                    if (bridge) { call(); } else { pendingCalls.push(call); }
+                });
+            },
+
+            // Close (hide) a popup dialog window. Required because window.close() is
+            // blocked by QtWebEngine.
+            close_dialog: function(name) {
+                return new Promise(function(resolve) {
+                    var call = function() { bridge.closeDialog(name); resolve(true); };
+                    if (bridge) { call(); } else { pendingCalls.push(call); }
+                });
+            },
+
+            // Show the blocking loader OS window
+            show_loader: function(title, message) {
+                return new Promise(function(resolve) {
+                    var call = function() { bridge.showLoader(title || '', message || ''); resolve(true); };
+                    if (bridge) { call(); } else { pendingCalls.push(call); }
+                });
+            },
+
+            // Hide the blocking loader OS window
+            hide_loader: function() {
+                return new Promise(function(resolve) {
+                    var call = function() { bridge.hideLoader(); resolve(true); };
                     if (bridge) { call(); } else { pendingCalls.push(call); }
                 });
             }

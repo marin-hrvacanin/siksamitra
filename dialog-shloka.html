@@ -39,15 +39,6 @@
 </head>
 <body class="popup-page">
 
-<!-- Titlebar -->
-<div class="popup-titlebar">
-    <div class="popup-titlebar-title">
-        <img src="logo.png" class="popup-titlebar-logo" alt="">
-        Insert Śloka
-    </div>
-    <button class="popup-titlebar-close" id="closeBtn" title="Close">✕</button>
-</div>
-
 <!-- Content -->
 <div class="popup-content">
     <form id="shlokaSearchForm" class="shloka-search-form">
@@ -228,18 +219,16 @@ function normalizeForSanskritDocs(query) {
 }
 
 async function fetchShlokamResults(query) {
-    const resp = await fetch(
-        `https://shlokam.org/wp-json/wp/v2/search?search=${encodeURIComponent(query)}&per_page=20`,
-        { headers: { 'Accept': 'application/json' }, mode: 'cors', credentials: 'omit' }
-    );
+    // Go through our Flask proxy so we avoid CORS and can pre-decode titles
+    const resp = await fetch(`/api/shlokam/search?q=${encodeURIComponent(query)}`);
     if (!resp.ok) throw new Error(`Status ${resp.status}`);
     const payload = await resp.json();
     if (!Array.isArray(payload)) return [];
-    return payload.filter(i => i && (i.url || i.link)).map(i => ({
+    return payload.filter(i => i && i.url).map(i => ({
         id: i.id,
-        title: decodeHtmlEntities(i.title || i.title_plain || ''),
-        url: i.url || i.link,
-        subtype: i.subtype || i.type || 'post'
+        title: decodeHtmlEntities(i.title || ''),
+        url: i.url,
+        subtype: i.subtype || 'post'
     }));
 }
 
@@ -314,26 +303,13 @@ async function performSearch() {
 
 // ── Fetch details ─────────────────────────────────────────────────────────────
 async function fetchShlokamDetails(result) {
+    if (!result || typeof result.id !== 'number') return [];
     const collection = (result.subtype && result.subtype !== 'post') ? `${result.subtype}s` : 'posts';
-    const resp = await fetch(
-        `https://shlokam.org/wp-json/wp/v2/${collection}/${result.id}?_fields=content.rendered,title.rendered,link`,
-        { headers: { 'Accept': 'application/json' }, mode: 'cors', credentials: 'omit' }
-    );
+    const resp = await fetch(`/api/shlokam/details/${collection}/${result.id}`);
     if (!resp.ok) throw new Error(`Status ${resp.status}`);
     const data = await resp.json();
-    const doc = new DOMParser().parseFromString(data?.content?.rendered || '', 'text/html');
-    const devNodes = Array.from(doc.querySelectorAll('div.verse_sanskrit'));
-    const translitNodes = Array.from(doc.querySelectorAll('div.verse_trans'));
-    const translationNodes = Array.from(doc.querySelectorAll('div.verse_meaning'));
-    const maxLen = Math.max(devNodes.length, translitNodes.length, translationNodes.length);
-    const shlokas = [];
-    for (let i = 0; i < maxLen; i++) {
-        const dev = (devNodes[i]?.textContent || '').trim();
-        const translit = (translitNodes[i]?.textContent || '').trim();
-        const transl = (translationNodes[i]?.textContent || '').trim();
-        if (dev || translit || transl) shlokas.push({ devanagari: dev, transliteration: translit, translation: transl });
-    }
-    return shlokas;
+    if (data && Array.isArray(data.shlokas)) return data.shlokas;
+    return [];
 }
 
 async function fetchSanskritDocsDocument(result) {
@@ -524,12 +500,13 @@ function wireDropdownOptions(dd) {
         // Clone to remove old listeners
         const newOpt = opt.cloneNode(true);
         opt.parentNode.replaceChild(newOpt, opt);
-        newOpt.addEventListener('click', () => {
+        newOpt.addEventListener('click', (e) => {
+            e.stopPropagation();
             dd.dataset.value = newOpt.dataset.value;
             trigger.textContent = newOpt.textContent;
             menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
             newOpt.classList.add('selected');
-            menu.classList.remove('open');
+            dd.classList.remove('open');
             // Sync hidden select
             const selectId = dd.id === 'sourceDropdown' ? 'sourceSelect'
                 : dd.id === 'categoryDropdown' ? 'categorySelect' : null;
@@ -551,12 +528,16 @@ function wireDropdowns() {
         if (!trigger || !menu) return;
         trigger.addEventListener('click', e => {
             e.stopPropagation();
-            menu.classList.toggle('open');
+            // Close any other open dropdowns first
+            document.querySelectorAll('.custom-dropdown.open').forEach(d => {
+                if (d !== dd) d.classList.remove('open');
+            });
+            dd.classList.toggle('open');
         });
         wireDropdownOptions(dd);
     });
     document.addEventListener('click', () => {
-        document.querySelectorAll('.custom-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+        document.querySelectorAll('.custom-dropdown.open').forEach(d => d.classList.remove('open'));
     });
 }
 
@@ -591,7 +572,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('insertAllBtn').addEventListener('click', insertAllShlokas);
 
     // Close buttons
-    document.getElementById('closeBtn').addEventListener('click', () => window.close());
     document.getElementById('closeFooterBtn').addEventListener('click', () => window.close());
 
     // Focus query input

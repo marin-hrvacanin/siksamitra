@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatic Svaras — śikṣāmitra</title>
+    <script>
+        (function() {
+            try {
+                var mode = '__SIKSAMITRA_INITIAL_THEME_MODE__';
+                var stored = localStorage.getItem('siksamitra-theme') || '';
+                var t = stored || mode || 'light';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; font-size: 14px; }
+    </style>
+</head>
+<body class="popup-page">
+
+<!-- Content -->
+<div class="popup-content">
+    <!-- Preview -->
+    <div class="auto-svara-preview-section">
+        <div class="auto-svara-preview-label">Preview</div>
+        <div id="autoSvaraPreview" class="auto-svara-preview">
+            <span class="preview-syllable">ta</span>
+        </div>
+    </div>
+
+    <!-- Presets -->
+    <div class="auto-svara-preset-section">
+        <label class="auto-svara-section-label">Choose Pattern</label>
+        <div class="auto-svara-preset-grid" id="presetGrid"></div>
+    </div>
+
+    <!-- Current rule display -->
+    <div class="auto-svara-current">
+        <div class="auto-svara-current-header">
+            <span class="auto-svara-section-label">Active Rule</span>
+            <button type="button" id="editRuleBtn" class="auto-svara-edit-btn" title="Edit rule">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </button>
+        </div>
+        <div id="currentRuleDisplay" class="auto-svara-current-display">
+            <span class="rule-pada">Pada 1: <strong>16</strong> syllables</span>
+            <span class="rule-pada">Pada 2: <strong>16</strong> syllables</span>
+            <span class="rule-plan">Pattern: <code>—</code></span>
+        </div>
+    </div>
+
+    <!-- Edit panel -->
+    <div id="editPanel" class="auto-svara-edit-panel" hidden>
+        <div class="auto-svara-edit-grid">
+            <div class="auto-svara-edit-field">
+                <label for="pada1Input">Pada 1 syllables</label>
+                <input type="text" id="pada1Input" value="16" placeholder="e.g. 16 or ?">
+            </div>
+            <div class="auto-svara-edit-field">
+                <label for="pada2Input">Pada 2 syllables</label>
+                <input type="text" id="pada2Input" value="16" placeholder="e.g. 16 or ?">
+            </div>
+            <div class="auto-svara-edit-field full-width">
+                <label for="planInput">Svara pattern</label>
+                <input type="text" id="planInput" value="2̍4̍6̱8̍9̱11̱14̍" placeholder="e.g. 2̍4̍6̱8̍">
+                <div class="auto-svara-plan-help">
+                    Position + mark:
+                    <span class="mark-sample svarita">̍</span> svarita ·
+                    <span class="mark-sample anudatta">̱</span> anudatta ·
+                    <span class="mark-sample dirgha">̎</span> dīrgha
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="popup-footer">
+    <span class="popup-footer-status" id="statusMsg"></span>
+    <button type="button" id="applyBtn" class="primary">Apply to Selection</button>
+    <button type="button" id="closeBtn">Close</button>
+</div>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────────────────────
+const SETTINGS_KEY = 'siksamitra-auto-svara-settings';
+const SVARA_CHARS = new Set(['\u030d', '\u0331', '\u030e', '\u02ce', '\u00b7']);
+
+// ── Presets ───────────────────────────────────────────────────────────────────
+const PRESETS = [
+    { id: 'anustubh', label: 'Anuṣṭubh (16|16)', description: 'Standard 16-syllable pādas',
+      rule: { pada1: '16', pada2: '16', plan: '2\u030d4\u030d6\u03318\u030d9\u033111\u033114\u030d' } },
+    { id: 'gayatri',  label: 'Gāyatrī (8|8)',    description: '8-syllable pādas',
+      rule: { pada1: '8',  pada2: '8',  plan: '2\u030d4\u030d6\u03318\u030d' } },
+    { id: 'tristubh', label: 'Triṣṭubh (11|11)', description: '11-syllable pādas',
+      rule: { pada1: '11', pada2: '11', plan: '2\u030d4\u030d6\u03318\u030d9\u033111\u030d' } },
+    { id: 'jagati',   label: 'Jagatī (12|12)',   description: '12-syllable pādas',
+      rule: { pada1: '12', pada2: '12', plan: '2\u030d4\u030d6\u03318\u030d9\u033111\u030d12\u0331' } },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function parseAutoSvaraPlan(plan) {
+    const out = [];
+    const re = /(\d+)([̱̍̎ˎ·])/gu;
+    let m;
+    while ((m = re.exec(plan)) !== null) {
+        const pos = parseInt(m[1], 10);
+        const mark = m[2];
+        if (!isFinite(pos) || pos <= 0) continue;
+        if (!SVARA_CHARS.has(mark)) continue;
+        out.push({ pos, mark });
+    }
+    const byPos = new Map();
+    out.forEach(e => byPos.set(e.pos, e.mark));
+    return Array.from(byPos.entries()).map(([pos, mark]) => ({ pos, mark })).sort((a, b) => a.pos - b.pos);
+}
+
+function getDefaultSettings() {
+    return { enabled: true, rules: [{ pada1: '16', pada2: '16', plan: '2\u030d4\u030d6\u03318\u030d9\u033111\u033114\u030d' }] };
+}
+
+function loadSettings() {
+    try {
+        const s = localStorage.getItem(SETTINGS_KEY);
+        if (!s) return getDefaultSettings();
+        const p = JSON.parse(s);
+        return { enabled: p.enabled !== false, rules: Array.isArray(p.rules) ? p.rules : getDefaultSettings().rules };
+    } catch(e) { return getDefaultSettings(); }
+}
+
+function saveSettings(settings) {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
+}
+
+function setFooterStatus(msg, success) {
+    const el = document.getElementById('statusMsg');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'popup-footer-status' + (success ? ' success' : '');
+    if (msg) setTimeout(() => { el.textContent = ''; el.className = 'popup-footer-status'; }, 3000);
+}
+
+// ── Update preview & rule display ─────────────────────────────────────────────
+function updatePreviewAndDisplay() {
+    const pada1 = document.getElementById('pada1Input').value.trim() || '?';
+    const pada2 = document.getElementById('pada2Input').value.trim() || '?';
+    const plan  = document.getElementById('planInput').value.trim() || '';
+
+    // Rule display
+    const entries = parseAutoSvaraPlan(plan);
+    const planSpaced = entries.map(e => `${e.pos}${e.mark}`).join(' ');
+    document.getElementById('currentRuleDisplay').innerHTML =
+        `<span class="rule-pada">Pada 1: <strong>${pada1}</strong> syllables</span>
+         <span class="rule-pada">Pada 2: <strong>${pada2}</strong> syllables</span>
+         <span class="rule-plan">Pattern: <code>${planSpaced || '—'}</code></span>`;
+
+    // Preview syllables
+    const preview = document.getElementById('autoSvaraPreview');
+    const maxSyl = Math.max(...entries.map(e => e.pos), 8);
+    const syllables = [];
+    for (let i = 1; i <= maxSyl; i++) {
+        const entry = entries.find(e => e.pos === i);
+        if (entry) {
+            const cp = entry.mark.codePointAt(0);
+            const cls = cp === 0x030d ? 'svarita' : cp === 0x0331 ? 'anudatta' : cp === 0x030e ? 'dirgha' : 'tick';
+            syllables.push(`<span class="preview-syllable has-svara ${cls}">tā${entry.mark}</span>`);
+        } else {
+            syllables.push(`<span class="preview-syllable">ta</span>`);
+        }
+    }
+    preview.innerHTML = syllables.join('');
+}
+
+// ── Render preset grid ────────────────────────────────────────────────────────
+function renderPresets() {
+    const grid = document.getElementById('presetGrid');
+    grid.innerHTML = '';
+    PRESETS.forEach(preset => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'auto-svara-preset-btn';
+        btn.innerHTML = `<div class="preset-name">${preset.label}</div><div class="preset-desc">${preset.description}</div>`;
+        btn.addEventListener('click', () => {
+            document.getElementById('pada1Input').value = preset.rule.pada1;
+            document.getElementById('pada2Input').value = preset.rule.pada2;
+            document.getElementById('planInput').value  = preset.rule.plan;
+            grid.querySelectorAll('.auto-svara-preset-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updatePreviewAndDisplay();
+        });
+        grid.appendChild(btn);
+    });
+}
+
+// ── Post action ───────────────────────────────────────────────────────────────
+async function postAction(type, data) {
+    try {
+        await fetch('/api/dialog/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, ...data })
+        });
+    } catch(e) { console.error('postAction error:', e); }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    renderPresets();
+
+    // Load current settings
+    const settings = loadSettings();
+    const rule = settings.rules?.[0] || getDefaultSettings().rules[0];
+    document.getElementById('pada1Input').value = rule.pada1 || '';
+    document.getElementById('pada2Input').value = rule.pada2 || '';
+    document.getElementById('planInput').value  = rule.plan  || '';
+    updatePreviewAndDisplay();
+
+    // Edit toggle
+    document.getElementById('editRuleBtn').addEventListener('click', () => {
+        const panel = document.getElementById('editPanel');
+        panel.hidden = !panel.hidden;
+    });
+
+    // Input listeners for live preview
+    ['pada1Input', 'pada2Input', 'planInput'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updatePreviewAndDisplay);
+    });
+
+    // Apply
+    document.getElementById('applyBtn').addEventListener('click', async () => {
+        const settings = {
+            enabled: true,
+            rules: [{
+                pada1: document.getElementById('pada1Input').value.trim(),
+                pada2: document.getElementById('pada2Input').value.trim(),
+                plan:  document.getElementById('planInput').value.trim()
+            }]
+        };
+        saveSettings(settings);
+        await postAction('apply_auto_svaras', {});
+        setFooterStatus('Applying svaras…', true);
+        setTimeout(() => window.close(), 800);
+    });
+
+    // Close
+    document.getElementById('closeBtn').addEventListener('click', () => window.close());
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading — śikṣāmitra</title>
+    <script>
+        (function() {
+            try {
+                var mode = '__SIKSAMITRA_INITIAL_THEME_MODE__';
+                var stored = localStorage.getItem('siksamitra-theme') || '';
+                var t = stored || mode || 'light';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            font-size: 14px;
+        }
+        .loader-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 18px;
+            padding: 24px;
+            box-sizing: border-box;
+            background: var(--bg-surface);
+        }
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loader-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: center;
+            margin: 0;
+        }
+        .loader-message {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin: 0;
+            min-height: 1.4em;
+        }
+    </style>
+</head>
+<body>
+<div class="loader-body">
+    <div class="loader-spinner"></div>
+    <p class="loader-title" id="loaderTitle">Loading…</p>
+    <p class="loader-message" id="loaderMessage"></p>
+</div>
+
+<script>
+async function pollState() {
+    try {
+        const resp = await fetch('/api/loader/state');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const titleEl = document.getElementById('loaderTitle');
+        const msgEl   = document.getElementById('loaderMessage');
+        if (titleEl && data.title   != null) titleEl.textContent = data.title   || 'Loading…';
+        if (msgEl   && data.message != null) msgEl.textContent   = data.message || '';
+    } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    pollState();
+    setInterval(pollState, 300);
+});
+</script>
+</body>
+</html>

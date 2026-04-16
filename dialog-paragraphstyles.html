@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paragraph Styles — śikṣāmitra</title>
+    <script>
+        (function() {
+            try {
+                var mode = '__SIKSAMITRA_INITIAL_THEME_MODE__';
+                var stored = localStorage.getItem('siksamitra-theme') || '';
+                var t = stored || mode || 'light';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; font-size: 14px; }
+        .modal-description { font-size: 12px; color: var(--text-secondary); margin: 0 0 12px; }
+    </style>
+</head>
+<body class="popup-page">
+
+<!-- Content -->
+<div class="popup-content">
+    <p class="modal-description">Customize the appearance of different paragraph styles. Changes are saved to this browser's storage.</p>
+
+    <!-- Style tabs -->
+    <div class="para-style-tabs">
+        <button class="para-style-tab active" data-style="title">Title</button>
+        <button class="para-style-tab" data-style="subtitle">Subtitle</button>
+        <button class="para-style-tab" data-style="section">Section Title</button>
+        <button class="para-style-tab" data-style="subsection">Subsection Title</button>
+    </div>
+
+    <form id="styleForm" class="para-style-form">
+        <div class="para-style-grid">
+            <div class="para-style-field">
+                <label for="paraFontSize">Font Size (em)</label>
+                <input type="number" id="paraFontSize" step="0.1" min="0.5" max="5" value="1.75">
+            </div>
+            <div class="para-style-field">
+                <label>Font Weight</label>
+                <div class="custom-dropdown modal-dropdown" id="paraFontWeightDropdown" data-value="600">
+                    <div class="custom-dropdown-trigger">Semi-Bold</div>
+                    <div class="custom-dropdown-menu">
+                        <div class="custom-dropdown-option" data-value="300">Light</div>
+                        <div class="custom-dropdown-option" data-value="400">Normal</div>
+                        <div class="custom-dropdown-option" data-value="500">Medium</div>
+                        <div class="custom-dropdown-option selected" data-value="600">Semi-Bold</div>
+                        <div class="custom-dropdown-option" data-value="700">Bold</div>
+                        <div class="custom-dropdown-option" data-value="800">Extra Bold</div>
+                    </div>
+                </div>
+                <select id="paraFontWeight" style="display:none">
+                    <option value="300">Light</option>
+                    <option value="400">Normal</option>
+                    <option value="500">Medium</option>
+                    <option value="600" selected>Semi-Bold</option>
+                    <option value="700">Bold</option>
+                    <option value="800">Extra Bold</option>
+                </select>
+            </div>
+            <div class="para-style-field">
+                <label for="paraColor">Color</label>
+                <input type="color" id="paraColor" value="#92400e">
+            </div>
+            <div class="para-style-field">
+                <label>Alignment</label>
+                <div class="custom-dropdown modal-dropdown" id="paraAlignmentDropdown" data-value="left">
+                    <div class="custom-dropdown-trigger">Left</div>
+                    <div class="custom-dropdown-menu">
+                        <div class="custom-dropdown-option selected" data-value="left">Left</div>
+                        <div class="custom-dropdown-option" data-value="center">Center</div>
+                        <div class="custom-dropdown-option" data-value="right">Right</div>
+                    </div>
+                </div>
+                <select id="paraAlignment" style="display:none">
+                    <option value="left" selected>Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                </select>
+            </div>
+            <div class="para-style-field">
+                <label for="paraMarginTop">Margin Top (em)</label>
+                <input type="number" id="paraMarginTop" step="0.1" min="0" max="5" value="0.5">
+            </div>
+            <div class="para-style-field">
+                <label for="paraMarginBottom">Margin Bottom (em)</label>
+                <input type="number" id="paraMarginBottom" step="0.1" min="0" max="5" value="0.3">
+            </div>
+            <div class="para-style-field">
+                <label for="paraLetterSpacing">Letter Spacing (em)</label>
+                <input type="number" id="paraLetterSpacing" step="0.01" min="-0.1" max="0.5" value="-0.01">
+            </div>
+            <div class="para-style-field">
+                <label for="paraLineHeight">Line Height</label>
+                <input type="number" id="paraLineHeight" step="0.1" min="0.8" max="3" value="1.25">
+            </div>
+            <div class="para-style-field">
+                <label>Text Transform</label>
+                <div class="custom-dropdown modal-dropdown" id="paraTextTransformDropdown" data-value="none">
+                    <div class="custom-dropdown-trigger">None</div>
+                    <div class="custom-dropdown-menu">
+                        <div class="custom-dropdown-option selected" data-value="none">None</div>
+                        <div class="custom-dropdown-option" data-value="uppercase">Uppercase</div>
+                        <div class="custom-dropdown-option" data-value="lowercase">Lowercase</div>
+                        <div class="custom-dropdown-option" data-value="capitalize">Capitalize</div>
+                    </div>
+                </div>
+                <select id="paraTextTransform" style="display:none">
+                    <option value="none" selected>None</option>
+                    <option value="uppercase">Uppercase</option>
+                    <option value="lowercase">Lowercase</option>
+                    <option value="capitalize">Capitalize</option>
+                </select>
+            </div>
+            <div class="para-style-field">
+                <label>Font Style</label>
+                <div class="custom-dropdown modal-dropdown" id="paraFontStyleDropdown" data-value="normal">
+                    <div class="custom-dropdown-trigger">Normal</div>
+                    <div class="custom-dropdown-menu">
+                        <div class="custom-dropdown-option selected" data-value="normal">Normal</div>
+                        <div class="custom-dropdown-option" data-value="italic">Italic</div>
+                    </div>
+                </div>
+                <select id="paraFontStyle" style="display:none">
+                    <option value="normal" selected>Normal</option>
+                    <option value="italic">Italic</option>
+                </select>
+            </div>
+            <div class="para-style-field para-style-special">
+                <label for="paraBorderBottom">Border Bottom Width (px)</label>
+                <input type="number" id="paraBorderBottom" step="1" min="0" max="10" value="2">
+            </div>
+            <div class="para-style-field para-style-special">
+                <label for="paraBorderLeft">Border Left Width (px)</label>
+                <input type="number" id="paraBorderLeft" step="1" min="0" max="10" value="0">
+            </div>
+            <div class="para-style-field para-style-special">
+                <label for="paraPaddingLeft">Padding Left (em)</label>
+                <input type="number" id="paraPaddingLeft" step="0.1" min="0" max="3" value="0">
+            </div>
+            <div class="para-style-field para-style-special">
+                <label for="paraPaddingBottom">Padding Bottom (em)</label>
+                <input type="number" id="paraPaddingBottom" step="0.1" min="0" max="3" value="0.2">
+            </div>
+        </div>
+
+        <div class="para-style-preview-section">
+            <h3>Live Preview</h3>
+            <div class="para-style-preview">
+                <p id="previewText" class="preview-para">Sample Paragraph Text</p>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Footer -->
+<div class="popup-footer">
+    <span class="popup-footer-status" id="statusMsg"></span>
+    <button type="button" id="resetBtn" class="secondary">Reset to Default</button>
+    <button type="button" id="closeBtn">Close</button>
+    <button type="button" id="saveBtn" class="primary">Save</button>
+</div>
+
+<script>
+// ── Defaults ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'siksamitra-paragraph-styles';
+
+function getDefaults() {
+    return {
+        title: {
+            fontSize:'1.75', fontWeight:'600', color:'#92400e', alignment:'left',
+            marginTop:'0.5', marginBottom:'0.3', letterSpacing:'-0.01', lineHeight:'1.25',
+            textTransform:'none', fontStyle:'normal', borderBottom:'2', borderLeft:'0',
+            paddingLeft:'0', paddingBottom:'0.2'
+        },
+        subtitle: {
+            fontSize:'0.85', fontWeight:'500', color:'#78716c', alignment:'left',
+            marginTop:'0', marginBottom:'0.8', letterSpacing:'0.04', lineHeight:'1.3',
+            textTransform:'uppercase', fontStyle:'normal', borderBottom:'0', borderLeft:'0',
+            paddingLeft:'0', paddingBottom:'0'
+        },
+        section: {
+            fontSize:'1.15', fontWeight:'600', color:'#b45309', alignment:'left',
+            marginTop:'1.0', marginBottom:'0.3', letterSpacing:'0', lineHeight:'1.3',
+            textTransform:'none', fontStyle:'normal', borderBottom:'0', borderLeft:'3',
+            paddingLeft:'0.5', paddingBottom:'0'
+        },
+        subsection: {
+            fontSize:'0.9', fontWeight:'600', color:'#78716c', alignment:'left',
+            marginTop:'0.8', marginBottom:'0.2', letterSpacing:'0.02', lineHeight:'1.3',
+            textTransform:'none', fontStyle:'normal', borderBottom:'0', borderLeft:'2',
+            paddingLeft:'0.4', paddingBottom:'0'
+        }
+    };
+}
+
+let paragraphStyles = getDefaults();
+let activeStyleType = 'title';
+
+// ── Load / save ───────────────────────────────────────────────────────────────
+function loadStyles() {
+    try {
+        const s = localStorage.getItem(STORAGE_KEY);
+        if (s) {
+            const parsed = JSON.parse(s);
+            // Merge with defaults so missing keys don't break things
+            const defaults = getDefaults();
+            for (const type of Object.keys(defaults)) {
+                paragraphStyles[type] = { ...defaults[type], ...(parsed[type] || {}) };
+            }
+        }
+    } catch(e) {}
+}
+
+function saveStyles() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(paragraphStyles)); } catch(e) {}
+}
+
+// ── Read form into style object ───────────────────────────────────────────────
+function readFormToStyle() {
+    return {
+        fontSize:      document.getElementById('paraFontSize').value,
+        fontWeight:    document.getElementById('paraFontWeight').value,
+        color:         document.getElementById('paraColor').value,
+        alignment:     document.getElementById('paraAlignment').value,
+        marginTop:     document.getElementById('paraMarginTop').value,
+        marginBottom:  document.getElementById('paraMarginBottom').value,
+        letterSpacing: document.getElementById('paraLetterSpacing').value,
+        lineHeight:    document.getElementById('paraLineHeight').value,
+        textTransform: document.getElementById('paraTextTransform').value,
+        fontStyle:     document.getElementById('paraFontStyle').value,
+        borderBottom:  document.getElementById('paraBorderBottom').value,
+        borderLeft:    document.getElementById('paraBorderLeft').value,
+        paddingLeft:   document.getElementById('paraPaddingLeft').value,
+        paddingBottom: document.getElementById('paraPaddingBottom').value,
+    };
+}
+
+// ── Write style object to form ────────────────────────────────────────────────
+function writeStyleToForm(style) {
+    document.getElementById('paraFontSize').value      = style.fontSize;
+    document.getElementById('paraFontWeight').value    = style.fontWeight;
+    document.getElementById('paraColor').value         = style.color;
+    document.getElementById('paraAlignment').value     = style.alignment;
+    document.getElementById('paraMarginTop').value     = style.marginTop;
+    document.getElementById('paraMarginBottom').value  = style.marginBottom;
+    document.getElementById('paraLetterSpacing').value = style.letterSpacing;
+    document.getElementById('paraLineHeight').value    = style.lineHeight;
+    document.getElementById('paraTextTransform').value = style.textTransform;
+    document.getElementById('paraFontStyle').value     = style.fontStyle;
+    document.getElementById('paraBorderBottom').value  = style.borderBottom;
+    document.getElementById('paraBorderLeft').value    = style.borderLeft;
+    document.getElementById('paraPaddingLeft').value   = style.paddingLeft;
+    document.getElementById('paraPaddingBottom').value = style.paddingBottom;
+    // Sync custom dropdowns
+    syncDropdown('paraFontWeight',    'paraFontWeightDropdown');
+    syncDropdown('paraAlignment',     'paraAlignmentDropdown');
+    syncDropdown('paraTextTransform', 'paraTextTransformDropdown');
+    syncDropdown('paraFontStyle',     'paraFontStyleDropdown');
+    updatePreview();
+}
+
+function syncDropdown(selectId, dropdownId) {
+    const sel = document.getElementById(selectId);
+    const dd  = document.getElementById(dropdownId);
+    if (!sel || !dd) return;
+    const val = sel.value;
+    dd.dataset.value = val;
+    dd.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        const active = opt.dataset.value === val;
+        opt.classList.toggle('selected', active);
+        if (active) dd.querySelector('.custom-dropdown-trigger').textContent = opt.textContent;
+    });
+}
+
+// ── Live preview ──────────────────────────────────────────────────────────────
+function updatePreview() {
+    const p = document.getElementById('previewText');
+    if (!p) return;
+    const s = readFormToStyle();
+    p.style.fontSize      = `${s.fontSize}em`;
+    p.style.fontWeight    = s.fontWeight;
+    p.style.color         = s.color;
+    p.style.textAlign     = s.alignment;
+    p.style.marginTop     = `${s.marginTop}em`;
+    p.style.marginBottom  = `${s.marginBottom}em`;
+    p.style.letterSpacing = `${s.letterSpacing}em`;
+    p.style.lineHeight    = s.lineHeight;
+    p.style.textTransform = s.textTransform;
+    p.style.fontStyle     = s.fontStyle;
+    p.style.borderBottom  = s.borderBottom > 0 ? `${s.borderBottom}px solid ${s.color}` : 'none';
+    p.style.borderLeft    = s.borderLeft  > 0 ? `${s.borderLeft}px solid ${s.color}`  : 'none';
+    p.style.paddingLeft   = `${s.paddingLeft}em`;
+    p.style.paddingBottom = `${s.paddingBottom}em`;
+}
+
+// ── Dropdown wiring ───────────────────────────────────────────────────────────
+function wireDropdowns() {
+    document.querySelectorAll('.custom-dropdown').forEach(dd => {
+        const trigger = dd.querySelector('.custom-dropdown-trigger');
+        const menu    = dd.querySelector('.custom-dropdown-menu');
+        if (!trigger || !menu) return;
+        trigger.addEventListener('click', e => {
+            e.stopPropagation();
+            menu.classList.toggle('open');
+        });
+        menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                dd.dataset.value = opt.dataset.value;
+                trigger.textContent = opt.textContent;
+                menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                menu.classList.remove('open');
+                // Sync hidden select
+                const map = {
+                    paraFontWeightDropdown:    'paraFontWeight',
+                    paraAlignmentDropdown:     'paraAlignment',
+                    paraTextTransformDropdown: 'paraTextTransform',
+                    paraFontStyleDropdown:     'paraFontStyle',
+                };
+                const selId = map[dd.id];
+                if (selId) {
+                    const sel = document.getElementById(selId);
+                    if (sel) sel.value = opt.dataset.value;
+                }
+                updatePreview();
+            });
+        });
+    });
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.custom-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+    });
+}
+
+// ── Action posting ────────────────────────────────────────────────────────────
+async function postAction(type, data) {
+    try {
+        await fetch('/api/dialog/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, ...data })
+        });
+    } catch(e) { console.error('postAction error:', e); }
+}
+
+function setFooterStatus(msg, success) {
+    const el = document.getElementById('statusMsg');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'popup-footer-status' + (success ? ' success' : '');
+    if (msg) setTimeout(() => { el.textContent = ''; el.className = 'popup-footer-status'; }, 2500);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    loadStyles();
+    wireDropdowns();
+
+    // Load initial style (title)
+    writeStyleToForm(paragraphStyles[activeStyleType]);
+
+    // Tabs
+    document.querySelectorAll('.para-style-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Save current form state before switching
+            paragraphStyles[activeStyleType] = readFormToStyle();
+            // Switch
+            document.querySelectorAll('.para-style-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            activeStyleType = tab.dataset.style;
+            writeStyleToForm(paragraphStyles[activeStyleType]);
+        });
+    });
+
+    // Live preview on input
+    const inputIds = ['paraFontSize','paraMarginTop','paraMarginBottom','paraLetterSpacing',
+                      'paraLineHeight','paraBorderBottom','paraBorderLeft','paraPaddingLeft',
+                      'paraPaddingBottom','paraColor'];
+    inputIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updatePreview);
+    });
+
+    // Save button
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+        paragraphStyles[activeStyleType] = readFormToStyle();
+        saveStyles();
+        await postAction('sync_paragraph_styles', { styles: paragraphStyles });
+        setFooterStatus('Styles saved.', true);
+    });
+
+    // Reset button
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        const defaults = getDefaults();
+        paragraphStyles[activeStyleType] = { ...defaults[activeStyleType] };
+        writeStyleToForm(paragraphStyles[activeStyleType]);
+    });
+
+    // Close button
+    document.getElementById('closeBtn').addEventListener('click', () => window.close());
+});
+</script>
+</body>
+</html>

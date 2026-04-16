@@ -175,44 +175,36 @@ _IAST_TO_DEV_ANNOTATION = {
 }
 
 
+# Pre-compiled regexes for _detect_script (C-speed instead of Python char loop)
+_RE_DEVANAGARI = re.compile(r'[\u0900-\u097F\uA8E0-\uA8FF]')
+_RE_TELUGU     = re.compile(r'[\u0C00-\u0C7F]')
+_RE_TAMIL      = re.compile(r'[\u0B80-\u0BFF]')
+_RE_KANNADA    = re.compile(r'[\u0C80-\u0CFF]')
+_RE_MALAYALAM  = re.compile(r'[\u0D00-\u0D7F]')
+_RE_LATIN      = re.compile(r'[\u0041-\u007A\u00C0-\u024F\u0300-\u036F]')
+
+
 def _detect_script(text):
     """Detect the dominant Unicode script of text.
 
     Returns one of: 'devanagari', 'telugu', 'tamil', 'kannada', 'malayalam',
     'latin' (covers IAST), or None (empty / no dominant script).
 
-    A script is considered dominant when its characters make up >25% of
-    the alphanumeric character count.
+    Uses compiled regexes (C-speed) rather than a Python character loop.
     """
+    if not text:
+        return None
     counts = {
-        'devanagari': 0,
-        'telugu':     0,
-        'tamil':      0,
-        'kannada':    0,
-        'malayalam':  0,
-        'latin':      0,
+        'devanagari': len(_RE_DEVANAGARI.findall(text)),
+        'telugu':     len(_RE_TELUGU.findall(text)),
+        'tamil':      len(_RE_TAMIL.findall(text)),
+        'kannada':    len(_RE_KANNADA.findall(text)),
+        'malayalam':  len(_RE_MALAYALAM.findall(text)),
+        'latin':      len(_RE_LATIN.findall(text)),
     }
-    for ch in text:
-        cp = ord(ch)
-        if 0x0900 <= cp <= 0x097F or 0xA8E0 <= cp <= 0xA8FF:
-            counts['devanagari'] += 1
-        elif 0x0C00 <= cp <= 0x0C7F:
-            counts['telugu'] += 1
-        elif 0x0B80 <= cp <= 0x0BFF:
-            counts['tamil'] += 1
-        elif 0x0C80 <= cp <= 0x0CFF:
-            counts['kannada'] += 1
-        elif 0x0D00 <= cp <= 0x0D7F:
-            counts['malayalam'] += 1
-        elif (0x0041 <= cp <= 0x007A or   # basic Latin
-              0x00C0 <= cp <= 0x024F or   # Latin extended (IAST diacritics)
-              0x0300 <= cp <= 0x036F):    # combining diacritical marks (Vedic accents)
-            counts['latin'] += 1
-
     total = sum(counts.values())
     if total == 0:
         return None
-
     dominant, count = max(counts.items(), key=lambda kv: kv[1])
     if count / total >= 0.25:
         return dominant
@@ -645,6 +637,8 @@ def remove_recent(filepath):
 # Disable built-in static file serving by setting static_folder=None
 # We handle static files explicitly with the catch-all route at the end
 app = Flask(__name__, static_folder=None)
+# Allow large audio uploads (~250 MB ≈ 3+ hours of MP3) via /api/audio/editor/state etc.
+app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024
 
 # ─── On-screen keyboard: shared in-memory character queue ───────────────────
 import collections as _collections
@@ -755,14 +749,18 @@ def import_docx_api():
         return jsonify({'error': 'python-docx is not installed. Run: pip install python-docx'}), 500
 
     try:
+        # Update loader for live progress
+        _update_loader('Importing Word Document', f'Reading {os.path.basename(filepath)}…')
         html_content = convert_docx_to_html(filepath)
-        # Extract a title from filename
+        para_count = html_content.count('<p')
+        _update_loader('Importing Word Document', f'Converted {para_count} paragraphs — loading into editor…')
         title = os.path.splitext(os.path.basename(filepath))[0]
         return jsonify({
             'content': html_content,
             'path': filepath,
             'name': os.path.basename(filepath),
-            'title': title
+            'title': title,
+            'paragraphs': para_count,
         })
     except Exception as e:
         import traceback
@@ -1865,6 +1863,89 @@ def _parse_index_page(html, category):
     return entries
 
 
+@app.route('/api/shlokam/search', methods=['GET'])
+def shlokam_search():
+    """Proxy the Shlokam.org WordPress search API to bypass CORS from dialog windows.
+
+    Shlokam may return different payload shapes for different queries. We normalize
+    to the shape the shloka dialog expects: [{ id, title, url, subtype }, ...].
+    """
+    query = (request.args.get('q') or '').strip()
+    if not query:
+        return jsonify([])
+    try:
+        import json as _json
+        url = f'https://shlokam.org/wp-json/wp/v2/search?search={urllib.parse.quote(query)}&per_page=20'
+        raw = _fetch_url(url, timeout=15)
+        try:
+            data = _json.loads(raw)
+        except Exception:
+            return jsonify({'error': 'Invalid JSON from shlokam.org'}), 502
+        if not isinstance(data, list):
+            return jsonify([])
+        out = []
+        import html as _html_mod
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            link = item.get('url') or item.get('link')
+            if not link:
+                continue
+            out.append({
+                'id': item.get('id'),
+                'title': _html_mod.unescape(item.get('title') or item.get('title_plain') or ''),
+                'url': link,
+                'subtype': item.get('subtype') or item.get('type') or 'post',
+            })
+        return jsonify(out)
+    except Exception as e:
+        return jsonify({'error': f'Shlokam search failed: {e}'}), 502
+
+
+@app.route('/api/shlokam/details/<collection>/<int:post_id>', methods=['GET'])
+def shlokam_details(collection, post_id):
+    """Proxy a Shlokam.org post/page and extract the individual verses."""
+    collection = re.sub(r'[^a-z_]', '', (collection or 'posts').lower()) or 'posts'
+    try:
+        import json as _json
+        url = (f'https://shlokam.org/wp-json/wp/v2/{collection}/{post_id}'
+               f'?_fields=content.rendered,title.rendered,link')
+        raw = _fetch_url(url, timeout=20)
+        data = _json.loads(raw)
+        html_content = ''
+        if isinstance(data, dict):
+            content = data.get('content') or {}
+            if isinstance(content, dict):
+                html_content = content.get('rendered') or ''
+        # Extract verses using regex (basic but robust)
+        def _extract(cls):
+            import re as _re
+            pat = _re.compile(r'<div[^>]*class="[^"]*' + _re.escape(cls) + r'[^"]*"[^>]*>(.*?)</div>',
+                              _re.DOTALL | _re.IGNORECASE)
+            blocks = []
+            for m in pat.findall(html_content or ''):
+                # Strip tags and normalize whitespace
+                txt = _re.sub(r'<[^>]+>', '', m)
+                import html as _html
+                txt = _html.unescape(txt)
+                blocks.append(txt.strip())
+            return blocks
+        dev = _extract('verse_sanskrit')
+        translit = _extract('verse_trans')
+        meaning = _extract('verse_meaning')
+        n = max(len(dev), len(translit), len(meaning))
+        shlokas = []
+        for i in range(n):
+            d = dev[i] if i < len(dev) else ''
+            t = translit[i] if i < len(translit) else ''
+            m = meaning[i] if i < len(meaning) else ''
+            if d or t or m:
+                shlokas.append({'devanagari': d, 'transliteration': t, 'translation': m})
+        return jsonify({'shlokas': shlokas})
+    except Exception as e:
+        return jsonify({'error': f'Shlokam details failed: {e}'}), 502
+
+
 @app.route('/api/sanskritdocs/categories', methods=['GET'])
 def sanskritdocs_categories():
     """Return the list of document categories."""
@@ -2041,8 +2122,11 @@ class JsBridge(QObject):
     fileDialogResult = pyqtSignal(str)
     viewerWindowRequested = pyqtSignal(str, str)  # filepath, title
     closeConfirmed = pyqtSignal(bool)  # For unsaved changes check
-    keyboardToggleRequested = pyqtSignal()  # Toggle on-screen keyboard
-    openDialogRequested = pyqtSignal(str)   # Open a named popup dialog
+    keyboardToggleRequested = pyqtSignal()      # Toggle on-screen keyboard
+    openDialogRequested = pyqtSignal(str)       # Open a named popup dialog
+    closeDialogRequested = pyqtSignal(str)      # Close (hide) a named popup dialog
+    showLoaderRequested = pyqtSignal(str, str)  # Show blocking loader (title, message)
+    hideLoaderRequested = pyqtSignal()          # Hide blocking loader
     
     def __init__(self, main_window):
         super().__init__()
@@ -2142,6 +2226,21 @@ class JsBridge(QObject):
     def openDialog(self, dialog_id: str):
         """Open (or raise) a named popup dialog window."""
         self.openDialogRequested.emit(dialog_id)
+
+    @pyqtSlot(str)
+    def closeDialog(self, dialog_id: str):
+        """Hide a named popup dialog window (window.close() is blocked in QtWebEngine)."""
+        self.closeDialogRequested.emit(dialog_id)
+
+    @pyqtSlot(str, str)
+    def showLoader(self, title: str, message: str):
+        """Show the blocking loader OS window with the given title and message."""
+        self.showLoaderRequested.emit(title, message)
+
+    @pyqtSlot()
+    def hideLoader(self):
+        """Hide the blocking loader OS window."""
+        self.hideLoaderRequested.emit()
 
 
 # --- Document Viewer Window ---
@@ -3632,7 +3731,12 @@ class PopupDialog(QMainWindow):
 
     def __init__(self, title: str, url: str, width: int, height: int,
                  server_url: str, parent=None):
-        super().__init__(parent, Qt.WindowType.WindowStaysOnTopHint)
+        # Tool gives a thin title bar (like the keyboard window) and excludes the
+        # window from the taskbar. Must be passed to super().__init__() on Windows —
+        # setting it later via setWindowFlags() causes a hide/show flicker (Qt 6 quirk).
+        super().__init__(parent,
+                         Qt.WindowType.WindowStaysOnTopHint |
+                         Qt.WindowType.Tool)
         self.server_url = server_url
         self.setWindowTitle(title)
         self.resize(width, height)
@@ -3666,6 +3770,57 @@ class PopupDialog(QMainWindow):
         # Hide rather than destroy — avoids QWebEngine teardown cost on re-open
         event.ignore()
         self.hide()
+
+
+class BlockingPopupDialog(QMainWindow):
+    """
+    A popup dialog for blocking operations (file import, export, agent run, etc.).
+
+    Differences from PopupDialog:
+    - No OS close button (CustomizeWindowHint + WindowTitleHint without WindowCloseButtonHint)
+    - closeEvent is a hard no-op — the Python code that started the operation is the
+      only thing allowed to hide this window.
+    """
+
+    def __init__(self, title: str, url: str, width: int, height: int,
+                 server_url: str, parent=None):
+        super().__init__(parent,
+                         Qt.WindowType.WindowStaysOnTopHint |
+                         Qt.WindowType.Tool |
+                         Qt.WindowType.CustomizeWindowHint |
+                         Qt.WindowType.WindowTitleHint)
+        self.server_url = server_url
+        self.setWindowTitle(title)
+        self.resize(width, height)
+        self.setMinimumSize(280, 160)
+        self.setMaximumSize(width, height)  # prevent resize
+
+        if os.path.exists(ICON_PATH):
+            self.setWindowIcon(QIcon(ICON_PATH))
+        elif os.path.exists(LOGO_PATH):
+            self.setWindowIcon(QIcon(LOGO_PATH))
+
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.web_view = QWebEngineView()
+        self.web_view.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
+        settings = self.web_view.settings()
+        settings.setAttribute(
+            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
+        )
+        layout.addWidget(self.web_view)
+        self.web_view.setUrl(QUrl(url))
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        _set_titlebar_color(self)
+
+    def closeEvent(self, event):
+        # Blocking dialogs cannot be closed by the user
+        event.ignore()
 
 
 class KeyboardWindow(QMainWindow):
@@ -3788,11 +3943,16 @@ class MainWindow(QMainWindow):
         self.bridge.closeConfirmed.connect(self._on_close_confirmed)
         self.bridge.keyboardToggleRequested.connect(self._toggle_keyboard)
         self.bridge.openDialogRequested.connect(self._open_dialog)
+        self.bridge.closeDialogRequested.connect(self._close_dialog)
+        self.bridge.showLoaderRequested.connect(self._show_loader_dialog)
+        self.bridge.hideLoaderRequested.connect(self._hide_loader_dialog)
 
         # On-screen keyboard window (created lazily on first toggle)
         self._keyboard_window = None
         # Popup dialog windows, keyed by dialog_id
         self._dialog_windows = {}
+        # Blocking loader OS window (created lazily on first use)
+        self._loader_window = None
 
         # Load app
         self.web_view.setUrl(QUrl(server_url))
@@ -3855,15 +4015,25 @@ class MainWindow(QMainWindow):
     def _open_dialog(self, dialog_id: str):
         """Open (or raise) a popup dialog window by its ID."""
         DIALOG_SPECS = {
-            'autorun': ('Run Agent — śikṣāmitra',  '/dialog/autorun', 720, 520),
-            'shloka':  ('Śloka Search — śikṣāmitra', '/dialog/shloka',  800, 560),
-            'iast':    ('IAST Characters — śikṣāmitra', '/dialog/iast',  700, 480),
+            'autorun':         ('Run Agent — śikṣāmitra',             '/dialog/autorun',         720, 520),
+            'shloka':          ('Insert Śloka — śikṣāmitra',          '/dialog/shloka',          800, 560),
+            'iast':            ('IAST Characters — śikṣāmitra',       '/dialog/iast',            700, 480),
+            'autosvara':       ('Automatic Svaras — śikṣāmitra',      '/dialog/autosvara',       620, 520),
+            'paragraphstyles': ('Paragraph Styles — śikṣāmitra',      '/dialog/paragraphstyles', 760, 620),
+            'media':           ('Embedded Media — śikṣāmitra',        '/dialog/media',           680, 480),
+            'audio-picker':    ('Attach Audio — śikṣāmitra',           '/dialog/audio-picker',    560, 520),
+            'audio-editor':    ('Audio Editor — śikṣāmitra',           '/dialog/audio-editor',    1100, 680),
+            'message':         ('śikṣāmitra',                          '/dialog/message',         460, 240),
         }
         if dialog_id not in DIALOG_SPECS:
             return
 
         title, path, w, h = DIALOG_SPECS[dialog_id]
         url = f'{self.server_url}{path}'
+
+        # Stateful dialogs (audio picker / editor / loader / media / message) must
+        # reload their URL on each open so they re-fetch the current state from the server.
+        STATEFUL = {'audio-picker', 'audio-editor', 'media', 'message'}
 
         win = self._dialog_windows.get(dialog_id)
         if win is None:
@@ -3874,12 +4044,50 @@ class MainWindow(QMainWindow):
             dx = geo.left() + (geo.width()  - w) // 2
             dy = geo.top()  + (geo.height() - h) // 2
             win.setGeometry(dx, dy, w, h)
+        elif dialog_id in STATEFUL:
+            # Force the page to reload so it picks up freshly staged state
+            win.web_view.setUrl(QUrl(url))
 
         if win.isVisible():
             win.raise_()
             win.activateWindow()
         else:
             win.show()
+
+    def _close_dialog(self, dialog_id: str):
+        """Hide a popup dialog window (called from JS via bridge.closeDialog)."""
+        win = self._dialog_windows.get(dialog_id)
+        if win is not None and win.isVisible():
+            win.hide()
+
+    def _show_loader_dialog(self, title: str, message: str):
+        """Show the blocking loader OS window for long-running operations."""
+        global _loader_state
+        with _loader_state_lock:
+            _loader_state = {'title': title or 'Loading\u2026', 'message': message or ''}
+
+        url = f'{self.server_url}/dialog/loader'
+        if self._loader_window is None:
+            self._loader_window = BlockingPopupDialog(
+                'śikṣāmitra', url, 340, 200, self.server_url, parent=None
+            )
+        else:
+            # Navigate to force a fresh poll of state after update
+            self._loader_window.web_view.setUrl(QUrl(url))
+
+        # Centre over the main window
+        geo = self.geometry()
+        lw, lh = 340, 200
+        lx = geo.left() + (geo.width()  - lw) // 2
+        ly = geo.top()  + (geo.height() - lh) // 2
+        self._loader_window.setGeometry(lx, ly, lw, lh)
+        self._loader_window.show()
+        self._loader_window.raise_()
+
+    def _hide_loader_dialog(self):
+        """Hide the blocking loader OS window."""
+        if self._loader_window is not None:
+            self._loader_window.hide()
 
     def closeEvent(self, event):
         """Handle close event with unsaved changes confirmation."""
@@ -3906,6 +4114,14 @@ class MainWindow(QMainWindow):
                 except Exception:
                     pass
             self._dialog_windows.clear()
+            # Close loader window if open
+            if self._loader_window is not None:
+                try:
+                    self._loader_window.web_view.setUrl(QUrl('about:blank'))
+                    self._loader_window.destroy()
+                except Exception:
+                    pass
+                self._loader_window = None
             event.accept()
             return
         
@@ -4042,11 +4258,14 @@ def keyboard_poll():
 # ─── Popup dialog pages ──────────────────────────────────────────────────────
 
 def _serve_dialog_page(filename):
-    """Helper: read a dialog HTML, inject theme, return Response."""
+    """Helper: read a dialog HTML, inject theme and base-href, return Response."""
     path = os.path.join(BASE_DIR, filename)
     try:
         with open(path, 'r', encoding='utf-8') as f:
             html = f.read()
+        # Inject <base href="/"> so relative asset paths (styles.css, logo.png, …)
+        # resolve correctly even though the page is served under /dialog/…
+        html = html.replace('<head>', '<head><base href="/">', 1)
         # Inject theme the same way the main editor does
         try:
             prefs = load_preferences() or {}
@@ -4076,6 +4295,123 @@ def serve_dialog_iast():
     return _serve_dialog_page('dialog-iast.html')
 
 
+@app.route('/dialog/autosvara')
+def serve_dialog_autosvara():
+    return _serve_dialog_page('dialog-autosvara.html')
+
+
+@app.route('/dialog/paragraphstyles')
+def serve_dialog_paragraphstyles():
+    return _serve_dialog_page('dialog-paragraphstyles.html')
+
+
+@app.route('/dialog/media')
+def serve_dialog_media():
+    return _serve_dialog_page('dialog-media.html')
+
+
+@app.route('/dialog/audio-picker')
+def serve_dialog_audio_picker():
+    return _serve_dialog_page('dialog-audio-picker.html')
+
+
+@app.route('/dialog/audio-editor')
+def serve_dialog_audio_editor():
+    return _serve_dialog_page('dialog-audio-editor.html')
+
+
+@app.route('/dialog/message')
+def serve_dialog_message():
+    return _serve_dialog_page('dialog-message.html')
+
+
+# ── Modal-message state — editor stages config, popup reads, posts response ──
+_message_state = {}
+_message_state_lock = threading.Lock()
+
+
+@app.route('/api/message/state', methods=['GET', 'POST'])
+def message_state():
+    """GET: dialog-message reads its current config.
+    POST: editor sets the next message to display (id, type, title, message, buttons, ...)."""
+    global _message_state
+    if request.method == 'POST':
+        data = request.get_json(force=True, silent=True) or {}
+        with _message_state_lock:
+            _message_state = dict(data)
+        return jsonify({'status': 'ok'})
+    with _message_state_lock:
+        return jsonify(dict(_message_state))
+
+
+# ── Audio dialog state — editor writes before opening popup, popup reads/writes ──
+# Two separate buckets (picker and editor) so one dialog can't clobber the other.
+_audio_picker_state = {}       # Data for dialog-audio-picker (audio library, target lines)
+_audio_editor_state = {}       # Data for dialog-audio-editor (audio data, regions, targets)
+_audio_sections_cache = {'sections': []}  # All available sections for the "+ Section" picker
+_audio_state_lock   = threading.Lock()
+
+
+@app.route('/api/audio/editor/sections', methods=['GET', 'POST'])
+def audio_editor_sections():
+    """GET: audio-editor's section-picker reads available sections.
+    POST: editor writes the cached list (called whenever the editor opens an audio dialog)."""
+    global _audio_sections_cache
+    if request.method == 'POST':
+        data = request.get_json(force=True, silent=True) or {}
+        with _audio_state_lock:
+            _audio_sections_cache = {'sections': data.get('sections', [])}
+        return jsonify({'status': 'ok'})
+    with _audio_state_lock:
+        return jsonify(dict(_audio_sections_cache))
+
+
+@app.route('/api/audio/picker/state', methods=['GET', 'POST'])
+def audio_picker_state():
+    """GET: audio-picker popup reads the currently-staged data.
+    POST: editor writes the data before opening the popup."""
+    global _audio_picker_state
+    if request.method == 'POST':
+        data = request.get_json(force=True, silent=True) or {}
+        with _audio_state_lock:
+            _audio_picker_state = dict(data)
+        return jsonify({'status': 'ok'})
+    with _audio_state_lock:
+        return jsonify(dict(_audio_picker_state))
+
+
+@app.route('/api/audio/editor/state', methods=['GET', 'POST'])
+def audio_editor_state():
+    """GET: audio-editor popup reads the currently-staged data.
+    POST: editor writes the data before opening the popup."""
+    global _audio_editor_state
+    if request.method == 'POST':
+        data = request.get_json(force=True, silent=True) or {}
+        with _audio_state_lock:
+            _audio_editor_state = dict(data)
+        return jsonify({'status': 'ok'})
+    with _audio_state_lock:
+        return jsonify(dict(_audio_editor_state))
+
+
+# ── Embedded audio cache — written by main editor before opening media popup ──
+_embedded_audio_cache = []
+_embedded_audio_lock = threading.Lock()
+
+
+@app.route('/api/audio/embedded', methods=['GET', 'POST'])
+def audio_embedded():
+    """Cache the list of embedded audio items (metadata only) for the media popup."""
+    global _embedded_audio_cache
+    if request.method == 'POST':
+        data = request.get_json(force=True, silent=True) or {}
+        with _embedded_audio_lock:
+            _embedded_audio_cache = data.get('audio', [])
+        return jsonify({'status': 'ok'})
+    with _embedded_audio_lock:
+        return jsonify({'audio': list(_embedded_audio_cache)})
+
+
 @app.route('/api/dialog/action', methods=['POST'])
 def dialog_action():
     """Receive an action from a popup dialog and queue it for the main editor."""
@@ -4093,6 +4429,48 @@ def dialog_actions():
         actions = list(_dialog_action_queue)
         _dialog_action_queue.clear()
     return jsonify({'actions': actions})
+
+
+@app.route('/dialog/loader')
+def serve_dialog_loader():
+    return _serve_dialog_page('dialog-loader.html')
+
+
+# ── Blocking-loader state — updated by the main editor, read by dialog-loader.html ──
+_loader_state = {'title': 'Loading\u2026', 'message': ''}
+_loader_state_lock = threading.Lock()
+
+
+def _update_loader(title, message=''):
+    """Convenience: update the loader state from any thread (e.g. Flask request handlers).
+
+    The OS loader window polls /api/loader/state every 300ms, so updates appear
+    within ~300ms of this call.
+    """
+    global _loader_state
+    with _loader_state_lock:
+        _loader_state = {
+            'title': str(title or 'Loading\u2026'),
+            'message': str(message or ''),
+        }
+
+
+@app.route('/api/loader/state', methods=['GET'])
+def loader_state_get():
+    """Return current loader title/message for the blocking-loader popup to poll."""
+    with _loader_state_lock:
+        return jsonify(dict(_loader_state))
+
+
+@app.route('/api/loader/update', methods=['POST'])
+def loader_state_update():
+    """Update loader title/message mid-operation (e.g. during multi-step agent run)."""
+    global _loader_state
+    data = request.get_json(force=True, silent=True) or {}
+    with _loader_state_lock:
+        if 'title'   in data: _loader_state['title']   = str(data['title']   or '')
+        if 'message' in data: _loader_state['message'] = str(data['message'] or '')
+    return jsonify({'status': 'ok'})
 
 
 @app.route('/<path:filename>')

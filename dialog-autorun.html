@@ -36,15 +36,6 @@
 </head>
 <body class="popup-page">
 
-<!-- Titlebar -->
-<div class="popup-titlebar">
-    <div class="popup-titlebar-title">
-        <img src="logo.png" class="popup-titlebar-logo" alt="">
-        Run Agent Settings
-    </div>
-    <button class="popup-titlebar-close" id="closeBtn" title="Close">✕</button>
-</div>
-
 <!-- Content -->
 <div class="popup-content">
     <p class="modal-description">Configure the automation pipeline steps and filters.</p>
@@ -258,20 +249,25 @@ function wireDropdowns() {
         if (!trigger || !menu) return;
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
-            menu.classList.toggle('open');
+            // Close any other open dropdowns first
+            document.querySelectorAll('.custom-dropdown.open').forEach(d => {
+                if (d !== dd) d.classList.remove('open');
+            });
+            dd.classList.toggle('open');
         });
         menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
-            opt.addEventListener('click', () => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
                 dd.dataset.value = opt.dataset.value;
                 trigger.textContent = opt.textContent;
                 menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
                 opt.classList.add('selected');
-                menu.classList.remove('open');
+                dd.classList.remove('open');
             });
         });
     });
     document.addEventListener('click', () => {
-        document.querySelectorAll('.custom-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+        document.querySelectorAll('.custom-dropdown.open').forEach(d => d.classList.remove('open'));
     });
 }
 
@@ -289,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
     wireChips();
     applyToForm(loadSettings());
 
-    document.getElementById('closeBtn').addEventListener('click', () => window.close());
 
     document.getElementById('saveBtn').addEventListener('click', async () => {
         saveSettings();

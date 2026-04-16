@@ -52,15 +52,6 @@
 </head>
 <body class="popup-page">
 
-<!-- Titlebar -->
-<div class="popup-titlebar">
-    <div class="popup-titlebar-title">
-        <img src="logo.png" class="popup-titlebar-logo" alt="">
-        Insert IAST Character
-    </div>
-    <button class="popup-titlebar-close" id="closeBtn" title="Close">✕</button>
-</div>
-
 <!-- Content -->
 <div class="popup-content iast-dialog-body">
     <div class="iast-menu-content">
@@ -218,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.getElementById('closeBtn').addEventListener('click', () => window.close());
     document.getElementById('closeBtn2').addEventListener('click', () => window.close());
 });
 </script>

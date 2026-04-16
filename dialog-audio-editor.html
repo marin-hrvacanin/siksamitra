@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Editor — śikṣāmitra</title>
+    <script>
+        (function() {
+            try {
+                var mode = '__SIKSAMITRA_INITIAL_THEME_MODE__';
+                var stored = localStorage.getItem('siksamitra-theme') || '';
+                var t = stored || mode || 'light';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="popup-page">
+
+<div class="popup-content ae-content">
+    <div class="ae-title-bar">
+        <div class="ae-title" id="audioTitle">Audio</div>
+        <div class="ae-meta" id="audioMeta"></div>
+    </div>
+
+    <div id="multiNote" class="ae-multi-note" hidden></div>
+
+    <div class="ae-toolbar">
+        <!-- Transport -->
+        <div class="ae-tool-group">
+            <button class="ae-tool-btn primary" id="btnPlay" type="button" title="Play (Space)">▸ Play</button>
+            <button class="ae-tool-btn" id="btnPause" type="button" disabled title="Pause">❚❚</button>
+            <button class="ae-tool-btn" id="btnStop" type="button" disabled title="Stop">■</button>
+            <button class="ae-tool-btn" id="btnPlayRegion" type="button" disabled title="Play active region">▸ Region</button>
+            <button class="ae-tool-btn" id="btnPlaySelection" type="button" disabled title="Play selection">▸ Selection</button>
+        </div>
+        <div class="ae-tool-divider"></div>
+
+        <!-- Cursor jumps -->
+        <div class="ae-tool-group">
+            <button class="ae-tool-btn" id="btnJumpStart" type="button" title="Jump to start (Home)">⏮</button>
+            <button class="ae-tool-btn" id="btnJumpRegionStart" type="button" disabled title="Jump to region start">⟨</button>
+            <button class="ae-tool-btn" id="btnJumpRegionEnd" type="button" disabled title="Jump to region end">⟩</button>
+            <button class="ae-tool-btn" id="btnJumpEnd" type="button" title="Jump to end (End)">⏭</button>
+        </div>
+        <div class="ae-tool-divider"></div>
+
+        <!-- Zoom -->
+        <div class="ae-tool-group">
+            <button class="ae-tool-btn" id="btnZoomOut" type="button" title="Zoom out (−)">−</button>
+            <span class="ae-zoom-level" id="zoomLevel">1.0×</span>
+            <button class="ae-tool-btn" id="btnZoomIn" type="button" title="Zoom in (+)">+</button>
+            <button class="ae-tool-btn" id="btnZoomFit" type="button" title="Fit to window (0)">Fit</button>
+        </div>
+        <div class="ae-tool-divider"></div>
+
+        <!-- Region -->
+        <div class="ae-tool-group">
+            <button class="ae-tool-btn" id="btnAddRegion" type="button" title="Add region (uses selection if any, else around playhead)">＋ Region</button>
+            <button class="ae-tool-btn" id="btnSetStart" type="button" disabled title="Set region start to playhead">⟨ Start</button>
+            <button class="ae-tool-btn" id="btnSetEnd" type="button" disabled title="Set region end to playhead">End ⟩</button>
+        </div>
+        <div class="ae-tool-divider"></div>
+
+        <!-- Selection ops -->
+        <div class="ae-tool-group">
+            <button class="ae-tool-btn" id="btnRegionFromSelection" type="button" disabled title="Add new region from current selection">＋ from Sel</button>
+            <button class="ae-tool-btn" id="btnCutSelection" type="button" disabled title="Cut selection out of any overlapping region">Cut Sel</button>
+            <button class="ae-tool-btn" id="btnInvertSelection" type="button" disabled title="Use everything OUTSIDE the selection as new regions">Invert Sel</button>
+            <button class="ae-tool-btn" id="btnClearSelection" type="button" disabled title="Clear selection (Esc)">Clear Sel</button>
+        </div>
+        <div class="ae-tool-divider"></div>
+
+        <!-- Auto + sections -->
+        <div class="ae-tool-group">
+            <button class="ae-tool-btn auto" id="btnAutoAlign" type="button" title="Smart split using IAST syllable counts">⚙ Auto-Align</button>
+            <button class="ae-tool-btn" id="btnAutoSplit" type="button" title="Split by detected silence (no text input)">⚙ Auto-Split</button>
+            <button class="ae-tool-btn" id="btnAddSection" type="button" title="Add more sections to attach to">＋ Section</button>
+        </div>
+    </div>
+
+    <div class="ae-waveform-wrap">
+        <div class="ae-waveform-scroller" id="waveScroller">
+            <div class="ae-waveform-inner" id="waveInner">
+                <canvas class="ae-waveform-canvas" id="waveCanvas"></canvas>
+                <div class="ae-timeline" id="timeline"></div>
+                <div class="ae-selection-layer" id="selectionLayer" style="display:none;"></div>
+                <!-- regions, selection overlay, and playhead injected here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="ae-bottom-panel">
+        <div class="ae-side-panel">
+            <div class="ae-panel-title">Sections</div>
+            <div id="targetsList" class="ae-targets-list"></div>
+        </div>
+        <div class="ae-side-panel">
+            <div class="ae-panel-title">Regions</div>
+            <div id="regionsList" class="ae-regions-list"></div>
+        </div>
+        <div class="ae-side-panel">
+            <div class="ae-panel-title">Selected Region</div>
+            <div id="regionDetails">
+                <div id="detailBody" class="ae-detail-body">
+                    <div class="ae-detail-empty">Click a region to edit its properties.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section picker overlay (in-dialog modal — small enough that a separate OS window would be excessive) -->
+<div id="sectionPickerOverlay" class="ae-overlay" hidden>
+    <div class="ae-modal">
+        <div class="ae-modal-title">Add sections</div>
+        <div class="ae-modal-hint">Select one or more text sections to attach this audio to. Different hierarchy levels are supported.</div>
+        <div id="sectionPickerList" class="ae-sec-picker-list"></div>
+        <div class="ae-modal-actions">
+            <button type="button" id="sectionPickerCancel">Cancel</button>
+            <button type="button" id="sectionPickerAdd" class="primary">Add Selected</button>
+        </div>
+    </div>
+</div>
+
+<div class="popup-footer">
+    <span class="popup-footer-status" id="statusMsg"></span>
+    <button type="button" class="danger" id="deleteAllBtn">Delete Audio</button>
+    <button type="button" id="cancelBtn">Cancel</button>
+    <button type="button" class="primary" id="applyBtn">Apply</button>
+</div>
+
+<script src="dialog-audio-editor.js"></script>
+</body>
+</html>
