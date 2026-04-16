@@ -261,6 +261,14 @@ The text from the start of the line up to and including the ṁ is trimmed, lowe
 
 ---
 
+## Audio Workflow Note
+
+Audio attachments preserve this visual system during playback and export. The audio editor can stage the selected region first, then let you hide or show individual ranges without changing the underlying text layer.
+
+For the full audio workflow, see `documents/audio-editing-and-matching.md`.
+
+---
+
 ## 10. Audio Attachments
 
 Documents may embed audio recitation files:

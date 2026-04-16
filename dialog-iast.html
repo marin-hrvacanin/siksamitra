@@ -16,6 +16,8 @@
         })();
     </script>
     <link rel="stylesheet" href="styles.css">
+    <script src="qwebchannel.js"></script>
+    <script src="pyqt-bridge.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         html, body { height: 100%; margin: 0; overflow: hidden; font-size: 14px; }
@@ -200,6 +202,18 @@ async function postChar(char) {
     } catch(e) { console.error('postChar error:', e); }
 }
 
+async function closeDialog() {
+    try {
+        if (window.pywebview?.api?.close_dialog) {
+            await window.pywebview.api.close_dialog('iast');
+            return;
+        }
+    } catch (e) {
+        console.error('closeDialog error:', e);
+    }
+    window.close();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Wire all IAST char buttons
     document.querySelectorAll('.iast-char-btn').forEach(btn => {
@@ -209,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.getElementById('closeBtn2').addEventListener('click', () => window.close());
+    document.getElementById('closeBtn2').addEventListener('click', closeDialog);
 });
 </script>
 </body>

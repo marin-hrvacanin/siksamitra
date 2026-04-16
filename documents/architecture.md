@@ -231,6 +231,18 @@ When the user triggers automation (Run Agent button):
 4. Apply each replacement via Quill's `insertText`, `deleteText`, `formatText` API
 5. Preserve all existing Quill formatting where not explicitly changed
 
+### Audio Editor and Matching
+
+The audio workflow is split between the main editor attachment model and the dedicated dialog UI:
+
+- `dialog-audio-editor.html` and `dialog-audio-editor.js` render the region editor, waveform, and matching controls
+- The dialog defaults to the selected region, with explicit show-selected, show-all, hide-all, and per-region visibility controls
+- Region timing is edited per attachment, and fade-in / fade-out values are stored alongside the audio metadata
+- Automatic matching stages the clicked region first so the user can immediately inspect the range being edited
+- Playback in the editor and preview window applies the stored fade values at runtime
+
+Only region timing and fade metadata are persisted in `.smdoc`; transient visibility state stays in the dialog UI.
+
 ---
 
 ## Document Lifecycle
@@ -261,6 +273,8 @@ User presses Ctrl+S
     → Flask /api/file/save: write to disk
     → Python: lzma.compress(json_bytes, preset=9|PRESET_EXTREME), prepend SMDI, write file
     → cache/_last_session.json: update session state
+
+Audio attachment records include region timing plus fade metadata (`fadeIn`, `fadeOut`) so the save path can round-trip the exact playback behavior.
 ```
 
 ### Exporting to HTML / Viewing

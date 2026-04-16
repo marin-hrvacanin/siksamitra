@@ -778,6 +778,20 @@ body.hide-audio .audio-play-button { display: none !important; }
         // Extract editor content
         const editorDiv = doc.querySelector('.ql-editor');
         const content = editorDiv ? editorDiv.innerHTML.trim() : '';
+        const audioAttachments = Array.from(doc.querySelectorAll('.ql-audio-attachment')).map((node) => {
+            const audio = node.querySelector('audio');
+            return {
+                id: node.dataset.audioId || '',
+                label: node.dataset.audioLabel || 'Audio',
+                src: node.dataset.audioSrc || (audio ? audio.getAttribute('src') || '' : ''),
+                startTime: parseFloat(node.dataset.startTime) || 0,
+                endTime: node.dataset.endTime ? parseFloat(node.dataset.endTime) : null,
+                duration: parseFloat(node.dataset.duration) || 0,
+                size: parseFloat(node.dataset.size) || 0,
+                fadeIn: parseFloat(node.dataset.fadeIn) || 0,
+                fadeOut: parseFloat(node.dataset.fadeOut) || 0,
+            };
+        }).filter(item => item.id && item.src);
         
         // Extract any custom styles (look for style differences)
         // For now, we don't extract custom CSS - that would require more complex parsing
@@ -788,7 +802,7 @@ body.hide-audio .audio-play-button { display: none !important; }
             theme,
             paragraphStyles: null,
             customCSS: null,
-            audioAttachments: null
+            audioAttachments: audioAttachments.length ? audioAttachments : null
         };
     }
 };

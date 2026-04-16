@@ -85,7 +85,9 @@ Magic bytes: `SMDI` = LZMA (current), `SMDC` = zlib (legacy). Both are transpare
         "label": "Display label",
         "src": "data:audio/mpeg;base64,...",
         "startTime": 0,
-        "endTime": null
+        "endTime": null,
+        "fadeIn": 0,
+        "fadeOut": 0
       }
     ]
   }
@@ -117,6 +119,8 @@ Magic bytes: `SMDI` = LZMA (current), `SMDC` = zlib (legacy). Both are transpare
 **`audio`** (object, optional)
 - Omitted entirely if no audio attachments
 - Audio stored as full base64 data URIs (can be large — primary driver of LZMA compression)
+- Each attachment may also include `fadeIn` and `fadeOut` values in seconds; when omitted, both default to `0`
+- Region visibility is a dialog-only UI state and is not serialized separately
 
 ---
 

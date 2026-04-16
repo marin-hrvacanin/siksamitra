@@ -3730,17 +3730,16 @@ class PopupDialog(QMainWindow):
     """
 
     def __init__(self, title: str, url: str, width: int, height: int,
-                 server_url: str, parent=None):
-        # Tool gives a thin title bar (like the keyboard window) and excludes the
-        # window from the taskbar. Must be passed to super().__init__() on Windows —
-        # setting it later via setWindowFlags() causes a hide/show flicker (Qt 6 quirk).
-        super().__init__(parent,
-                         Qt.WindowType.WindowStaysOnTopHint |
-                         Qt.WindowType.Tool)
+                 server_url: str, parent=None, min_width: int = 400,
+                 min_height: int = 300, window_flags=None):
+        # Default to a tool window (thin title bar, excluded from taskbar).
+        # Individual dialogs can override the flags when they need a full window.
+        flags = window_flags if window_flags is not None else Qt.WindowType.Tool
+        super().__init__(parent, flags)
         self.server_url = server_url
         self.setWindowTitle(title)
         self.resize(width, height)
-        self.setMinimumSize(400, 300)
+        self.setMinimumSize(min_width, min_height)
 
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
@@ -3758,6 +3757,16 @@ class PopupDialog(QMainWindow):
         settings.setAttribute(
             QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
         )
+
+        # Wire popup pages into the same JS bridge used by the main window.
+        # Without this, pyqt-bridge.js cannot initialize in popup dialogs.
+        self.channel = QWebChannel()
+        bridge_obj = getattr(parent, 'bridge', None)
+        if bridge_obj is None:
+            bridge_obj = JsBridge(parent or self)
+        self.channel.registerObject('pyqt', bridge_obj)
+        self.web_view.page().setWebChannel(self.channel)
+
         layout.addWidget(self.web_view)
         self.web_view.setUrl(QUrl(url))
 
@@ -3785,10 +3794,9 @@ class BlockingPopupDialog(QMainWindow):
     def __init__(self, title: str, url: str, width: int, height: int,
                  server_url: str, parent=None):
         super().__init__(parent,
-                         Qt.WindowType.WindowStaysOnTopHint |
-                         Qt.WindowType.Tool |
-                         Qt.WindowType.CustomizeWindowHint |
-                         Qt.WindowType.WindowTitleHint)
+                 Qt.WindowType.Tool |
+                 Qt.WindowType.CustomizeWindowHint |
+                 Qt.WindowType.WindowTitleHint)
         self.server_url = server_url
         self.setWindowTitle(title)
         self.resize(width, height)
@@ -3830,7 +3838,6 @@ class KeyboardWindow(QMainWindow):
     Window flags:
       - WindowDoesNotAcceptFocus: clicking keys NEVER steals focus from the main
         editor, so the Quill cursor position is preserved throughout.
-      - WindowStaysOnTopHint: always floats above the main window.
       - Tool: thin title bar, excluded from taskbar.
 
     IMPORTANT: these flags must be passed to super().__init__() — setting them
@@ -3841,7 +3848,6 @@ class KeyboardWindow(QMainWindow):
         super().__init__(
             parent,
             Qt.WindowType.WindowDoesNotAcceptFocus |
-            Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.Tool
         )
         self.server_url = server_url
@@ -4023,13 +4029,14 @@ class MainWindow(QMainWindow):
             'media':           ('Embedded Media — śikṣāmitra',        '/dialog/media',           680, 480),
             'audio-picker':    ('Attach Audio — śikṣāmitra',           '/dialog/audio-picker',    560, 520),
             'audio-editor':    ('Audio Editor — śikṣāmitra',           '/dialog/audio-editor',    1100, 680),
-            'message':         ('śikṣāmitra',                          '/dialog/message',         460, 240),
+            'message':         ('śikṣāmitra',                          '/dialog/message',         500, 220),
         }
         if dialog_id not in DIALOG_SPECS:
             return
 
         title, path, w, h = DIALOG_SPECS[dialog_id]
         url = f'{self.server_url}{path}'
+        min_w, min_h = (360, 190) if dialog_id == 'message' else (400, 300)
 
         # Stateful dialogs (audio picker / editor / loader / media / message) must
         # reload their URL on each open so they re-fetch the current state from the server.
@@ -4037,7 +4044,18 @@ class MainWindow(QMainWindow):
 
         win = self._dialog_windows.get(dialog_id)
         if win is None:
-            win = PopupDialog(title, url, w, h, self.server_url, parent=None)
+            dialog_flags = None
+            dialog_parent = self
+            if dialog_id == 'audio-editor':
+                dialog_flags = (
+                    Qt.WindowType.Window |
+                    Qt.WindowType.WindowTitleHint |
+                    Qt.WindowType.WindowMinimizeButtonHint |
+                    Qt.WindowType.WindowMaximizeButtonHint |
+                    Qt.WindowType.WindowCloseButtonHint
+                )
+            win = PopupDialog(title, url, w, h, self.server_url, parent=dialog_parent,
+                              min_width=min_w, min_height=min_h, window_flags=dialog_flags)
             self._dialog_windows[dialog_id] = win
             # Centre over the main window
             geo = self.geometry()
@@ -4069,7 +4087,7 @@ class MainWindow(QMainWindow):
         url = f'{self.server_url}/dialog/loader'
         if self._loader_window is None:
             self._loader_window = BlockingPopupDialog(
-                'śikṣāmitra', url, 340, 200, self.server_url, parent=None
+                'śikṣāmitra', url, 340, 200, self.server_url, parent=self
             )
         else:
             # Navigate to force a fresh poll of state after update

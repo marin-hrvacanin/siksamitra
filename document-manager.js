@@ -22,6 +22,11 @@ Object.assign(SiksamitraEditor.prototype, {
             const src = attachment.dataset.audioSrc || ''; // Base64 data URI
             const startTime = parseFloat(attachment.dataset.startTime) || 0;
             const endTime = attachment.dataset.endTime ? parseFloat(attachment.dataset.endTime) : null;
+            const fadeIn = parseFloat(attachment.dataset.fadeIn) || 0;
+            const fadeOut = parseFloat(attachment.dataset.fadeOut) || 0;
+            const audioEl = attachment.querySelector('audio');
+            const duration = parseFloat(attachment.dataset.duration) || (audioEl && isFinite(audioEl.duration) ? audioEl.duration : 0);
+            const size = attachment.dataset.size ? parseFloat(attachment.dataset.size) : (src ? src.length : 0);
             
             if (audioId && src) {
                 result.push({
@@ -29,7 +34,11 @@ Object.assign(SiksamitraEditor.prototype, {
                     label: label,
                     src: src,
                     startTime: startTime,
-                    endTime: endTime
+                    endTime: endTime,
+                    fadeIn: fadeIn,
+                    fadeOut: fadeOut,
+                    duration: duration,
+                    size: size,
                 });
             }
         }
@@ -77,6 +86,32 @@ Object.assign(SiksamitraEditor.prototype, {
                 if (data.endTime !== undefined && data.endTime !== null) {
                     element.dataset.endTime = data.endTime;
                 }
+                if (data.duration !== undefined && data.duration !== null) {
+                    element.dataset.duration = data.duration;
+                }
+                if (data.size !== undefined && data.size !== null) {
+                    element.dataset.size = data.size;
+                }
+                if (data.fadeIn !== undefined && Number(data.fadeIn) > 0) element.dataset.fadeIn = data.fadeIn;
+                else delete element.dataset.fadeIn;
+                if (data.fadeOut !== undefined && Number(data.fadeOut) > 0) element.dataset.fadeOut = data.fadeOut;
+                else delete element.dataset.fadeOut;
+
+                if (typeof this.audioLibrary === 'undefined') this.audioLibrary = [];
+                const existing = this.audioLibrary.findIndex(a => a.id === audioId);
+                const libraryEntry = {
+                    id: audioId,
+                    label: data.label || element.dataset.audioLabel || 'Audio',
+                    src: data.src || element.dataset.audioSrc || '',
+                    startTime: data.startTime !== undefined ? data.startTime : (parseFloat(element.dataset.startTime) || 0),
+                    endTime: data.endTime !== undefined ? data.endTime : (element.dataset.endTime ? parseFloat(element.dataset.endTime) : null),
+                    duration: data.duration !== undefined ? data.duration : (parseFloat(element.dataset.duration) || 0),
+                    size: data.size !== undefined ? data.size : (parseFloat(element.dataset.size) || 0),
+                    fadeIn: data.fadeIn !== undefined ? data.fadeIn : (parseFloat(element.dataset.fadeIn) || 0),
+                    fadeOut: data.fadeOut !== undefined ? data.fadeOut : (parseFloat(element.dataset.fadeOut) || 0),
+                };
+                if (existing === -1) this.audioLibrary.push(libraryEntry);
+                else this.audioLibrary[existing] = libraryEntry;
             }
         }
         
@@ -1690,6 +1725,26 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
         });
     },
 
+    _setSaveButtonLoading(isLoading) {
+        const saveButton = document.getElementById('saveDocBtn') || document.getElementById('saveBtn');
+        if (!saveButton) return;
+
+        if (isLoading) {
+            if (!saveButton.dataset.prevDisabled) {
+                saveButton.dataset.prevDisabled = saveButton.disabled ? '1' : '0';
+            }
+            saveButton.disabled = true;
+            saveButton.setAttribute('aria-busy', 'true');
+            saveButton.classList.add('is-saving');
+            return;
+        }
+
+        saveButton.classList.remove('is-saving');
+        saveButton.removeAttribute('aria-busy');
+        saveButton.disabled = saveButton.dataset.prevDisabled === '1';
+        delete saveButton.dataset.prevDisabled;
+    },
+
     async saveUntitled() {
         try {
             const content = await this.getDocumentHTML();
@@ -1961,6 +2016,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
     async saveDocument(options = {}) {
         // Check if running in pywebview with native API
         if (window.pywebview && window.pywebview.api) {
+            let saveButtonStateApplied = false;
             try {
                 if (options?.source === 'autosave' && !this.currentFilePath) return;
                 let filepath = this.currentFilePath;
@@ -1971,6 +2027,12 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                     filepath = await window.pywebview.api.save_file_dialog(defaultName);
                     if (!filepath) return false;
                 }
+
+                this._setSaveButtonLoading(true);
+                saveButtonStateApplied = true;
+                this._saving = true;
+                this._autoSavePending = false;
+                this.updateTitle();
                 
                 // Determine format based on file extension
                 const isSmdoc = SMDocFormat.isSMDoc(filepath);
@@ -1998,11 +2060,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                     content = await this.getDocumentHTML();
                 }
 
-                this._saving = true;
-                this._autoSavePending = false;
-                this.updateTitle();
                 const result = await window.pywebview.api.write_file(filepath, content);
-                this._saving = false;
                 
                 if (result !== 'Success') {
                     throw new Error(result);
@@ -2022,12 +2080,16 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                 await this.loadFileBrowser();
                 return true;
             } catch (error) {
-                this._saving = false;
                 this._autoSavePending = false;
                 console.error('Error saving document:', error);
                 await ModalDialogs.alert(`Error saving document: ${error.message}`, 'Error', ModalDialogs.icons.error);
-                this.updateTitle();
                 return false;
+            } finally {
+                if (saveButtonStateApplied) {
+                    this._setSaveButtonLoading(false);
+                }
+                this._saving = false;
+                this.updateTitle();
             }
         } else {
             // Original implementation (browser-based, defaults to .smdoc)

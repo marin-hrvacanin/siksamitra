@@ -203,3 +203,11 @@ Characters accepted as input that get normalized:
 | U+0321 | U+0331 | Anudātta — combining latin small letter i below |
 | U+1CDA | U+030E | Udātta — South Asian combining mark |
 | U+0341 | U+030E | Udātta — combining acute tone |
+
+---
+
+## Audio Matching Note
+
+The audio editor and automatic matching workflow rely on these canonical IAST forms, especially the vowel length distinctions and combining svara marks listed above. Preserving the normalized characters is what keeps region labels and playback ranges aligned with the text.
+
+For the full audio workflow, see `documents/audio-editing-and-matching.md`.

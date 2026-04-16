@@ -66,7 +66,11 @@ Consonants that cannot host a holding: ṅ ñ ṇ n m ṁ ṃ r ś ṣ s.
 ### Audio
 
 - Embed recitation audio directly in `.smdoc` documents
+- Multi-region audio editor with selected-only, show-all, hide-all, and per-region visibility control
+- Fade-in and fade-out support on each region, preserved through save/load and export
+- Automatic audio matching for the selected text, with the clicked region staged first in the editor
 - Audio stored as base64 data URIs within the document file
+- See `documents/audio-editing-and-matching.md` for the full workflow and data model
 
 ### Text Import
 
@@ -89,6 +93,7 @@ Consonants that cannot host a holding: ṅ ñ ṇ n m ṁ ṃ r ś ṣ s.
 ### Document Format (.smdoc)
 
 - Custom JSON-based format storing content, metadata, styles, and audio
+- Audio attachments store region timing plus fade metadata (`fadeIn`, `fadeOut`) so playback and export can reconstruct the full behavior
 - LZMA compression at preset 9 with EXTREME flag; `SMDI` magic byte prefix
 - Legacy zlib-compressed files (`SMDC` prefix) and plain JSON files remain readable
 - Content stores only the editor innerHTML, not the full HTML shell
@@ -175,7 +180,7 @@ editor/
 ├── lib/                       -- Vendored libraries (Quill.js)
 ├── icons/                     -- SVG icon set
 ├── Library/                   -- Sample .smdoc documents
-├── documents/                 -- Technical documentation (architecture, grammar, format specs)
+├── documents/                 -- Technical documentation (architecture, grammar, format specs, audio workflow)
 ├── media/                     -- Audio and image attachments
 ├── design/                    -- Design assets
 └── cache/                     -- Temporary files (safe to clear)

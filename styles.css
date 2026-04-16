@@ -508,6 +508,32 @@ body.hide-comments .ql-comment-style {
   border-color: var(--primary);
 }
 
+.ribbon-btn.is-saving {
+  position: relative;
+  pointer-events: none;
+  cursor: wait;
+  opacity: 0.92;
+}
+
+.ribbon-btn.is-saving svg {
+  opacity: 0;
+}
+
+.ribbon-btn.is-saving::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: ribbon-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ribbon-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ==================== RESPONSIVE BUTTON STATES ==================== */
 .ribbon-btn.active {
   background: var(--primary) !important;
@@ -6919,11 +6945,21 @@ select:focus {
     transition: background .12s, border-color .12s, color .12s;
     white-space: nowrap;
 }
+  .ae-tool-icon {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+  }
 .ae-tool-btn:hover { background: var(--bg-elevated); border-color: var(--primary); }
 .ae-tool-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
 .ae-tool-btn.primary:hover { background: var(--accent); border-color: var(--accent); }
 .ae-tool-btn.auto { background: var(--bg-elevated); border-color: var(--primary); color: var(--primary); font-weight: 600; }
 .ae-tool-btn.auto:hover { background: var(--primary); color: #fff; }
+.ae-tool-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
 .ae-tool-btn.danger { background: transparent; color: #ef4444; border-color: transparent; }
 .ae-tool-btn.danger:hover { background: rgba(239, 68, 68, 0.10); border-color: #ef4444; }
 .ae-tool-btn[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
@@ -6950,6 +6986,7 @@ select:focus {
 }
 .ae-waveform-scroller {
     position: relative;
+    min-height: 0;
     height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -6961,6 +6998,7 @@ select:focus {
 .ae-waveform-inner {
     position: relative;
     height: 100%;
+    min-height: 0;
     min-width: 100%;
 }
 .ae-waveform-canvas {
@@ -6970,32 +7008,38 @@ select:focus {
 }
 .ae-timeline {
     position: absolute;
+    min-height: 0;
     top: 0;
     left: 0;
     right: 0;
     height: 18px;
+    min-height: 0;
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border-subtle);
     pointer-events: none;
     font-size: 9px;
+    min-height: 0;
     color: var(--text-tertiary);
     z-index: 3;
-}
-.ae-timeline-tick {
-    position: absolute;
-    top: 0;
-    width: 1px;
-    height: 100%;
-    background: var(--border-subtle);
-}
-.ae-timeline-label {
-    position: absolute;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
     top: 3px;
     font-size: 9px;
-    color: var(--text-secondary);
-    padding-left: 3px;
+  color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  width: 14px;
+  height: 14px;
 }
 
 /* ── Time selection (drag-to-select) ─────────────────────────────────────── */
@@ -7005,6 +7049,11 @@ select:focus {
     bottom: 0;
     background: rgba(59, 130, 246, 0.18);
     border-left: 2px dashed #3b82f6;
+#regionDetails {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
     border-right: 2px dashed #3b82f6;
     pointer-events: none;
     z-index: 4;
@@ -7226,6 +7275,7 @@ select:focus {
 .ae-region-card:hover { border-color: var(--primary); }
 .ae-region-card.active { background: rgba(184, 129, 61, 0.10); border-color: var(--primary); }
 .ae-region-card.primary { background: rgba(217, 119, 6, 0.13); border-color: var(--accent); }
+.ae-region-card.hidden { opacity: 0.62; }
 .ae-region-card-info { flex: 1; min-width: 0; }
 .ae-region-card-label {
     font-weight: 500;
@@ -7250,6 +7300,28 @@ select:focus {
     text-overflow: ellipsis;
 }
 .ae-region-card-unassigned { color: var(--text-tertiary); font-style: italic; font-weight: normal; }
+.ae-region-visibility {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  margin-right: 2px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ae-region-visibility:hover {
+  color: #6b7280;
+}
+.ae-region-visibility svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
 
 /* Detail body */
 .ae-detail-body {
@@ -7287,6 +7359,29 @@ select:focus {
 .ae-detail-input:focus, .ae-detail-select:focus {
     outline: none;
     border-color: var(--primary);
+}
+.ae-detail-row-visibility {
+  align-items: center;
+}
+.ae-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.ae-detail-chip {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ae-detail-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* ── In-dialog modal (Section picker) ────────────────────────────────────── */
@@ -7340,6 +7435,10 @@ select:focus {
     color: var(--text-primary);
 }
 .ae-sec-item:hover { background: var(--bg-elevated); }
+.ae-sec-item.selected {
+  background: var(--primary-subtle);
+  outline: 1px solid var(--primary);
+}
 .ae-sec-pill {
     display: inline-block;
     font-size: 9px;

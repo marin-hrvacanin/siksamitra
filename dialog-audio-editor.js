@@ -32,14 +32,21 @@
         regions: [],                  // [{ id, start, end, label, targetIndex }]
         activeRegionIds: new Set(),   // multi-selected region IDs
         primaryRegionId: null,        // most-recently focused region (for details panel)
+        visibilityMode: 'selected',   // selected | all | hidden | custom
         timeSelection: null,          // { start, end } when user has dragged a range
         zoom: 1.0,                    // 1.0 = fit-to-window; up to 50×
         duration: 0,                  // seconds
         playhead: 0,                  // seconds
         audioEl: null,                // hidden HTMLAudioElement
+        audioCtx: null,               // WebAudio context for sample-accurate preview
+        activeSource: null,           // active AudioBufferSourceNode
+        activeRaf: null,              // RAF id for playhead animation
+        playbackAnchorCtxTime: 0,     // context time when current playback started
+        playbackAnchorOffset: 0,      // audio offset (seconds) at playback start
         playing: false,
         regionPlayEnd: null,          // when playing a single region
         mode: 'single',               // 'single' or 'multi'
+        autoMatchDone: false,         // avoid re-running initial auto match repeatedly
     };
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -48,17 +55,16 @@
     const dom = {};
     function cacheDom() {
         [
-            'audioTitle','audioMeta','multiNote',
             'btnPlay','btnPause','btnStop','btnPlayRegion','btnPlaySelection',
             'btnJumpStart','btnJumpEnd','btnJumpRegionStart','btnJumpRegionEnd',
             'btnZoomOut','btnZoomIn','btnZoomFit','zoomLevel',
             'btnAddRegion','btnSetStart','btnSetEnd',
             'btnRegionFromSelection','btnInvertSelection','btnCutSelection','btnClearSelection',
-            'btnAutoAlign','btnAutoSplit','btnAddSection',
+            'btnAutoAlign','btnAutoSplit',
+            'btnShowSelected','btnShowAll','btnHideAll',
             'waveScroller','waveInner','waveCanvas','timeline','selectionLayer',
             'regionsList','targetsList','regionDetails','detailBody',
             'statusMsg','deleteAllBtn','cancelBtn','applyBtn',
-            'sectionPickerOverlay','sectionPickerList','sectionPickerCancel','sectionPickerAdd',
         ].forEach(id => dom[id] = document.getElementById(id));
     }
 
@@ -92,6 +98,65 @@
     };
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const genId = () => `reg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+
+    function getRegionById(id) {
+        return state.regions.find(r => r.id === id) || null;
+    }
+
+    function updateViewButtons() {
+        if (dom.btnShowSelected) dom.btnShowSelected.classList.toggle('active', state.visibilityMode === 'selected');
+        if (dom.btnShowAll) dom.btnShowAll.classList.toggle('active', state.visibilityMode === 'all');
+        if (dom.btnHideAll) dom.btnHideAll.classList.toggle('active', state.visibilityMode === 'hidden');
+    }
+
+    function applyVisibilityMode(mode, focusRegionId = null) {
+        state.visibilityMode = mode;
+        if (!state.regions.length) {
+            updateViewButtons();
+            renderRegionsOnWaveform();
+            renderRegionsList();
+            return;
+        }
+
+        if (mode === 'all') {
+            state.regions.forEach(r => { r.hidden = false; });
+        } else if (mode === 'hidden') {
+            state.regions.forEach(r => { r.hidden = true; });
+        } else if (mode === 'selected') {
+            const focusId = focusRegionId || state.primaryRegionId || state.regions[0].id;
+            state.regions.forEach(r => { r.hidden = r.id !== focusId; });
+            state.primaryRegionId = focusId;
+            state.activeRegionIds = new Set([focusId]);
+        }
+
+        updateViewButtons();
+        renderRegionsOnWaveform();
+        renderRegionsList();
+        renderRegionDetails();
+        renderTargetsList();
+    }
+
+    function setPrimaryRegion(regionId) {
+        const reg = getRegionById(regionId);
+        if (!reg) return;
+        state.primaryRegionId = regionId;
+        state.activeRegionIds = new Set([regionId]);
+        renderRegionsOnWaveform();
+        renderRegionsList();
+        renderRegionDetails();
+        updateToolbarState();
+    }
+
+    function toggleRegionVisibility(regionId) {
+        const reg = getRegionById(regionId);
+        if (!reg) return;
+        reg.hidden = !reg.hidden;
+        state.visibilityMode = 'custom';
+        updateViewButtons();
+        renderRegionsOnWaveform();
+        renderRegionsList();
+        renderRegionDetails();
+    }
 
     function setStatus(msg, kind) {
         if (!dom.statusMsg) return;
@@ -145,6 +210,9 @@
                 end: Number(r.end) || 0,
                 label: r.label || '',
                 targetIndex: typeof r.targetIndex === 'number' ? r.targetIndex : null,
+                hidden: !!r.hidden,
+                fadeIn: Number(r.fadeIn) || 0,
+                fadeOut: Number(r.fadeOut) || 0,
             }));
             state.mode = state.targets.length > 1 ? 'multi' : 'single';
 
@@ -153,16 +221,7 @@
                 return;
             }
 
-            dom.audioTitle.textContent = state.audio.label || 'Audio';
             state.duration = state.audio.duration || 0;
-
-            if (state.mode === 'multi') {
-                dom.multiNote.hidden = false;
-                dom.multiNote.innerHTML =
-                    `<strong>Multi-section mode.</strong> ${state.targets.length} sections targeted. ` +
-                    `Use <em>＋ Region</em>, <em>Region from selection</em>, or <em>Auto-Align</em> ` +
-                    `to mark one audio region per section, then assign each region.`;
-            }
 
             // Audio element
             state.audioEl = new Audio();
@@ -172,9 +231,6 @@
                 if (!state.duration || !isFinite(state.duration)) {
                     state.duration = state.audioEl.duration || 0;
                 }
-                dom.audioMeta.textContent =
-                    `Duration: ${fmtTime(state.duration)}` +
-                    (state.audio.size ? ` • Size: ${fmtSize(state.audio.size)}` : '');
                 if (!state.regions.length && state.mode === 'single' && state.targets.length === 1) {
                     state.regions.push({
                         id: genId(),
@@ -182,12 +238,15 @@
                         end: state.duration,
                         label: state.targets[0].text || 'Region 1',
                         targetIndex: 0,
+                        hidden: false,
+                        fadeIn: 0,
+                        fadeOut: 0,
                     });
+                }
+                if (state.regions.length) {
                     state.primaryRegionId = state.regions[0].id;
                     state.activeRegionIds = new Set([state.primaryRegionId]);
-                } else if (state.regions.length) {
-                    state.primaryRegionId = state.regions[0].id;
-                    state.activeRegionIds = new Set([state.primaryRegionId]);
+                    applyVisibilityMode('selected', state.primaryRegionId);
                 }
                 decodeAudioForWaveform();
                 layout();
@@ -249,10 +308,24 @@
             }
             state.peaks = peaks;
             drawWaveform();
+
+            if (!state.autoMatchDone && state.mode === 'multi' && state.targets.length > 1 && !state.regions.length) {
+                state.autoMatchDone = true;
+                autoAlignRegions({ silentSuccess: true });
+            }
         } catch(e) {
             console.warn('Could not decode audio', e);
             state.peaks = null;
             drawWaveform();
+
+            if (!state.autoMatchDone && state.mode === 'multi' && state.targets.length > 1 && !state.regions.length) {
+                state.autoMatchDone = true;
+                const fallback = buildProportionalIntervalsFromDuration();
+                if (fallback.length) {
+                    installRegionsFromIntervals(fallback);
+                    setStatus('Used duration-based matching (audio analysis unavailable).', 'success');
+                }
+            }
         }
     }
 
@@ -363,6 +436,7 @@
     function renderRegionsOnWaveform() {
         dom.waveInner.querySelectorAll('.ae-region').forEach(r => r.remove());
         state.regions.forEach((reg) => {
+            if (reg.hidden) return;
             const div = document.createElement('div');
             const isActive = state.activeRegionIds.has(reg.id);
             const isPrimary = state.primaryRegionId === reg.id;
@@ -605,9 +679,8 @@
             }
         }, true);
 
-        // Ctrl+wheel zoom (cursor-anchored)
+        // Wheel zoom (cursor-anchored): supports mouse wheel + trackpad scroll.
         dom.waveScroller.addEventListener('wheel', (e) => {
-            if (!(e.ctrlKey || e.metaKey)) return;
             e.preventDefault();
             const delta = e.deltaY < 0 ? 1.2 : 1 / 1.2;
             const prevZoom = state.zoom;
@@ -641,7 +714,83 @@
             dom.btnStop.disabled = true;
         }
     }
+
+    function stopBufferPlayback(resetPlayhead = false) {
+        if (state.activeRaf) {
+            cancelAnimationFrame(state.activeRaf);
+            state.activeRaf = null;
+        }
+        if (state.activeSource) {
+            try { state.activeSource.onended = null; } catch(_) {}
+            try { state.activeSource.stop(); } catch(_) {}
+            try { state.activeSource.disconnect(); } catch(_) {}
+            state.activeSource = null;
+        }
+        if (resetPlayhead) {
+            state.playhead = 0;
+            renderPlayhead();
+        }
+    }
+
+    function animateBufferPlayhead() {
+        if (!state.audioCtx || !state.activeSource) return;
+        const elapsed = Math.max(0, state.audioCtx.currentTime - state.playbackAnchorCtxTime);
+        state.playhead = state.playbackAnchorOffset + elapsed;
+        if (state.regionPlayEnd != null) {
+            state.playhead = Math.min(state.playhead, state.regionPlayEnd);
+        }
+        renderPlayhead();
+        state.activeRaf = requestAnimationFrame(animateBufferPlayhead);
+    }
+
+    async function playBufferSegment(start, end = null) {
+        if (!state.audioBuffer) return false;
+        const ctx = state.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        state.audioCtx = ctx;
+        if (ctx.state === 'suspended') {
+            try { await ctx.resume(); } catch(_) {}
+        }
+
+        stopBufferPlayback();
+
+        const safeStart = clamp(start, 0, state.duration || state.audioBuffer.duration || 0);
+        const maxEnd = clamp(end == null ? (state.duration || state.audioBuffer.duration) : end, safeStart + 0.001, state.duration || state.audioBuffer.duration || safeStart + 0.001);
+        const duration = Math.max(0.001, maxEnd - safeStart);
+
+        const source = ctx.createBufferSource();
+        source.buffer = state.audioBuffer;
+        source.connect(ctx.destination);
+
+        state.activeSource = source;
+        state.regionPlayEnd = maxEnd;
+        state.playbackAnchorCtxTime = ctx.currentTime + 0.005;
+        state.playbackAnchorOffset = safeStart;
+        state.playhead = safeStart;
+        renderPlayhead();
+
+        source.onended = () => {
+            stopBufferPlayback();
+            state.playing = false;
+            state.regionPlayEnd = null;
+            dom.btnPlay.disabled = false;
+            dom.btnPause.disabled = true;
+            dom.btnStop.disabled = true;
+        };
+
+        source.start(state.playbackAnchorCtxTime, safeStart, duration);
+        state.playing = true;
+        dom.btnPlay.disabled = true;
+        dom.btnPause.disabled = false;
+        dom.btnStop.disabled = false;
+        animateBufferPlayhead();
+        return true;
+    }
+
     function play() {
+        if (state.audioBuffer) {
+            playBufferSegment(state.playhead, state.duration);
+            return;
+        }
         if (!state.audioEl) return;
         state.regionPlayEnd = null;
         state.audioEl.play();
@@ -652,7 +801,12 @@
     }
     function playRegion() {
         const reg = getPrimaryRegion();
-        if (!reg || !state.audioEl) return;
+        if (!reg) return;
+        if (state.audioBuffer) {
+            playBufferSegment(reg.start, reg.end);
+            return;
+        }
+        if (!state.audioEl) return;
         state.audioEl.currentTime = reg.start;
         state.regionPlayEnd = reg.end;
         state.audioEl.play();
@@ -662,7 +816,12 @@
         dom.btnStop.disabled = false;
     }
     function playSelection() {
-        if (!state.timeSelection || !state.audioEl) return;
+        if (!state.timeSelection) return;
+        if (state.audioBuffer) {
+            playBufferSegment(state.timeSelection.start, state.timeSelection.end);
+            return;
+        }
+        if (!state.audioEl) return;
         state.audioEl.currentTime = state.timeSelection.start;
         state.regionPlayEnd = state.timeSelection.end;
         state.audioEl.play();
@@ -672,16 +831,18 @@
         dom.btnStop.disabled = false;
     }
     function pause() {
-        if (!state.audioEl) return;
-        state.audioEl.pause();
+        stopBufferPlayback();
+        if (state.audioEl) state.audioEl.pause();
         state.playing = false;
         dom.btnPlay.disabled = false;
         dom.btnPause.disabled = true;
     }
     function stop() {
-        if (!state.audioEl) return;
-        state.audioEl.pause();
-        state.audioEl.currentTime = 0;
+        stopBufferPlayback(true);
+        if (state.audioEl) {
+            state.audioEl.pause();
+            state.audioEl.currentTime = 0;
+        }
         state.playhead = 0;
         state.playing = false;
         state.regionPlayEnd = null;
@@ -770,12 +931,15 @@
             // Click → focus the assigned region (if any)
             card.addEventListener('click', () => {
                 if (assignedRegion) {
-                    state.primaryRegionId = assignedRegion.id;
-                    state.activeRegionIds = new Set([assignedRegion.id]);
-                    renderRegionsOnWaveform();
-                    renderRegionsList();
-                    renderRegionDetails();
-                    updateToolbarState();
+                    setPrimaryRegion(assignedRegion.id);
+                    if (state.visibilityMode === 'selected') {
+                        applyVisibilityMode('selected', assignedRegion.id);
+                    } else {
+                        renderRegionsOnWaveform();
+                        renderRegionsList();
+                        renderRegionDetails();
+                        updateToolbarState();
+                    }
                 }
             });
 
@@ -809,8 +973,9 @@
         state.regions.forEach((r, idx) => {
             const isActive = state.activeRegionIds.has(r.id);
             const isPrimary = state.primaryRegionId === r.id;
+            const isHidden = !!r.hidden;
             const card = document.createElement('div');
-            card.className = 'ae-region-card' + (isActive ? ' active' : '') + (isPrimary ? ' primary' : '');
+            card.className = 'ae-region-card' + (isActive ? ' active' : '') + (isPrimary ? ' primary' : '') + (isHidden ? ' hidden' : '');
             card.dataset.regionId = r.id;
             card.tabIndex = 0;
             card.addEventListener('click', (e) => {
@@ -850,6 +1015,20 @@
                 info.appendChild(tgt);
             }
 
+            const visBtn = document.createElement('button');
+            visBtn.type = 'button';
+            visBtn.className = 'ae-region-visibility';
+            visBtn.title = isHidden ? 'Show this region' : 'Hide this region';
+            visBtn.setAttribute('aria-label', visBtn.title);
+            visBtn.innerHTML = isHidden
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12c1.9-4.2 6-7 10.2-7s8.3 2.8 10.2 7c-1.9 4.2-6 7-10.2 7S3.7 16.2 1.8 12Z"></path><path d="M4 4 20 20"></path></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12c1.9-4.2 6-7 10.2-7s8.3 2.8 10.2 7c-1.9 4.2-6 7-10.2 7S3.7 16.2 1.8 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+            visBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleRegionVisibility(r.id);
+            });
+            card.appendChild(visBtn);
+
             card.appendChild(info);
             dom.regionsList.appendChild(card);
         });
@@ -887,6 +1066,34 @@
             renderRegionsOnWaveform();
             renderRegionsList();
         }));
+
+        const visRow = document.createElement('div');
+        visRow.className = 'ae-detail-row ae-detail-row-visibility';
+        const visLbl = document.createElement('div');
+        visLbl.className = 'ae-detail-label';
+        visLbl.textContent = 'Visible';
+        visRow.appendChild(visLbl);
+        const visWrap = document.createElement('div');
+        visWrap.className = 'ae-detail-actions';
+        const visBtn = document.createElement('button');
+        visBtn.type = 'button';
+        visBtn.className = 'ae-detail-chip';
+        visBtn.textContent = reg.hidden ? 'Hidden' : 'Shown';
+        visBtn.addEventListener('click', () => {
+            toggleRegionVisibility(reg.id);
+            const current = getRegionById(reg.id);
+            visBtn.textContent = current && current.hidden ? 'Hidden' : 'Shown';
+        });
+        visWrap.appendChild(visBtn);
+        visRow.appendChild(visWrap);
+        dom.detailBody.appendChild(visRow);
+
+        dom.detailBody.appendChild(mkDetailRow('Fade In', 'number', String(reg.fadeIn || 0), (v) => {
+            reg.fadeIn = Math.max(0, parseFloat(v) || 0);
+        }, { step: '0.01', min: '0' }));
+        dom.detailBody.appendChild(mkDetailRow('Fade Out', 'number', String(reg.fadeOut || 0), (v) => {
+            reg.fadeOut = Math.max(0, parseFloat(v) || 0);
+        }, { step: '0.01', min: '0' }));
 
         if (state.targets.length) {
             const row = document.createElement('div');
@@ -937,7 +1144,7 @@
         dom.detailBody.appendChild(actions);
     }
 
-    function mkDetailRow(label, type, value, onChange) {
+    function mkDetailRow(label, type, value, onChange, inputAttrs = {}) {
         const row = document.createElement('div');
         row.className = 'ae-detail-row';
         const lbl = document.createElement('div');
@@ -948,6 +1155,9 @@
         inp.type = type;
         inp.className = 'ae-detail-input';
         inp.value = value;
+        Object.entries(inputAttrs || {}).forEach(([key, val]) => {
+            inp.setAttribute(key, val);
+        });
         const fire = () => onChange(inp.value);
         inp.addEventListener('change', fire);
         inp.addEventListener('blur', fire);
@@ -973,17 +1183,13 @@
         const label = tgtIdx != null
             ? (state.targets[tgtIdx].text || `Region ${state.regions.length + 1}`)
             : `Region ${state.regions.length + 1}`;
-        const reg = { id: genId(), start, end, label, targetIndex: tgtIdx };
+        const reg = { id: genId(), start, end, label, targetIndex: tgtIdx, hidden: false, fadeIn: 0, fadeOut: 0 };
         state.regions.push(reg);
         // Sort regions by start so list order matches time order
         state.regions.sort((a, b) => a.start - b.start);
-        state.primaryRegionId = reg.id;
-        state.activeRegionIds = new Set([reg.id]);
+        setPrimaryRegion(reg.id);
+        applyVisibilityMode('selected', reg.id);
         state.timeSelection = null;
-        renderRegionsOnWaveform();
-        renderRegionsList();
-        renderRegionDetails();
-        renderTargetsList();
         renderSelection();
         updateToolbarState();
     }
@@ -1004,10 +1210,13 @@
             state.primaryRegionId = state.regions.length ? state.regions[0].id : null;
             if (state.primaryRegionId) state.activeRegionIds.add(state.primaryRegionId);
         }
-        renderRegionsOnWaveform();
-        renderRegionsList();
-        renderRegionDetails();
-        renderTargetsList();
+        if (state.primaryRegionId && state.visibilityMode === 'selected') applyVisibilityMode('selected', state.primaryRegionId);
+        else {
+            renderRegionsOnWaveform();
+            renderRegionsList();
+            renderRegionDetails();
+            renderTargetsList();
+        }
         updateToolbarState();
     }
 
@@ -1017,10 +1226,13 @@
         state.activeRegionIds.clear();
         state.primaryRegionId = state.regions.length ? state.regions[0].id : null;
         if (state.primaryRegionId) state.activeRegionIds.add(state.primaryRegionId);
-        renderRegionsOnWaveform();
-        renderRegionsList();
-        renderRegionDetails();
-        renderTargetsList();
+        if (state.primaryRegionId && state.visibilityMode === 'selected') applyVisibilityMode('selected', state.primaryRegionId);
+        else {
+            renderRegionsOnWaveform();
+            renderRegionsList();
+            renderRegionDetails();
+            renderTargetsList();
+        }
         updateToolbarState();
     }
 
@@ -1053,7 +1265,7 @@
             const label = tgt != null
                 ? (state.targets[tgt].text || `Region ${state.regions.length + 1}`)
                 : `Region ${state.regions.length + 1}`;
-            state.regions.push({ id: genId(), start: s, end: e, label, targetIndex: tgt });
+            state.regions.push({ id: genId(), start: s, end: e, label, targetIndex: tgt, hidden: false, fadeIn: 0, fadeOut: 0 });
         });
         state.regions.sort((a, b) => a.start - b.start);
         state.timeSelection = null;
@@ -1150,14 +1362,31 @@
     //      contiguous regions whose duration ratios best match the syllable ratios.
     //   5. Falls back to uniform split if syllable counts are missing.
     // ═════════════════════════════════════════════════════════════════════════
-    function autoAlignRegions() {
-        if (!state.channelData || !state.targets.length) {
-            setStatus('Cannot auto-align: audio not ready or no sections.', 'error');
+    function autoAlignRegions(options = {}) {
+        const silentSuccess = !!options.silentSuccess;
+        if (!state.targets.length) {
+            setStatus('Cannot auto-align: no target sections.', 'error');
+            return;
+        }
+        if (!state.channelData) {
+            const fallback = buildProportionalIntervalsFromDuration();
+            if (!fallback.length) {
+                setStatus('Cannot auto-align: audio not ready.', 'error');
+                return;
+            }
+            installRegionsFromIntervals(fallback);
+            if (!silentSuccess) setStatus('Aligned by duration ratios (audio analysis not ready).', 'success');
             return;
         }
         const intervals = detectSpeechIntervals();
         if (!intervals.length) {
-            setStatus('Auto-align failed: no speech detected.', 'error');
+            const fallback = buildProportionalIntervalsFromDuration();
+            if (!fallback.length) {
+                setStatus('Auto-align failed: no speech detected.', 'error');
+                return;
+            }
+            installRegionsFromIntervals(fallback);
+            if (!silentSuccess) setStatus('Aligned by duration ratios (speech not detected reliably).', 'success');
             return;
         }
         const N = state.targets.length;
@@ -1204,7 +1433,27 @@
             result.push([bounds[i], bounds[i + 1]]);
         }
         installRegionsFromIntervals(result);
-        setStatus(`Aligned ${N} sections using syllable-count weighting.`, 'success');
+        if (!silentSuccess) setStatus(`Aligned ${N} sections using syllable-count weighting.`, 'success');
+    }
+
+    function buildProportionalIntervalsFromDuration() {
+        const N = state.targets.length;
+        if (!N || !state.duration || state.duration <= 0) return [];
+        const sylCounts = state.targets.map(t =>
+            (typeof t.syllables === 'number' && t.syllables > 0) ? t.syllables : 1
+        );
+        const totalSyl = sylCounts.reduce((a, b) => a + b, 0) || N;
+        const bounds = [0];
+        let acc = 0;
+        for (let i = 0; i < N; i++) {
+            acc += sylCounts[i];
+            bounds.push((acc / totalSyl) * state.duration);
+        }
+        const out = [];
+        for (let i = 0; i < N; i++) {
+            out.push([bounds[i], bounds[i + 1]]);
+        }
+        return out;
     }
 
     /**
@@ -1263,15 +1512,21 @@
             end: Math.min(state.duration, iv[1]),
             label: state.targets[i]?.text || `Region ${i + 1}`,
             targetIndex: i < state.targets.length ? i : null,
+            hidden: false,
+            fadeIn: 0,
+            fadeOut: 0,
         }));
         state.regions = state.regions.filter(r => r.end > r.start + 0.01);
         state.regions.sort((a, b) => a.start - b.start);
         state.primaryRegionId = state.regions[0]?.id || null;
         state.activeRegionIds = state.primaryRegionId ? new Set([state.primaryRegionId]) : new Set();
-        renderRegionsOnWaveform();
-        renderRegionsList();
-        renderRegionDetails();
-        renderTargetsList();
+        if (state.primaryRegionId && state.visibilityMode === 'selected') applyVisibilityMode('selected', state.primaryRegionId);
+        else {
+            renderRegionsOnWaveform();
+            renderRegionsList();
+            renderRegionDetails();
+            renderTargetsList();
+        }
         updateToolbarState();
     }
 
@@ -1364,71 +1619,6 @@
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    //  Section picker (Add Section…)
-    // ═════════════════════════════════════════════════════════════════════════
-    function openSectionPicker() {
-        // Ask the editor for the list of sections
-        postAction('audio_editor_request_sections', {});
-        // Editor will POST back via /api/audio/editor/state with `availableSections`
-        // We poll a few times for the data to land.
-        let tries = 0;
-        const tick = async () => {
-            tries++;
-            try {
-                const r = await fetch('/api/audio/editor/sections');
-                const data = await r.json();
-                if (Array.isArray(data?.sections)) {
-                    showSectionPicker(data.sections);
-                    return;
-                }
-            } catch(_) {}
-            if (tries < 15) setTimeout(tick, 200);
-            else setStatus('Could not load sections list.', 'error');
-        };
-        setTimeout(tick, 150);
-    }
-    function showSectionPicker(sections) {
-        dom.sectionPickerOverlay.hidden = false;
-        dom.sectionPickerList.innerHTML = '';
-        const existingLines = new Set(state.targets.map(t => t.lineIndex));
-        sections.forEach((s, i) => {
-            if (existingLines.has(s.lineIndex)) return;
-            const item = document.createElement('label');
-            item.className = 'ae-sec-item';
-            item.innerHTML = `
-                <input type="checkbox" data-line="${s.lineIndex}" data-text="" data-level="${s.level || 'line'}" data-syl="${s.syllables || ''}">
-                <span class="ae-sec-pill ae-sec-pill-${s.level || 'line'}">${labelForLevel(s.level)}</span>
-                <span class="ae-sec-text"></span>`;
-            item.querySelector('.ae-sec-text').textContent = s.text || `Line ${s.lineIndex}`;
-            item.querySelector('input').dataset.text = s.text || '';
-            dom.sectionPickerList.appendChild(item);
-        });
-    }
-    function applySectionPicker() {
-        const checks = dom.sectionPickerList.querySelectorAll('input[type="checkbox"]:checked');
-        checks.forEach(cb => {
-            const sylText = cb.dataset.syl;
-            const t = {
-                lineIndex: parseInt(cb.dataset.line, 10),
-                text: cb.dataset.text,
-                level: cb.dataset.level,
-                syllables: sylText ? parseInt(sylText, 10) : null,
-            };
-            state.targets.push(t);
-        });
-        state.mode = state.targets.length > 1 ? 'multi' : 'single';
-        if (state.mode === 'multi') {
-            dom.multiNote.hidden = false;
-            dom.multiNote.innerHTML = `<strong>Multi-section mode.</strong> ${state.targets.length} sections targeted.`;
-        }
-        dom.sectionPickerOverlay.hidden = true;
-        renderTargetsList();
-        renderRegionsList();
-        renderRegionDetails();
-        updateToolbarState();
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
     //  Zoom
     // ═════════════════════════════════════════════════════════════════════════
     function zoomIn()  { state.zoom = clamp(state.zoom * 1.5, 1, 50); layout(); dom.zoomLevel.textContent = state.zoom.toFixed(1) + '×'; }
@@ -1464,6 +1654,8 @@
                 end: r.end,
                 label: r.label,
                 targetIndex: r.targetIndex,
+                fadeIn: r.fadeIn || 0,
+                fadeOut: r.fadeOut || 0,
                 targetLineIndex: r.targetIndex != null && state.targets[r.targetIndex]
                     ? state.targets[r.targetIndex].lineIndex : null,
             })),
@@ -1526,18 +1718,18 @@
         // Auto
         dom.btnAutoAlign.addEventListener('click', autoAlignRegions);
         dom.btnAutoSplit.addEventListener('click', autoSplitRegions);
-        dom.btnAddSection.addEventListener('click', openSectionPicker);
+
+        // Visibility
+        dom.btnShowSelected.addEventListener('click', () => applyVisibilityMode('selected', state.primaryRegionId));
+        dom.btnShowAll.addEventListener('click', () => applyVisibilityMode('all'));
+        dom.btnHideAll.addEventListener('click', () => applyVisibilityMode('hidden'));
 
         // Footer
         dom.applyBtn.addEventListener('click', applyChanges);
         dom.cancelBtn.addEventListener('click', cancelChanges);
         dom.deleteAllBtn.addEventListener('click', deleteAll);
 
-        // Section picker
-        dom.sectionPickerCancel.addEventListener('click', () => {
-            dom.sectionPickerOverlay.hidden = true;
-        });
-        dom.sectionPickerAdd.addEventListener('click', applySectionPicker);
+        updateViewButtons();
 
         // Keyboard
         document.addEventListener('keydown', (e) => {

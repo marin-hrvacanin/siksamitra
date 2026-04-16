@@ -320,6 +320,14 @@ The tick is inserted only at actual segment endings, not mid-word.
 
 ---
 
+## Audio Matching Note
+
+The audio editor uses this same canonical IAST output when it stages region labels and automatic matching ranges. It does not introduce separate grammar rules; it only reuses the normalized text produced by the pipeline above.
+
+For the full audio workflow, see `documents/audio-editing-and-matching.md`.
+
+---
+
 ## Source Variants
 
 | Source value | Tradition | Key differences |

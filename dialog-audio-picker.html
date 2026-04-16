@@ -16,6 +16,8 @@
         })();
     </script>
     <link rel="stylesheet" href="styles.css">
+    <script src="qwebchannel.js"></script>
+    <script src="pyqt-bridge.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         html, body { height: 100%; margin: 0; overflow: hidden; font-size: 14px; }
@@ -255,7 +257,7 @@ function renderLibrary(library) {
 async function pickExisting(audioId) {
     await postAction('audio_picker_choose', { audioId });
     setStatus('Opening audio editor…', 'success');
-    setTimeout(() => window.close(), 400);
+    setTimeout(() => closeDialog(), 400);
 }
 
 async function uploadFile(file) {
@@ -284,7 +286,7 @@ async function uploadFile(file) {
             };
             await postAction('audio_picker_upload', { audio: audioData });
             setStatus('Uploaded. Opening editor…', 'success');
-            setTimeout(() => window.close(), 400);
+            setTimeout(() => closeDialog(), 400);
         });
         tempAudio.addEventListener('error', () => {
             setStatus('Could not decode audio file.', 'error');
@@ -292,6 +294,19 @@ async function uploadFile(file) {
     };
     reader.onerror = () => setStatus('Failed to read file.', 'error');
     reader.readAsDataURL(file);
+}
+
+async function closeDialog() {
+    try {
+        if (window.pywebview?.api?.close_dialog) {
+            await window.pywebview.api.close_dialog('audio-picker');
+        } else {
+            window.close();
+        }
+    } catch(e) {
+        console.error('closeDialog error:', e);
+        window.close();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -303,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = e.target.files?.[0];
         if (file) uploadFile(file);
     });
-    document.getElementById('cancelBtn').addEventListener('click', () => window.close());
+    document.getElementById('cancelBtn').addEventListener('click', closeDialog);
 });
 </script>
 </body>

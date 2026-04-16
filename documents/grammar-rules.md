@@ -4,6 +4,11 @@ This document provides the complete specification of all Sanskrit phonological r
 
 ---
 
+## Audio Matching Note
+
+The audio editor does not change the grammar rules above. It uses the same normalized IAST text, combining marks, and punctuation output when it stages region labels and automatic matching ranges.
+
+For the full audio workflow, see `documents/audio-editing-and-matching.md`.
 ## The Phonological Pipeline
 
 When the user triggers "Run Agent" (automation), the editor applies rules in this exact order to the selected text. Each step receives the text as modified by all previous steps, and the Quill selection is updated after each step to reflect the new text length.

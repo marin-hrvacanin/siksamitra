@@ -161,11 +161,13 @@
         }
 
         static async saveChanges(filename) {
+            const displayName = filename || 'Untitled.smdoc';
             if (_bridgeAvailable()) {
                 return showOSMessage({
                     type: 'savechanges',
                     title: 'Save Changes?',
-                    message: `Do you want to save changes to "${filename}"?`,
+                    message: 'Save changes before closing?',
+                    filename: displayName,
                     icon: 'save',
                     buttons: [
                         { label: "Don't Save", value: 'dont-save' },
@@ -301,6 +303,7 @@
 
     function _saveChangesOverlay(filename) {
         return new Promise((resolve) => {
+            const displayName = filename || 'Untitled.smdoc';
             const overlay = _createOverlay();
             const modal = _createModal();
             modal.innerHTML = `
@@ -308,7 +311,10 @@
                     <span class="custom-modal-icon">${_iconMarkupHTML('save')}</span>
                     <h3 class="custom-modal-title">Save Changes?</h3>
                 </div>
-                <div class="custom-modal-body">Do you want to save changes to "${filename}"?</div>
+                <div class="custom-modal-body custom-modal-body-savechanges">
+                    <div class="custom-modal-body-copy">Save changes before closing?</div>
+                    <div class="custom-modal-filename" title="${displayName}">${displayName}</div>
+                </div>
                 <div class="custom-modal-actions">
                     <button class="custom-modal-btn custom-modal-btn-secondary" id="modal-dont-save">Don't Save</button>
                     <button class="custom-modal-btn custom-modal-btn-secondary" id="modal-cancel">Cancel</button>

@@ -1784,6 +1784,10 @@ class SiksamitraEditor {
                 const src = attachment.src || ''; // Base64 data URI
                 const startTime = attachment.startTime || 0;
                 const endTime = attachment.endTime || null;
+                const fadeIn = Number(attachment.fadeIn) || 0;
+                const fadeOut = Number(attachment.fadeOut) || 0;
+                const duration = Number(attachment.duration) || 0;
+                const size = Number(attachment.size) || (src ? src.length : 0);
 
                 node.dataset.audioId = audioId;
                 node.dataset.audioLabel = label;
@@ -1791,6 +1795,10 @@ class SiksamitraEditor {
                 if (endTime !== null) {
                     node.dataset.endTime = endTime;
                 }
+                if (duration > 0) node.dataset.duration = duration;
+                if (size > 0) node.dataset.size = size;
+                if (fadeIn > 0) node.dataset.fadeIn = fadeIn;
+                if (fadeOut > 0) node.dataset.fadeOut = fadeOut;
                 if (src) {
                     node.dataset.audioSrc = src; // Store base64 for export
                 }
@@ -1826,7 +1834,11 @@ class SiksamitraEditor {
                     label: node.dataset.audioLabel || '',
                     src: node.dataset.audioSrc || (audio ? audio.getAttribute('src') || '' : ''),
                     startTime: parseFloat(node.dataset.startTime) || 0,
-                    endTime: node.dataset.endTime ? parseFloat(node.dataset.endTime) : null
+                    endTime: node.dataset.endTime ? parseFloat(node.dataset.endTime) : null,
+                    duration: parseFloat(node.dataset.duration) || 0,
+                    size: parseFloat(node.dataset.size) || 0,
+                    fadeIn: parseFloat(node.dataset.fadeIn) || 0,
+                    fadeOut: parseFloat(node.dataset.fadeOut) || 0,
                 };
                 // console.log('[AudioBlot] Extracting value:', value);
                 return value;
@@ -1969,6 +1981,9 @@ class SiksamitraEditor {
         this.quill.on('selection-change', (range, oldRange, source) => {
             // Track last known cursor index for keyboard insertion fallback
             if (range) this._lastKnownCursorIndex = range.index;
+            if (source !== Quill.sources.SILENT && !this.isModalOverlayActive()) {
+                this.clearNavigationSelection();
+            }
             // Don't update if title is being edited or if modal is active
             if (document.activeElement.id !== 'titleEdit' &&
                 document.activeElement.id !== 'titleEditHeader' &&
@@ -2479,6 +2494,23 @@ class SiksamitraEditor {
         if (force || this.shouldRestoreEditorFocus()) {
             this.quill.focus();
         }
+    }
+
+    clearNavigationSelection() {
+        this._navSelectedLineIndices = new Set();
+        this._navAnchorLineIndex = null;
+        this._applyNavigationSelectionState();
+    }
+
+    _applyNavigationSelectionState() {
+        const selected = this._navSelectedLineIndices || new Set();
+        const anchor = this._navAnchorLineIndex;
+        document.querySelectorAll('.nav-item').forEach(item => {
+            const li = parseInt(item.getAttribute('data-line-index') || '-1', 10);
+            const isSelected = selected.has(li);
+            item.classList.toggle('multi-selected', isSelected && selected.size > 1);
+            item.classList.toggle('active', isSelected && li === anchor);
+        });
     }
 
     isModalOverlayActive() {
@@ -5086,12 +5118,70 @@ class SiksamitraEditor {
      */
     _continueWithAudio(audio) {
         if (!audio) return;
-        const targets = Array.isArray(this._pendingAudioTargets) ? this._pendingAudioTargets : [];
+        let targets = Array.isArray(this._pendingAudioTargets) ? this._pendingAudioTargets : [];
         const existing = this._pendingAudioExistingAttachment;
+
+        if (!targets.length) {
+            return;
+        }
+
+        const lines = this.quill.getLines();
+        const sameAudioLineMap = new Map();
+        const allAttachments = Array.from(this.quill.root.querySelectorAll('.ql-audio-attachment'));
+        for (const att of allAttachments) {
+            if (att.dataset.audioId !== audio.id) continue;
+            const lineIndex = lines.findIndex(ln => ln.domNode.contains(att));
+            if (lineIndex >= 0 && !sameAudioLineMap.has(lineIndex)) {
+                sameAudioLineMap.set(lineIndex, att);
+            }
+        }
+
+        // Single-target attach still opens a universal audio editor. Include all
+        // existing references to this audio so Show All can display every region.
+        if (targets.length === 1 && sameAudioLineMap.size) {
+            const selectedLine = targets[0].lineIndex;
+            const byLine = new Map(targets.map(t => [t.lineIndex, t]));
+            for (const lineIndex of sameAudioLineMap.keys()) {
+                if (!byLine.has(lineIndex) && lines[lineIndex]) {
+                    byLine.set(lineIndex, this._buildTarget(lineIndex, lines[lineIndex]));
+                }
+            }
+            const merged = Array.from(byLine.values());
+            merged.sort((a, b) => {
+                if (a.lineIndex === selectedLine) return -1;
+                if (b.lineIndex === selectedLine) return 1;
+                return a.lineIndex - b.lineIndex;
+            });
+            targets = merged;
+        }
+
+        if (targets.length > 1) {
+            // Multi-target attach: preserve any existing trims, otherwise let the
+            // editor auto-match regions from audio and text (do not prefill full-length regions).
+            const existingRegions = [];
+            targets.forEach((t, i) => {
+                try {
+                    const line = lines[t.lineIndex];
+                    const att = sameAudioLineMap.get(t.lineIndex) || (line && line.domNode.querySelector('.ql-audio-attachment'));
+                    if (att && att.dataset.audioId === audio.id) {
+                        const start = parseFloat(att.dataset.startTime) || 0;
+                        const end = att.dataset.endTime ? parseFloat(att.dataset.endTime) : (audio.duration || 0);
+                        existingRegions.push({
+                            start: Math.max(0, Math.min(start, audio.duration || 0)),
+                            end: Math.max(0.05, Math.min(end, audio.duration || 0)),
+                            label: t.text || `Region ${i + 1}`,
+                            targetIndex: i,
+                        });
+                    }
+                } catch(_) {}
+            });
+
+            this.openAudioEditorDialog(audio, targets, existingRegions);
+            return;
+        }
 
         // Build regions per target. If the target already has an attachment with this audio,
         // preserve its trim range. Otherwise default to full audio.
-        const lines = this.quill.getLines();
         const regions = [];
         targets.forEach((t, i) => {
             let start = 0;
@@ -5099,7 +5189,7 @@ class SiksamitraEditor {
             // Look for an existing attachment on this line using same audio id
             try {
                 const line = lines[t.lineIndex];
-                const att = line && line.domNode.querySelector('.ql-audio-attachment');
+                const att = sameAudioLineMap.get(t.lineIndex) || (line && line.domNode.querySelector('.ql-audio-attachment'));
                 if (att && att.dataset.audioId === audio.id) {
                     start = parseFloat(att.dataset.startTime) || 0;
                     end = att.dataset.endTime ? parseFloat(att.dataset.endTime) : end;
@@ -5200,6 +5290,10 @@ class SiksamitraEditor {
                     duration: audio.duration,
                     startTime: Number(region.start) || 0,
                     endTime: Number(region.end) || (audio.duration || 0),
+                    duration: Number(audio.duration) || 0,
+                    size: Number(audio.size) || 0,
+                    fadeIn: Number(region.fadeIn) || 0,
+                    fadeOut: Number(region.fadeOut) || 0,
                 };
                 const lineOffset = this.quill.getIndex(line);
                 this.quill.insertEmbed(lineOffset, 'audio-attachment', audioData, Quill.sources.USER);
@@ -12055,6 +12149,21 @@ ${embeddedStyles}
                 const startTime = parseFloat(attachment.dataset.startTime) || 0;
                 const endTime = attachment.dataset.endTime ? parseFloat(attachment.dataset.endTime) : null;
                 const label = attachment.dataset.audioLabel || 'Audio';
+                const fadeIn = Math.max(0, parseFloat(attachment.dataset.fadeIn) || 0);
+                const fadeOut = Math.max(0, parseFloat(attachment.dataset.fadeOut) || 0);
+
+                const applyFadeVolume = () => {
+                    if (!audio.duration || audio.currentTime == null) return;
+                    let volume = 1;
+                    if (fadeIn > 0 && audio.currentTime < startTime + fadeIn) {
+                        volume = Math.max(0, Math.min(1, (audio.currentTime - startTime) / fadeIn));
+                    }
+                    if (fadeOut > 0 && endTime !== null && audio.currentTime > endTime - fadeOut) {
+                        const remaining = endTime - audio.currentTime;
+                        volume = Math.min(volume, Math.max(0, Math.min(1, remaining / fadeOut)));
+                    }
+                    audio.volume = volume;
+                };
                 
                 // Create floating play button with embedded SVG icons
                 const playButton = document.createElement('button');
@@ -12088,6 +12197,7 @@ ${embeddedStyles}
                     // Toggle playback
                     if (audio.paused) {
                         audio.currentTime = startTime;
+                        audio.volume = 1;
                         playButton.dataset.state = 'loading';
                         audio.play().then(() => {
                             attachment.classList.add('playing');
@@ -12120,9 +12230,12 @@ ${embeddedStyles}
                     if (endTime !== null && audio.currentTime >= endTime) {
                         audio.pause();
                         audio.currentTime = startTime;
+                        audio.volume = 1;
                         attachment.classList.remove('playing');
                         playButton.dataset.state = 'play';
                         if (activeAudio === audio) activeAudio = null;
+                    } else {
+                        applyFadeVolume();
                     }
                 });
             });
@@ -12553,6 +12666,7 @@ ${embeddedStyles}
     setupNavigationPanel() {
         const navToggleBtn = document.getElementById('navToggleBtn');
         const navPanel = document.getElementById('navPanel');
+        const navTree = document.getElementById('navTree');
         const navResizeHandle = document.getElementById('navResizeHandle');
         
         // Toggle navigation panel
@@ -12598,6 +12712,14 @@ ${embeddedStyles}
                     isResizing = false;
                     document.body.style.cursor = '';
                     document.body.style.userSelect = '';
+                }
+            });
+        }
+
+        if (navPanel) {
+            navPanel.addEventListener('click', (e) => {
+                if (e.target === navPanel || e.target === navTree) {
+                    this.clearNavigationSelection();
                 }
             });
         }
@@ -12874,6 +12996,10 @@ ${embeddedStyles}
         this._pendingAudioTargets = targets;
         this._pendingAudioExistingAttachment = existingAttachment;
 
+        // Rehydrate the in-memory library from current document attachments when
+        // opening older documents that did not populate audioLibrary reliably.
+        this._syncAudioLibraryFromDocument();
+
         // Make sure library metadata (without base64) is sent to the popup
         const library = (this.audioLibrary || []).map(a => ({
             id: a.id,
@@ -12893,6 +13019,36 @@ ${embeddedStyles}
             await window.pywebview.api.open_dialog('audio-picker');
         }
         // Dialog-action polling already running globally picks up events
+    }
+
+    _syncAudioLibraryFromDocument() {
+        if (!this.quill || !this.quill.root) return;
+        this.audioLibrary = this.audioLibrary || [];
+
+        const byId = new Map((this.audioLibrary || []).filter(a => a && a.id).map(a => [a.id, a]));
+        const nodes = Array.from(this.quill.root.querySelectorAll('.ql-audio-attachment'));
+
+        for (const node of nodes) {
+            const id = node.dataset.audioId || '';
+            const audio = node.querySelector('audio');
+            const src = node.dataset.audioSrc || (audio ? (audio.getAttribute('src') || audio.src || '') : '');
+            if (!id || !src) continue;
+
+            const entry = {
+                id,
+                label: node.dataset.audioLabel || 'Audio',
+                src,
+                startTime: parseFloat(node.dataset.startTime) || 0,
+                endTime: node.dataset.endTime ? parseFloat(node.dataset.endTime) : null,
+                duration: parseFloat(node.dataset.duration) || (audio && isFinite(audio.duration) ? audio.duration : 0),
+                size: parseFloat(node.dataset.size) || (src ? src.length : 0),
+                fadeIn: parseFloat(node.dataset.fadeIn) || 0,
+                fadeOut: parseFloat(node.dataset.fadeOut) || 0,
+            };
+            byId.set(id, entry);
+        }
+
+        this.audioLibrary = Array.from(byId.values());
     }
 
     /**
@@ -13099,8 +13255,16 @@ ${embeddedStyles}
             }
         }
 
+        const fadeIn = Number(audioData.fadeIn) || 0;
+        const fadeOut = Number(audioData.fadeOut) || 0;
+        const attachmentData = {
+            ...audioData,
+            fadeIn,
+            fadeOut,
+        };
+
         const lineOffset = this.quill.getIndex(line);
-        this.quill.insertEmbed(lineOffset, 'audio-attachment', audioData, Quill.sources.USER);
+        this.quill.insertEmbed(lineOffset, 'audio-attachment', attachmentData, Quill.sources.USER);
 
         this.refreshAudioAttachments();
     }
@@ -13346,7 +13510,127 @@ ${embeddedStyles}
         });
     }
 
+    async _getPlaybackAudioBuffer(src) {
+        if (!src) return null;
+
+        this._audioBufferCache = this._audioBufferCache || new Map();
+        if (this._audioBufferCache.has(src)) {
+            return this._audioBufferCache.get(src);
+        }
+
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+
+        try {
+            this._audioPlaybackCtx = this._audioPlaybackCtx || new AudioContextClass();
+            const response = await fetch(src);
+            const arrayBuffer = await response.arrayBuffer();
+            const buffer = await this._audioPlaybackCtx.decodeAudioData(arrayBuffer.slice(0));
+            this._audioBufferCache.set(src, buffer);
+            return buffer;
+        } catch (error) {
+            console.warn('Failed to decode audio buffer for playback:', error);
+            return null;
+        }
+    }
+
+    _stopPreciseAudioPlayback() {
+        const active = this._activeAudioPlayback;
+        if (!active) return;
+
+        this._audioPlaybackRequestId = (this._audioPlaybackRequestId || 0) + 1;
+
+        try { active.source.onended = null; } catch (_) {}
+        try { active.source.stop(); } catch (_) {}
+        try { active.source.disconnect(); } catch (_) {}
+        try { active.gain.disconnect(); } catch (_) {}
+
+        if (active.buttonContainer) {
+            active.buttonContainer.classList.remove('playing');
+        }
+        if (active.button) {
+            active.button.dataset.state = 'play';
+        }
+
+        this._activeAudioPlayback = null;
+    }
+
+    async _playPreciseAttachmentRange(attachmentNode, audio, button, buttonContainer, startTime, endTime, fadeIn, fadeOut) {
+        const requestId = (this._audioPlaybackRequestId || 0) + 1;
+        this._audioPlaybackRequestId = requestId;
+
+        const src = attachmentNode.dataset.audioSrc || audio.src || (audio.getAttribute ? audio.getAttribute('src') : '');
+        const buffer = await this._getPlaybackAudioBuffer(src);
+        if (this._audioPlaybackRequestId !== requestId) return false;
+        if (!buffer) return false;
+
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return false;
+
+        this._audioPlaybackCtx = this._audioPlaybackCtx || new AudioContextClass();
+        const ctx = this._audioPlaybackCtx;
+        if (ctx.state === 'suspended') {
+            try { await ctx.resume(); } catch (_) {}
+        }
+
+        if (this._audioPlaybackRequestId !== requestId) return false;
+
+        this._stopPreciseAudioPlayback();
+
+        const safeStart = clamp(Number(startTime) || 0, 0, buffer.duration || 0);
+        const rawEnd = endTime == null ? buffer.duration : Number(endTime);
+        const safeEnd = clamp(isFinite(rawEnd) ? rawEnd : buffer.duration, safeStart + 0.000001, buffer.duration || rawEnd || safeStart + 0.000001);
+        const playDuration = Math.max(0.000001, safeEnd - safeStart);
+        const startAt = ctx.currentTime + 0.01;
+        const fadeInDur = Math.min(Math.max(0, Number(fadeIn) || 0), playDuration);
+        const fadeOutDur = Math.min(Math.max(0, Number(fadeOut) || 0), playDuration);
+        const fadeOutStart = Math.max(fadeInDur, playDuration - fadeOutDur);
+
+        const source = ctx.createBufferSource();
+        const gain = ctx.createGain();
+        source.buffer = buffer;
+        source.connect(gain);
+        gain.connect(ctx.destination);
+
+        gain.gain.setValueAtTime(fadeInDur > 0 ? 0 : 1, startAt);
+        if (fadeInDur > 0) {
+            gain.gain.linearRampToValueAtTime(1, startAt + fadeInDur);
+        }
+        if (fadeOutDur > 0) {
+            if (fadeOutStart > 0) {
+                gain.gain.setValueAtTime(1, startAt + fadeOutStart);
+            }
+            gain.gain.linearRampToValueAtTime(0, startAt + playDuration);
+        }
+
+        this._activeAudioPlayback = {
+            source,
+            gain,
+            audio,
+            button,
+            buttonContainer,
+            attachmentNode,
+        };
+
+        source.onended = () => {
+            if (this._activeAudioPlayback && this._activeAudioPlayback.source === source) {
+                this._stopPreciseAudioPlayback();
+                this.activeAudioElement = null;
+            }
+        };
+
+        button.dataset.state = 'loading';
+        if (this._audioPlaybackRequestId !== requestId) return false;
+        source.start(startAt, safeStart, playDuration);
+        this.activeAudioElement = audio;
+        if (buttonContainer) buttonContainer.classList.add('playing');
+        button.dataset.state = 'pause';
+        return true;
+    }
+
     stopActiveAudio() {
+        this._stopPreciseAudioPlayback();
+
         if (!this.activeAudioElement) {
             return;
         }
@@ -13380,27 +13664,60 @@ ${embeddedStyles}
             this.stopActiveAudio();
         }
 
-        if (audio.paused || audio.ended) {
+        const isPlaying = (this._activeAudioPlayback && this._activeAudioPlayback.audio === audio)
+            || (!this._activeAudioPlayback && !audio.paused && !audio.ended);
+
+        if (!isPlaying) {
             // Set start time from trim settings
             const startTime = parseFloat(attachmentNode.dataset.startTime) || 0;
-            audio.currentTime = startTime;
-            
-            // Start playing
-            button.dataset.state = 'loading';
-            audio.play().then(() => {
-                this.activeAudioElement = audio;
-                if (buttonContainer) buttonContainer.classList.add('playing');
-                button.dataset.state = 'pause';
-            }).catch(async (error) => {
-                console.error('Audio playback failed:', error);
-                button.dataset.state = 'play';
-                await ModalDialogs.alert('Could not play audio. The file may be corrupted or in an unsupported format.', 'Playback Error', 'error');
-            });
+            const endTime = attachmentNode.dataset.endTime ? parseFloat(attachmentNode.dataset.endTime) : null;
+            const fadeIn = Math.max(0, parseFloat(attachmentNode.dataset.fadeIn) || 0);
+            const fadeOut = Math.max(0, parseFloat(attachmentNode.dataset.fadeOut) || 0);
+            this._playPreciseAttachmentRange(attachmentNode, audio, button, buttonContainer, startTime, endTime, fadeIn, fadeOut)
+                .then(async (usedPrecisePlayback) => {
+                    if (usedPrecisePlayback) {
+                        return;
+                    }
+
+                    const applyFadeVolume = () => {
+                        let volume = 1;
+                        if (fadeIn > 0 && audio.currentTime < startTime + fadeIn) {
+                            volume = Math.max(0, Math.min(1, (audio.currentTime - startTime) / fadeIn));
+                        }
+                        if (fadeOut > 0 && endTime !== null && audio.currentTime > endTime - fadeOut) {
+                            const remaining = endTime - audio.currentTime;
+                            volume = Math.min(volume, Math.max(0, Math.min(1, remaining / fadeOut)));
+                        }
+                        audio.volume = volume;
+                    };
+
+                    audio.currentTime = startTime;
+                    audio.volume = 1;
+
+                    button.dataset.state = 'loading';
+                    audio.play().then(() => {
+                        this.activeAudioElement = audio;
+                        if (buttonContainer) buttonContainer.classList.add('playing');
+                        button.dataset.state = 'pause';
+                        applyFadeVolume();
+                    }).catch(async (error) => {
+                        console.error('Audio playback failed:', error);
+                        button.dataset.state = 'play';
+                        await ModalDialogs.alert('Could not play audio. The file may be corrupted or in an unsupported format.', 'Playback Error', 'error');
+                    });
+                })
+                .catch(async (error) => {
+                    console.error('Precise audio playback failed:', error);
+                    button.dataset.state = 'play';
+                    await ModalDialogs.alert('Could not play audio. The file may be corrupted or in an unsupported format.', 'Playback Error', 'error');
+                });
         } else {
             // Pause/Stop playing
+            this._stopPreciseAudioPlayback();
             audio.pause();
             const startTime = parseFloat(attachmentNode.dataset.startTime) || 0;
             audio.currentTime = startTime;
+            audio.volume = 1;
             if (buttonContainer) buttonContainer.classList.remove('playing');
             button.dataset.state = 'play';
             this.activeAudioElement = null;
@@ -13434,9 +13751,9 @@ ${embeddedStyles}
 
             // Build targets[] from EVERY attachment in the doc that uses this audio id
             const lines = this.quill.getLines();
-            const targets = [];
-            const regions = [];
+            const records = [];
             const seenLineIndices = new Set();
+            let clickedRecord = null;
 
             const allAttachments = Array.from(this.quill.root.querySelectorAll('.ql-audio-attachment'));
             for (const att of allAttachments) {
@@ -13448,26 +13765,56 @@ ${embeddedStyles}
                 const target = this._buildTarget(lineIndex, lines[lineIndex]);
                 const start = parseFloat(att.dataset.startTime) || 0;
                 const end = att.dataset.endTime ? parseFloat(att.dataset.endTime) : (audio.duration || 0);
-                regions.push({
-                    start, end,
-                    label: target.text || audio.label || 'Region',
-                    targetIndex: targets.length,
-                });
-                targets.push(target);
+                const record = {
+                    target,
+                    region: {
+                        start,
+                        end,
+                        label: target.text || audio.label || 'Region',
+                        targetIndex: records.length,
+                        fadeIn: parseFloat(att.dataset.fadeIn) || 0,
+                        fadeOut: parseFloat(att.dataset.fadeOut) || 0,
+                    },
+                    lineIndex,
+                };
+                records.push(record);
+                if (att === attachmentNode) clickedRecord = record;
             }
 
             // Fallback: if the attachment isn't in the doc tree (rare), use just the clicked one
-            if (!targets.length) {
+            if (!records.length) {
                 const lineIndex = lines.findIndex(ln => ln.domNode.contains(attachmentNode));
                 if (lineIndex >= 0) {
                     const target = this._buildTarget(lineIndex, lines[lineIndex]);
-                    targets.push(target);
                     const start = parseFloat(attachmentNode.dataset.startTime) || 0;
                     const end = attachmentNode.dataset.endTime
                         ? parseFloat(attachmentNode.dataset.endTime) : (audio.duration || 0);
-                    regions.push({ start, end, label: target.text || audio.label, targetIndex: 0 });
+                    clickedRecord = {
+                        target,
+                        region: {
+                            start,
+                            end,
+                            label: target.text || audio.label,
+                            targetIndex: 0,
+                            fadeIn: parseFloat(attachmentNode.dataset.fadeIn) || 0,
+                            fadeOut: parseFloat(attachmentNode.dataset.fadeOut) || 0,
+                        },
+                        lineIndex,
+                    };
+                    records.push(clickedRecord);
                 }
             }
+
+            if (clickedRecord) {
+                const idx = records.indexOf(clickedRecord);
+                if (idx > 0) {
+                    records.splice(idx, 1);
+                    records.unshift(clickedRecord);
+                }
+            }
+
+            const targets = records.map((record, index) => ({ ...record.target, targetIndex: index }));
+            const regions = records.map((record, index) => ({ ...record.region, targetIndex: index, targetLineIndex: record.lineIndex }));
 
             this._pendingAudioTargets = targets;
             this._pendingAudioExistingAttachment = attachmentNode;
@@ -14221,11 +14568,7 @@ ${embeddedStyles}
                 }
 
                 // Update visuals
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    const li = parseInt(item.getAttribute('data-line-index') || '-1', 10);
-                    item.classList.toggle('multi-selected', set.has(li));
-                    item.classList.toggle('active', li === this._navAnchorLineIndex);
-                });
+                this._applyNavigationSelectionState();
             });
 
             // Right-click handler - show context menu
@@ -14237,11 +14580,7 @@ ${embeddedStyles}
                     set.clear();
                     set.add(index);
                     this._navAnchorLineIndex = index;
-                    document.querySelectorAll('.nav-item').forEach(item => {
-                        const li = parseInt(item.getAttribute('data-line-index') || '-1', 10);
-                        item.classList.toggle('multi-selected', set.has(li));
-                        item.classList.toggle('active', li === this._navAnchorLineIndex);
-                    });
+                    this._applyNavigationSelectionState();
                 }
                 if (this.showNavigationContextMenu) {
                     this.showNavigationContextMenu(navItem, index, e);
@@ -14307,16 +14646,8 @@ ${embeddedStyles}
             navTree.appendChild(navItem);
         });
 
-        // Restore multi-selection visuals after rebuild (they live in this._navSelectedLineIndices)
-        if (this._navSelectedLineIndices && this._navSelectedLineIndices.size) {
-            const sel = this._navSelectedLineIndices;
-            const anchor = this._navAnchorLineIndex;
-            document.querySelectorAll('.nav-item').forEach(item => {
-                const li = parseInt(item.getAttribute('data-line-index') || '-1', 10);
-                if (sel.has(li)) item.classList.add('multi-selected');
-                if (li === anchor) item.classList.add('active');
-            });
-        }
+        // Restore selection visuals after rebuild using the shared state helper.
+        this._applyNavigationSelectionState();
     }
 
     /**
@@ -14351,7 +14682,7 @@ ${embeddedStyles}
         const lineOffset = this.quill.getIndex(line);
         
         // Set selection to start of line
-        this.quill.setSelection(lineOffset, 0);
+        this.quill.setSelection(lineOffset, 0, Quill.sources.SILENT);
         
         // Scroll into view
         const lineDom = line.domNode;

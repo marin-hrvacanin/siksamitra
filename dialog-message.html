@@ -23,7 +23,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            padding: 22px 24px 18px;
+            padding: 20px 22px 16px;
             box-sizing: border-box;
             overflow: hidden;
         }
@@ -31,7 +31,7 @@
             display: flex;
             align-items: flex-start;
             gap: 14px;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
         .msg-icon {
             flex-shrink: 0;
@@ -60,9 +60,34 @@
             font-size: 13px;
             color: var(--text-secondary);
             line-height: 1.55;
-            margin-bottom: 18px;
+            margin-bottom: 14px;
             white-space: pre-wrap;
             word-break: break-word;
+        }
+        .msg-body.savechanges .msg-content {
+            flex: 0 0 auto;
+            overflow: visible;
+        }
+        .msg-save-copy {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .msg-save-file {
+            display: block;
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--bg-body);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-sizing: border-box;
         }
         .msg-input {
             width: 100%;
@@ -143,10 +168,31 @@ async function loadState() {
         cancelValue = data.cancelValue;
         inputMode = data.type === 'prompt';
         buttons = Array.isArray(data.buttons) ? data.buttons : [{ label: 'OK', value: undefined, primary: true }];
+        const isSaveChanges = data.type === 'savechanges';
+        const displayName = data.filename || '';
 
         // Render
+        const bodyEl = document.querySelector('.msg-body');
+        bodyEl.classList.toggle('savechanges', isSaveChanges);
+
         document.getElementById('msgTitle').textContent = data.title || 'Notice';
-        document.getElementById('msgContent').textContent = data.message || '';
+        const contentEl = document.getElementById('msgContent');
+        contentEl.innerHTML = '';
+        if (isSaveChanges) {
+            const copy = document.createElement('div');
+            copy.className = 'msg-save-copy';
+            copy.textContent = data.message || 'Save changes before closing?';
+
+            const file = document.createElement('div');
+            file.className = 'msg-save-file';
+            file.textContent = displayName || 'Untitled.smdoc';
+            file.title = displayName || 'Untitled.smdoc';
+
+            contentEl.appendChild(copy);
+            contentEl.appendChild(file);
+        } else {
+            contentEl.textContent = data.message || '';
+        }
         const iconEl = document.getElementById('msgIcon');
         const iconKey = (data.icon || 'info').toLowerCase();
         iconEl.innerHTML = ICONS[iconKey] || ICONS.info;

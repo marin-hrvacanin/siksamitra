@@ -16,6 +16,8 @@
         })();
     </script>
     <link rel="stylesheet" href="styles.css">
+    <script src="qwebchannel.js"></script>
+    <script src="pyqt-bridge.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         html, body { height: 100%; margin: 0; overflow: hidden; font-size: 14px; }
@@ -130,6 +132,18 @@ async function postAction(type, data) {
     } catch(e) { console.error('postAction error:', e); }
 }
 
+async function closeDialog() {
+    try {
+        if (window.pywebview?.api?.close_dialog) {
+            await window.pywebview.api.close_dialog('media');
+            return;
+        }
+    } catch (e) {
+        console.error('closeDialog error:', e);
+    }
+    window.close();
+}
+
 // ── Load file list ────────────────────────────────────────────────────────────
 async function loadFileList() {
     const tbody = document.getElementById('fileList');
@@ -219,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.files.length > 0) uploadFile(e.target.files[0]);
     });
     document.getElementById('refreshBtn').addEventListener('click', loadFileList);
-    document.getElementById('closeBtn').addEventListener('click', () => window.close());
+    document.getElementById('closeBtn').addEventListener('click', closeDialog);
 });
 </script>
 </body>
