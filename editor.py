@@ -2484,6 +2484,14 @@ class ViewerWindow(QMainWindow):
         """Generate full HTML from .smdoc content - matching the full exported HTML format."""
         # This matches the getDocumentHTML() function from editor-quill.js
         # It includes the full side menu, theme toggle, audio controls, and all styles
+
+        shared_styles = ''
+        shared_styles_path = os.path.join(BASE_DIR, 'viewer-export-shared.css')
+        try:
+            with open(shared_styles_path, 'r', encoding='utf-8') as f:
+                shared_styles = f.read()
+        except Exception as e:
+            print(f"[Viewer] Warning: failed to load shared viewer/export styles: {e}")
         
         embedded_styles = f'''
         /* Embedded URW Palladio ITU font */
@@ -2529,45 +2537,41 @@ class ViewerWindow(QMainWindow):
             --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
         }}
 
+        /* Shared viewer/export CSS baseline */
+{shared_styles}
+
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 
         body {{
-            margin: 0;
-            padding: 3rem 1.5rem;
             background: var(--bg-body);
             color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            font-size: 28px;
-            line-height: 1.55;
-            min-height: 100vh;
             transition: background-color 0.3s ease, color 0.3s ease;
         }}
 
         .paper {{
-            max-width: 960px;
-            margin: 0 auto;
             background: var(--bg-surface);
-            border-radius: 18px;
             box-shadow: var(--shadow-lg);
             border: 1px solid var(--border);
-            padding: 3rem;
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }}
 
         .content {{
-            min-height: 60vh;
+            min-height: 100mm;
         }}
 
         .ql-editor {{
             padding: 0;
             color: var(--text-primary);
             background: transparent;
-            line-height: 1.5;
-            font-size: 28px;
+            line-height: 24pt;
+            font-size: 16pt;
             font-family: Arial, sans-serif;
+            min-height: 100mm;
             overflow-wrap: break-word;
             word-break: normal;
             white-space: pre-wrap;
+            tab-size: 3;
+            -moz-tab-size: 3;
         }}
 
         .ql-editor strong, strong, .ql-bold {{ font-weight: 700; }}
@@ -2666,7 +2670,26 @@ class ViewerWindow(QMainWindow):
             line-height: inherit;
         }}
 
-        .content p {{ position: relative; }}
+        .ql-editor p {{
+            position: relative;
+            margin: 0;
+            line-height: 24pt;
+            font-size: 16pt;
+        }}
+
+        .ql-editor p:last-child {{
+            margin-bottom: 0;
+        }}
+
+        .ql-editor p.ql-script-devanagari,
+        .ql-editor p.ql-script-telugu,
+        .ql-editor p.ql-script-tamil,
+        .ql-editor p.ql-script-kannada {{
+            line-height: 32pt;
+            font-family: 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil',
+                         'Noto Sans Devanagari', 'Noto Sans Telugu', 'Noto Sans Tamil',
+                         serif !important;
+        }}
 
         .ql-audio-attachment {{
             display: inline !important;
@@ -2685,17 +2708,10 @@ class ViewerWindow(QMainWindow):
             position: absolute;
             left: -60px;
             top: 0;
-            width: 40px;
-            height: 40px;
-            min-width: 40px;
-            border-radius: 50%;
             border: 2px solid var(--primary);
             background: var(--bg-surface);
             color: var(--primary);
             cursor: pointer;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
             transition: all 0.2s ease;
             box-shadow: var(--shadow);
             padding: 0;
@@ -2706,31 +2722,7 @@ class ViewerWindow(QMainWindow):
         .audio-play-button:hover {{
             background: var(--primary);
             color: #ffffff;
-            transform: scale(1.1);
         }}
-
-        .audio-icon {{
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 18px;
-            height: 18px;
-        }}
-
-        .audio-icon svg {{
-            width: 16px;
-            height: 16px;
-            stroke: currentColor;
-            fill: none;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }}
-
-        .audio-play-button[data-state='play'] .audio-icon .icon-play {{ display: block; }}
-        .audio-play-button[data-state='play'] .audio-icon .icon-stop {{ display: none; }}
-        .audio-play-button[data-state='pause'] .audio-icon .icon-play {{ display: none; }}
-        .audio-play-button[data-state='pause'] .audio-icon .icon-stop {{ display: block; }}
 
         .ql-comment-style {{
             font-style: italic;
@@ -2894,17 +2886,10 @@ class ViewerWindow(QMainWindow):
             position: fixed;
             top: 20px;
             left: 20px;
-            width: 44px;
-            height: 44px;
             border: 1px solid var(--border);
-            border-radius: 50%;
             background: var(--bg-surface);
             color: var(--text-primary);
             cursor: pointer;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             transition: all 0.2s;
             box-shadow: var(--shadow);
             z-index: 2000;
@@ -2919,7 +2904,6 @@ class ViewerWindow(QMainWindow):
         }}
 
         .options-toggle-btn.hidden {{ opacity: 0; pointer-events: none; }}
-        .options-icon {{ display: block; line-height: 1; }}
 
         .options-container {{
             position: fixed;
@@ -2960,17 +2944,10 @@ class ViewerWindow(QMainWindow):
         }}
 
         .options-close-btn {{
-            width: 28px;
-            height: 28px;
             border: none;
-            border-radius: 6px;
             background: transparent;
             color: var(--text-secondary);
             cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             transition: all 0.15s;
         }}
 
@@ -2996,64 +2973,7 @@ class ViewerWindow(QMainWindow):
 
         /* option-btn kept for any non-switch uses (e.g. options toggle) */
 
-        /* Switch toggle — matches editor's switch-checkbox */
-        .option-switch {{
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 0;
-            cursor: pointer;
-            user-select: none;
-        }}
-
-        .option-switch input {{ display: none; }}
-
-        .option-switch .switch-track {{
-            width: 40px;
-            height: 22px;
-            background: var(--border);
-            border-radius: 22px;
-            position: relative;
-            transition: background 0.2s;
-            flex-shrink: 0;
-        }}
-
-        .option-switch .switch-knob {{
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            left: 3px;
-            top: 3px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.2s;
-        }}
-
-        .option-switch.on .switch-track {{
-            background: var(--primary);
-        }}
-
-        .option-switch.on .switch-knob {{
-            transform: translateX(18px);
-        }}
-
-        .option-switch .switch-label {{
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }}
-
-        .option-switch .theme-icon {{
-            color: var(--text-secondary);
-            flex-shrink: 0;
-        }}
-
         .option-group-bottom {{
-            margin-top: auto;
-            padding-top: 16px;
             border-top: 1px solid var(--border-subtle);
         }}
 

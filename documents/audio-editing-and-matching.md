@@ -111,16 +111,55 @@ Fades are applied at runtime in both live playback and preview/export playback. 
 
 The automatic matching workflow is designed to reduce manual region assignment.
 
+At a technical level, auto-align combines:
+
+- Voice activity detection (energy-based speech interval detection)
+- Section-order assumption (target 1, then target 2, then target 3...)
+- Syllable-weighted duration splitting (higher syllable count gets more time)
+
 The current behavior is:
 
 - the clicked region is staged first
-- the dialog uses the selected text and the staged audio ranges to build the matching view
-- matching updates the region list directly instead of opening a separate section-picking popup
-- the old add-selected popup was removed so the workflow stays in one place
+- the dialog uses the selected text and staged audio to build target regions
+- matching updates the region list directly in the dialog
+- when no speech intervals are detected, matching falls back to duration-only proportional splitting
 
-This keeps the workflow centered on the region editor itself. You review the ranges, adjust the visibility, and apply the result without an extra modal step.
+### Writing System Coverage
 
-The matching logic is meant to work with normalized IAST text and the same transliteration / standardization pipeline used by the rest of the editor.
+Auto-align weighting is script-aware for the editor's currently supported script flow.
+
+| Writing system | Matching quality | Notes |
+|---|---|---|
+| IAST (Latin) | Full | Vowel-nucleus counting runs directly on IAST text. |
+| Devanagari | Full | Text is transliterated to IAST for consistent syllable counting. |
+| Telugu | Full | Text is transliterated to IAST for consistent syllable counting. |
+| Tamil | Full (approximation-aware) | Uses table-based transliteration; Tamil approximation limits still apply for some Sanskrit phonemes. |
+| Kannada | Full | Text is transliterated to IAST for consistent syllable counting. |
+| Mixed-script paragraphs | Best effort | Dominant script is used for weighting; highly mixed lines may need manual adjustment. |
+
+### Interleaved Shloka and Translation
+
+For patterns such as `shloka + translation + shloka + translation`, matching remains deterministic:
+
+- auto-align splits audio into exactly the number of target sections provided
+- if translation lines are included as targets, the algorithm assumes the recording also includes those translation lines
+- if audio contains only recitation (no spoken translation), include only shloka lines as targets for best results
+
+After auto-align, regions can still be reassigned manually (target dropdown) without rerunning the whole process.
+
+### Relation to DOCX Import
+
+DOCX import is compatible with the matching pipeline:
+
+- paragraph styles are mapped to editor paragraph classes (`title`, `section`, `translation`, etc.)
+- script class detection runs on imported paragraph text
+- section targets generated from imported lines carry syllable estimates used by auto-align
+
+Practical caveats:
+
+- import quality depends on source `.docx` style consistency
+- if `python-docx` is unavailable, DOCX import endpoint returns an explicit error
+- script-specific insert annotation conversion is currently strongest for Devanagari; non-Devanagari annotation conversion remains best-effort
 
 ---
 
@@ -183,6 +222,16 @@ A typical session looks like this:
 This is the flow the UI is designed around now. There is no extra region-selection popup in the middle of it.
 
 ---
+
+## Suggested Improvements
+
+These are the highest-value next steps for audio/text alignment robustness:
+
+1. Add an "Ignore translation/comment targets during auto-align" toggle (while still preserving those lines for manual assignment).
+2. Add an optional "speech-to-text guided" mode where boundary candidates can also be scored by transcript similarity, not only VAD + syllable ratio.
+3. Surface per-boundary confidence values in the dialog to quickly spot risky splits.
+4. Add a regression test corpus with IAST/Devanagari/Telugu/Tamil/Kannada samples and known-good alignments.
+5. Extend explicit script tooling symmetry across the stack (including Malayalam, if added as a first-class editor script).
 
 ## Notes For Future Changes
 

@@ -1,0 +1,182 @@
+/* Shared viewer/export baseline styles.
+   Keep geometry and control mechanics here so Python viewer and JS export stay in lockstep. */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 28px;
+    line-height: 1.55;
+    min-height: 100vh;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+.paper {
+    /* Match editor .container geometry exactly for WYSIWYG parity. */
+    width: 210mm;
+    max-width: 210mm;
+    min-width: 210mm;
+    margin: 20px auto;
+    border-radius: 2px;
+    padding: 16mm 16mm 40px 16mm;
+    flex-shrink: 0;
+    transform-origin: top center;
+}
+
+.audio-play-button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 50%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.audio-play-button:hover {
+    transform: scale(1.1);
+}
+
+.audio-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+}
+
+.audio-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.audio-play-button[data-state='play'] .audio-icon .icon-play { display: block; }
+.audio-play-button[data-state='play'] .audio-icon .icon-stop { display: none; }
+.audio-play-button[data-state='pause'] .audio-icon .icon-play { display: none; }
+.audio-play-button[data-state='pause'] .audio-icon .icon-stop { display: block; }
+
+.audio-play-button[data-state='loading'] {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.audio-play-button[data-state='loading'] .audio-icon svg {
+    display: none;
+}
+
+.audio-play-button[data-state='loading'] .audio-icon::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: audioSpin 1s linear infinite;
+}
+
+@keyframes audioSpin {
+    to { transform: rotate(360deg); }
+}
+
+.options-toggle-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.options-toggle-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.options-close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.options-close-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.option-switch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.option-switch input { display: none; }
+
+.option-switch .switch-track {
+    width: 40px;
+    height: 22px;
+    background: var(--border);
+    border-radius: 22px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.option-switch .switch-knob {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    top: 3px;
+    background: #ffffff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.option-switch.on .switch-track {
+    background: var(--primary);
+}
+
+.option-switch.on .switch-knob {
+    transform: translateX(18px);
+}
+
+.option-switch .switch-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.option-switch .theme-icon {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.option-group-bottom {
+    margin-top: auto;
+    padding-top: 16px;
+}

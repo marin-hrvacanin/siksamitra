@@ -69,6 +69,8 @@ Consonants that cannot host a holding: ṅ ñ ṇ n m ṁ ṃ r ś ṣ s.
 - Multi-region audio editor with selected-only, show-all, hide-all, and per-region visibility control
 - Fade-in and fade-out support on each region, preserved through save/load and export
 - Automatic audio matching for the selected text, with the clicked region staged first in the editor
+- Script-aware auto-match weighting across IAST, Devanagari, Telugu, Tamil, and Kannada text
+- For interleaved shloka/translation layouts, matching follows the chosen target lines in order (include only shloka lines when audio contains recitation only)
 - Audio stored as base64 data URIs within the document file
 - See `documents/audio-editing-and-matching.md` for the full workflow and data model
 

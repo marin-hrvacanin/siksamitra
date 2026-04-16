@@ -239,6 +239,8 @@ The audio workflow is split between the main editor attachment model and the ded
 - The dialog defaults to the selected region, with explicit show-selected, show-all, hide-all, and per-region visibility controls
 - Region timing is edited per attachment, and fade-in / fade-out values are stored alongside the audio metadata
 - Automatic matching stages the clicked region first so the user can immediately inspect the range being edited
+- Automatic matching is script-aware for IAST, Devanagari, Telugu, Tamil, and Kannada (syllable weighting is normalized through IAST transliteration)
+- Target order is authoritative: if translation lines are included as targets, auto-align allocates timing for them too
 - Playback in the editor and preview window applies the stored fade values at runtime
 
 Only region timing and fade metadata are persisted in `.smdoc`; transient visibility state stays in the dialog UI.

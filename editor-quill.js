@@ -1153,6 +1153,8 @@ const EXPORT_FAVICON_DATA_URI =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAP//AADgBwAAwAMAAIABAAAAAAAAAAAAAAAAAAAAAAAAgAEAAMADAADgBwAA//8AAP/' +
     '/AAD//wAA';
 
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
 class SiksamitraEditor {
     constructor() {
         this.quill = null;
@@ -10970,6 +10972,60 @@ ${className} {
             }
         }
     }
+
+    async loadViewerExportSharedStyles() {
+        if (typeof this._viewerExportSharedStyles === 'string') {
+            return this._viewerExportSharedStyles;
+        }
+
+        try {
+            const response = await fetch('viewer-export-shared.css');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            this._viewerExportSharedStyles = await response.text();
+        } catch (error) {
+            console.warn('Failed to load shared viewer/export styles:', error);
+            this._viewerExportSharedStyles = '';
+        }
+
+        return this._viewerExportSharedStyles;
+    }
+
+    async loadExportFaviconDataUri() {
+        if (typeof this._exportFaviconDataUri === 'string' && this._exportFaviconDataUri.startsWith('data:')) {
+            return this._exportFaviconDataUri;
+        }
+
+        if (typeof ICON_DATA_URI === 'string' && ICON_DATA_URI.startsWith('data:')) {
+            this._exportFaviconDataUri = ICON_DATA_URI;
+            return this._exportFaviconDataUri;
+        }
+
+        try {
+            const response = await fetch('icon.ico');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const blob = await response.blob();
+            const dataUri = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('Failed to read icon blob'));
+                reader.readAsDataURL(blob);
+            });
+
+            if (typeof dataUri === 'string' && dataUri.startsWith('data:')) {
+                this._exportFaviconDataUri = dataUri;
+                return this._exportFaviconDataUri;
+            }
+        } catch (error) {
+            console.warn('Failed to load export favicon from icon.ico:', error);
+        }
+
+        this._exportFaviconDataUri = EXPORT_FAVICON_DATA_URI;
+        return this._exportFaviconDataUri;
+    }
     
     /**
      * Get document HTML (matching main2.pyw export format)
@@ -11010,6 +11066,8 @@ ${className} {
         
         const content = this.quill.root.innerHTML;
         const currentTheme = document.body.getAttribute('data-theme') || 'light';
+        const sharedStyles = await this.loadViewerExportSharedStyles();
+        const faviconDataUri = await this.loadExportFaviconDataUri();
 
         const embeddedStyles = `
         /* Embedded URW Palladio ITU font */
@@ -11035,6 +11093,12 @@ ${className} {
             --translation-text-color: #6b7280;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --primary: var(--primary-color);
+            --bg-body: var(--bg-color);
+            --bg-surface: var(--paper-bg);
+            --text-primary: var(--text-color);
+            --border: var(--border-color);
+            --border-subtle: var(--border-color);
         }
 
         [data-theme='dark'] {
@@ -11053,6 +11117,9 @@ ${className} {
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
         }
 
+        /* Shared viewer/export CSS baseline */
+        ${sharedStyles}
+
         * {
             margin: 0;
             padding: 0;
@@ -11060,42 +11127,35 @@ ${className} {
         }
 
         body {
-            margin: 0;
-            padding: 3rem 1.5rem;
             background: var(--bg-color);
             color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            font-size: 28px;
-            line-height: 1.55;
-            min-height: 100vh;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .paper {
-            max-width: 960px;
-            margin: 0 auto;
             background: var(--paper-bg);
-            border-radius: 18px;
             box-shadow: var(--shadow-lg);
             border: 1px solid var(--border-color);
-            padding: 3rem;
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
 
         .content {
-            min-height: 60vh;
+            min-height: 100mm;
         }
 
         .ql-editor {
             padding: 0;
             color: var(--text-color);
             background: transparent;
-            line-height: 1.5;
-            font-size: 28px;
+            line-height: 24pt;
+            font-size: 16pt;
             font-family: Arial, sans-serif;
+            min-height: 100mm;
             overflow-wrap: break-word;
             word-break: normal;
             white-space: pre-wrap;
+            tab-size: 3;
+            -moz-tab-size: 3;
         }
 
         .ql-editor strong,
@@ -11324,9 +11384,26 @@ ${className} {
             clear: both;
         }
 
-        /* Paragraphs need relative positioning for floating buttons */
-        .content p {
+        /* Match editor paragraph metrics for true WYSIWYG. */
+        .ql-editor p {
             position: relative;
+            margin: 0;
+            line-height: 24pt;
+            font-size: 16pt;
+        }
+
+        .ql-editor p:last-child {
+            margin-bottom: 0;
+        }
+
+        .ql-editor p.ql-script-devanagari,
+        .ql-editor p.ql-script-telugu,
+        .ql-editor p.ql-script-tamil,
+        .ql-editor p.ql-script-kannada {
+            line-height: 32pt;
+            font-family: 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil',
+                         'Noto Sans Devanagari', 'Noto Sans Telugu', 'Noto Sans Tamil',
+                         serif !important;
         }
 
         /* Audio attachment marker (invisible) */
@@ -11351,17 +11428,10 @@ ${className} {
             position: absolute;
             left: -60px;
             top: 0;
-            width: 40px;
-            height: 40px;
-            min-width: 40px;
-            border-radius: 50%;
             border: 2px solid var(--primary-color);
             background: var(--paper-bg);
             color: var(--primary-color);
             cursor: pointer;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
             transition: all 0.2s ease;
             box-shadow: var(--shadow);
             padding: 0;
@@ -11373,7 +11443,6 @@ ${className} {
         .audio-play-button:hover {
             background: var(--primary-color);
             color: #ffffff;
-            transform: scale(1.1);
             box-shadow: var(--shadow-lg);
         }
 
@@ -11381,77 +11450,9 @@ ${className} {
             transform: scale(0.95);
         }
 
-        .audio-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-
-        /* Play triangle */
-        .audio-icon::before {
-            content: '';
-            width: 0;
-            height: 0;
-            border-left: 10px solid currentColor;
-            border-top: 6px solid transparent;
-            border-bottom: 6px solid transparent;
-            margin-left: 2px;
-        }
-
-        /* Pause bars */
-        .audio-play-button[data-state='pause'] .audio-icon::before {
-            width: 3px;
-            height: 12px;
-            background: currentColor;
-            border: none;
-            margin-left: -3px;
-        }
-
-        .audio-play-button[data-state='pause'] .audio-icon::after {
-            content: '';
-            position: absolute;
-            width: 3px;
-            height: 12px;
-            background: currentColor;
-            margin-left: 3px;
-        }
-
-        .audio-play-button[data-state='loading'] {
-            pointer-events: none;
-            opacity: 0.6;
-        }
-
-        .audio-play-button[data-state='loading'] .audio-icon::before {
-            width: 12px;
-            height: 12px;
-            background: transparent;
-            border: 2px solid currentColor;
-            border-top-color: transparent;
-            border-radius: 50%;
-            margin-left: 0;
-            animation: audioSpin 1s linear infinite;
-        }
-
-        .audio-play-button[data-state='loading'] .audio-icon::after {
-            display: none;
-        }
-
-        @keyframes audioSpin {
-            to { transform: rotate(360deg); }
-        }
-
         @keyframes audioPulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
-        }
-
-        .ql-audio-attachment.playing .audio-play-button {
-            background: var(--primary-color);
-            color: #ffffff;
-            border-color: var(--primary-color);
         }
 
         .ql-audio-attachment.playing .audio-play-button {
@@ -11592,17 +11593,10 @@ ${className} {
             position: fixed;
             top: 20px;
             left: 20px;
-            width: 44px;
-            height: 44px;
             border: 1px solid var(--border-color);
-            border-radius: 50%;
             background: var(--paper-bg);
             color: var(--text-color);
             cursor: pointer;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             transition: all 0.2s;
             box-shadow: var(--shadow);
             z-index: 2000;
@@ -11619,11 +11613,6 @@ ${className} {
         .options-toggle-btn.hidden {
             opacity: 0;
             pointer-events: none;
-        }
-
-        .options-icon {
-            display: block;
-            line-height: 1;
         }
 
         .options-container {
@@ -11658,33 +11647,26 @@ ${className} {
         }
 
         .options-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--doc-title-color, var(--primary-color));
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
             margin: 0;
-            line-height: 1.3;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .options-close-btn {
-            width: 32px;
-            height: 32px;
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            background: var(--paper-bg);
+            border: none;
+            background: transparent;
             color: var(--text-secondary);
             cursor: pointer;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             transition: all 0.2s;
             flex-shrink: 0;
         }
 
         .options-close-btn:hover {
-            background: #ef4444;
-            color: #ffffff;
-            border-color: #ef4444;
+            background: var(--bg-color);
+            color: var(--text-color);
         }
 
         .options-content {
@@ -11712,58 +11694,8 @@ ${className} {
             opacity: 0.8;
         }
 
-        .option-btn {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--paper-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            color: var(--text-color);
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .option-btn:hover {
-            background: var(--primary-hover);
-            color: #ffffff;
-            border-color: var(--primary-hover);
-            box-shadow: var(--shadow);
-            transform: translateX(4px);
-        }
-
-        .option-btn.toggle-btn {
-            justify-content: flex-start;
-        }
-
-        .option-btn.toggle-btn .toggle-indicator {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border-color);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
-            color: transparent;
-            transition: all 0.2s;
-        }
-
-        .option-btn.toggle-btn.active .toggle-indicator {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-            color: #ffffff;
-        }
-
-        .option-btn.toggle-btn:hover .toggle-indicator {
-            border-color: var(--primary-color);
+        .option-group-bottom {
+            border-top: 1px solid var(--border-color);
         }
 
         /* Speed Controls */
@@ -11987,9 +11919,7 @@ ${className} {
                 padding: 20px;
             }
 
-            .option-btn {
-                padding: 14px 16px;
-                font-size: 16px;
+            .option-switch {
                 min-height: 48px;
             }
 
@@ -12055,7 +11985,7 @@ ${className} {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${this.currentFileName}</title>
-    <link rel="icon" type="image/x-icon" href="${EXPORT_FAVICON_DATA_URI}">
+    <link rel="icon" type="image/x-icon" href="${faviconDataUri}">
     <style>
 ${embeddedStyles}
     </style>
@@ -12063,44 +11993,35 @@ ${embeddedStyles}
 <body data-theme="${currentTheme}">
     <!-- Options Toggle Button -->
     <button class="options-toggle-btn" id="optionsToggleBtn" onclick="toggleOptions()" title="Document Options" aria-label="Document Options">
-        <span class="options-icon">☰</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     
     <!-- Options Panel -->
     <div class="options-container" id="optionsContainer">
         <div class="options-header">
-            <h2 class="options-title">Document Options</h2>
-            <button class="options-close-btn" onclick="toggleOptions()" aria-label="Close Options">×</button>
+            <h2 class="options-title">Options</h2>
+            <button class="options-close-btn" onclick="toggleOptions()" aria-label="Close Options">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
         </div>
         
         <div class="options-content">
-            <!-- Theme Toggle -->
             <div class="option-group">
-                <h3 class="option-group-title">Appearance</h3>
-                <button class="option-btn" id="themeToggleBtn" onclick="toggleTheme()">
-                    <span id="themeIcon">☀</span>
-                    <span id="themeText">Switch to Dark Mode</span>
-                </button>
+                <h3 class="option-group-title">Visibility</h3>
+                <label class="option-switch on" onclick="toggleTranslations()" id="translationsSwitch">
+                    <span class="switch-track"><span class="switch-knob"></span></span>
+                    <span class="switch-label">Translations</span>
+                </label>
+                <label class="option-switch on" onclick="toggleAudio()" id="audioSwitch">
+                    <span class="switch-track"><span class="switch-knob"></span></span>
+                    <span class="switch-label">Audio Buttons</span>
+                </label>
+                <label class="option-switch on" onclick="toggleComments()" id="commentsSwitch">
+                    <span class="switch-track"><span class="switch-knob"></span></span>
+                    <span class="switch-label">Comments</span>
+                </label>
             </div>
             
-            <!-- Visibility Toggles -->
-            <div class="option-group">
-                <h3 class="option-group-title">Show/Hide Elements</h3>
-                <button class="option-btn toggle-btn active" id="translationsToggleBtn" onclick="toggleTranslations()">
-                    <span class="toggle-indicator">✓</span>
-                    <span>Show Translations</span>
-                </button>
-                <button class="option-btn toggle-btn active" id="audioToggleBtn" onclick="toggleAudio()">
-                    <span class="toggle-indicator">✓</span>
-                    <span>Show Audio Buttons</span>
-                </button>
-                <button class="option-btn toggle-btn active" id="commentsToggleBtn" onclick="toggleComments()">
-                    <span class="toggle-indicator">✓</span>
-                    <span>Show Comments</span>
-                </button>
-            </div>
-            
-            <!-- Audio Playback Speed -->
             <div class="option-group">
                 <h3 class="option-group-title">Audio Playback Speed</h3>
                 <div class="speed-controls">
@@ -12111,12 +12032,21 @@ ${embeddedStyles}
                 <div class="speed-display" id="speedDisplay">Speed: 1.0x</div>
             </div>
             
-            <!-- Table of Contents -->
             <div class="option-group">
                 <h3 class="option-group-title">Navigation</h3>
                 <nav class="toc-nav" id="tocNav">
                     <!-- ToC will be generated dynamically -->
                 </nav>
+            </div>
+
+            <div class="option-group option-group-bottom">
+                <label class="option-switch" onclick="toggleTheme()" id="themeSwitch">
+                    <span class="switch-track"><span class="switch-knob"></span></span>
+                    <span class="switch-label">
+                        <svg class="theme-icon" id="themeIconSvg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        <span id="themeText">Dark Mode</span>
+                    </span>
+                </label>
             </div>
         </div>
     </div>
@@ -12267,11 +12197,20 @@ ${embeddedStyles}
         }
         
         function updateThemeIcon(theme) {
-            const icon = document.getElementById('themeIcon');
+            const sw = document.getElementById('themeSwitch');
             const text = document.getElementById('themeText');
-            if (icon && text) {
-                icon.textContent = theme === 'light' ? '☀' : '☾';
-                text.textContent = theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
+            const icon = document.getElementById('themeIconSvg');
+            if (sw) {
+                if (theme === 'dark') sw.classList.add('on');
+                else sw.classList.remove('on');
+            }
+            if (text) text.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            if (icon) {
+                if (theme === 'dark') {
+                    icon.innerHTML = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
+                } else {
+                    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+                }
             }
         }
 
@@ -12289,46 +12228,48 @@ ${embeddedStyles}
         }
         
         function toggleTranslations() {
-            const btn = document.getElementById('translationsToggleBtn');
-            const isActive = btn.classList.contains('active');
+            const btn = document.getElementById('translationsSwitch');
+            if (!btn) return;
+            const isActive = btn.classList.contains('on');
             
             if (isActive) {
-                btn.classList.remove('active');
+                btn.classList.remove('on');
                 document.body.classList.add('hide-translations');
                 localStorage.setItem('showTranslations', 'false');
             } else {
-                btn.classList.add('active');
+                btn.classList.add('on');
                 document.body.classList.remove('hide-translations');
                 localStorage.setItem('showTranslations', 'true');
             }
         }
         
         function toggleAudio() {
-            const btn = document.getElementById('audioToggleBtn');
-            const isActive = btn.classList.contains('active');
+            const btn = document.getElementById('audioSwitch');
+            if (!btn) return;
+            const isActive = btn.classList.contains('on');
             
             if (isActive) {
-                btn.classList.remove('active');
+                btn.classList.remove('on');
                 document.body.classList.add('hide-audio');
                 localStorage.setItem('showAudio', 'false');
             } else {
-                btn.classList.add('active');
+                btn.classList.add('on');
                 document.body.classList.remove('hide-audio');
                 localStorage.setItem('showAudio', 'true');
             }
         }
         
         function toggleComments() {
-            const btn = document.getElementById('commentsToggleBtn');
+            const btn = document.getElementById('commentsSwitch');
             if (!btn) return;
-            const isActive = btn.classList.contains('active');
+            const isActive = btn.classList.contains('on');
             
             if (isActive) {
-                btn.classList.remove('active');
+                btn.classList.remove('on');
                 document.body.classList.add('hide-comments');
                 localStorage.setItem('showComments', 'false');
             } else {
-                btn.classList.add('active');
+                btn.classList.add('on');
                 document.body.classList.remove('hide-comments');
                 localStorage.setItem('showComments', 'true');
             }
@@ -12475,19 +12416,22 @@ ${embeddedStyles}
         
         const showTranslations = localStorage.getItem('showTranslations') !== 'false';
         if (!showTranslations) {
-            document.getElementById('translationsToggleBtn').classList.remove('active');
+            const sw = document.getElementById('translationsSwitch');
+            if (sw) sw.classList.remove('on');
             document.body.classList.add('hide-translations');
         }
         
         const showAudio = localStorage.getItem('showAudio') !== 'false';
         if (!showAudio) {
-            document.getElementById('audioToggleBtn').classList.remove('active');
+            const sw = document.getElementById('audioSwitch');
+            if (sw) sw.classList.remove('on');
             document.body.classList.add('hide-audio');
         }
         
         const showComments = localStorage.getItem('showComments') !== 'false';
         if (!showComments) {
-            document.getElementById('commentsToggleBtn').classList.remove('active');
+            const sw = document.getElementById('commentsSwitch');
+            if (sw) sw.classList.remove('on');
             document.body.classList.add('hide-comments');
         }
         
@@ -12938,53 +12882,101 @@ ${embeddedStyles}
     }
 
     /**
-     * Estimate syllable count for IAST + Devanagari Sanskrit text.
+     * Estimate syllable count for audio auto-align weighting.
      *
-     * IAST: each maximal run of vowel letters = 1 syllable nucleus.
-     *       (handles 'ai', 'au' diphthongs as one nucleus)
-     * Devanagari: consonants - viramas + independent vowels = nucleus count.
+     * Strategy:
+     *  1) Detect dominant script.
+     *  2) Transliterate Indic scripts (Devanagari/Telugu/Tamil/Kannada) to IAST.
+     *  3) Count IAST vowel nuclei (treat ai/au as single nuclei).
      *
-     * The number is a hint, not a guarantee — used only for proportional weighting
-     * during auto-align. Returns 0 for empty or non-Sanskrit input.
+     * Falls back to per-script inherent-vowel heuristics if transliteration is
+     * unavailable. The count is only a weighting hint for auto-align.
      */
     _countSyllables(text) {
         if (!text) return 0;
+
+        const originalText = String(text);
+        const script = this.detectDominantScript(originalText);
+        let meterText = originalText;
+
+        try {
+            if (script === 'devanagari') {
+                meterText = this.devanagariToIAST(originalText);
+            } else if (script === 'telugu') {
+                meterText = this.teluguToIAST(originalText);
+            } else if (script === 'tamil') {
+                meterText = this.tamilToIAST(originalText);
+            } else if (script === 'kannada') {
+                meterText = this.kannadaToIAST(originalText);
+            }
+        } catch (_) {
+            meterText = originalText;
+        }
+
+        // Strip accent/annotation marks that do not introduce new vowel nuclei.
+        const cleaned = (meterText || '')
+            .normalize('NFC')
+            .replace(/[\u0300-\u036F\u02CE·]/g, '')
+            .toLowerCase();
+
+        const VOWELS = new Set(['a', 'ā', 'i', 'ī', 'u', 'ū', 'ṛ', 'ṝ', 'ḷ', 'ḹ', 'e', 'o']);
         let count = 0;
         let inVowel = false;
-        const IAST_VOWELS = 'aāiīuūṛṝḷḹeoAĀIĪUŪṚṜḶḸEO';
 
-        for (let i = 0; i < text.length; i++) {
-            const ch = text[i];
-            const code = ch.codePointAt(0);
-            // Devanagari independent vowels (U+0905–U+0914)
-            if (code >= 0x0905 && code <= 0x0914) {
+        for (let i = 0; i < cleaned.length; i++) {
+            const ch = cleaned[i];
+            if (!VOWELS.has(ch)) {
+                inVowel = false;
+                continue;
+            }
+
+            if (!inVowel) {
                 count++;
-                inVowel = false;
-                continue;
+                inVowel = true;
             }
-            // Devanagari consonants (U+0915–U+0939) — each carries inherent 'a'
-            if (code >= 0x0915 && code <= 0x0939) {
-                count++;
-                inVowel = false;
-                continue;
-            }
-            // Devanagari virama / halant (U+094D) — cancels inherent vowel
-            if (code === 0x094D) {
-                count = Math.max(0, count - 1);
-                continue;
-            }
-            // Devanagari vowel signs (mātrās) U+093A–U+094C — already counted with consonant
-            if (code >= 0x093A && code <= 0x094C) {
-                continue;
-            }
-            // IAST vowels (group adjacent vowels into one nucleus)
-            if (IAST_VOWELS.indexOf(ch) >= 0) {
-                if (!inVowel) { count++; inVowel = true; }
-            } else {
-                inVowel = false;
+
+            // Handle IAST diphthongs as a single nucleus.
+            if (ch === 'a' && i + 1 < cleaned.length) {
+                const next = cleaned[i + 1];
+                if (next === 'i' || next === 'u') {
+                    i++;
+                }
             }
         }
-        return Math.max(0, count);
+
+        if (count > 0) return count;
+
+        // Fallback when transliteration tables are unavailable.
+        const scriptFallback = {
+            devanagari: { indep: [0x0905, 0x0914], cons: [0x0915, 0x0939], virama: 0x094D, signs: [0x093A, 0x094C] },
+            telugu:     { indep: [0x0C05, 0x0C14], cons: [0x0C15, 0x0C39], virama: 0x0C4D, signs: [0x0C3E, 0x0C4C] },
+            tamil:      { indep: [0x0B85, 0x0B94], cons: [0x0B95, 0x0BB9], virama: 0x0BCD, signs: [0x0BBE, 0x0BCC] },
+            kannada:    { indep: [0x0C85, 0x0C94], cons: [0x0C95, 0x0CB9], virama: 0x0CCD, signs: [0x0CBE, 0x0CCC] },
+        };
+        const cfg = script ? scriptFallback[script] : null;
+        if (!cfg) return 0;
+
+        let fallbackCount = 0;
+        for (const ch of originalText) {
+            const code = ch.codePointAt(0);
+            if (code >= cfg.indep[0] && code <= cfg.indep[1]) {
+                fallbackCount++;
+                continue;
+            }
+            if (code >= cfg.cons[0] && code <= cfg.cons[1]) {
+                fallbackCount++;
+                continue;
+            }
+            if (code === cfg.virama) {
+                fallbackCount = Math.max(0, fallbackCount - 1);
+                continue;
+            }
+            if (code >= cfg.signs[0] && code <= cfg.signs[1]) {
+                continue;
+            }
+        }
+
+        return Math.max(0, fallbackCount);
     }
 
     /**
