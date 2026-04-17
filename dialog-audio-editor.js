@@ -28,8 +28,8 @@
         peaks: null,                  // Float32Array of peaks (downsampled)
         channelData: null,            // Mono PCM for analysis
         sampleRate: 44100,
-        targets: [],                  // [{ lineIndex, text, level, syllables }]
-        regions: [],                  // [{ id, start, end, label, targetIndex }]
+        targets: [],                  // [{ lineIndex, text, level, syllables, beatUnits, pauseAfterHint }]
+        regions: [],                  // [{ id, start, end, label, targetIndex, confidence }]
         activeRegionIds: new Set(),   // multi-selected region IDs
         primaryRegionId: null,        // most-recently focused region (for details panel)
         visibilityMode: 'selected',   // selected | all | hidden | custom
@@ -98,6 +98,33 @@
     };
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const genId = () => `reg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+
+    function confidenceClass(conf) {
+        if (typeof conf !== 'number' || !isFinite(conf)) return 'ae-conf-low';
+        if (conf >= 0.75) return 'ae-conf-high';
+        if (conf >= 0.50) return 'ae-conf-med';
+        return 'ae-conf-low';
+    }
+
+    function confidenceLabel(conf) {
+        if (typeof conf !== 'number' || !isFinite(conf)) return 'low';
+        if (conf >= 0.75) return 'high';
+        if (conf >= 0.50) return 'medium';
+        return 'low';
+    }
+
+    function scoreToConfidence(score) {
+        const s = Number(score);
+        if (!isFinite(s)) return 0.25;
+        return clamp(1 - (s / 3.0), 0.05, 0.98);
+    }
+
+    function clearTargetAlignmentState() {
+        state.targets.forEach((t) => {
+            t.matchStatus = 'unmatched';
+            t.matchConfidence = null;
+        });
+    }
 
     function getRegionById(id) {
         return state.regions.find(r => r.id === id) || null;
@@ -203,6 +230,12 @@
                 text: t.text || '',
                 level: t.level || 'line',
                 syllables: typeof t.syllables === 'number' ? t.syllables : null,
+                beatUnits: typeof t.beatUnits === 'number' ? t.beatUnits : null,
+                pauseAfterHint: !!t.pauseAfterHint,
+                iastNormalized: typeof t.iastNormalized === 'string' ? t.iastNormalized : '',
+                anchorTokens: Array.isArray(t.anchorTokens) ? t.anchorTokens : [],
+                matchStatus: 'unmatched',
+                matchConfidence: null,
             }));
             state.regions = (data.regions || []).map(r => ({
                 id: r.id || genId(),
@@ -213,6 +246,7 @@
                 hidden: !!r.hidden,
                 fadeIn: Number(r.fadeIn) || 0,
                 fadeOut: Number(r.fadeOut) || 0,
+                confidence: typeof r.confidence === 'number' ? r.confidence : null,
             }));
             state.mode = state.targets.length > 1 ? 'multi' : 'single';
 
@@ -241,6 +275,7 @@
                         hidden: false,
                         fadeIn: 0,
                         fadeOut: 0,
+                        confidence: null,
                     });
                 }
                 if (state.regions.length) {
@@ -323,6 +358,7 @@
                 const fallback = buildProportionalIntervalsFromDuration();
                 if (fallback.length) {
                     installRegionsFromIntervals(fallback);
+                    applyUniformConfidence(0.32, 'matched');
                     setStatus('Used duration-based matching (audio analysis unavailable).', 'success');
                 }
             }
@@ -905,15 +941,24 @@
 
             const meta = document.createElement('div');
             meta.className = 'ae-target-meta';
+            const conf = assignedRegion && typeof assignedRegion.confidence === 'number'
+                ? assignedRegion.confidence
+                : (typeof t.matchConfidence === 'number' ? t.matchConfidence : null);
             if (assignedRegion) {
                 meta.innerHTML = `<span class="ae-status-ok">●</span> ` +
                     `${fmtTime(assignedRegion.start)} → ${fmtTime(assignedRegion.end)} ` +
                     `(${fmtTime(assignedRegion.end - assignedRegion.start)})`;
                 if (typeof t.syllables === 'number')
                     meta.innerHTML += ` <span class="ae-syl">${t.syllables} syl</span>`;
+                if (typeof conf === 'number') {
+                    meta.innerHTML += ` <span class="ae-conf-pill ${confidenceClass(conf)}">${Math.round(conf * 100)}% ${confidenceLabel(conf)}</span>`;
+                }
             } else {
                 meta.innerHTML = `<span class="ae-status-warn">○</span> Unassigned` +
                     (typeof t.syllables === 'number' ? ` <span class="ae-syl">${t.syllables} syl</span>` : '');
+                if (t.matchStatus === 'skipped') {
+                    meta.innerHTML += ' <span class="ae-match-note">audio missing</span>';
+                }
             }
             card.appendChild(meta);
 
@@ -1013,6 +1058,13 @@
                     ? `↦ ${state.targets[r.targetIndex].text || ('Line ' + state.targets[r.targetIndex].lineIndex)}`
                     : '↦ Unassigned';
                 info.appendChild(tgt);
+
+                if (typeof r.confidence === 'number') {
+                    const conf = document.createElement('div');
+                    conf.className = `ae-region-confidence ${confidenceClass(r.confidence)}`;
+                    conf.textContent = `Match ${Math.round(r.confidence * 100)}%`;
+                    info.appendChild(conf);
+                }
             }
 
             const visBtn = document.createElement('button');
@@ -1183,7 +1235,7 @@
         const label = tgtIdx != null
             ? (state.targets[tgtIdx].text || `Region ${state.regions.length + 1}`)
             : `Region ${state.regions.length + 1}`;
-        const reg = { id: genId(), start, end, label, targetIndex: tgtIdx, hidden: false, fadeIn: 0, fadeOut: 0 };
+        const reg = { id: genId(), start, end, label, targetIndex: tgtIdx, hidden: false, fadeIn: 0, fadeOut: 0, confidence: null };
         state.regions.push(reg);
         // Sort regions by start so list order matches time order
         state.regions.sort((a, b) => a.start - b.start);
@@ -1265,7 +1317,7 @@
             const label = tgt != null
                 ? (state.targets[tgt].text || `Region ${state.regions.length + 1}`)
                 : `Region ${state.regions.length + 1}`;
-            state.regions.push({ id: genId(), start: s, end: e, label, targetIndex: tgt, hidden: false, fadeIn: 0, fadeOut: 0 });
+            state.regions.push({ id: genId(), start: s, end: e, label, targetIndex: tgt, hidden: false, fadeIn: 0, fadeOut: 0, confidence: null });
         });
         state.regions.sort((a, b) => a.start - b.start);
         state.timeSelection = null;
@@ -1349,18 +1401,17 @@
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    //  Auto-Align (energy + IAST syllable counts)
+    //  Auto-Align (energy + chant-weighted dynamic mapping)
     //
     //  Strategy:
-    //   1. VAD detects all speech intervals.
-    //   2. We assume the audio plays the targets in order (good default for
-    //      shloka recitation; can be unchecked if needed via UI in future).
-    //   3. Each target has an estimated syllable count (from IAST / Devanagari
-    //      vowel-cluster count). Ratios of syllable counts give us the *expected*
-    //      duration ratios.
-    //   4. We collapse / expand the detected intervals so we end up with N
-    //      contiguous regions whose duration ratios best match the syllable ratios.
-    //   5. Falls back to uniform split if syllable counts are missing.
+    //   1. Detect speech intervals via VAD.
+    //   2. Align targets↔intervals via DP with three operations:
+    //      - match target i to interval j
+    //      - skip target i (audio missing this section)
+    //      - skip interval j (extra audio between selected sections)
+    //   3. Score matches by duration ratio + expected timeline location + pause hints.
+    //   4. Apply a tiny adjacent-swap heuristic to tolerate nearby recitation reorder.
+    //   5. If robust mapping fails, fall back to classic ratio boundary fitting.
     // ═════════════════════════════════════════════════════════════════════════
     function autoAlignRegions(options = {}) {
         const silentSuccess = !!options.silentSuccess;
@@ -1368,6 +1419,8 @@
             setStatus('Cannot auto-align: no target sections.', 'error');
             return;
         }
+        clearTargetAlignmentState();
+
         if (!state.channelData) {
             const fallback = buildProportionalIntervalsFromDuration();
             if (!fallback.length) {
@@ -1375,10 +1428,12 @@
                 return;
             }
             installRegionsFromIntervals(fallback);
+            applyUniformConfidence(0.34, 'matched');
             if (!silentSuccess) setStatus('Aligned by duration ratios (audio analysis not ready).', 'success');
             return;
         }
-        const intervals = detectSpeechIntervals();
+        const rawIntervals = detectSpeechIntervals();
+        const intervals = mergeNearbyIntervals(rawIntervals, 0.12);
         if (!intervals.length) {
             const fallback = buildProportionalIntervalsFromDuration();
             if (!fallback.length) {
@@ -1386,9 +1441,27 @@
                 return;
             }
             installRegionsFromIntervals(fallback);
+            applyUniformConfidence(0.30, 'matched');
             if (!silentSuccess) setStatus('Aligned by duration ratios (speech not detected reliably).', 'success');
             return;
         }
+
+        const robust = alignTargetsToIntervalsRobust(intervals);
+        if (robust && robust.regions.length) {
+            installRegionsFromMapped(robust.regions);
+            const matched = robust.matchedTargets;
+            const total = state.targets.length;
+            const percent = Math.round((robust.avgConfidence || 0) * 100);
+            if (!silentSuccess) {
+                const kind = robust.avgConfidence >= 0.55 ? 'success' : 'warning';
+                const unmatched = Math.max(0, total - matched);
+                const extraAudio = robust.unusedIntervals > 0 ? `, ${robust.unusedIntervals} extra audio segment${robust.unusedIntervals === 1 ? '' : 's'}` : '';
+                const swapText = robust.swaps > 0 ? `, ${robust.swaps} swap correction${robust.swaps === 1 ? '' : 's'}` : '';
+                setStatus(`Matched ${matched}/${total} sections (${percent}% confidence${extraAudio}${swapText}).${unmatched ? ` ${unmatched} left unmatched.` : ''}`, kind);
+            }
+            return;
+        }
+
         const N = state.targets.length;
 
         // Total speech time spanned by detected intervals (clip to first..last)
@@ -1433,7 +1506,230 @@
             result.push([bounds[i], bounds[i + 1]]);
         }
         installRegionsFromIntervals(result);
+        applyUniformConfidence(0.52, 'matched');
         if (!silentSuccess) setStatus(`Aligned ${N} sections using syllable-count weighting.`, 'success');
+    }
+
+    function mergeNearbyIntervals(intervals, minGap = 0.12) {
+        if (!Array.isArray(intervals) || !intervals.length) return [];
+        const sorted = intervals
+            .map(iv => [Math.max(0, Number(iv[0]) || 0), Math.max(0, Number(iv[1]) || 0)])
+            .filter(iv => iv[1] > iv[0])
+            .sort((a, b) => a[0] - b[0]);
+        if (!sorted.length) return [];
+
+        const merged = [sorted[0].slice()];
+        for (let i = 1; i < sorted.length; i++) {
+            const cur = sorted[i];
+            const prev = merged[merged.length - 1];
+            if (cur[0] - prev[1] <= minGap) {
+                prev[1] = Math.max(prev[1], cur[1]);
+            } else {
+                merged.push(cur.slice());
+            }
+        }
+        return merged;
+    }
+
+    function buildTargetWeights() {
+        return state.targets.map((t) => {
+            if (typeof t.beatUnits === 'number' && isFinite(t.beatUnits) && t.beatUnits > 0) {
+                return t.beatUnits;
+            }
+            if (typeof t.syllables === 'number' && isFinite(t.syllables) && t.syllables > 0) {
+                return t.syllables;
+            }
+            return 1;
+        });
+    }
+
+    function alignTargetsToIntervalsRobust(intervals) {
+        const N = state.targets.length;
+        const M = intervals.length;
+        if (!N || !M) return null;
+
+        const weights = buildTargetWeights();
+        const totalWeight = weights.reduce((a, b) => a + b, 0) || N;
+        const speechStart = intervals[0][0];
+        const speechEnd = intervals[M - 1][1];
+        const speechSpan = Math.max(0.05, speechEnd - speechStart);
+
+        const cumulative = [0];
+        for (let i = 0; i < N; i++) cumulative.push(cumulative[i] + weights[i]);
+        const expectedMid = Array.from({ length: N }, (_, i) => {
+            const start = speechStart + (cumulative[i] / totalWeight) * speechSpan;
+            const end = speechStart + (cumulative[i + 1] / totalWeight) * speechSpan;
+            return (start + end) / 2;
+        });
+        const expectedDur = Array.from({ length: N }, (_, i) => (weights[i] / totalWeight) * speechSpan);
+
+        const intervalFeatures = intervals.map((iv, j) => {
+            const start = iv[0];
+            const end = iv[1];
+            const duration = Math.max(0.01, end - start);
+            const gapBefore = j > 0 ? Math.max(0, start - intervals[j - 1][1]) : 0;
+            const gapAfter = j < intervals.length - 1 ? Math.max(0, intervals[j + 1][0] - end) : 0;
+            return {
+                start,
+                end,
+                duration,
+                mid: (start + end) / 2,
+                gapBefore,
+                gapAfter,
+                maxNeighborGap: Math.max(gapBefore, gapAfter),
+            };
+        });
+        const avgDur = intervalFeatures.reduce((a, b) => a + b.duration, 0) / Math.max(1, M);
+
+        const skipTargetCost = (ti) => {
+            const w = weights[ti] || 1;
+            return 0.62 + Math.min(1.45, w * 0.25);
+        };
+        const skipIntervalCost = (ij) => {
+            const d = intervalFeatures[ij].duration;
+            return 0.45 + Math.min(0.90, (d / (avgDur + 0.03)) * 0.40);
+        };
+        const matchCost = (ti, ij) => {
+            const iv = intervalFeatures[ij];
+            const expD = Math.max(0.03, expectedDur[ti] || avgDur || 0.3);
+            const expM = expectedMid[ti] ?? iv.mid;
+
+            const durErr = Math.abs(Math.log((iv.duration + 0.04) / (expD + 0.04)));
+            const timeErr = Math.abs(iv.mid - expM) / speechSpan;
+
+            let pauseTerm = 0;
+            if (state.targets[ti] && state.targets[ti].pauseAfterHint) {
+                pauseTerm += iv.gapAfter >= 0.16 ? -0.18 : 0.24;
+            }
+            const gapReward = iv.maxNeighborGap >= 0.20 ? 0.10 : 0;
+
+            return Math.max(0, 1.35 * durErr + 0.95 * timeErr + pauseTerm - gapReward);
+        };
+
+        const INF = 1e15;
+        const dp = Array.from({ length: N + 1 }, () => new Float64Array(M + 1).fill(INF));
+        const back = Array.from({ length: N + 1 }, () => new Int8Array(M + 1).fill(-1));
+        dp[0][0] = 0;
+        back[0][0] = -1;
+
+        for (let j = 1; j <= M; j++) {
+            dp[0][j] = dp[0][j - 1] + skipIntervalCost(j - 1);
+            back[0][j] = 2;
+        }
+        for (let i = 1; i <= N; i++) {
+            dp[i][0] = dp[i - 1][0] + skipTargetCost(i - 1);
+            back[i][0] = 1;
+        }
+
+        for (let i = 1; i <= N; i++) {
+            for (let j = 1; j <= M; j++) {
+                const cMatch = dp[i - 1][j - 1] + matchCost(i - 1, j - 1);
+                const cSkipTarget = dp[i - 1][j] + skipTargetCost(i - 1);
+                const cSkipInterval = dp[i][j - 1] + skipIntervalCost(j - 1);
+
+                let best = cMatch;
+                let op = 0;
+                if (cSkipTarget < best) {
+                    best = cSkipTarget;
+                    op = 1;
+                }
+                if (cSkipInterval < best) {
+                    best = cSkipInterval;
+                    op = 2;
+                }
+                dp[i][j] = best;
+                back[i][j] = op;
+            }
+        }
+
+        const assignments = [];
+        const skippedTargets = new Set();
+        let i = N;
+        let j = M;
+        while (i > 0 || j > 0) {
+            let op;
+            if (i === 0) op = 2;
+            else if (j === 0) op = 1;
+            else op = back[i][j];
+
+            if (op === 0) {
+                assignments.push({
+                    targetIndex: i - 1,
+                    intervalIndex: j - 1,
+                    score: matchCost(i - 1, j - 1),
+                });
+                i -= 1;
+                j -= 1;
+            } else if (op === 1) {
+                skippedTargets.add(i - 1);
+                i -= 1;
+            } else {
+                j -= 1;
+            }
+        }
+
+        assignments.sort((a, b) => a.intervalIndex - b.intervalIndex);
+        if (!assignments.length) return null;
+
+        let swaps = 0;
+        for (let k = 0; k < assignments.length - 1; k++) {
+            const a = assignments[k];
+            const b = assignments[k + 1];
+            if (Math.abs(a.targetIndex - b.targetIndex) !== 1) continue;
+            const current = a.score + b.score;
+            const swappedA = matchCost(b.targetIndex, a.intervalIndex);
+            const swappedB = matchCost(a.targetIndex, b.intervalIndex) + 0.12;
+            if (swappedA + swappedB + 0.10 < current) {
+                const tmp = a.targetIndex;
+                a.targetIndex = b.targetIndex;
+                b.targetIndex = tmp;
+                a.score = swappedA;
+                b.score = swappedB;
+                swaps += 1;
+            }
+        }
+
+        clearTargetAlignmentState();
+        skippedTargets.forEach((ti) => {
+            if (state.targets[ti]) {
+                state.targets[ti].matchStatus = 'skipped';
+                state.targets[ti].matchConfidence = null;
+            }
+        });
+
+        assignments.forEach((a) => {
+            const conf = scoreToConfidence(a.score);
+            a.confidence = conf;
+            const target = state.targets[a.targetIndex];
+            if (target) {
+                target.matchStatus = 'matched';
+                target.matchConfidence = conf;
+            }
+        });
+
+        const regions = assignments
+            .map((a) => {
+                const iv = intervalFeatures[a.intervalIndex];
+                return {
+                    start: iv.start,
+                    end: iv.end,
+                    label: state.targets[a.targetIndex]?.text || `Region ${a.targetIndex + 1}`,
+                    targetIndex: a.targetIndex,
+                    confidence: a.confidence,
+                };
+            })
+            .filter((r) => r.end > r.start + 0.01)
+            .sort((a, b) => a.start - b.start);
+
+        if (!regions.length) return null;
+        const avgConfidence = regions.reduce((a, r) => a + (r.confidence || 0), 0) / regions.length;
+        return {
+            regions,
+            matchedTargets: regions.length,
+            avgConfidence,
+            unusedIntervals: Math.max(0, M - regions.length),
+            swaps,
+        };
     }
 
     function buildProportionalIntervalsFromDuration() {
@@ -1515,6 +1811,7 @@
             hidden: false,
             fadeIn: 0,
             fadeOut: 0,
+            confidence: null,
         }));
         state.regions = state.regions.filter(r => r.end > r.start + 0.01);
         state.regions.sort((a, b) => a.start - b.start);
@@ -1528,6 +1825,46 @@
             renderTargetsList();
         }
         updateToolbarState();
+    }
+
+    function installRegionsFromMapped(mappedRegions) {
+        state.regions = (mappedRegions || []).map((r, idx) => ({
+            id: genId(),
+            start: Math.max(0, Number(r.start) || 0),
+            end: Math.min(state.duration, Number(r.end) || 0),
+            label: r.label || state.targets[r.targetIndex]?.text || `Region ${idx + 1}`,
+            targetIndex: typeof r.targetIndex === 'number' ? r.targetIndex : null,
+            hidden: false,
+            fadeIn: Number(r.fadeIn) || 0,
+            fadeOut: Number(r.fadeOut) || 0,
+            confidence: typeof r.confidence === 'number' ? clamp(r.confidence, 0, 1) : null,
+        })).filter(r => r.end > r.start + 0.01);
+
+        state.regions.sort((a, b) => a.start - b.start);
+        state.primaryRegionId = state.regions[0]?.id || null;
+        state.activeRegionIds = state.primaryRegionId ? new Set([state.primaryRegionId]) : new Set();
+        if (state.primaryRegionId && state.visibilityMode === 'selected') applyVisibilityMode('selected', state.primaryRegionId);
+        else {
+            renderRegionsOnWaveform();
+            renderRegionsList();
+            renderRegionDetails();
+            renderTargetsList();
+        }
+        updateToolbarState();
+    }
+
+    function applyUniformConfidence(confidence, status = 'matched') {
+        const c = clamp(Number(confidence) || 0, 0, 1);
+        state.regions.forEach((r) => {
+            if (r.targetIndex != null) r.confidence = c;
+        });
+        state.targets.forEach((t, idx) => {
+            const hasRegion = state.regions.some(r => r.targetIndex === idx);
+            t.matchStatus = hasRegion ? status : 'unmatched';
+            t.matchConfidence = hasRegion ? c : null;
+        });
+        renderTargetsList();
+        renderRegionsList();
     }
 
     // VAD
@@ -1648,6 +1985,8 @@
                 lineIndex: t.lineIndex,
                 text: t.text,
                 level: t.level,
+                syllables: t.syllables,
+                beatUnits: t.beatUnits,
             })),
             regions: state.regions.map(r => ({
                 start: r.start,
@@ -1656,6 +1995,7 @@
                 targetIndex: r.targetIndex,
                 fadeIn: r.fadeIn || 0,
                 fadeOut: r.fadeOut || 0,
+                confidence: typeof r.confidence === 'number' ? r.confidence : null,
                 targetLineIndex: r.targetIndex != null && state.targets[r.targetIndex]
                     ? state.targets[r.targetIndex].lineIndex : null,
             })),

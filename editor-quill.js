@@ -1788,6 +1788,8 @@ class SiksamitraEditor {
                 const endTime = attachment.endTime || null;
                 const fadeIn = Number(attachment.fadeIn) || 0;
                 const fadeOut = Number(attachment.fadeOut) || 0;
+                const confidence = (typeof attachment.confidence === 'number' && isFinite(attachment.confidence))
+                    ? Math.max(0, Math.min(1, Number(attachment.confidence))) : null;
                 const duration = Number(attachment.duration) || 0;
                 const size = Number(attachment.size) || (src ? src.length : 0);
 
@@ -1801,6 +1803,7 @@ class SiksamitraEditor {
                 if (size > 0) node.dataset.size = size;
                 if (fadeIn > 0) node.dataset.fadeIn = fadeIn;
                 if (fadeOut > 0) node.dataset.fadeOut = fadeOut;
+                if (confidence != null) node.dataset.confidence = confidence;
                 if (src) {
                     node.dataset.audioSrc = src; // Store base64 for export
                 }
@@ -1841,6 +1844,7 @@ class SiksamitraEditor {
                     size: parseFloat(node.dataset.size) || 0,
                     fadeIn: parseFloat(node.dataset.fadeIn) || 0,
                     fadeOut: parseFloat(node.dataset.fadeOut) || 0,
+                    confidence: node.dataset.confidence != null ? parseFloat(node.dataset.confidence) : null,
                 };
                 // console.log('[AudioBlot] Extracting value:', value);
                 return value;
@@ -5173,6 +5177,9 @@ class SiksamitraEditor {
                             end: Math.max(0.05, Math.min(end, audio.duration || 0)),
                             label: t.text || `Region ${i + 1}`,
                             targetIndex: i,
+                            fadeIn: parseFloat(att.dataset.fadeIn) || 0,
+                            fadeOut: parseFloat(att.dataset.fadeOut) || 0,
+                            confidence: att.dataset.confidence != null ? parseFloat(att.dataset.confidence) : null,
                         });
                     }
                 } catch(_) {}
@@ -5188,6 +5195,9 @@ class SiksamitraEditor {
         targets.forEach((t, i) => {
             let start = 0;
             let end = audio.duration || 0;
+            let fadeIn = 0;
+            let fadeOut = 0;
+            let confidence = null;
             // Look for an existing attachment on this line using same audio id
             try {
                 const line = lines[t.lineIndex];
@@ -5195,10 +5205,16 @@ class SiksamitraEditor {
                 if (att && att.dataset.audioId === audio.id) {
                     start = parseFloat(att.dataset.startTime) || 0;
                     end = att.dataset.endTime ? parseFloat(att.dataset.endTime) : end;
+                    fadeIn = parseFloat(att.dataset.fadeIn) || 0;
+                    fadeOut = parseFloat(att.dataset.fadeOut) || 0;
+                    confidence = att.dataset.confidence != null ? parseFloat(att.dataset.confidence) : null;
                 } else if (i === 0 && existing && existing.dataset.audioId === audio.id) {
                     // Replacing the existing attachment for target #0
                     start = parseFloat(existing.dataset.startTime) || 0;
                     end = existing.dataset.endTime ? parseFloat(existing.dataset.endTime) : end;
+                    fadeIn = parseFloat(existing.dataset.fadeIn) || 0;
+                    fadeOut = parseFloat(existing.dataset.fadeOut) || 0;
+                    confidence = existing.dataset.confidence != null ? parseFloat(existing.dataset.confidence) : null;
                 }
             } catch(_) {}
             regions.push({
@@ -5206,6 +5222,9 @@ class SiksamitraEditor {
                 end: Math.max(0.05, Math.min(end, audio.duration || 0)),
                 label: t.text || `Region ${i + 1}`,
                 targetIndex: i,
+                fadeIn,
+                fadeOut,
+                confidence,
             });
         });
 
@@ -5296,6 +5315,8 @@ class SiksamitraEditor {
                     size: Number(audio.size) || 0,
                     fadeIn: Number(region.fadeIn) || 0,
                     fadeOut: Number(region.fadeOut) || 0,
+                    confidence: (typeof region.confidence === 'number' && isFinite(region.confidence))
+                        ? Math.max(0, Math.min(1, Number(region.confidence))) : null,
                 };
                 const lineOffset = this.quill.getIndex(line);
                 this.quill.insertEmbed(lineOffset, 'audio-attachment', audioData, Quill.sources.USER);
@@ -5357,12 +5378,7 @@ class SiksamitraEditor {
         lines.forEach((line, i) => {
             const text = (line.domNode?.textContent || '').trim();
             if (!text) return;
-            sections.push({
-                lineIndex: i,
-                text: this._summarizeLine(line),
-                level: this._getLineLevel(line),
-                syllables: this._countSyllables(text),
-            });
+            sections.push(this._buildTarget(i, line));
         });
         try {
             await fetch('/api/audio/editor/sections', {
@@ -12833,11 +12849,17 @@ ${embeddedStyles}
      * estimated syllable count for use by the auto-align algorithm.
      */
     _buildTarget(lineIndex, line) {
+        const rawText = (line.domNode?.textContent || '');
+        const profile = this._buildAudioAlignmentProfile(rawText);
         return {
             lineIndex,
             text: this._summarizeLine(line),
             level: this._getLineLevel(line),
-            syllables: this._countSyllables((line.domNode?.textContent || '')),
+            syllables: profile.syllables,
+            beatUnits: profile.beatUnits,
+            pauseAfterHint: profile.pauseAfterHint,
+            iastNormalized: profile.iastNormalized,
+            anchorTokens: profile.anchorTokens,
         };
     }
 
@@ -12879,6 +12901,113 @@ ${embeddedStyles}
         if (cls.includes('ql-doc-translation') || cls.includes('ql-translation-style')) return 'translation';
         if (cls.includes('ql-comment-style'))  return 'comment';
         return 'line';
+    }
+
+    _buildAudioAlignmentProfile(text) {
+        const original = String(text || '');
+        const iastNormalized = this._normalizeForAudioAlignment(original);
+        const syllables = this._countSyllables(original);
+        const beatUnits = this._estimateBeatUnitsFromNormalized(iastNormalized, syllables);
+        return {
+            syllables,
+            beatUnits,
+            pauseAfterHint: this._detectPauseAfterHint(original),
+            iastNormalized,
+            anchorTokens: this._extractAnchorTokens(iastNormalized),
+        };
+    }
+
+    _normalizeForAudioAlignment(text) {
+        if (!text) return '';
+        const originalText = String(text);
+        const script = this.detectDominantScript(originalText);
+        let meterText = originalText;
+
+        try {
+            if (script === 'devanagari') {
+                meterText = this.devanagariToIAST(originalText);
+            } else if (script === 'telugu') {
+                meterText = this.teluguToIAST(originalText);
+            } else if (script === 'tamil') {
+                meterText = this.tamilToIAST(originalText);
+            } else if (script === 'kannada') {
+                meterText = this.kannadaToIAST(originalText);
+            }
+        } catch (_) {
+            meterText = originalText;
+        }
+
+        return (meterText || '')
+            .normalize('NFC')
+            .replace(/[\u0300-\u036F\u02CE·]/g, '')
+            .toLowerCase();
+    }
+
+    _estimateBeatUnitsFromNormalized(cleaned, syllableFallback = 1) {
+        if (!cleaned) return Math.max(1, Number(syllableFallback) || 1);
+        const SHORT = new Set(['a', 'i', 'u', 'ṛ', 'ḷ']);
+        const LONG = new Set(['ā', 'ī', 'ū', 'ṝ', 'ḹ', 'e', 'o']);
+        const ALL = new Set([...SHORT, ...LONG]);
+        const CONS = /[bcdfghjklmnpqrstvwxyzṅñṭḍṇśṣḥṁ]/;
+
+        let beats = 0;
+        let inVowel = false;
+        for (let i = 0; i < cleaned.length; i++) {
+            const ch = cleaned[i];
+            if (!ALL.has(ch)) {
+                inVowel = false;
+                continue;
+            }
+            if (inVowel) continue;
+            inVowel = true;
+
+            let nucleus = SHORT.has(ch) ? 1.0 : 1.6;
+            if (ch === 'a' && i + 1 < cleaned.length) {
+                const next = cleaned[i + 1];
+                if (next === 'i' || next === 'u') {
+                    nucleus = 1.4;
+                    i += 1;
+                }
+            }
+
+            let coda = 0;
+            for (let j = i + 1; j < cleaned.length; j++) {
+                const ahead = cleaned[j];
+                if (ALL.has(ahead)) break;
+                if (CONS.test(ahead)) coda++;
+            }
+            const codaBonus = coda >= 2 ? 0.40 : (coda === 1 ? 0.25 : 0);
+            beats += nucleus + codaBonus;
+        }
+
+        return Math.max(1, Number(beats.toFixed(2)) || Math.max(1, Number(syllableFallback) || 1));
+    }
+
+    _extractAnchorTokens(cleaned) {
+        const normalized = (cleaned || '')
+            .replace(/[^a-zāīūṛṝḷḹṅñṭḍṇśṣḥṁ\s]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (!normalized) return [];
+
+        const tokens = new Set();
+        normalized.split(' ').forEach((word) => {
+            if (!word) return;
+            if (word.length >= 2) {
+                tokens.add(word.slice(0, 2));
+                tokens.add(word.slice(-2));
+            }
+            if (word.length >= 4) {
+                tokens.add(word.slice(1, 4));
+            }
+        });
+        return Array.from(tokens).slice(0, 16);
+    }
+
+    _detectPauseAfterHint(text) {
+        const t = String(text || '').trim();
+        if (!t) return false;
+        return /[।॥|.,;:!?]$/.test(t) || /[।॥]/.test(t);
     }
 
     /**
@@ -13766,6 +13895,7 @@ ${embeddedStyles}
                         targetIndex: records.length,
                         fadeIn: parseFloat(att.dataset.fadeIn) || 0,
                         fadeOut: parseFloat(att.dataset.fadeOut) || 0,
+                        confidence: att.dataset.confidence != null ? parseFloat(att.dataset.confidence) : null,
                     },
                     lineIndex,
                 };
@@ -13790,6 +13920,7 @@ ${embeddedStyles}
                             targetIndex: 0,
                             fadeIn: parseFloat(attachmentNode.dataset.fadeIn) || 0,
                             fadeOut: parseFloat(attachmentNode.dataset.fadeOut) || 0,
+                            confidence: attachmentNode.dataset.confidence != null ? parseFloat(attachmentNode.dataset.confidence) : null,
                         },
                         lineIndex,
                     };

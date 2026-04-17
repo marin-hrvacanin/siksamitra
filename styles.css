@@ -7241,6 +7241,25 @@ select:focus {
     font-weight: 500;
     margin-left: 4px;
 }
+  .ae-conf-pill {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 7px;
+    font-size: 9px;
+    font-weight: 600;
+    margin-left: 4px;
+    letter-spacing: .01em;
+  }
+  .ae-conf-pill.ae-conf-high { background: rgba(16, 185, 129, 0.16); color: #047857; }
+  .ae-conf-pill.ae-conf-med  { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+  .ae-conf-pill.ae-conf-low  { background: rgba(239, 68, 68, 0.14); color: #b91c1c; }
+  .ae-match-note {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 9px;
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
 .ae-target-remove {
     position: absolute;
     top: 6px;
@@ -7299,6 +7318,14 @@ select:focus {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.ae-region-confidence {
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.ae-region-confidence.ae-conf-high { color: #047857; }
+.ae-region-confidence.ae-conf-med  { color: #b45309; }
+.ae-region-confidence.ae-conf-low  { color: #b91c1c; }
 .ae-region-card-unassigned { color: var(--text-tertiary); font-style: italic; font-weight: normal; }
 .ae-region-visibility {
   flex-shrink: 0;
