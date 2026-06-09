@@ -19,6 +19,36 @@
     <script src="qwebchannel.js"></script>
     <script src="pyqt-bridge.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Sections panel header with the non-chant filter toggle */
+        .ae-sections-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .ae-nonchant-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+        }
+        .ae-nonchant-toggle input { margin: 0; cursor: pointer; }
+        /* Busy overlay elapsed line */
+        .ae-busy-elapsed {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
+        /* While busy, prevent the toolbar/panels from looking interactive */
+        body.ae-busy .ae-content { pointer-events: none; }
+    </style>
 </head>
 <body class="popup-page">
 
@@ -76,8 +106,16 @@
 
         <!-- Auto + sections -->
         <div class="ae-tool-group">
-            <button class="ae-tool-btn auto" id="btnAutoAlign" type="button" title="Smart split using IAST syllable counts">⚙ Auto-Align</button>
-            <button class="ae-tool-btn" id="btnAutoSplit" type="button" title="Split by detected silence (no text input)">⚙ Auto-Split</button>
+            <button class="ae-tool-btn auto" id="btnAutoAlign" type="button" title="Map the entire text onto this audio automatically (local, offline)">⚙ Map audio to text</button>
+            <button class="ae-tool-btn" id="btnDownloadModel" type="button" title="Download the local speech-recognition model" style="display:none;">↓ Download speech model</button>
+        </div>
+        <div class="ae-tool-divider"></div>
+        <!-- YouTube fetch + map (testing convenience) -->
+        <div class="ae-tool-group">
+            <input id="ytUrl" type="text" placeholder="Paste YouTube URL → fetch &amp; map"
+                   title="Download audio from this URL and map the text onto it"
+                   style="height:28px;min-width:220px;padding:0 8px;border:1px solid var(--border,#dddde1);border-radius:6px;background:var(--bg-surface,#fff);color:var(--text-primary,#1a1816);font-size:13px;" />
+            <button class="ae-tool-btn auto" id="btnFetchYouTube" type="button" title="Download audio from the URL above and map the text to it">⬇ Fetch &amp; map</button>
         </div>
         <div class="ae-tool-divider"></div>
 
@@ -120,7 +158,14 @@
 
     <div class="ae-bottom-panel">
         <div class="ae-side-panel">
-            <div class="ae-panel-title">Sections</div>
+            <div class="ae-panel-title ae-sections-title">
+                <span>Sections</span>
+                <label class="ae-nonchant-toggle"
+                       title="Show title / subtitle / comment / translation lines (these are never mapped to audio)">
+                    <input type="checkbox" id="toggleNonChant">
+                    <span>Show non-chant</span>
+                </label>
+            </div>
             <div id="targetsList" class="ae-targets-list"></div>
         </div>
         <div class="ae-side-panel">
@@ -143,6 +188,16 @@
     <button type="button" class="danger" id="deleteAllBtn">Delete Audio</button>
     <button type="button" id="cancelBtn">Cancel</button>
     <button type="button" class="primary" id="applyBtn">Apply</button>
+</div>
+
+<!-- Blocking loading overlay (reuses the document-import loader styles) -->
+<div class="file-loading-overlay" id="aeBusyOverlay">
+    <div class="file-loading-popup" id="aeBusyPopup">
+        <div class="file-hub-spinner" style="margin:0 auto 1rem;"></div>
+        <div class="file-loading-title" id="aeBusyTitle">Preparing audio…</div>
+        <div class="file-loading-message" id="aeBusyMessage">Loading…</div>
+        <div class="ae-busy-elapsed" id="aeBusyElapsed"></div>
+    </div>
 </div>
 
 <script src="dialog-audio-editor.js"></script>

@@ -132,6 +132,144 @@ class SanskritRules {
     isSvaraMark(char) {
         return this.SVARA_MARKS.has(char);
     }
+
+    /**
+     * Project IAST text into a phoneme-class event sequence for audio–text alignment.
+     *
+     * Each event is one of: SIL, VOW_S, VOW_L, NAS, SIB, STOP, APP.
+     * Combining svara marks on a vowel are captured so the svara channel can score them.
+     *
+     * Input should be the normalized IAST form (caller can keep combining marks or strip them —
+     * this function handles both). Non-letter whitespace is treated as an implicit SIL break.
+     * Returns: [{ type, matras, svara, char }, …]
+     *
+     * matras: expected duration in mātrās (1 = short, 2 = long, 1.5 = pause).
+     * svara : 'udatta' | 'anudatta' | 'svarita' | null   (only set on vowels).
+     * char  : the source IAST grapheme for diagnostics/debug.
+     */
+    projectToEventSequence(text) {
+        if (!text) return [];
+        const src = String(text);
+        const events = [];
+        const PAUSE_CHARS = new Set(['|', '।', '॥', '\n', '\r']);
+        const SIBILANT_PLUS_H = new Set(['ś', 'ṣ', 's', 'h']);
+        const APPROXIMANTS = new Set(['y', 'r', 'l', 'ḻ', 'v']);
+        const NASAL_CONS = new Set(['ṅ', 'ñ', 'ṇ', 'n', 'm', 'ṁ', 'ṃ']);
+
+        const pushSil = (matras) => {
+            const last = events[events.length - 1];
+            if (last && last.type === 'SIL') {
+                last.matras = Math.max(last.matras, matras);
+            } else {
+                events.push({ type: 'SIL', matras, svara: null, char: ' ' });
+            }
+        };
+
+        let i = 0;
+        while (i < src.length) {
+            const ch = src[i];
+
+            // Skip annotation candrabindu scaffolding (U+0310, its superscript gg/g/ṁ runs
+            // already stripped by normalization, but be defensive)
+            if (ch === '̐') { i++; continue; }
+
+            // Whitespace → soft pause separator (matras 0.25 — won't override harder pause)
+            if (/\s/.test(ch)) { pushSil(0.25); i++; continue; }
+
+            // Hard pause / danda / newline
+            if (PAUSE_CHARS.has(ch)) {
+                // `||` long pause — check lookahead
+                let matras = 1.0;
+                if (ch === '|' && src[i + 1] === '|') { matras = 2.0; i++; }
+                else if (ch === '॥') matras = 2.0;
+                pushSil(matras);
+                i++;
+                continue;
+            }
+
+            // Two-character consonants first (kh, gh, ch, jh, ṭh, ḍh, th, dh, ph, bh)
+            let two = src.substring(i, i + 2);
+            if (this.TWO_CHAR_CONSONANTS.includes(two)) {
+                events.push({ type: 'STOP', matras: 0.5, svara: null, char: two });
+                i += 2;
+                continue;
+            }
+
+            // Two-character vowels (ai, au, ṝ, ḹ)
+            if (this.TWO_CHAR_VOWELS.includes(two)) {
+                const svara = this._readSvaraAfter(src, i + 2);
+                events.push({ type: 'VOW_L', matras: 2.0, svara: svara.tag, char: two });
+                i = svara.nextIndex;
+                continue;
+            }
+
+            // Single vowels
+            if (this.SHORT_VOWELS.has(ch)) {
+                const svara = this._readSvaraAfter(src, i + 1);
+                events.push({ type: 'VOW_S', matras: 1.0, svara: svara.tag, char: ch });
+                i = svara.nextIndex;
+                continue;
+            }
+            if (this.LONG_VOWELS.has(ch)) {
+                const svara = this._readSvaraAfter(src, i + 1);
+                events.push({ type: 'VOW_L', matras: 2.0, svara: svara.tag, char: ch });
+                i = svara.nextIndex;
+                continue;
+            }
+
+            // Consonants — nasals, sibilants, approximants, stops can all carry a
+            // svara mark in Vedic texts (rare but valid), so drain marks here too.
+            if (NASAL_CONS.has(ch)) {
+                const svara = this._readSvaraAfter(src, i + 1);
+                events.push({ type: 'NAS', matras: 0.5, svara: svara.tag, char: ch });
+                i = svara.nextIndex; continue;
+            }
+            if (SIBILANT_PLUS_H.has(ch)) {
+                const svara = this._readSvaraAfter(src, i + 1);
+                events.push({ type: 'SIB', matras: 0.8, svara: svara.tag, char: ch });
+                i = svara.nextIndex; continue;
+            }
+            if (APPROXIMANTS.has(ch)) {
+                const svara = this._readSvaraAfter(src, i + 1);
+                events.push({ type: 'APP', matras: 0.5, svara: svara.tag, char: ch });
+                i = svara.nextIndex; continue;
+            }
+            if (this.ALL_CONSONANTS.has(ch)) {
+                // Remaining stops (single-char plosives: k, g, c, j, ṭ, ḍ, t, d, p, b)
+                const svara = this._readSvaraAfter(src, i + 1);
+                events.push({ type: 'STOP', matras: 0.5, svara: svara.tag, char: ch });
+                i = svara.nextIndex; continue;
+            }
+            // Visarga
+            if (ch === 'ḥ') {
+                const svara = this._readSvaraAfter(src, i + 1);
+                events.push({ type: 'SIB', matras: 0.6, svara: svara.tag, char: ch });
+                i = svara.nextIndex; continue;
+            }
+            // Unknown character — skip without producing an event
+            i++;
+        }
+        return events;
+    }
+
+    /**
+     * Read combining svara marks after a vowel. Returns { tag, nextIndex }.
+     * tag is 'anudatta' (U+0331) | 'svarita' (U+030D) | 'udatta' (U+030E) | null.
+     */
+    _readSvaraAfter(src, startIndex) {
+        let j = startIndex;
+        let tag = null;
+        while (j < src.length) {
+            const mark = src[j];
+            if (mark === '̱') { tag = tag || 'anudatta'; j++; continue; }
+            if (mark === '̍') { tag = tag || 'svarita';  j++; continue; }
+            if (mark === '̎') { tag = 'udatta';          j++; continue; }
+            if (mark === 'ˎ')                          { j++; continue; } // tick
+            if (/[̀-ͯ]/.test(mark))               { j++; continue; } // other combining
+            break;
+        }
+        return { tag, nextIndex: j };
+    }
 }
 
 class SanskritProcessor {

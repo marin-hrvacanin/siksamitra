@@ -135,6 +135,36 @@
         }
         .divider::before { left: 0; }
         .divider::after { right: 0; }
+        .url-row {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .url-input {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+        }
+        .url-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .url-fetch-btn {
+            width: auto;
+            flex-shrink: 0;
+            padding: 10px 18px;
+        }
+        .url-hint {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 6px;
+        }
     </style>
 </head>
 <body class="popup-page">
@@ -154,6 +184,16 @@
 
     <button type="button" class="upload-btn" id="uploadBtn">Upload New Audio File</button>
     <input type="file" id="uploadInput" accept="audio/*" style="display:none">
+
+    <div class="divider">— OR —</div>
+
+    <div class="picker-section-title">From YouTube / Web URL</div>
+    <div class="url-row">
+        <input type="text" id="urlInput" class="url-input"
+               placeholder="Paste a YouTube link…" autocomplete="off" spellcheck="false">
+        <button type="button" class="upload-btn url-fetch-btn" id="fetchUrlBtn">Fetch</button>
+    </div>
+    <div class="url-hint">The audio is downloaded locally and attached to this section.</div>
 </div>
 
 <div class="popup-footer">
@@ -296,6 +336,74 @@ async function uploadFile(file) {
     reader.readAsDataURL(file);
 }
 
+// Persistent status (does not auto-clear) — used during the long URL download.
+function setStatusPersistent(msg, kind) {
+    const el = document.getElementById('statusMsg');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.className = 'popup-footer-status' + (kind ? ' ' + kind : '');
+}
+
+let _fetchingUrl = false;
+async function fetchFromUrl() {
+    if (_fetchingUrl) return;
+    const input = document.getElementById('urlInput');
+    const btn = document.getElementById('fetchUrlBtn');
+    const url = (input?.value || '').trim();
+    if (!url) { setStatus('Paste a URL first.', 'error'); input?.focus(); return; }
+
+    _fetchingUrl = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Fetching…'; }
+    if (input) input.disabled = true;
+    setStatusPersistent('Downloading audio… first run can take a moment.');
+    try {
+        const resp = await fetch('/api/align/youtube', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
+        const data = await resp.json();
+        if (!resp.ok || data.error) {
+            throw new Error(data.error || `server returned ${resp.status}`);
+        }
+        const dataUrl = data.audio; // data:audio/mpeg;base64,…
+        if (!dataUrl) throw new Error('no audio returned');
+        setStatusPersistent(`Loaded "${data.title || 'audio'}" (${data.size_mb || '?'} MB). Decoding…`);
+
+        const attach = (duration) => {
+            const audioData = {
+                id: `audio-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+                label: (data.title || 'Audio').toString(),
+                src: dataUrl,
+                duration: duration || 0,
+                size: Math.round((dataUrl.length * 3) / 4), // ~base64 → bytes
+                startTime: 0,
+                endTime: duration || 0
+            };
+            // Reuse the same action as a local upload — the editor adds it to the
+            // library, attaches it, and opens the audio editor (where mapping runs).
+            postAction('audio_picker_upload', { audio: audioData });
+            setStatusPersistent('Attached. Opening editor…', 'success');
+            setTimeout(() => closeDialog(), 400);
+        };
+
+        // Prefer the backend-reported duration; otherwise probe metadata.
+        if (data.duration && isFinite(data.duration) && data.duration > 0) {
+            attach(data.duration);
+        } else {
+            const tempAudio = new Audio(dataUrl);
+            tempAudio.addEventListener('loadedmetadata', () => attach(tempAudio.duration || 0));
+            tempAudio.addEventListener('error', () => attach(0));
+        }
+    } catch (e) {
+        console.error('fetchFromUrl error:', e);
+        setStatusPersistent('Fetch failed: ' + (e && e.message || e), 'error');
+        _fetchingUrl = false;
+        if (btn) { btn.disabled = false; btn.textContent = 'Fetch'; }
+        if (input) input.disabled = false;
+    }
+}
+
 async function closeDialog() {
     try {
         if (window.pywebview?.api?.close_dialog) {
@@ -317,6 +425,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('uploadInput').addEventListener('change', (e) => {
         const file = e.target.files?.[0];
         if (file) uploadFile(file);
+    });
+    document.getElementById('fetchUrlBtn').addEventListener('click', fetchFromUrl);
+    document.getElementById('urlInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); fetchFromUrl(); }
     });
     document.getElementById('cancelBtn').addEventListener('click', closeDialog);
 });

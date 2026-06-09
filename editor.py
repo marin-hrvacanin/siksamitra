@@ -768,6 +768,41 @@ def import_docx_api():
         return jsonify({'error': f'Failed to import .docx: {str(e)}'}), 500
 
 
+@app.route('/api/file/import-pdf', methods=['POST'])
+def import_pdf_api():
+    """Import a Veda Union–styled .pdf and convert to Quill-compatible HTML."""
+    data = request.json or {}
+    filepath = (data.get('path') or '').strip()
+    if not filepath:
+        return jsonify({'error': 'Path required'}), 400
+    try:
+        import pdf_import
+    except ImportError as e:
+        return jsonify({'error': f'PDF import module unavailable: {e}'}), 500
+    if not pdf_import.HAS_PYMUPDF:
+        return jsonify({'error': 'PyMuPDF is not installed. Run: pip install pymupdf'}), 500
+    try:
+        _update_loader('Importing PDF', f'Reading {os.path.basename(filepath)}…')
+        html_content = pdf_import.convert_pdf_to_html(filepath)
+        para_count = html_content.count('<p')
+        _update_loader('Importing PDF', f'Recognized {para_count} lines — loading into editor…')
+        title = pdf_import.pdf_title(filepath)
+        return jsonify({
+            'content': html_content,
+            'path': filepath,
+            'name': os.path.basename(filepath),
+            'title': title,
+            'paragraphs': para_count,
+        })
+    except ValueError as e:
+        # no extractable text layer (scanned/image-only)
+        return jsonify({'error': str(e)}), 422
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to import .pdf: {str(e)}'}), 500
+
+
 # ---------------------------------------------------------------------------
 # DOCX Export
 # ---------------------------------------------------------------------------
@@ -1643,8 +1678,13 @@ def cache_untitled():
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     elif request.method == 'POST':
-        data = request.json or {}
-        content = data.get('content', '')
+        # Robust against oversized / malformed bodies: never let an autosave crash the app
+        # (a giant JSON body previously raised MemoryError in request.json on low-RAM machines).
+        try:
+            data = request.get_json(force=True, silent=True) or {}
+            content = data.get('content', '') if isinstance(data, dict) else ''
+        except Exception as e:
+            return jsonify({'error': f'could not parse autosave body: {e}'}), 200
         try:
             with open(UNTITLED_PATH, 'w', encoding='utf-8') as f:
                 f.write(content)
@@ -2139,7 +2179,7 @@ class JsBridge(QObject):
             self.main_window,
             "Open Document",
             LIBRARY_DIR,
-            "śikṣāmitra Documents (*.smdoc);;Word Documents (*.docx);;HTML Files (*.html *.htm);;All Files (*)"
+            "śikṣāmitra Documents (*.smdoc);;PDF Files (*.pdf);;Word Documents (*.docx);;HTML Files (*.html *.htm);;All Files (*)"
         )
         return filepath or ''
 
@@ -2193,7 +2233,7 @@ class JsBridge(QObject):
             self.main_window,
             "Import Document to Library",
             "",
-            "śikṣāmitra Documents (*.smdoc);;Word Documents (*.docx);;HTML Files (*.html *.htm);;All Files (*)"
+            "śikṣāmitra Documents (*.smdoc);;PDF Files (*.pdf);;Word Documents (*.docx);;HTML Files (*.html *.htm);;All Files (*)"
         )
         return filepath or ''
     
@@ -4330,6 +4370,204 @@ def audio_editor_state():
         return jsonify({'status': 'ok'})
     with _audio_state_lock:
         return jsonify(dict(_audio_editor_state))
+
+
+@app.route('/api/align/model/status', methods=['GET'])
+def align_model_status():
+    """Report availability/download status of the speech-recognition model.
+
+    Query: ?model=tiny | small   (default tiny)
+    Response: { model, downloaded, size_mb, cache_dir, engine_available }
+
+    Returns 200 even when faster-whisper is absent so the UI can show an
+    informative hint instead of erroring.
+    """
+    model = request.args.get('model') or 'tiny'
+    try:
+        from align_recognize import model_status
+        return jsonify(model_status(model))
+    except ImportError as e:
+        return jsonify({'model': model, 'downloaded': False,
+                        'engine_available': False, 'reason': str(e)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/align/model/download', methods=['POST'])
+def align_model_download():
+    """Ensure the requested recognition model is cached.
+
+    Request: { model: "tiny" | "small" }
+    Response: model_status() after the model is present.
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    model = str(data.get('model') or 'tiny')
+    try:
+        from align_recognize import ensure_downloaded
+        return jsonify(ensure_downloaded(model))
+    except ImportError as e:
+        return jsonify({'model': model, 'downloaded': False,
+                        'engine_available': False, 'reason': str(e)})
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
+
+def _run_alignment_isolated(payload):
+    """Run the mapping engine in a short-lived child process (align_runner.py).
+
+    Returns the result dict on success, or None to signal the caller to fall back
+    to in-process alignment. Isolating torch/MMS (~1.5 GB) keeps it from competing
+    for RAM with the WebEngine + open document in this process, and contains any
+    OOM/segfault to the child so the editor survives. See align_runner.py."""
+    import subprocess
+    pid = os.getpid()
+    req_path = os.path.join(CACHE_DIR, f'_align_req.{pid}.json')
+    resp_path = os.path.join(CACHE_DIR, f'_align_resp.{pid}.json')
+    runner = os.path.join(BASE_DIR, 'align_runner.py')
+    try:
+        with open(req_path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, ensure_ascii=False)
+        # Build a child env that strips PyQt6/Qt6 DLL dirs from PATH — without this the
+        # child inherits Qt's DLLs and torch fails (OSError 1114), forcing the blind
+        # `proportional` fallback. See align_runner.child_env for the full explanation.
+        from align_runner import child_env
+        env = child_env(os.environ)
+        proc = subprocess.run(
+            [sys.executable, runner, req_path, resp_path],
+            capture_output=True, env=env, timeout=600,
+        )
+        if proc.returncode != 0:
+            logging.warning('align_runner exited %s: %s', proc.returncode,
+                            (proc.stderr or b'')[-500:].decode('utf-8', 'replace'))
+            return None
+        with open(resp_path, 'r', encoding='utf-8') as f:
+            result = json.load(f)
+        result.setdefault('diagnostics', {})['isolated'] = True
+        return result
+    except Exception as e:
+        logging.warning('isolated alignment failed (%r); falling back in-process', e)
+        return None
+    finally:
+        for p in (req_path, resp_path):
+            try:
+                if os.path.exists(p):
+                    os.remove(p)
+            except Exception:
+                pass
+
+
+@app.route('/api/align/run', methods=['POST'])
+def align_run():
+    """Run the unified audio→text mapping.
+
+    Request JSON:
+      {
+        "audio":  data URI or base64 bytes,
+        "mime":   "audio/mpeg" (optional),
+        "model":  "tiny" | "small" (optional; default tiny),
+        "targets": [ { index, text, level, syllables, hasSvaras, pauseAfterHint,
+                       iastNormalized, events: [ {type, matras, svara, char}, ... ] }, ... ]
+      }
+
+    Response JSON:
+      {
+        "engine": "whisper-tiny" | "whisper-small" | "proportional",
+        "regions": [ {targetIndex, start, end, confidence, status, breakdown} ],
+        "unassigned": [targetIndex, ...],
+        "speech_span": [start, end],
+        "summary": {matched, warn, unassigned},
+        "diagnostics": { ... }
+      }
+    """
+    try:
+        # Lazy import to avoid importing numpy at editor startup if
+        # the user never uses audio features
+        from align_service import run as _align_run
+    except ImportError as e:
+        return jsonify({'error': f'alignment service unavailable: {e!r}'}), 500
+
+    try:
+        payload = request.get_json(force=True, silent=True) or {}
+        # Prefer an isolated child process so torch/MMS does not contend for RAM with
+        # the document in this process (the in-app↔standalone discrepancy). Fall back
+        # to in-process alignment if the child cannot run (returns None).
+        result = _run_alignment_isolated(payload)
+        if result is None:
+            result = _align_run(payload)
+        # Persist a small diagnostic snapshot of the LAST mapping so a still-bleeding
+        # in-app run can be diagnosed without the GUI: which engine actually ran (MMS
+        # vs whisper vs proportional fallback — RAM pressure can force a downgrade),
+        # whether the bleed-free fused stage succeeded, and the resulting region times.
+        # This is the frontend-side evidence the handoff asked for (stale vs fallback
+        # vs misapplied). Cheap, best-effort, never affects the response.
+        try:
+            import json as _json
+            diag = result.get('diagnostics', {}) or {}
+            snapshot = {
+                'targets_in': len(payload.get('targets') or []),
+                'engine': result.get('engine'),
+                'isolated': diag.get('isolated'),
+                'summary': result.get('summary'),
+                'fused': diag.get('fused'),
+                'fused_error': diag.get('fused_error'),
+                'ctc_error': diag.get('ctc_error'),
+                'whisper_error': diag.get('whisper_error'),
+                'speech_span': result.get('speech_span'),
+                'regions': [
+                    {'i': r.get('targetIndex'), 'start': r.get('start'),
+                     'end': r.get('end'), 'status': r.get('status'),
+                     'fadeIn': r.get('fadeIn'), 'fadeOut': r.get('fadeOut')}
+                    for r in (result.get('regions') or [])
+                ],
+            }
+            with open(os.path.join(CACHE_DIR, 'align_debug.json'), 'w', encoding='utf-8') as _f:
+                _json.dump(snapshot, _f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+        return jsonify(result)
+    except Exception as e:  # pragma: no cover
+        import traceback
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc(),
+        }), 500
+
+
+@app.route('/api/align/youtube', methods=['POST'])
+def align_youtube():
+    """Pull audio from a YouTube (or any yt-dlp) URL and return it as a data URI.
+
+    Request:  { "url": "https://www.youtube.com/watch?v=..." }
+    Response: { audio: "data:audio/mpeg;base64,…", mime, title, duration, size_mb }
+
+    The client then loads this as the dialog's audio and runs the normal map.
+    Requires yt-dlp + ffmpeg; returns a clear error if yt-dlp is missing.
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    url = str(data.get('url') or '').strip()
+    if not url:
+        return jsonify({'error': 'no url provided'}), 400
+    try:
+        from youtube_audio import download_audio
+    except ImportError as e:
+        return jsonify({'error': f'yt-dlp not installed (pip install yt-dlp): {e}'}), 500
+    try:
+        import base64
+        meta = download_audio(url)
+        with open(meta['path'], 'rb') as f:
+            raw = f.read()
+        b64 = base64.b64encode(raw).decode('ascii')
+        return jsonify({
+            'audio': f'data:audio/mpeg;base64,{b64}',
+            'mime': 'audio/mpeg',
+            'title': meta['title'],
+            'duration': meta['duration'],
+            'size_mb': round(len(raw) / (1024 * 1024), 2),
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 
 # ── Embedded audio cache — written by main editor before opening media popup ──

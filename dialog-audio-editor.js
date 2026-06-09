@@ -47,7 +47,13 @@
         regionPlayEnd: null,          // when playing a single region
         mode: 'single',               // 'single' or 'multi'
         autoMatchDone: false,         // avoid re-running initial auto match repeatedly
+        showNonChant: false,          // Sections panel filter: hide title/subtitle/comment/translation
+        busyTimer: null,              // interval id for the loading-overlay elapsed counter
+        busyStart: 0,
     };
+
+    // Levels that are never mapped to audio (kept in state, hidden from the list by default).
+    const NON_CHANT_LEVELS = new Set(['title', 'subtitle', 'comment', 'translation']);
 
     // ═════════════════════════════════════════════════════════════════════════
     //  DOM refs
@@ -60,11 +66,13 @@
             'btnZoomOut','btnZoomIn','btnZoomFit','zoomLevel',
             'btnAddRegion','btnSetStart','btnSetEnd',
             'btnRegionFromSelection','btnInvertSelection','btnCutSelection','btnClearSelection',
-            'btnAutoAlign','btnAutoSplit',
+            'btnAutoAlign','btnDownloadModel','ytUrl','btnFetchYouTube',
             'btnShowSelected','btnShowAll','btnHideAll',
             'waveScroller','waveInner','waveCanvas','timeline','selectionLayer',
             'regionsList','targetsList','regionDetails','detailBody',
             'statusMsg','deleteAllBtn','cancelBtn','applyBtn',
+            'toggleNonChant',
+            'aeBusyOverlay','aeBusyPopup','aeBusyTitle','aeBusyMessage','aeBusyElapsed',
         ].forEach(id => dom[id] = document.getElementById(id));
     }
 
@@ -197,6 +205,45 @@
         }, 3500);
     }
 
+    // ── Blocking loading overlay ─────────────────────────────────────────────
+    // Heavy work (audio decode + the ~minute-or-two MMS mapping) must finish
+    // BEFORE the user can touch the editor, otherwise the half-ready UI is choppy
+    // and interacting mid-process can hang the app. showBusy() covers everything.
+    function showBusy(title, message) {
+        if (!dom.aeBusyOverlay) return;
+        if (dom.aeBusyTitle && title != null) dom.aeBusyTitle.textContent = title;
+        if (dom.aeBusyMessage && message != null) dom.aeBusyMessage.textContent = message;
+        document.body.classList.add('ae-busy');
+        dom.aeBusyOverlay.classList.add('active');
+        if (dom.aeBusyPopup) dom.aeBusyPopup.classList.add('active');
+        // Elapsed-time counter so a long map never looks frozen.
+        if (!state.busyTimer) {
+            state.busyStart = Date.now();
+            const tick = () => {
+                if (!dom.aeBusyElapsed) return;
+                const s = Math.floor((Date.now() - state.busyStart) / 1000);
+                dom.aeBusyElapsed.textContent = s >= 1
+                    ? `Elapsed ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+                    : '';
+            };
+            tick();
+            state.busyTimer = setInterval(tick, 1000);
+        }
+    }
+
+    function setBusyMsg(title, message) {
+        if (dom.aeBusyTitle && title != null) dom.aeBusyTitle.textContent = title;
+        if (dom.aeBusyMessage && message != null) dom.aeBusyMessage.textContent = message;
+    }
+
+    function hideBusy() {
+        if (state.busyTimer) { clearInterval(state.busyTimer); state.busyTimer = null; }
+        document.body.classList.remove('ae-busy');
+        if (dom.aeBusyOverlay) dom.aeBusyOverlay.classList.remove('active');
+        if (dom.aeBusyPopup) dom.aeBusyPopup.classList.remove('active');
+        if (dom.aeBusyElapsed) dom.aeBusyElapsed.textContent = '';
+    }
+
     async function postAction(type, data) {
         try {
             await fetch('/api/dialog/action', {
@@ -221,6 +268,7 @@
     //  Load state
     // ═════════════════════════════════════════════════════════════════════════
     async function loadState() {
+        showBusy('Preparing audio…', 'Loading audio and sections…');
         try {
             const resp = await fetch('/api/audio/editor/state');
             const data = await resp.json();
@@ -234,6 +282,8 @@
                 pauseAfterHint: !!t.pauseAfterHint,
                 iastNormalized: typeof t.iastNormalized === 'string' ? t.iastNormalized : '',
                 anchorTokens: Array.isArray(t.anchorTokens) ? t.anchorTokens : [],
+                events: Array.isArray(t.events) ? t.events : [],
+                hasSvaras: !!t.hasSvaras,
                 matchStatus: 'unmatched',
                 matchConfidence: null,
             }));
@@ -251,6 +301,7 @@
             state.mode = state.targets.length > 1 ? 'multi' : 'single';
 
             if (!state.audio || !state.audio.src) {
+                hideBusy();
                 setStatus('No audio loaded.', 'error');
                 return;
             }
@@ -283,12 +334,12 @@
                     state.activeRegionIds = new Set([state.primaryRegionId]);
                     applyVisibilityMode('selected', state.primaryRegionId);
                 }
-                decodeAudioForWaveform();
-                layout();
-                renderTargetsList();
-                renderRegionsList();
-                renderRegionDetails();
-                updateToolbarState();
+                // Decode + (if needed) auto-map under the loading overlay, then reveal.
+                prepareEditor();
+            });
+            state.audioEl.addEventListener('error', () => {
+                hideBusy();
+                setStatus('Could not load the audio.', 'error');
             });
             state.audioEl.addEventListener('timeupdate', onTimeUpdate);
             state.audioEl.addEventListener('ended', () => {
@@ -300,7 +351,47 @@
             });
         } catch(e) {
             console.error('loadState failed', e);
+            hideBusy();
             setStatus('Failed to load audio state.', 'error');
+        }
+    }
+
+    // Decode the waveform and, for a freshly-attached multi-section document with no
+    // regions yet, run the automatic map — all under the loading overlay. The editor
+    // is only revealed (overlay hidden) once everything is ready.
+    async function prepareEditor() {
+        try {
+            setBusyMsg('Preparing audio…', 'Decoding audio for the waveform…');
+            await decodeAudioForWaveform();
+            layout();
+            renderTargetsList();
+            renderRegionsList();
+            renderRegionDetails();
+            updateToolbarState();
+
+            const needAutoMap = !state.autoMatchDone
+                && state.mode === 'multi'
+                && state.targets.length > 1
+                && !state.regions.length;
+            if (needAutoMap) {
+                state.autoMatchDone = true;
+                if (state.peaks) {
+                    // autoAlignRegions updates the overlay message and maps the text.
+                    await autoAlignRegions();
+                    return; // overlay hidden by the finally below
+                }
+                // Decode failed → duration-based fallback (fast, no overlay needed long).
+                const fallback = buildProportionalIntervalsFromDuration();
+                if (fallback.length) {
+                    installRegionsFromIntervals(fallback);
+                    applyUniformConfidence(0.32, 'matched');
+                    setStatus('Used duration-based matching (audio analysis unavailable).', 'warning');
+                }
+            }
+        } catch (e) {
+            console.error('prepareEditor failed', e);
+        } finally {
+            hideBusy();
         }
     }
 
@@ -343,25 +434,12 @@
             }
             state.peaks = peaks;
             drawWaveform();
-
-            if (!state.autoMatchDone && state.mode === 'multi' && state.targets.length > 1 && !state.regions.length) {
-                state.autoMatchDone = true;
-                autoAlignRegions({ silentSuccess: true });
-            }
+            // Auto-map (or its fallback) is orchestrated by prepareEditor /
+            // fetchYouTubeAndMap so it always runs under the loading overlay.
         } catch(e) {
             console.warn('Could not decode audio', e);
             state.peaks = null;
             drawWaveform();
-
-            if (!state.autoMatchDone && state.mode === 'multi' && state.targets.length > 1 && !state.regions.length) {
-                state.autoMatchDone = true;
-                const fallback = buildProportionalIntervalsFromDuration();
-                if (fallback.length) {
-                    installRegionsFromIntervals(fallback);
-                    applyUniformConfidence(0.32, 'matched');
-                    setStatus('Used duration-based matching (audio analysis unavailable).', 'success');
-                }
-            }
         }
     }
 
@@ -924,7 +1002,13 @@
             dom.targetsList.appendChild(em);
             return;
         }
+        let hiddenNonChant = 0;
         state.targets.forEach((t, idx) => {
+            const isNonChant = NON_CHANT_LEVELS.has((t.level || 'line').toLowerCase());
+            if (isNonChant && !state.showNonChant) {
+                hiddenNonChant++;
+                return; // hidden by the Sections filter (still kept in state)
+            }
             const card = document.createElement('div');
             card.className = 'ae-target-card ae-target-level-' + (t.level || 'line');
             const assignedRegion = state.regions.find(r => r.targetIndex === idx);
@@ -990,6 +1074,19 @@
 
             dom.targetsList.appendChild(card);
         });
+
+        if (hiddenNonChant > 0) {
+            const note = document.createElement('div');
+            note.className = 'ae-list-empty';
+            note.style.cursor = 'pointer';
+            note.textContent = `${hiddenNonChant} non-chant line${hiddenNonChant === 1 ? '' : 's'} hidden — click “Show non-chant” to reveal.`;
+            note.addEventListener('click', () => {
+                if (dom.toggleNonChant) dom.toggleNonChant.checked = true;
+                state.showNonChant = true;
+                renderTargetsList();
+            });
+            dom.targetsList.appendChild(note);
+        }
     }
 
     function labelForLevel(level) {
@@ -1413,101 +1510,93 @@
     //   4. Apply a tiny adjacent-swap heuristic to tolerate nearby recitation reorder.
     //   5. If robust mapping fails, fall back to classic ratio boundary fitting.
     // ═════════════════════════════════════════════════════════════════════════
-    function autoAlignRegions(options = {}) {
+    // The ONE unified mapping action. No tiers, no mode selection, no client-side
+    // fallback cascade — the local backend engine (recognition + phonetic
+    // alignment + silence + mātrā prior) handles everything, including its own
+    // graceful degradation when the speech model is unavailable.
+    async function autoAlignRegions(options = {}) {
         const silentSuccess = !!options.silentSuccess;
         if (!state.targets.length) {
-            setStatus('Cannot auto-align: no target sections.', 'error');
+            setStatus('Cannot map: no target sections to map to.', 'error');
             return;
         }
         clearTargetAlignmentState();
-
-        if (!state.channelData) {
-            const fallback = buildProportionalIntervalsFromDuration();
-            if (!fallback.length) {
-                setStatus('Cannot auto-align: audio not ready.', 'error');
-                return;
+        showBusy('Mapping audio to text…',
+                 'Aligning each section to the recording locally — this can take a minute or two. Please wait.');
+        try {
+            const ok = await runAnchorAlign(silentSuccess);
+            if (!ok && !silentSuccess) {
+                setStatus('Could not confidently map the text to this audio. ' +
+                          'Try a clearer recording, or assign regions manually.', 'warning');
             }
-            installRegionsFromIntervals(fallback);
-            applyUniformConfidence(0.34, 'matched');
-            if (!silentSuccess) setStatus('Aligned by duration ratios (audio analysis not ready).', 'success');
+        } catch (e) {
+            console.error('audio→text mapping failed:', e);
+            if (!silentSuccess) setStatus('Mapping failed: ' + (e && e.message || e), 'error');
+        } finally {
+            hideBusy();
+        }
+    }
+
+    // Fetch audio from a YouTube URL, load it as the dialog's audio, then map.
+    // A testing convenience — replaces the current audio with the downloaded clip.
+    async function fetchYouTubeAndMap() {
+        const url = (dom.ytUrl && dom.ytUrl.value || '').trim();
+        if (!url) { setStatus('Paste a YouTube URL first.', 'error'); return; }
+        if (!state.targets.length) {
+            setStatus('No text sections to map — open the audio editor from a document with text.', 'error');
             return;
         }
-        const rawIntervals = detectSpeechIntervals();
-        const intervals = mergeNearbyIntervals(rawIntervals, 0.12);
-        if (!intervals.length) {
-            const fallback = buildProportionalIntervalsFromDuration();
-            if (!fallback.length) {
-                setStatus('Auto-align failed: no speech detected.', 'error');
-                return;
+        if (dom.btnFetchYouTube) dom.btnFetchYouTube.disabled = true;
+        showBusy('Fetching audio…', 'Downloading from the URL — the first run can take a moment.');
+        try {
+            const resp = await fetch('/api/align/youtube', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+            });
+            const data = await resp.json();
+            if (!resp.ok || data.error) {
+                throw new Error(data.error || `server returned ${resp.status}`);
             }
-            installRegionsFromIntervals(fallback);
-            applyUniformConfidence(0.30, 'matched');
-            if (!silentSuccess) setStatus('Aligned by duration ratios (speech not detected reliably).', 'success');
-            return;
+            setBusyMsg('Preparing audio…', `Loaded "${data.title || 'audio'}" (${data.size_mb || '?'} MB). Decoding…`);
+
+            // Swap in the fetched audio and rebuild the audio element.
+            try { if (state.audioEl) state.audioEl.pause(); } catch (e) {}
+            state.audio = { src: data.audio, mime: data.mime || 'audio/mpeg', duration: data.duration || 0 };
+            state.duration = data.duration || 0;
+            state.regions = [];
+            state.primaryRegionId = null;
+            state.activeRegionIds = new Set();
+
+            state.audioEl = new Audio();
+            state.audioEl.src = state.audio.src;
+            state.audioEl.preload = 'auto';
+            state.audioEl.addEventListener('timeupdate', onTimeUpdate);
+            state.audioEl.addEventListener('ended', () => { state.playing = false; });
+            state.audioEl.addEventListener('error', () => {
+                hideBusy();
+                setStatus('Could not load the fetched audio.', 'error');
+            });
+            state.audioEl.addEventListener('loadedmetadata', async () => {
+                if (!state.duration || !isFinite(state.duration)) {
+                    state.duration = state.audioEl.duration || 0;
+                }
+                setBusyMsg('Preparing audio…', 'Decoding audio for the waveform…');
+                await decodeAudioForWaveform();
+                layout();
+                renderTargetsList();
+                renderRegionsList();
+                renderRegionDetails();
+                updateToolbarState();
+                await autoAlignRegions(); // shows "Mapping…" and hides the overlay when done
+            });
+        } catch (e) {
+            console.error('YouTube fetch failed:', e);
+            hideBusy();
+            setStatus('Fetch failed: ' + (e && e.message || e), 'error');
+        } finally {
+            if (dom.btnFetchYouTube) dom.btnFetchYouTube.disabled = false;
         }
-
-        const robust = alignTargetsToIntervalsRobust(intervals);
-        if (robust && robust.regions.length) {
-            installRegionsFromMapped(robust.regions);
-            const matched = robust.matchedTargets;
-            const total = state.targets.length;
-            const percent = Math.round((robust.avgConfidence || 0) * 100);
-            if (!silentSuccess) {
-                const kind = robust.avgConfidence >= 0.55 ? 'success' : 'warning';
-                const unmatched = Math.max(0, total - matched);
-                const extraAudio = robust.unusedIntervals > 0 ? `, ${robust.unusedIntervals} extra audio segment${robust.unusedIntervals === 1 ? '' : 's'}` : '';
-                const swapText = robust.swaps > 0 ? `, ${robust.swaps} swap correction${robust.swaps === 1 ? '' : 's'}` : '';
-                setStatus(`Matched ${matched}/${total} sections (${percent}% confidence${extraAudio}${swapText}).${unmatched ? ` ${unmatched} left unmatched.` : ''}`, kind);
-            }
-            return;
-        }
-
-        const N = state.targets.length;
-
-        // Total speech time spanned by detected intervals (clip to first..last)
-        const speechStart = intervals[0][0];
-        const speechEnd = intervals[intervals.length - 1][1];
-        const totalSpan = speechEnd - speechStart;
-
-        // Expected syllable counts; fall back to equal weights if missing
-        const sylCounts = state.targets.map(t =>
-            (typeof t.syllables === 'number' && t.syllables > 0) ? t.syllables : 1
-        );
-        const totalSyl = sylCounts.reduce((a, b) => a + b, 0);
-
-        // Cumulative expected boundaries (in seconds, within speechStart..speechEnd)
-        const cumSyl = [0];
-        for (let i = 0; i < N; i++) cumSyl.push(cumSyl[i] + sylCounts[i]);
-        const expectedBoundaries = cumSyl.map(c => speechStart + (c / totalSyl) * totalSpan);
-        // expectedBoundaries.length = N+1 (start + N internal + end)
-
-        // Collect candidate boundary times: midpoints of every silence gap
-        // between adjacent intervals. These are natural pause locations.
-        const candidates = [];
-        for (let i = 0; i < intervals.length - 1; i++) {
-            const gapMid = (intervals[i][1] + intervals[i + 1][0]) / 2;
-            candidates.push({ time: gapMid, gap: intervals[i + 1][0] - intervals[i][1] });
-        }
-
-        // We need N-1 internal boundaries. If we have fewer candidates than
-        // needed, fall back to expected boundaries directly.
-        const internalCount = N - 1;
-        let chosen;
-        if (candidates.length >= internalCount && internalCount > 0) {
-            chosen = pickBoundariesByDP(candidates, expectedBoundaries.slice(1, -1));
-        } else {
-            chosen = expectedBoundaries.slice(1, -1);
-        }
-
-        // Build the final intervals: from speechStart, through chosen boundaries, to speechEnd
-        const bounds = [speechStart, ...chosen, speechEnd];
-        const result = [];
-        for (let i = 0; i < N; i++) {
-            result.push([bounds[i], bounds[i + 1]]);
-        }
-        installRegionsFromIntervals(result);
-        applyUniformConfidence(0.52, 'matched');
-        if (!silentSuccess) setStatus(`Aligned ${N} sections using syllable-count weighting.`, 'success');
     }
 
     function mergeNearbyIntervals(intervals, minGap = 0.12) {
@@ -1801,6 +1890,97 @@
         return out;
     }
 
+    // ─── Anchor-based alignment (Tier 0/1/2 via Flask /api/align/run) ───────
+    async function runAnchorAlign(silentSuccess) {
+        if (!state.audio || !state.audio.src) return false;
+        const targetsPayload = state.targets.map((t, i) => ({
+            index: i,
+            text: (t.text || '').slice(0, 400),
+            level: t.level || 'line',
+            syllables: Number.isFinite(t.syllables) ? t.syllables : 0,
+            hasSvaras: !!t.hasSvaras,
+            pauseAfterHint: !!t.pauseAfterHint,
+            iastNormalized: t.iastNormalized || '',
+            events: Array.isArray(t.events) ? t.events : [],
+        }));
+        const body = {
+            audio: state.audio.src, // data URI — server decodes base64 portion
+            mime: state.audio.mime || '',
+            targets: targetsPayload,
+        };
+        setStatus('Mapping audio to text…', 'info');
+        let resp;
+        try {
+            resp = await fetch('/api/align/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+        } catch (e) {
+            throw new Error('network error: ' + (e && e.message || e));
+        }
+        if (!resp.ok) {
+            const txt = await resp.text().catch(() => '');
+            throw new Error(`align endpoint returned ${resp.status}: ${txt.slice(0, 200)}`);
+        }
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error);
+
+        const regions = Array.isArray(result.regions) ? result.regions : [];
+        // 'unassigned' (no confident match) and 'skipped' (non-chant line:
+        // title/subtitle/comment/translation) both get NO drawn region.
+        const placed = regions.filter(r => r.status !== 'unassigned' && r.status !== 'skipped');
+        if (!placed.length) {
+            // Server ran but found nothing placeable — let the fallback try.
+            return false;
+        }
+        const mapped = placed.map(r => ({
+            start: r.start,
+            end: r.end,
+            targetIndex: r.targetIndex,
+            confidence: r.confidence,
+            fadeIn: r.fadeIn,
+            fadeOut: r.fadeOut,
+            label: state.targets[r.targetIndex]?.text || `Region ${r.targetIndex + 1}`,
+        }));
+        installRegionsFromMapped(mapped);
+
+        // Mark every target's match status from the server response
+        state.targets.forEach((t, idx) => {
+            const rec = regions.find(r => r.targetIndex === idx);
+            if (!rec || rec.status === 'unassigned' || rec.status === 'skipped') {
+                t.matchStatus = 'skipped';
+                t.matchConfidence = rec ? rec.confidence : null;
+            } else {
+                t.matchStatus = rec.status === 'warn' ? 'warn' : 'matched';
+                t.matchConfidence = rec.confidence;
+            }
+        });
+        renderTargetsList();
+        renderRegionsList();
+
+        const total = state.targets.length;
+        const summary = result.summary || {};
+        const nMatched = Number.isFinite(summary.matched) ? summary.matched
+            : regions.filter(r => r.status === 'matched').length;
+        const nWarn = Number.isFinite(summary.warn) ? summary.warn
+            : regions.filter(r => r.status === 'warn').length;
+        const nUnassigned = Number.isFinite(summary.unassigned) ? summary.unassigned
+            : (total - nMatched - nWarn);
+        if (!silentSuccess) {
+            const degraded = result.engine === 'proportional';
+            const kind = degraded ? 'warning' : (nMatched >= Math.ceil(total * 0.6) ? 'success' : 'warning');
+            const parts = [`${nMatched} matched`];
+            if (nWarn) parts.push(`${nWarn} to review`);
+            if (nUnassigned) parts.push(`${nUnassigned} unmatched`);
+            const prefix = degraded
+                ? 'Speech model unavailable — placed by duration estimate: '
+                : '';
+            setStatus(`${prefix}${parts.join(', ')} of ${total} section${total === 1 ? '' : 's'}.`, kind);
+        }
+        return true;
+    }
+
     function installRegionsFromIntervals(intervals) {
         state.regions = intervals.map((iv, i) => ({
             id: genId(),
@@ -1835,8 +2015,10 @@
             label: r.label || state.targets[r.targetIndex]?.text || `Region ${idx + 1}`,
             targetIndex: typeof r.targetIndex === 'number' ? r.targetIndex : null,
             hidden: false,
-            fadeIn: Number(r.fadeIn) || 0,
-            fadeOut: Number(r.fadeOut) || 0,
+            // Auto-mapped regions get a small default fade so cuts are clean
+            // (no clicks at boundaries); user-tunable afterward.
+            fadeIn: Number.isFinite(Number(r.fadeIn)) && Number(r.fadeIn) > 0 ? Number(r.fadeIn) : 0.04,
+            fadeOut: Number.isFinite(Number(r.fadeOut)) && Number(r.fadeOut) > 0 ? Number(r.fadeOut) : 0.04,
             confidence: typeof r.confidence === 'number' ? clamp(r.confidence, 0, 1) : null,
         })).filter(r => r.end > r.start + 0.01);
 
@@ -1952,7 +2134,6 @@
         dom.btnJumpRegionStart.disabled = !hasPrimary;
         dom.btnJumpRegionEnd.disabled = !hasPrimary;
         dom.btnAutoAlign.disabled = state.targets.length < 1;
-        dom.btnAutoSplit.disabled = state.targets.length < 1;
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -2000,8 +2181,8 @@
                     ? state.targets[r.targetIndex].lineIndex : null,
             })),
         };
+        showBusy('Applying…', 'Saving regions to the document…');
         await postAction('audio_editor_apply', payload);
-        setStatus('Saved.', 'success');
         await closeDialog();
     }
 
@@ -2055,9 +2236,67 @@
         dom.btnCutSelection.addEventListener('click', cutSelectionFromRegions);
         dom.btnClearSelection.addEventListener('click', clearSelection);
 
-        // Auto
+        // Auto — single unified "Map audio to text" action.
         dom.btnAutoAlign.addEventListener('click', autoAlignRegions);
-        dom.btnAutoSplit.addEventListener('click', autoSplitRegions);
+
+        // YouTube fetch + map (testing convenience).
+        if (dom.btnFetchYouTube) dom.btnFetchYouTube.addEventListener('click', fetchYouTubeAndMap);
+        if (dom.ytUrl) dom.ytUrl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); fetchYouTubeAndMap(); }
+        });
+
+        // Optional speech-model download — shown only when the recognition
+        // engine is present but the model isn't cached yet. The default models
+        // ship cached, so this normally stays hidden.
+        if (dom.btnDownloadModel) {
+            (async () => {
+                try {
+                    const r = await fetch('/api/align/model/status?model=tiny');
+                    const s = await r.json();
+                    if (s && s.engine_available && !s.downloaded) {
+                        dom.btnDownloadModel.style.display = '';
+                    } else {
+                        dom.btnDownloadModel.style.display = 'none';
+                    }
+                } catch (e) {
+                    dom.btnDownloadModel.style.display = 'none';
+                }
+            })();
+            dom.btnDownloadModel.addEventListener('click', async () => {
+                dom.btnDownloadModel.disabled = true;
+                dom.btnDownloadModel.textContent = 'Downloading…';
+                setStatus('Downloading the local speech model… this may take a minute.', 'info');
+                try {
+                    const r = await fetch('/api/align/model/download', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: 'tiny' }),
+                    });
+                    const s = await r.json();
+                    if (s.error) {
+                        setStatus(`Download failed: ${s.error}`, 'error');
+                        dom.btnDownloadModel.textContent = `↓ Retry`;
+                    } else {
+                        setStatus(`Speech model ready (${s.size_mb} MB).`, 'success');
+                        dom.btnDownloadModel.style.display = 'none';
+                    }
+                } catch (e) {
+                    setStatus(`Download failed: ${e.message || e}`, 'error');
+                    dom.btnDownloadModel.textContent = `↓ Retry`;
+                } finally {
+                    dom.btnDownloadModel.disabled = false;
+                }
+            });
+        }
+
+        // Sections filter: hide non-chant (title/subtitle/comment/translation) by default.
+        if (dom.toggleNonChant) {
+            dom.toggleNonChant.checked = state.showNonChant;
+            dom.toggleNonChant.addEventListener('change', () => {
+                state.showNonChant = dom.toggleNonChant.checked;
+                renderTargetsList();
+            });
+        }
 
         // Visibility
         dom.btnShowSelected.addEventListener('click', () => applyVisibilityMode('selected', state.primaryRegionId));

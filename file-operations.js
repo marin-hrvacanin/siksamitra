@@ -266,7 +266,7 @@ class FileOperations {
      */
     async exportDocx() {
         try {
-            const html    = this.quill.root.innerHTML;
+            const html    = (window.siksamitraEditor && window.siksamitraEditor.getSerializableHTML) ? window.siksamitraEditor.getSerializableHTML() : this.quill.root.innerHTML;
             const title   = this.currentFileName.replace(/\.[^/.]+$/, '');
             const sugName = `${title}.docx`;
 
@@ -333,7 +333,7 @@ class FileOperations {
      * @returns {string} Complete HTML document
      */
     generateHtmlExport() {
-        const content = this.quill.root.innerHTML;
+        const content = (window.siksamitraEditor && window.siksamitraEditor.getSerializableHTML) ? window.siksamitraEditor.getSerializableHTML() : this.quill.root.innerHTML;
         const themeManager = window.getThemeManager();
         const currentTheme = themeManager ? themeManager.getCurrentTheme() : 'light';
         

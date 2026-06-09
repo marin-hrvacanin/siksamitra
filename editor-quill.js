@@ -1818,13 +1818,13 @@ class SiksamitraEditor {
                 node.style.lineHeight = '0';
                 node.style.verticalAlign = 'baseline';
 
-                // Hidden audio element for playback
+                // Hidden audio element. Its src is intentionally NOT set eagerly:
+                // the bytes live once in the editor's audioLibrary (keyed by id) and
+                // playback resolves them by id. data-audio-src above is transient and
+                // gets hoisted to the library + stripped by _dedupeAudioInDOM().
                 const audio = document.createElement('audio');
                 audio.setAttribute('preload', 'metadata');
                 audio.dataset.audioId = audioId;
-                if (src) {
-                    audio.src = src;
-                }
                 audio.style.display = 'none';
 
                 node.appendChild(audio);
@@ -1837,7 +1837,12 @@ class SiksamitraEditor {
                 const value = {
                     id: node.dataset.audioId || '',
                     label: node.dataset.audioLabel || '',
-                    src: node.dataset.audioSrc || (audio ? audio.getAttribute('src') || '' : ''),
+                    // Resolve bytes from the DOM if present, else from the single
+                    // library copy by id — so de-duplicated blots round-trip losslessly.
+                    src: node.dataset.audioSrc
+                        || (audio ? audio.getAttribute('src') || '' : '')
+                        || (typeof window !== 'undefined' && window.siksamitraEditor
+                            ? window.siksamitraEditor.resolveAudioSrc(node.dataset.audioId || '') : ''),
                     startTime: parseFloat(node.dataset.startTime) || 0,
                     endTime: node.dataset.endTime ? parseFloat(node.dataset.endTime) : null,
                     duration: parseFloat(node.dataset.duration) || 0,
@@ -11080,7 +11085,7 @@ ${className} {
             }
         }
         
-        const content = this.quill.root.innerHTML;
+        const content = this.getSerializableHTML();
         const currentTheme = document.body.getAttribute('data-theme') || 'light';
         const sharedStyles = await this.loadViewerExportSharedStyles();
         const faviconDataUri = await this.loadExportFaviconDataUri();
@@ -12561,7 +12566,9 @@ ${embeddedStyles}
      * Get editor content as HTML
      */
     getHTML() {
-        return this.quill.root.innerHTML;
+        // Canonical serialization: audio inflated back onto attachments so the
+        // returned HTML is self-contained (single-copy in memory, full bytes on save).
+        return this.getSerializableHTML();
     }
 
     /**
@@ -12860,6 +12867,10 @@ ${embeddedStyles}
             pauseAfterHint: profile.pauseAfterHint,
             iastNormalized: profile.iastNormalized,
             anchorTokens: profile.anchorTokens,
+            // Forwarded so the backend mātrā prior + phone aligner get real input
+            // (these were computed in the profile but previously dropped here).
+            events: profile.events,
+            hasSvaras: profile.hasSvaras,
         };
     }
 
@@ -12906,15 +12917,44 @@ ${embeddedStyles}
     _buildAudioAlignmentProfile(text) {
         const original = String(text || '');
         const iastNormalized = this._normalizeForAudioAlignment(original);
+        const iastWithSvaras = this._normalizeForEventProjection(original);
         const syllables = this._countSyllables(original);
         const beatUnits = this._estimateBeatUnitsFromNormalized(iastNormalized, syllables);
+        const events = this._buildEventSequence(iastWithSvaras);
+        const hasSvaras = events.some(e => e && e.svara);
         return {
             syllables,
             beatUnits,
             pauseAfterHint: this._detectPauseAfterHint(original),
             iastNormalized,
+            iastWithSvaras,
             anchorTokens: this._extractAnchorTokens(iastNormalized),
+            events,
+            hasSvaras,
         };
+    }
+
+    _normalizeForEventProjection(text) {
+        if (!text) return '';
+        const originalText = String(text);
+        const script = this.detectDominantScript(originalText);
+        let projected = originalText;
+        try {
+            if (script === 'devanagari')      projected = this.devanagariToIAST(originalText);
+            else if (script === 'telugu')     projected = this.teluguToIAST(originalText);
+            else if (script === 'tamil')      projected = this.tamilToIAST(originalText);
+            else if (script === 'kannada')    projected = this.kannadaToIAST(originalText);
+        } catch (_) { projected = originalText; }
+        return (projected || '').normalize('NFC').toLowerCase();
+    }
+
+    _buildEventSequence(iastWithSvaras) {
+        try {
+            const rules = new SanskritRules();
+            return rules.projectToEventSequence(iastWithSvaras) || [];
+        } catch (_) {
+            return [];
+        }
     }
 
     _normalizeForAudioAlignment(text) {
@@ -13475,10 +13515,91 @@ ${embeddedStyles}
         }
     }
 
+    // ── Single-copy audio store (memory fix; backwards compatible) ───────────
+    // Each audio file lives ONCE in this.audioLibrary keyed by id; attachments in
+    // the live DOM reference it by data-audio-id and carry NO base64. Old files
+    // that embedded the audio on every attachment are de-duplicated on load; saves
+    // are inflated so the output stays self-contained and openable anywhere.
+
+    /** The one copy of an audio's bytes, by id (or '' if unknown). */
+    resolveAudioSrc(audioId) {
+        if (!audioId) return '';
+        const lib = this.audioLibrary || [];
+        const hit = lib.find(a => a && a.id === audioId);
+        return (hit && hit.src) ? hit.src : '';
+    }
+
+    /**
+     * Hoist any per-attachment embedded audio into the single library copy, then
+     * strip the duplicate bytes from the live DOM. Idempotent; safe to call often.
+     */
+    _dedupeAudioInDOM() {
+        if (!this.quill || !this.quill.root) return;
+        this.audioLibrary = this.audioLibrary || [];
+        const byId = new Map(this.audioLibrary.filter(a => a && a.id).map(a => [a.id, a]));
+        const nodes = this.quill.root.querySelectorAll('.ql-audio-attachment');
+        nodes.forEach(node => {
+            const id = node.dataset.audioId || '';
+            const audioEl = node.querySelector('audio');
+            const domSrc = node.dataset.audioSrc
+                || (audioEl ? (audioEl.getAttribute('src') || '') : '');
+            if (id) {
+                // Ensure the library has this audio's bytes (hoist from the DOM if needed).
+                let entry = byId.get(id);
+                if (!entry) {
+                    entry = {
+                        id,
+                        label: node.dataset.audioLabel || 'Audio',
+                        src: domSrc || '',
+                        duration: parseFloat(node.dataset.duration) || 0,
+                        size: parseFloat(node.dataset.size) || (domSrc ? domSrc.length : 0),
+                    };
+                    this.audioLibrary.push(entry);
+                    byId.set(id, entry);
+                } else if (!entry.src && domSrc) {
+                    entry.src = domSrc;
+                }
+                // Strip the duplicate bytes from the live DOM (keep only the id reference).
+                if (entry.src) {
+                    if (node.dataset.audioSrc) delete node.dataset.audioSrc;
+                    if (audioEl && audioEl.getAttribute('src')) audioEl.removeAttribute('src');
+                }
+            }
+        });
+    }
+
+    /**
+     * Editor HTML with audio inflated back onto every attachment (from the single
+     * library copy) — self-contained and identical in shape to pre-fix files, so
+     * saves/exports/preview open in any version and the viewer. Live DOM untouched.
+     */
+    getSerializableHTML() {
+        if (!this.quill || !this.quill.root) return '';
+        const root = this.quill.root.cloneNode(true);
+        const nodes = root.querySelectorAll('.ql-audio-attachment');
+        nodes.forEach(node => {
+            const id = node.dataset.audioId || '';
+            const audioEl = node.querySelector('audio');
+            const hasSrc = !!node.dataset.audioSrc
+                || (audioEl && !!audioEl.getAttribute('src'));
+            if (hasSrc) return; // already self-contained — never overwrite (FR-006)
+            const src = this.resolveAudioSrc(id);
+            if (src) {
+                node.dataset.audioSrc = src;
+                if (audioEl) audioEl.setAttribute('src', src);
+            }
+        });
+        return root.innerHTML;
+    }
+
     refreshAudioAttachments() {
         if (!this.quill || !this.quill.root) {
             return;
         }
+
+        // Keep audio single-copy: hoist any embedded bytes into the library and
+        // strip per-attachment duplicates before (re)building the play buttons.
+        this._dedupeAudioInDOM();
 
         const overlay = document.getElementById('audioButtonsOverlay');
         if (!overlay) return;
@@ -13518,6 +13639,11 @@ ${embeddedStyles}
             buttonContainer.style.alignItems = 'center';
             buttonContainer.style.pointerEvents = 'all';
             buttonContainer.dataset.audioId = attachment.dataset.audioId;
+            // Single-copy audio means every attachment shares the same audioId, so a
+            // [data-audio-id] lookup can no longer identify ONE button. Keep a direct
+            // node↔node reference instead, so position updates track the right line.
+            buttonContainer._attachment = attachment;
+            attachment._buttonContainer = buttonContainer;
 
             // Create play button with embedded SVG icons
             const playButton = document.createElement('button');
@@ -13617,8 +13743,11 @@ ${embeddedStyles}
         const attachments = Array.from(this.quill.root.querySelectorAll('.ql-audio-attachment'));
 
         attachments.forEach((attachment) => {
-            const audioId = attachment.dataset.audioId;
-            const buttonContainer = overlay.querySelector(`[data-audio-id="${audioId}"]`);
+            // Resolve THIS attachment's button by direct reference, not by audioId:
+            // single-copy audio shares one id across all lines, so a [data-audio-id]
+            // query would return the same first button for every attachment and pile
+            // them onto one line.
+            const buttonContainer = attachment._buttonContainer;
             if (!buttonContainer) return;
 
             const paragraph = attachment.closest('p');
@@ -13631,12 +13760,15 @@ ${embeddedStyles}
         });
     }
 
-    async _getPlaybackAudioBuffer(src) {
+    async _getPlaybackAudioBuffer(src, cacheKey) {
         if (!src) return null;
 
+        // Cache decoded PCM by a small key (audio id) rather than the multi-MB src
+        // string, so the clip is decoded once and shared across all its attachments.
+        const key = cacheKey || src;
         this._audioBufferCache = this._audioBufferCache || new Map();
-        if (this._audioBufferCache.has(src)) {
-            return this._audioBufferCache.get(src);
+        if (this._audioBufferCache.has(key)) {
+            return this._audioBufferCache.get(key);
         }
 
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -13647,7 +13779,7 @@ ${embeddedStyles}
             const response = await fetch(src);
             const arrayBuffer = await response.arrayBuffer();
             const buffer = await this._audioPlaybackCtx.decodeAudioData(arrayBuffer.slice(0));
-            this._audioBufferCache.set(src, buffer);
+            this._audioBufferCache.set(key, buffer);
             return buffer;
         } catch (error) {
             console.warn('Failed to decode audio buffer for playback:', error);
@@ -13680,8 +13812,12 @@ ${embeddedStyles}
         const requestId = (this._audioPlaybackRequestId || 0) + 1;
         this._audioPlaybackRequestId = requestId;
 
-        const src = attachmentNode.dataset.audioSrc || audio.src || (audio.getAttribute ? audio.getAttribute('src') : '');
-        const buffer = await this._getPlaybackAudioBuffer(src);
+        const audioId = attachmentNode.dataset.audioId || '';
+        const src = this.resolveAudioSrc(audioId)
+            || attachmentNode.dataset.audioSrc
+            || (audio && audio.getAttribute ? audio.getAttribute('src') : '')
+            || (audio ? audio.src : '');
+        const buffer = await this._getPlaybackAudioBuffer(src, audioId || src);
         if (this._audioPlaybackRequestId !== requestId) return false;
         if (!buffer) return false;
 
@@ -13775,7 +13911,13 @@ ${embeddedStyles}
             return;
         }
 
-        if (!audio.src) {
+        // Audio bytes may live only in the single library copy (resolved by id),
+        // not on the element — so check all sources, not just audio.src.
+        const hasSource = (attachmentNode && this.resolveAudioSrc(attachmentNode.dataset.audioId || ''))
+            || (attachmentNode && attachmentNode.dataset.audioSrc)
+            || audio.src
+            || (audio.getAttribute && audio.getAttribute('src'));
+        if (!hasSource) {
             ModalDialogs.alert('This audio attachment has no source.', 'No Audio', 'info');
             return;
         }
@@ -13956,10 +14098,14 @@ ${embeddedStyles}
      */
     _reconstructAudioFromAttachment(attachmentNode) {
         const audioEl = attachmentNode.querySelector('audio');
-        const src = attachmentNode.dataset.audioSrc || (audioEl ? audioEl.src : '');
+        const id = attachmentNode.dataset.audioId || `audio-${Date.now()}`;
+        // On a de-duplicated DOM the bytes live only in the library — resolve by id.
+        const src = this.resolveAudioSrc(attachmentNode.dataset.audioId || '')
+            || attachmentNode.dataset.audioSrc
+            || (audioEl ? audioEl.src : '');
         if (!src) return null;
         return {
-            id: attachmentNode.dataset.audioId || `audio-${Date.now()}`,
+            id,
             label: attachmentNode.dataset.audioLabel || 'Audio',
             src,
             duration: audioEl ? (audioEl.duration || 0) : 0,
@@ -14912,9 +15058,10 @@ ${embeddedStyles}
 
         audioAttachments.forEach(attachment => {
             const label = attachment.dataset.audioLabel || 'Untitled';
-            const src = attachment.dataset.audioSrc || '';
             const audioId = attachment.dataset.audioId || '';
-            
+            // Bytes may live only in the single library copy (resolved by id).
+            const src = this.resolveAudioSrc(audioId) || attachment.dataset.audioSrc || '';
+
             // Skip if already added (same label)
             if (seen.has(label) || !src) return;
             seen.add(label);

@@ -1,6 +1,7 @@
 # śikṣāmitra — Python dependencies
 # Install with: pip install -r requirements.txt
 
+# ── Core (required) ──────────────────────────────────────────────────────────
 # Web framework (backend API + local server)
 Flask>=3.0
 
@@ -10,3 +11,42 @@ beautifulsoup4>=4.12
 # Qt desktop shell
 PyQt6>=6.6
 PyQt6-WebEngine>=6.6    # QWebEngineView, QWebEngineCore, QWebChannel
+
+# ── DOCX import (optional; feature degrades gracefully if missing) ───────────
+python-docx>=1.0
+
+# ── PDF import (Veda Union styled PDFs → structured editor content) ──────────
+# PyMuPDF gives per-span font/size/color/position needed to recognize title /
+# subtitle / comment / shloka / translation and reattach Vedic accent glyphs.
+PyMuPDF>=1.24
+
+# ── High-accuracy audio↔text forced alignment (optional, auto-used if present)
+# torch + torchaudio enable the MMS (wav2vec2/CTC) forced aligner — the most
+# accurate engine. Heavier (~1.2 GB model auto-cached to cache/models, gitignored;
+# emissions are chunked to bound RAM). If absent, mapping falls back to the
+# faster-whisper engine automatically.
+torch>=2.2
+torchaudio>=2.2
+
+# ── YouTube → audio (one-step testing: "Fetch & map" / youtube_map.py) ───────
+yt-dlp>=2024.1
+
+# ── Audio–text alignment (unified engine) ────────────────────────────────────
+# numpy drives the phonetic Smith–Waterman scoring; librosa decodes/resamples
+# audio (MP3/OGG/M4A → 16 kHz mono). scipy is a transitive convenience.
+numpy>=1.24
+scipy>=1.11
+librosa>=0.10
+
+# Speech recognition for the unified mapping engine. faster-whisper bundles
+# CTranslate2 wheels (CPU, int8, no torch) on Windows. Model weights
+# (~75 MB tiny / ~250 MB small) cache to cache/models/ on first use; tiny is
+# the lightweight default. If absent, mapping degrades to a proportional
+# (duration-estimate) layout rather than failing.
+faster-whisper>=1.0
+
+# OPTIONAL higher-accuracy Sanskrit recognition (not required; not downloaded
+# by default — keeps the default footprint small on modest machines):
+#   pip install ctranslate2  # then convert Bidwill/whisper-small-sanskrit:
+#   ct2-transformers-converter --model Bidwill/whisper-small-sanskrit \
+#       --output_dir cache/models/whisper-small-sanskrit --quantization int8

@@ -686,7 +686,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                     iconPath = '<path d="M14.2639 15.9375L12.5958 14.2834C11.7909 13.4851 11.3884 13.086 10.9266 12.9401C10.5204 12.8118 10.0838 12.8165 9.68048 12.9536C9.22188 13.1095 8.82814 13.5172 8.04068 14.3326L4.04409 18.2801M14.2639 15.9375L14.6053 15.599C15.4112 14.7998 15.8141 14.4002 16.2765 14.2543C16.6831 14.126 17.12 14.1311 17.5236 14.2687C17.9824 14.4251 18.3761 14.8339 19.1634 15.6514L20 16.4934M14.2639 15.9375L18.275 19.9565M18.275 19.9565C17.9176 20 17.4543 20 16.8 20H7.2C6.07989 20 5.51984 20 5.09202 19.782C4.71569 19.5903 4.40973 19.2843 4.21799 18.908C4.12796 18.7313 4.07512 18.5321 4.04409 18.2801M18.275 19.9565C18.5293 19.9256 18.7301 19.8727 18.908 19.782C19.2843 19.5903 19.5903 19.2843 19.782 18.908C20 18.4802 20 17.9201 20 16.8V16.4934M4.04409 18.2801C4 17.9221 4 17.4575 4 16.8V7.2C4 6.0799 4 5.51984 4.21799 5.09202C4.40973 4.71569 4.71569 4.40973 5.09202 4.21799C5.51984 4 6.07989 4 7.2 4H16.8C17.9201 4 18.4802 4 18.908 4.21799C19.2843 4.40973 19.5903 4.71569 19.782 5.09202C20 5.51984 20 6.0799 20 7.2V16.4934M17 8.99989C17 10.1045 16.1046 10.9999 15 10.9999C13.8954 10.9999 13 10.1045 13 8.99989C13 7.89532 13.8954 6.99989 15 6.99989C16.1046 6.99989 17 7.89532 17 8.99989Z"></path>';
                 } else if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(ext)) {
                     iconPath = '<path d="M7 5V19M17 5V19M3 8H7M17 8H21M3 16H7M17 16H21M3 12H21M6.2 20H17.8C18.9201 20 19.4802 20 19.908 19.782C20.2843 19.5903 20.5903 19.2843 20.782 18.908C21 18.4802 21 17.9201 21 16.8V7.2C21 6.0799 21 5.51984 20.782 5.09202C20.5903 4.71569 20.2843 4.40973 19.908 4.21799C19.4802 4 18.9201 4 17.8 4H6.2C5.0799 4 4.51984 4 4.09202 4.21799C3.71569 4.40973 3.40973 4.71569 3.21799 5.09202C3 5.51984 3 6.07989 3 7.2V16.8C3 17.9201 3 18.4802 3.21799 18.908C3.40973 19.2843 3.71569 19.5903 4.09202 19.782C4.51984 20 5.07989 20 6.2 20Z"></path>';
-                } else if (['txt', 'doc', 'docx', 'md', 'rtf'].includes(ext)) {
+                } else if (['txt', 'doc', 'docx', 'md', 'rtf', 'pdf'].includes(ext)) {
                     iconPath = '<path d="M9 17H15M9 13H15M9 9H10M13 3H8.2C7.0799 3 6.51984 3 6.09202 3.21799C5.71569 3.40973 5.40973 3.71569 5.21799 4.09202C5 4.51984 5 5.0799 5 6.2V17.8C5 18.9201 5 19.4802 5.21799 19.908C5.40973 20.2843 5.71569 20.5903 6.09202 20.782C6.51984 21 7.0799 21 8.2 21H15.8C16.9201 21 17.4802 21 17.908 20.782C18.2843 20.5903 18.5903 20.2843 18.782 19.908C19 19.4802 19 18.9201 19 17.8V9M13 3L19 9M13 3V7.4C13 7.96005 13 8.24008 13.109 8.45399C13.2049 8.64215 13.3578 8.79513 13.546 8.89101C13.7599 9 14.0399 9 14.6 9H19"></path>';
                 } else if (['mp3', 'wav', 'aac', 'flac', 'm4a'].includes(ext)) {
                     iconPath = '<path d="M19 9V17.8C19 18.9201 19 19.4802 18.782 19.908C18.5903 20.2843 18.2843 20.5903 17.908 20.782C17.4802 21 16.9201 21 15.8 21H8.2C7.07989 21 6.51984 21 6.09202 20.782C5.71569 20.5903 5.40973 20.2843 5.21799 19.908C5 19.4802 5 18.9201 5 17.8V6.2C5 5.07989 5 4.51984 5.21799 4.09202C5.40973 3.71569 5.71569 3.40973 6.09202 3.21799C6.51984 3 7.0799 3 8.2 3H13M19 9L13 3M19 9H16.2C15.0799 9 14.5198 9 14.092 8.78201C13.7157 8.59027 13.4097 8.28431 13.218 7.90798C13 7.48016 13 6.9201 13 5.8V3M14.5 13C15.1137 13.4913 15.5 14.2053 15.5 15C15.5 15.7947 15.1137 16.5087 14.5 17M8.5 14H9.83333L11.5 12V18L9.83333 16H8.5V14Z"></path>';
@@ -1010,7 +1010,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                     iconPath = '<path d="M14.2639 15.9375L12.5958 14.2834C11.7909 13.4851 11.3884 13.086 10.9266 12.9401C10.5204 12.8118 10.0838 12.8165 9.68048 12.9536C9.22188 13.1095 8.82814 13.5172 8.04068 14.3326L4.04409 18.2801M14.2639 15.9375L14.6053 15.599C15.4112 14.7998 15.8141 14.4002 16.2765 14.2543C16.6831 14.126 17.12 14.1311 17.5236 14.2687C17.9824 14.4251 18.3761 14.8339 19.1634 15.6514L20 16.4934M14.2639 15.9375L18.275 19.9565M18.275 19.9565C17.9176 20 17.4543 20 16.8 20H7.2C6.07989 20 5.51984 20 5.09202 19.782C4.71569 19.5903 4.40973 19.2843 4.21799 18.908C4.12796 18.7313 4.07512 18.5321 4.04409 18.2801M18.275 19.9565C18.5293 19.9256 18.7301 19.8727 18.908 19.782C19.2843 19.5903 19.5903 19.2843 19.782 18.908C20 18.4802 20 17.9201 20 16.8V16.4934M4.04409 18.2801C4 17.9221 4 17.4575 4 16.8V7.2C4 6.0799 4 5.51984 4.21799 5.09202C4.40973 4.71569 4.71569 4.40973 5.09202 4.21799C5.51984 4 6.07989 4 7.2 4H16.8C17.9201 4 18.4802 4 18.908 4.21799C19.2843 4.40973 19.5903 4.71569 19.782 5.09202C20 5.51984 20 6.0799 20 7.2V16.4934M17 8.99989C17 10.1045 16.1046 10.9999 15 10.9999C13.8954 10.9999 13 10.1045 13 8.99989C13 7.89532 13.8954 6.99989 15 6.99989C16.1046 6.99989 17 7.89532 17 8.99989Z"></path>';
                 } else if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(ext)) {
                     iconPath = '<path d="M7 5V19M17 5V19M3 8H7M17 8H21M3 16H7M17 16H21M3 12H21M6.2 20H17.8C18.9201 20 19.4802 20 19.908 19.782C20.2843 19.5903 20.5903 19.2843 20.782 18.908C21 18.4802 21 17.9201 21 16.8V7.2C21 6.0799 21 5.51984 20.782 5.09202C20.5903 4.71569 20.2843 4.40973 19.908 4.21799C19.4802 4 18.9201 4 17.8 4H6.2C5.0799 4 4.51984 4 4.09202 4.21799C3.71569 4.40973 3.40973 4.71569 3.21799 5.09202C3 5.51984 3 6.07989 3 7.2V16.8C3 17.9201 3 18.4802 3.21799 18.908C3.40973 19.2843 3.71569 19.5903 4.09202 19.782C4.51984 20 5.07989 20 6.2 20Z"></path>';
-                } else if (['txt', 'doc', 'docx', 'md', 'rtf'].includes(ext)) {
+                } else if (['txt', 'doc', 'docx', 'md', 'rtf', 'pdf'].includes(ext)) {
                     iconPath = '<path d="M9 17H15M9 13H15M9 9H10M13 3H8.2C7.0799 3 6.51984 3 6.09202 3.21799C5.71569 3.40973 5.40973 3.71569 5.21799 4.09202C5 4.51984 5 5.0799 5 6.2V17.8C5 18.9201 5 19.4802 5.21799 19.908C5.40973 20.2843 5.71569 20.5903 6.09202 20.782C6.51984 21 7.0799 21 8.2 21H15.8C16.9201 21 17.4802 21 17.908 20.782C18.2843 20.5903 18.5903 20.2843 18.782 19.908C19 19.4802 19 18.9201 19 17.8V9M13 3L19 9M13 3V7.4C13 7.96005 13 8.24008 13.109 8.45399C13.2049 8.64215 13.3578 8.79513 13.546 8.89101C13.7599 9 14.0399 9 14.6 9H19"></path>';
                 } else if (['mp3', 'wav', 'aac', 'flac', 'm4a'].includes(ext)) {
                     iconPath = '<path d="M19 9V17.8C19 18.9201 19 19.4802 18.782 19.908C18.5903 20.2843 18.2843 20.5903 17.908 20.782C17.4802 21 16.9201 21 15.8 21H8.2C7.07989 21 6.51984 21 6.09202 20.782C5.71569 20.5903 5.40973 20.2843 5.21799 19.908C5 19.4802 5 18.9201 5 17.8V6.2C5 5.07989 5 4.51984 5.21799 4.09202C5.40973 3.71569 5.71569 3.40973 6.09202 3.21799C6.51984 3 7.0799 3 8.2 3H13M19 9L13 3M19 9H16.2C15.0799 9 14.5198 9 14.092 8.78201C13.7157 8.59027 13.4097 8.28431 13.218 7.90798C13 7.48016 13 6.9201 13 5.8V3M14.5 13C15.1137 13.4913 15.5 14.2053 15.5 15C15.5 15.7947 15.1137 16.5087 14.5 17M8.5 14H9.83333L11.5 12V18L9.83333 16H8.5V14Z"></path>';
@@ -1468,7 +1468,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
             let content;
             
             if (isSmdoc) {
-                const editorContent = this.quill.root.innerHTML;
+                const editorContent = (window.siksamitraEditor && window.siksamitraEditor.getSerializableHTML) ? window.siksamitraEditor.getSerializableHTML() : this.quill.root.innerHTML;
                 const currentTheme = document.body.getAttribute('data-theme') || 'light';
                 const title = name.replace(/\.(smdoc|html?)$/i, '');
                 
@@ -1747,7 +1747,14 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
 
     async saveUntitled() {
         try {
-            const content = await this.getDocumentHTML();
+            // Crash-recovery backup: store the LIGHT editor content only. The live DOM is
+            // de-duplicated (audio lives once in audioLibrary, referenced by id), so this is
+            // small. We deliberately do NOT embed the audio bytes here — autosave fires on
+            // every edit, and embedding a multi-MB clip per debounce previously produced a
+            // ~hundreds-of-MB JSON body that exhausted memory (MemoryError) and made the
+            // editor choppy. Audio is preserved by an explicit Save (.smdoc), not by this
+            // transient backup.
+            const content = (this.quill && this.quill.root) ? this.quill.root.innerHTML : '';
             await fetch('/api/cache/untitled', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1846,22 +1853,60 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                         const isSmdoc = SMDocFormat.isSMDoc(filepath);
                         const isHtml = lowerPath.endsWith('.html') || lowerPath.endsWith('.htm');
                         const isDocx = lowerPath.endsWith('.docx');
+                        const isPdf = lowerPath.endsWith('.pdf');
 
-                        if (!isSmdoc && !isHtml && !isDocx) {
+                        if (!isSmdoc && !isHtml && !isDocx && !isPdf) {
                             // Open in viewer instead
                             this._openViewerWindow(filepath);
                             return;
                         }
 
                         this.showBlockingLoader?.({
-                            title: isDocx ? 'Importing Word Document' : 'Opening File',
+                            title: isDocx ? 'Importing Word Document' : (isPdf ? 'Importing PDF' : 'Opening File'),
                             message: isDocx
                                 ? 'Converting Word document to editor format…'
-                                : 'Please wait while the file is being loaded…'
+                                : (isPdf
+                                    ? 'Recognizing PDF structure (title, shlokas, translations)…'
+                                    : 'Please wait while the file is being loaded…')
                         });
                         await this._nextFrame?.();
 
                         try {
+                            // Handle .pdf import via server-side conversion (Veda Union styling)
+                            if (isPdf) {
+                                this.setBlockingLoaderText?.({ message: 'Server is reading the PDF…' });
+                                const resp = await fetch('/api/file/import-pdf', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ path: filepath })
+                                });
+                                const result = await resp.json();
+                                if (result.error) throw new Error(result.error);
+                                const paraCount = result.paragraphs || '?';
+                                this.setBlockingLoaderText?.({ message: `Loading ${paraCount} lines into editor…` });
+                                await this._nextFrame?.();
+                                if (typeof this._startBatch === 'function') this._startBatch();
+                                try {
+                                    this.setHTML(result.content);
+                                } finally {
+                                    this.setBlockingLoaderText?.({ message: 'Applying formatting…' });
+                                    await this._nextFrame?.();
+                                    if (typeof this._endBatch === 'function') this._endBatch();
+                                }
+                                this.currentFilePath = null;
+                                this.currentFileName = (result.title || 'Imported') + '.smdoc';
+                                this._scratchOpenedFromCache = false;
+                                this.isDirty = true;
+                                if (typeof this.updateTitle === 'function') this.updateTitle();
+                                const editTabPdf = document.querySelector('[data-tab="edit"]');
+                                if (editTabPdf) editTabPdf.click();
+                                await this._nextFrame?.();
+                                await this._postContentLoadRefresh?.();
+                                setTimeout(() => this.hideBlockingLoader?.(), 150);
+                                console.log(`Imported .pdf (${paraCount} lines): ${filepath}`);
+                                return;
+                            }
+
                             // Handle .docx import via server-side conversion
                             if (isDocx) {
                                 this.setBlockingLoaderText?.({ message: 'Server is converting Word document…' });
@@ -2042,7 +2087,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                     // Save as lightweight .smdoc format
                     // Audio data is already embedded in the innerHTML as data URIs,
                     // so we don't need to store it separately in audio.attachments
-                    const editorContent = this.quill.root.innerHTML;
+                    const editorContent = (window.siksamitraEditor && window.siksamitraEditor.getSerializableHTML) ? window.siksamitraEditor.getSerializableHTML() : this.quill.root.innerHTML;
                     const currentTheme = document.body.getAttribute('data-theme') || 'light';
                     const title = this.currentFileName ? 
                         this.currentFileName.replace(/\.(smdoc|html?)$/i, '') : 
@@ -2115,7 +2160,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
 
                 // Handle .docx export via dedicated endpoint
                 if (lowerName.endsWith('.docx')) {
-                    const editorContent = this.quill.root.innerHTML;
+                    const editorContent = (window.siksamitraEditor && window.siksamitraEditor.getSerializableHTML) ? window.siksamitraEditor.getSerializableHTML() : this.quill.root.innerHTML;
                     const response = await fetch('/api/file/export-docx', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -2129,7 +2174,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
                     let content;
 
                     if (isSmdoc) {
-                        const editorContent = this.quill.root.innerHTML;
+                        const editorContent = (window.siksamitraEditor && window.siksamitraEditor.getSerializableHTML) ? window.siksamitraEditor.getSerializableHTML() : this.quill.root.innerHTML;
                         const currentTheme = document.body.getAttribute('data-theme') || 'light';
                         const title = filename.replace(/\.(smdoc|html?)$/i, '');
 
