@@ -161,6 +161,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # CPU-only torch FIRST so requirements.txt's torch>=2.2 is satisfied without
+          # pulling a larger build (keeps the bundle well under GitHub's 2 GB asset limit;
+          # the app only ever uses CPU). macOS PyPI wheels are CPU-only anyway, so this is
+          # a no-op there, but keeps the build explicit and identical to Linux.
+          pip install "torch>=2.2" "torchaudio>=2.2" --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
           pip install pyinstaller python-docx
 
@@ -198,11 +203,14 @@ jobs:
             --hidden-import "PyQt6.QtWebEngineCore" \
             editor.py
 
-      - name: Create DMG
+      - name: Create DMG and tarball
         run: |
           mkdir -p dmg_contents
           cp -r dist/SiksamitraEditor.app dmg_contents/ 2>/dev/null || cp -r dist/SiksamitraEditor dmg_contents/
-          hdiutil create -volname "SiksamitraEditor" -srcfolder dmg_contents -ov -format UDZO SiksamitraEditor-macOS.dmg 2>/dev/null || \
+          # Always produce BOTH a .dmg and a .tar.gz so the release's macOS files always
+          # exist (the old `|| tar` only made the tarball when the dmg FAILED, so the
+          # release listed a SiksamitraEditor-macOS.tar.gz that never got built).
+          hdiutil create -volname "SiksamitraEditor" -srcfolder dmg_contents -ov -format UDZO SiksamitraEditor-macOS.dmg || true
           tar -czf SiksamitraEditor-macOS.tar.gz -C dist SiksamitraEditor
 
       - name: Upload artifacts
@@ -231,6 +239,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # CRITICAL: on Linux, `pip install torch` from PyPI pulls the CUDA build
+          # (~2.5 GB of bundled NVIDIA libraries the app never uses) — that is what pushed
+          # the Linux release asset over GitHub's 2 GB per-asset limit. Install the
+          # CPU-only wheels FIRST so requirements.txt's torch>=2.2 is satisfied without CUDA.
+          pip install "torch>=2.2" "torchaudio>=2.2" --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
           pip install pyinstaller python-docx
 

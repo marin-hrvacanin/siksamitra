@@ -2785,6 +2785,24 @@ class ViewerWindow(QMainWindow):
 
         body.hide-comments .ql-comment-style {{ display: none !important; }}
 
+        /* Block source/citation line (e.g. "taittirīya saṁhitā 1.5.3", "optional"). */
+        .ql-doc-comment {{
+            font-style: italic;
+            color: #92400e;
+            background: rgba(251, 191, 36, 0.18);
+            border-left: 3px solid #f59e0b;
+            padding: 0.1em 0.5em;
+            border-radius: 4px;
+        }}
+
+        [data-theme='dark'] .ql-doc-comment {{
+            color: #fcd34d;
+            background: rgba(146, 64, 14, 0.30);
+            border-left-color: #fbbf24;
+        }}
+
+        body.hide-comments .ql-doc-comment {{ display: none !important; }}
+
         .ql-short-pause {{ color: #2563eb; font-weight: bold; white-space: pre; }}
         .ql-long-pause {{ color: #dc2626; font-weight: bold; white-space: pre; }}
 

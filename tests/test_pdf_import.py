@@ -41,7 +41,7 @@ def test_structure_and_accents():
     classes = [c for c, _ in rows]
     assert classes.count('ql-doc-title') >= 1
     assert classes.count('ql-doc-subtitle') >= 1
-    assert any(c == 'ql-comment-style' for c in classes)       # source citation
+    assert any(c == 'ql-doc-comment' for c in classes)         # source citation (block class)
     assert sum(1 for c in classes if c == 'ql-doc-translation') >= 5  # translations
 
     # Shloka line 1 reconstructs exactly (accents on the right base chars).
@@ -57,7 +57,7 @@ def test_no_header_no_tofu_no_stranded_accents():
         assert not any('' <= ch <= '' or ch == '�' for ch in t), repr(t)
     # Accent marks never stranded on gray (comment/translation) lines.
     for c, t in rows:
-        if c in ('ql-doc-translation', 'ql-comment-style'):
+        if c in ('ql-doc-translation', 'ql-doc-comment'):
             assert not (set(t) & _ACCENTS), ('stranded accent', c, repr(t))
     # Running header line ("bhū sūktam   kṛṣṇa yajurvedīya") is not in the body.
     assert not any(t.strip().startswith('bhū sūktam') and 'kṛṣṇa yajurvedīya' in t for _c, t in rows)

@@ -110,12 +110,10 @@
             <button class="ae-tool-btn" id="btnDownloadModel" type="button" title="Download the local speech-recognition model" style="display:none;">↓ Download speech model</button>
         </div>
         <div class="ae-tool-divider"></div>
-        <!-- YouTube fetch + map (testing convenience) -->
+        <!-- Remove the selected cut(s) without deleting the whole audio -->
         <div class="ae-tool-group">
-            <input id="ytUrl" type="text" placeholder="Paste YouTube URL → fetch &amp; map"
-                   title="Download audio from this URL and map the text onto it"
-                   style="height:28px;min-width:220px;padding:0 8px;border:1px solid var(--border,#dddde1);border-radius:6px;background:var(--bg-surface,#fff);color:var(--text-primary,#1a1816);font-size:13px;" />
-            <button class="ae-tool-btn auto" id="btnFetchYouTube" type="button" title="Download audio from the URL above and map the text to it">⬇ Fetch &amp; map</button>
+            <button class="ae-tool-btn danger" id="btnDeleteRegion" type="button" disabled
+                    title="Delete the selected cut(s) — removes the region and its play button, but keeps the audio">🗑 Delete cut</button>
         </div>
         <div class="ae-tool-divider"></div>
 

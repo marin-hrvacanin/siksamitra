@@ -74,7 +74,10 @@ _PUA_MAP = {
 STYLE_CLASS = {
     'title': 'ql-doc-title',
     'subtitle': 'ql-doc-subtitle',
-    'comment': 'ql-comment-style',
+    # Source/citation lines use the BLOCK class `ql-doc-comment` (a registered paragraph
+    # format) — NOT the inline `ql-comment-style`, whose <p> class Quill drops on load,
+    # leaving the line unclassified and wrongly treated as chant (audio mapped onto it).
+    'comment': 'ql-doc-comment',
     'translation': 'ql-doc-translation',
     'shloka': '',
     'body': '',

@@ -19,7 +19,8 @@ from youtube_audio import download_audio
 from align_service import run
 
 CLS2LVL = {'ql-doc-title': 'title', 'ql-doc-subtitle': 'subtitle',
-           'ql-comment-style': 'comment', 'ql-doc-translation': 'translation'}
+           'ql-doc-comment': 'comment', 'ql-comment-style': 'comment',
+           'ql-doc-translation': 'translation'}
 
 
 def _fmt(t):

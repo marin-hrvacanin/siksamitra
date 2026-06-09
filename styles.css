@@ -2641,6 +2641,23 @@ body.hide-comments .ql-comment-style {
   margin: 0.4em 0 0.4em;
 }
 
+/* Source/citation line (block paragraph) — e.g. "taittirīya saṁhitā 1.5.3", "optional".
+   The block sibling of the inline .ql-comment-style; same muted italic look. */
+.ql-editor .ql-doc-comment,
+.ql-doc-comment {
+  font-style: italic;
+  color: var(--translation-text-color);
+  white-space: pre-wrap;
+  font-size: 0.8em;
+  line-height: 1.35;
+  display: block;
+  margin: 0.3em 0;
+}
+
+body.hide-comments .ql-doc-comment {
+  display: none !important;
+}
+
 .ql-editor br.soft-break,
 br.soft-break {
   display: inline;

@@ -66,7 +66,7 @@
             'btnZoomOut','btnZoomIn','btnZoomFit','zoomLevel',
             'btnAddRegion','btnSetStart','btnSetEnd',
             'btnRegionFromSelection','btnInvertSelection','btnCutSelection','btnClearSelection',
-            'btnAutoAlign','btnDownloadModel','ytUrl','btnFetchYouTube',
+            'btnAutoAlign','btnDownloadModel','btnDeleteRegion',
             'btnShowSelected','btnShowAll','btnHideAll',
             'waveScroller','waveInner','waveCanvas','timeline','selectionLayer',
             'regionsList','targetsList','regionDetails','detailBody',
@@ -193,16 +193,18 @@
         renderRegionDetails();
     }
 
-    function setStatus(msg, kind) {
+    // setStatus(msg, kind, autoClearMs). Pass autoClearMs = 0 to keep the message
+    // pinned until the next status change (used for warnings the user must not miss).
+    function setStatus(msg, kind, autoClearMs = 3500) {
         if (!dom.statusMsg) return;
         dom.statusMsg.textContent = msg || '';
         dom.statusMsg.className = 'popup-footer-status' + (kind ? ' ' + kind : '');
-        if (msg) setTimeout(() => {
+        if (msg && autoClearMs > 0) setTimeout(() => {
             if (dom.statusMsg.textContent === msg) {
                 dom.statusMsg.textContent = '';
                 dom.statusMsg.className = 'popup-footer-status';
             }
-        }, 3500);
+        }, autoClearMs);
     }
 
     // ── Blocking loading overlay ─────────────────────────────────────────────
@@ -1385,6 +1387,21 @@
         updateToolbarState();
     }
 
+    // Toolbar action: delete the currently selected cut(s) but keep the audio.
+    function deleteSelectedCuts() {
+        const ids = state.activeRegionIds.size
+            ? state.activeRegionIds
+            : (state.primaryRegionId ? new Set([state.primaryRegionId]) : new Set());
+        if (!ids.size) {
+            setStatus('Select a cut first (click a region), then Delete cut.', 'info');
+            return;
+        }
+        const n = ids.size;
+        state.activeRegionIds = new Set(ids);   // ensure removeSelectedRegions targets these
+        removeSelectedRegions();
+        setStatus(`Deleted ${n} cut${n === 1 ? '' : 's'}. Click Apply to save.`, 'success');
+    }
+
     function setActiveRegionStart() {
         const reg = getPrimaryRegion();
         if (!reg) return;
@@ -1945,38 +1962,60 @@
         }));
         installRegionsFromMapped(mapped);
 
-        // Mark every target's match status from the server response
+        // Mark every target's match status from the server response. Distinguish a
+        // chant line the engine could NOT place ('unmatched' — a real gap the user should
+        // see, e.g. a verse not in this recording) from an intentionally-ignored non-chant
+        // line ('skipped' — title/comment/translation). Both get no region, but only the
+        // former is a problem worth surfacing.
+        const NON_CHANT = new Set(['title', 'subtitle', 'comment', 'translation']);
         state.targets.forEach((t, idx) => {
             const rec = regions.find(r => r.targetIndex === idx);
-            if (!rec || rec.status === 'unassigned' || rec.status === 'skipped') {
-                t.matchStatus = 'skipped';
-                t.matchConfidence = rec ? rec.confidence : null;
-            } else {
+            const isNonChant = NON_CHANT.has(t.level || 'line');
+            if (rec && (rec.status === 'matched' || rec.status === 'warn')) {
                 t.matchStatus = rec.status === 'warn' ? 'warn' : 'matched';
                 t.matchConfidence = rec.confidence;
+            } else if (isNonChant) {
+                t.matchStatus = 'skipped';
+                t.matchConfidence = null;
+            } else {
+                // Chant line with no placement → genuinely unmatched (no audio found).
+                t.matchStatus = 'unmatched';
+                t.matchConfidence = rec ? rec.confidence : null;
             }
         });
         renderTargetsList();
         renderRegionsList();
 
-        const total = state.targets.length;
-        const summary = result.summary || {};
-        const nMatched = Number.isFinite(summary.matched) ? summary.matched
-            : regions.filter(r => r.status === 'matched').length;
-        const nWarn = Number.isFinite(summary.warn) ? summary.warn
-            : regions.filter(r => r.status === 'warn').length;
-        const nUnassigned = Number.isFinite(summary.unassigned) ? summary.unassigned
-            : (total - nMatched - nWarn);
+        // Count over CHANT sections only (non-chant is intentionally never mapped, so it
+        // doesn't belong in the denominator — counting it made "of 73 sections" misleading).
+        const NC = new Set(['title', 'subtitle', 'comment', 'translation']);
+        const chantTargets = state.targets.filter(t => !NC.has(t.level || 'line'));
+        const total = chantTargets.length;
+        const nMatched = chantTargets.filter(t => t.matchStatus === 'matched').length;
+        const nWarn = chantTargets.filter(t => t.matchStatus === 'warn').length;
+        const nUnmatched = chantTargets.filter(t => t.matchStatus === 'unmatched').length;
         if (!silentSuccess) {
             const degraded = result.engine === 'proportional';
-            const kind = degraded ? 'warning' : (nMatched >= Math.ceil(total * 0.6) ? 'success' : 'warning');
             const parts = [`${nMatched} matched`];
             if (nWarn) parts.push(`${nWarn} to review`);
-            if (nUnassigned) parts.push(`${nUnassigned} unmatched`);
-            const prefix = degraded
-                ? 'Speech model unavailable — placed by duration estimate: '
-                : '';
-            setStatus(`${prefix}${parts.join(', ')} of ${total} section${total === 1 ? '' : 's'}.`, kind);
+            if (nUnmatched) parts.push(`${nUnmatched} not found in audio`);
+            let msg, kind;
+            if (degraded) {
+                // The real engines could not load — placement is a blind duration estimate.
+                msg = `⚠ Speech engine unavailable — sections placed by length estimate only `
+                    + `(not matched to the audio). ${parts.join(', ')} of ${total}.`;
+                kind = 'error';
+            } else if (nUnmatched) {
+                msg = `${parts.join(', ')} of ${total} chant lines. The "not found" lines were `
+                    + `left without a cut (they may not be in this recording) — see the Sections list.`;
+                kind = 'warning';
+            } else {
+                msg = `${parts.join(', ')} of ${total} chant line${total === 1 ? '' : 's'}.`;
+                kind = nWarn ? 'warning' : 'success';
+            }
+            // Keep a problem message visible until the next action (don't auto-clear),
+            // so "something didn't map" can't be missed.
+            setStatus(msg, kind, (kind === 'success') ? undefined : 0);
         }
         return true;
     }
@@ -2134,6 +2173,10 @@
         dom.btnJumpRegionStart.disabled = !hasPrimary;
         dom.btnJumpRegionEnd.disabled = !hasPrimary;
         dom.btnAutoAlign.disabled = state.targets.length < 1;
+        if (dom.btnDeleteRegion) {
+            const nSel = state.activeRegionIds.size || (hasPrimary ? 1 : 0);
+            dom.btnDeleteRegion.disabled = nSel < 1;
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -2239,11 +2282,8 @@
         // Auto — single unified "Map audio to text" action.
         dom.btnAutoAlign.addEventListener('click', autoAlignRegions);
 
-        // YouTube fetch + map (testing convenience).
-        if (dom.btnFetchYouTube) dom.btnFetchYouTube.addEventListener('click', fetchYouTubeAndMap);
-        if (dom.ytUrl) dom.ytUrl.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); fetchYouTubeAndMap(); }
-        });
+        // Delete the selected cut(s) without removing the whole audio.
+        if (dom.btnDeleteRegion) dom.btnDeleteRegion.addEventListener('click', deleteSelectedCuts);
 
         // Optional speech-model download — shown only when the recognition
         // engine is present but the model isn't cached yet. The default models

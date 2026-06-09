@@ -319,3 +319,105 @@ The user must **re-map in-app with the updated `editor.py`** and listen. Confirm
 `cache/align_debug.json` that `engine` is now `mms_fa` (or `whisper-*`) and `isolated: true` — NOT
 `proportional`. If it is still `proportional`, read `ctc_error`/`whisper_error` there: the child's
 PATH/env still has a conflict (widen the strip in `align_runner.child_env`).
+
+---
+
+## 12. SESSION UPDATE — 2026-06-09 (agent 2 cont.): MMS now runs in-app; honest-unassign + UX
+The DLL fix (§11) worked — `cache/align_debug.json` confirmed `engine=mms_fa, isolated=true`. The
+user then reported residual **gross misplacement at the end of the document**: an out-of-audio verse
+(the optional gāyatrī "tanno dharāḥ", line 68) was getting a confident region and **stealing the
+audio of the real last line of shloka 12** (line 59 "puṇyaṁ ślokaṁ"); plus "no failure message".
+
+### Is recognition the answer? NO — tested, Whisper is useless on this chant.
+`tests/diag_recognize.py` (whisper-tiny): transcribed **nothing for the first ~2 min** and emitted
+**Chinese ("天下")** with 0.9 prob for the last 15 s. So ASR cannot anchor mapping for Vedic chant.
+**MMS forced alignment IS the "use the words" approach** and is correct for present text — `tests/
+diag_scores.py` shows real lines score CTC **0.64–0.98**; the out-of-audio gāyatrī scored **0.32**
+(clean separation). The bug was that `refine` laundered that 0.32 into `matched 0.61` and pulled its
+start back across unassigned lines 59/67 to grab line 59's audio.
+
+### Fix (in `align_fused.refine`, validated by `diag_scores.py` re-run)
+1. **`_CONF_FLOOR = 0.40`** — an anchor scoring below it is UNASSIGNED, not placed (out-of-audio).
+2. **No confidence inflation** — refined conf capped near the raw CTC score (`base + 0.12`), so a
+   weak line stays visibly low / unassigned instead of becoming a confident false match.
+3. **No cross-unassigned stealing** — when document lines between two anchors are unassigned, their
+   gap audio is left alone (each anchor only tidies to a silence within ±0.30 s of its own edge).
+4. **`_FILL_GAP_FRACTION 0.55 → 0.75`** — rhythm-fill only when the gap closely matches expected
+   length (honest-unassigned over fabricated, per the user).
+Result on bhū sūktam: line 68 (gāyatrī) → **unassigned** (was stealing 59's audio); lines 59/67 →
+unassigned; **all 31 real lines unchanged/correct; 0 regressions**. Line 59 still gets no cut (its
+audio is genuinely hard for MMS and ASR can't help) — honest gap the user can fill by hand.
+Regression tests: `test_low_ctc_anchor_is_unassigned_not_fabricated`,
+`test_anchor_does_not_steal_audio_across_unassigned_line` (in `tests/test_align_fused.py`).
+
+### Surfacing ("no failure message")
+`dialog-audio-editor.js`: chant lines with no placement are now marked **`unmatched`** (distinct
+from non-chant `skipped`); the post-map status is computed over CHANT lines only, says e.g. "31
+matched, 3 not found in audio … see the Sections list", and is **pinned** (no auto-clear) for any
+warning/error. Proportional now shows a loud `⚠ Speech engine unavailable` error.
+
+### UX (`dialog-audio-editor.html/.js`)
+- Removed the redundant **YouTube URL field** from the editor toolbar (it lives in the picker before
+  the editor). Replaced with a **🗑 Delete cut** button that removes the selected region(s) via the
+  existing `removeSelectedRegions` (keeps the audio; only the cut + its play button go). Enabled when
+  a region is selected. `fetchYouTubeAndMap` is now dead code (left in place, unreferenced).
+- Per-region "x" on the waveform was suggested by the user but NOT done (toolbar button + the
+  Regions-list remove button cover it) — a future nicety.
+
+### Still needs the user's ear (could not drive GUI)
+- Re-map in-app and listen. The **tail of line 49 ("viyantu ॥11॥")** ending a hair early is a
+  sub-second boundary-snap issue I could not tune blind (backend shows 49 → `02:24.78–02:33.90`,
+  next line at `02:34.50`, comment 53 correctly `skipped` — so "viyantu attached to the comment" is
+  NOT in the current backend; likely it was the old proportional run). If still cut, it's the
+  `_best_pause` window picking a within-pada silence — needs the audio to tune.
+- Suite now **34 green**. Diagnostics added: `tests/diag_scores.py`, `tests/diag_recognize.py`.
+
+---
+
+## 13. SESSION UPDATE — 2026-06-09 (agent 2 cont.): segment+mātrā recovery; comment block class
+The DLL fix made MMS run in-app; the user then reported the real accuracy bugs: lines **cut off**
+(trailing words), **one line entirely missing** (line 59, which IS in the audio), and audio on a
+**comment** ("om" on "taittirīya saṁhitā 1.5.3"). Tested Whisper as an anchor — **useless on chant**
+(`diag_recognize.py`: nothing for 2 min, Chinese "天下" at the end). So MMS forced alignment stays
+the engine; fixed its failure modes in `align_fused.refine` (validated by replaying cached MMS via
+`tests/iter_refine.py` — see `tests/cache_raw_mms.py`, instant iteration, no 97 s MMS re-run):
+
+1. **Low-CTC not anchored** — an anchor must score ≥ `_CONF_FLOOR` (0.40). The out-of-audio gāyatrī
+   (0.32) was anchoring and occupying line 59's audio; now it falls into the None-run.
+2. **Tail-keeping boundary** — cut at the LATEST real breath (≥`_MIN_BREATH` 0.22 s) *before the next
+   pada's onset* (`_latest_breath`, window capped at `sb`), so a pada keeps its last syllable
+   ("nā", "viyantu") without grabbing the next pada's start.
+3. **Segment + mātrā recovery** (`_speech_segments`, `_content_after/_before`) — for unplaced padas
+   between anchors, the gap's real breath-bounded speech segments + cumulative mātrā (≤1.25× slack)
+   decide how many padas are actually present; assign in order, the first is always recovered,
+   extras only if the audio holds them, the rest stay UNASSIGNED. Recovers line 59; leaves the
+   skipped gāyatrī unassigned. Both `_content_after` (skip the left anchor's compressed tail) and the
+   mātrā gate are essential.
+End-to-end through real `align_service.run` (manual_e2e): **32 matched in-order, 0 overlaps**, line 59
+recovered `02:58.45–03:03.08`, line 58 keeps "nā" `…–02:57.91`, gāyatrī UNMATCHED, comments skipped.
+
+**Comment misclassification (root cause + fix).** The user's doc had comments as
+`<p><span class="ql-comment-style">…</span></p>` — classless `<p>`, so `_getLineLevel` (paragraph
+class only) returned 'line' → comments became chant and got audio. Cause: `comment-style` is an
+INLINE Quill format, so the PDF import's block `<p class="ql-comment-style">` was demoted on load.
+Fixes: (a) registered a **block** `comment-block` / `ql-doc-comment` format + clipboard matcher + CSS
+(editor-quill.js); (b) PDF import now emits `ql-doc-comment` for citations (`pdf_import.py
+STYLE_CLASS`); (c) `_getLineLevel` also detects inline `ql-comment-style`/`ql-translation-style` by
+content (backward-compat for old docs). Re-import gives clean, round-tripping, non-chant comments.
+
+**Surfacing & UX.** Unmatched chant lines are now marked `unmatched` (distinct from `skipped`
+non-chant); the post-map status counts CHANT lines only, says "N not found in audio … see Sections",
+and is pinned (no auto-clear) for warnings/errors. Removed the redundant YouTube URL field from the
+audio-editor toolbar; added a **🗑 Delete cut** button (deletes selected region(s) via
+`removeSelectedRegions`, keeps the audio).
+
+**Tunables** (`align_fused.py`): `_CONF_FLOOR=0.40`, `_MIN_BREATH=0.22`, recovery mātrā slack `1.25`,
+`_FILL_GAP_FRACTION=0.75`. **Dev harness**: `tests/cache_raw_mms.py` (cache MMS once) +
+`tests/iter_refine.py` (replay refine in ms) — use this to tune boundaries without the 97 s MMS run.
+Suite **36 green**. Diagnostics: `diag_scores.py` (raw-vs-refined per line), `diag_recognize.py`,
+`diag_dumptext.py`, `diag_full.py`.
+
+### Still needs the user's EAR (sub-second, can't tune blind)
+- Re-import the PDF + re-attach the URL, re-map, LISTEN. Confirm: comments have no audio; line 59
+  plays; "nā"/"viyantu" aren't clipped; gāyatrī has no cut. If a tail/onset is still a hair off, it's
+  a `_MIN_BREATH`/`_latest_breath`-window tuning question — give me the line and what you hear.

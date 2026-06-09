@@ -1701,6 +1701,21 @@ class SiksamitraEditor {
             }
         }
 
+        // Source/citation lines ("taittirīya saṁhitā 1.5.3", "optional", "also in …").
+        // A BLOCK paragraph format (like title/translation) so the class survives a Quill
+        // load round-trip — unlike the inline `comment-style`, whose block <p> class was
+        // dropped on import, leaving these lines unclassified and wrongly treated as chant
+        // (so audio got mapped onto them). They are metadata, never mapped to audio.
+        class CommentBlock extends Block {
+            static blotName = 'comment-block';
+            static tagName = 'p';
+            static className = 'ql-doc-comment';
+
+            static formats(domNode) {
+                return true;
+            }
+        }
+
         // Register custom blots for pause marks
         class ShortPause extends Inline {
             static blotName = 'short-pause';
@@ -1764,6 +1779,7 @@ class SiksamitraEditor {
             'formats/section-block': SectionBlock,
             'formats/subsection-block': SubsectionBlock,
             'formats/translation-block': TranslationBlock,
+            'formats/comment-block': CommentBlock,
             'formats/short-pause': ShortPause,
             'formats/long-pause': LongPause,
             'formats/linebreak': LineBreak
@@ -1972,8 +1988,10 @@ class SiksamitraEditor {
                 formats['subsection-block'] = true;
             } else if (node.classList.contains('ql-doc-translation')) {
                 formats['translation-block'] = true;
+            } else if (node.classList.contains('ql-doc-comment')) {
+                formats['comment-block'] = true;
             }
-            
+
             if (Object.keys(formats).length > 0) {
                 // Apply the block format to all ops in the delta
                 const newOps = delta.ops.map(op => {
@@ -11505,6 +11523,26 @@ ${className} {
             display: none !important;
         }
 
+        /* Block source/citation paragraph (e.g. "taittirīya saṁhitā 1.5.3", "optional"). */
+        .ql-doc-comment {
+            font-style: italic;
+            color: #92400e;
+            background: rgba(251, 191, 36, 0.18);
+            border-left: 3px solid #f59e0b;
+            padding: 0.1em 0.5em;
+            border-radius: 4px;
+        }
+
+        [data-theme='dark'] .ql-doc-comment {
+            color: #fcd34d;
+            background: rgba(146, 64, 14, 0.30);
+            border-left-color: #fbbf24;
+        }
+
+        body.hide-comments .ql-doc-comment {
+            display: none !important;
+        }
+
         /* Dynamic paragraph styles from user preferences */
         ${this.getDynamicParagraphStylesCSS()}
 
@@ -12894,14 +12932,36 @@ ${embeddedStyles}
         try {
             const node = line.domNode;
             if (!node) return 'line';
-            const cls = node.className || '';
-            if (typeof cls !== 'string') {
-                // SVGAnimatedString or other; convert
-                const v = (cls.baseVal || '').toString();
-                return this._levelFromClassString(v);
-            }
-            return this._levelFromClassString(cls);
+            const raw = node.className || '';
+            const cls = (typeof raw === 'string') ? raw : (raw.baseVal || '').toString();
+            const blockLevel = this._levelFromClassString(cls);
+            if (blockLevel !== 'line') return blockLevel;
+            // comment-style and translation-style are INLINE Quill formats, so the PDF
+            // import's block <p class="ql-comment-style"> is demoted on load to
+            // <p><span class="ql-comment-style">…</span></p> — the PARAGRAPH ends up with
+            // no class, and a class-only check would wrongly treat the line as chant (and
+            // map audio onto it). Detect them from the line's CONTENT instead.
+            return this._inlineLevelFromContent(node);
         } catch(e) { return 'line'; }
+    }
+
+    // If (almost) the whole line's text sits inside an inline comment/translation span,
+    // treat the line as that non-chant level. Tolerates an inline audio-attachment span.
+    _inlineLevelFromContent(node) {
+        try {
+            const total = (node.textContent || '').replace(/\s/g, '').length;
+            if (!total) return 'line';
+            const covered = (sel) => {
+                let n = 0;
+                node.querySelectorAll(sel).forEach(el => {
+                    n += (el.textContent || '').replace(/\s/g, '').length;
+                });
+                return n;
+            };
+            if (covered('.ql-comment-style') >= total * 0.8) return 'comment';
+            if (covered('.ql-translation-style') >= total * 0.8) return 'translation';
+        } catch (_) {}
+        return 'line';
     }
 
     _levelFromClassString(cls) {
@@ -12910,7 +12970,8 @@ ${embeddedStyles}
         if (cls.includes('ql-doc-section'))    return 'section';
         if (cls.includes('ql-doc-subsection')) return 'subsection';
         if (cls.includes('ql-doc-translation') || cls.includes('ql-translation-style')) return 'translation';
-        if (cls.includes('ql-comment-style'))  return 'comment';
+        // Block source/citation lines (new) and legacy block comment class.
+        if (cls.includes('ql-doc-comment') || cls.includes('ql-comment-style')) return 'comment';
         return 'line';
     }
 
