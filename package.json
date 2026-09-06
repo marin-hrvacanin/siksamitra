@@ -33,7 +33,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sm": "tsx packages/cli/src/main.ts",
-    "check": "npm-run-all --serial typecheck test check:tokens check:literals check:fixtures check:conformance check:transliteration check:engine",
+    "check": "npm-run-all --serial typecheck test check:tokens check:literals check:fixtures check:conformance check:transliteration check:lossless check:engine",
     "check:transliteration": "tsx packages/cli/src/gates/transliteration.ts",
     "check:engine": "tsx packages/cli/src/gates/corpus.ts",
     "spec": "openspec",
@@ -43,7 +43,8 @@
     "gen:tokens": "tsx packages/tokens/gen.mjs",
     "check:tokens": "tsx packages/tokens/gen.mjs --check",
     "check:literals": "node tools/check-tokens.mjs",
-    "build:storage": "npm run -w @siksamitra/storage build"
+    "build:storage": "npm run -w @siksamitra/storage build",
+    "check:lossless": "tsx packages/cli/src/gates/lossless.ts"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

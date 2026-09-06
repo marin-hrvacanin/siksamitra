@@ -21,7 +21,10 @@
  * `verified: false`. This comment used to claim "all three Indic scripts",
  * which was a third more verification than exists.
  */
-import { ANU, DIGRAPHS, PRANAVA, VIS, VIRAMA_TICK, ZWJ, ZWNJ, isConsonant, isVowel } from '../alphabet.js';
+import {
+  ANU, DIGRAPHS, FORM_BOUNDARY, PRANAVA, VIS, VIRAMA_TICK, ZWJ, ZWNJ,
+  isConsonant, isVowel,
+} from '../alphabet.js';
 import {
   ACCENT_MARKS, BY_IAST, SIGN_BY_IAST,
   letterFor, signFor,
@@ -138,7 +141,27 @@ export function transliterateSyllable(
   // 'iast')`, which is the privilege this refactor exists to remove — the same
   // path now serves ITRANS and any romanisation added later.
   if (module.kind === 'romanisation') {
-    return units.map((u) => formOf(module, u.c)?.form ?? u.c).join('');
+    // In lossless mode the conjunct choice is written out, because otherwise a
+    // romanisation drops it: Devanagari distinguishes `क्त्य` from `क्‌त्य`
+    // and IAST spells both `ktya`. This is the same mechanism the Indic scripts
+    // use for their own ambiguities — a marker that survives the round trip —
+    // and without it "IAST" is a one-way export rather than an exchange form.
+    if (opts?.lossless === true) return romanisationLossless(units, module);
+    return units.map((u) => {
+      const form = formOf(module, u.c)?.form ?? u.c;
+      if (u.cj === undefined) return form;
+      // ZWNJ / ZWJ, not the ASCII `_` / `+`.
+      //
+      // They are zero-width format characters: invisible, inert in collation
+      // and search, stepped over by every rule (they are in `ANNOTATION`), and
+      // already the canonical internal form — `normalize` rewrites the ASCII
+      // into these before anything else runs. The ASCII pair is a TYPING
+      // convenience for an author, not the representation; emitting it here
+      // would put a visible `_` into text meant to read as Sanskrit, and would
+      // make the same information two different characters depending on which
+      // end of the pipeline produced it.
+      return form + cjControl(u.cj);
+    }).join('');
   }
   const virama = module.virama;
   const sel = (c: string): string =>
@@ -365,13 +388,90 @@ export interface ToIastResult {
   ambiguous: { at: number; from: string; chose: string; alternatives: string[] }[];
 }
 
+/**
+ * Write a romanisation so it can be read back exactly.
+ *
+ * Longest-match decoding is deterministic but not automatically faithful: in
+ * ITRANS `sh` is both one phoneme and `s` + `h`, and `aa` is both one vowel and
+ * `a` + `a`, so the pair silently reads back as the single letter. The corpus
+ * happens to contain neither sequence, which is precisely the kind of luck that
+ * should not be mistaken for a property.
+ *
+ * So each form is appended, the result re-read, and where the reading has
+ * changed a zero-width non-joiner is inserted to break the merge. ZWNJ is the
+ * right character for it: invisible, inert, and already meaning "these do not
+ * combine" — the same thing it means after a halanta.
+ */
+function romanisationLossless(
+  units: readonly ScriptUnit[],
+  module: ScriptModule,
+): string {
+  let out = '';
+  const intended: string[] = [];
+  for (const u of units) {
+    const form = formOf(module, u.c)?.form ?? u.c;
+    intended.push(u.c);
+    const candidate = out + form;
+    // Would appending this form change how anything already written reads?
+    if (romanisationToIast(candidate, module).iast !== intended.join('')) {
+      out += FORM_BOUNDARY + form;
+    } else {
+      out = candidate;
+    }
+    if (u.cj !== undefined) out += cjControl(u.cj);
+  }
+  return out;
+}
+
+/**
+ * Read a romanisation back, by longest match over its own forms.
+ *
+ * A romanisation has no virama and no matras: it writes vowels in line, so the
+ * abugida decoder below is simply the wrong machine for it. Run against ITRANS
+ * it inserted the inherent vowel after every consonant — `prā` came back as
+ * `parā`, `gnim` as `ganima` — and 29 % of the corpus failed to round-trip.
+ *
+ * Longest match first, so a two-character form is read as itself before its
+ * first character is read alone. That makes the decode DETERMINISTIC. Where a
+ * form is also spellable as a sequence of shorter forms (ITRANS `sh` is both
+ * one phoneme and `s` + `h`) determinism is not the same as faithfulness: the
+ * longer reading wins and the sequence reading cannot be expressed. Such
+ * scripts are reported by `sequenceAmbiguitiesIn` and registered
+ * `reversible: false`.
+ */
+function romanisationToIast(text: string, module: ScriptModule): ToIastResult {
+  const forms = PHONEME_INVENTORY
+    .map((p) => ({ id: p.id, form: formOf(module, p.id)?.form }))
+    .filter((e): e is { id: string; form: string } => e.form !== undefined && e.form !== '')
+    .sort((a, b) => b.form.length - a.form.length);
+
+  let out = '';
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i]!;
+    // The conjunct controls are carried through untouched: they are the same
+    // characters on both sides and mean the same thing.
+    // A form boundary did its job at parse time and is not part of the text.
+    if (ch === FORM_BOUNDARY) { i += 1; continue; }
+    // The conjunct controls ARE part of it: same characters, same meaning.
+    if (ch === ZWNJ || ch === ZWJ) { out += ch; i += 1; continue; }
+    const hit = forms.find((e) => text.startsWith(e.form, i));
+    if (hit === undefined) { out += ch; i += 1; continue; }
+    out += hit.id;
+    i += hit.form.length;
+  }
+  return { iast: out, ambiguous: [] };
+}
+
 export function toIast(
   text: string,
   from: ScriptKey,
   opts?: ScriptOptions,
 ): ToIastResult {
-  if (requireScript(from).kind === 'romanisation' && isIdentityMapping(requireScript(from))) {
-    return { iast: text, ambiguous: [] };
+  const source0 = requireScript(from);
+  if (source0.kind === 'romanisation') {
+    if (isIdentityMapping(source0)) return { iast: text, ambiguous: [] };
+    return romanisationToIast(text, source0);
   }
   // Losslessness is a property of the ENCODING, so the decoder has to be told
   // which encoding it is reading — like a character set. In lossless text the
@@ -426,7 +526,9 @@ export function toIast(
       // control, which becomes the `cj` flag rather than a character.
       i += virama.length;
       if (text[i] === ZWNJ || text[i] === ZWJ) {
-        out += text[i] === ZWNJ ? '_' : '+';
+        // Emit the control itself, not its ASCII spelling: what comes out of a
+        // reverse conversion has to be what goes back in.
+        out += text[i];
         i += 1;
       }
       pendingConsonant = false;

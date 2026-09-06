@@ -114,9 +114,40 @@ describe('the conjunct boundary (01 §2.5)', () => {
     expect(transliterateSyllable(units([['s'], ['r'], ['a']]), 'tel')).toBe('స్ర');
   });
 
-  it('the boundary survives a round trip as its ASCII authoring form', () => {
+  it('the boundary comes back as the control, not as its ASCII spelling', () => {
+    // OWNER'S RULING (2026-09-06): the marker carried in IAST text must be a
+    // neutral, invisible character. `_` and `+` are the AUTHORING forms —
+    // `normalize` rewrites them to ZWNJ/ZWJ before anything else runs — so a
+    // reverse conversion emitting `_` produced a second spelling of the same
+    // information, depending on which end of the pipeline made it.
     const there = transliterateSyllable(units([['k'], ['t', 'split'], ['y'], ['a']]), 'deva');
-    expect(toIast(there, 'deva').iast).toBe('kt_ya');
+    expect(toIast(there, 'deva').iast).toBe(`kt${ZWNJ}ya`);
+  });
+
+  it('IAST always carries the conjunct choice, invisibly', () => {
+    // THE LOSS THE OWNER NAMED (2026-09-06): Devanāgarī distinguishes `क्त्य`
+    // from `क्‌त्य` — whether the stack is composed `kt` + `ya` or `k` + `tya`
+    // — and IAST spelled both `ktya`. So a document could not reproduce its own
+    // Devanāgarī from its own IAST.
+    //
+    // Carried ALWAYS rather than only in lossless mode: the control is
+    // zero-width, `bare()` strips it before every rule, and the renderer draws
+    // nothing for it, so there is no cost to it always being right. A mode you
+    // have to remember to switch on is a mode that is off when it matters.
+    const split = units([['k', 'split'], ['t'], ['y'], ['a']]);
+    const join = units([['k', 'join'], ['t'], ['y'], ['a']]);
+    const plain = units([['k'], ['t'], ['y'], ['a']]);
+
+    expect(transliterateSyllable(plain, 'iast')).toBe('ktya');
+    expect(transliterateSyllable(split, 'iast')).toBe(`k${ZWNJ}tya`);
+    expect(transliterateSyllable(join, 'iast')).toBe(`k${ZWJ}tya`);
+
+    // And the three are now distinguishable, which is the whole point.
+    expect(new Set([
+      transliterateSyllable(plain, 'iast'),
+      transliterateSyllable(split, 'iast'),
+      transliterateSyllable(join, 'iast'),
+    ]).size).toBe(3);
   });
 });
 

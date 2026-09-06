@@ -36,6 +36,10 @@ export function unitOf(l: Elem): ChantUnit {
     u.hold = l.hold;
     if (l.hg !== undefined) u.hg = l.hg;
   }
+  // The conjunct choice was computed by `lex`, handed to the Indic scripts, and
+  // then dropped here — so a document could not reproduce its own Devanagari
+  // from its own IAST. It is document data, not a transliteration detail.
+  if (l.cj !== undefined) u.cj = l.cj;
   if (l.change === true) u.change = true;
   if (l.svara !== undefined) u.svara = l.svara;
   if (l.sup !== undefined) u.sup = l.sup;

@@ -40,6 +40,22 @@ export interface ChantUnit {
   hold?: 'short' | 'long';
   /** Holding-group id — adjacent units sharing hold+hg share ONE box. */
   hg?: number;
+  /**
+   * A conjunct boundary AFTER this letter — the information IAST loses.
+   *
+   * Devanagari writes `क्त्य` as one stack, but whether it is composed `kt` +
+   * `ya` or `k` + `tya` is a real choice by the author, and IAST spells both
+   * `ktya`. Without this field a document round-tripped through its IAST
+   * cannot reproduce its own Devanagari: the engine computed the choice, used
+   * it to build the Indic forms, and then discarded it.
+   *
+   * `split` suppresses the ligature (virama + ZWNJ in Unicode terms); `join`
+   * forces it (ZWJ). Absent means "however the script normally writes it".
+   *
+   * Authored in IAST as `_` (split) and `+` (join) — `.` and `-` were already
+   * taken by the danda and the word space.
+   */
+  cj?: 'split' | 'join';
   /** Anusvāra/visarga-derived letter — rendered in the "change" colour. */
   change?: boolean;
   /** Svara (attested Vedic data, or a sanctioned positional convention). */

@@ -1,0 +1,11 @@
+{
+  "note": "Round-trip exactness per script over the corpus. May only go UP. The requirement is that every script reach 100 %.",
+  "total": 15881,
+  "exact": {
+    "iast": 15881,
+    "deva": 15881,
+    "tel": 15881,
+    "tam": 15881,
+    "itrans": 15881
+  }
+}

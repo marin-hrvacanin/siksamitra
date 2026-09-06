@@ -43,11 +43,18 @@ export interface ScriptModule {
   readonly name: string;
   readonly kind: ScriptKind;
   /**
-   * Can text be recovered from this script unambiguously?
+   * Can PLAIN text in this script be read back unambiguously, with no
+   * disambiguating marker?
    *
-   * Where false the script is READ-ONLY: it may be displayed, and it may not be
-   * authored in, because what the author typed could not be recovered. Tamil is
-   * the standing example — it writes `k`, `kh`, `g` and `gh` all as `க`.
+   * False for Tamil, which writes `k`, `kh`, `g` and `gh` all as `க`, and for
+   * ITRANS, where `sh` is both one phoneme and `s` + `h`.
+   *
+   * It does NOT mean the script is lossy. Every registered script round-trips
+   * exactly in lossless mode — Tamil through variation selectors, ITRANS
+   * through the form boundary — and `check:lossless` measures that over the
+   * whole corpus. What this field decides is whether a person can be offered
+   * the script as a typing surface, where there is no opportunity to insert a
+   * marker they cannot see.
    */
   readonly reversible: boolean;
   /**

@@ -32,6 +32,22 @@ export const VIRAMA_TICK = 'ˎ';
 export const ZWNJ = '‌';
 export const ZWJ = '‍';
 
+/**
+ * The form boundary, for a romanisation whose forms can merge.
+ *
+ * U+034F COMBINING GRAPHEME JOINER. Its Unicode-defined purpose is exactly
+ * this: block two characters from being treated as one unit, without changing
+ * how either renders. It is invisible, it is inert in collation and search, and
+ * it is NOT ZWNJ — which already means a conjunct split, and would be two
+ * meanings on one character.
+ *
+ * ITRANS needs it because `sh` is both one phoneme and `s` + `h`, and `aa` is
+ * both one vowel and `a` + `a`. Without a boundary the pair reads back as the
+ * single letter and the script is lossy for text the corpus happens not to
+ * contain.
+ */
+export const FORM_BOUNDARY = '͏';
+
 /** The author-facing ASCII forms. `.` and `-` are taken (daṇḍa; word space). */
 export const CJ_SPLIT_ASCII = '_';
 export const CJ_JOIN_ASCII = '+';
@@ -41,7 +57,7 @@ export const CJ_JOIN_ASCII = '+';
  * combining marks, the candrabindu, the svarabhakti dot and the conjunct
  * controls. `SVARA_MARKS` in `sanskrit_rules.js` L28, extended.
  */
-export const ANNOTATION = new Set(['̱', '̍', '̎', 'ˎ', '·', CANDRA, ZWNJ, ZWJ]);
+export const ANNOTATION = new Set(['̱', '̍', '̎', 'ˎ', '·', CANDRA, ZWNJ, ZWJ, FORM_BOUNDARY]);
 
 /** Two-character letters. A digraph is ONE letter and therefore one unit. */
 export const DIGRAPHS = [
