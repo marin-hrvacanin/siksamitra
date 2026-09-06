@@ -1,0 +1,56 @@
+# === Node ===
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.vite/
+
+# === Rust / Tauri ===
+target/
+apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/binaries/*
+!apps/desktop/src-tauri/binaries/.gitkeep
+
+# === Python (tools/ sidecars) ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# === User data (never in the repo) ===
+Library/
+media/
+cache/
+preferences.json
+
+# === Legacy v1 leftovers that survive a branch switch ===
+Untitled.html
+test_dirgham.html
+combiningMark.html
+*_original.html
+icon_data_uri*.txt
+icon_old.ico
+logo_old.png
+debug.log
+*.log
+documents/
+tests/
+specs/
+śikṣāmitra/
+
+# === Portable packages are build output, not source ===
+*.vuchant
+*.smdoc
+
+# === Claude Code local config ===
+CLAUDE.md
+.claude/settings.local.json
+
+# === OS / editor ===
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+*.code-workspace

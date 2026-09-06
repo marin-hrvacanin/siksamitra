@@ -1,0 +1,60 @@
+schema: spec-driven
+
+context: |
+  śikṣāmitra v2 — a standalone desktop + web editor for Vedic and classical
+  Sanskrit recitation text. It owns the marking ENGINE, the document FORMAT,
+  the RENDERER and all file interop. It is a tool, not a website: file-first,
+  offline-first, usable with no account.
+
+  Tech stack:
+    - TypeScript everywhere, strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes
+    - npm workspaces monorepo: packages/{format,engine,render,interop,cli} + apps/{desktop,web}
+    - React 19 + Vite 6 for the UI; the renderer is React + CSS
+    - Tauri 2 (Rust) for the desktop shell — NOT Electron, NOT PyQt
+    - Vitest for tests; the corpus gates are ratchets, not snapshots
+    - Python sidecars only where calibration demands it (PDF vector-layer import)
+
+  Relationship to vedaunion.org (a SEPARATE, INDEPENDENT project):
+    - Neither project depends on the other. Separate repos, separate hosting,
+      separate deploys, no shared packages in either direction.
+    - Veda Union has its own renderer and its own reader for the interchange
+      format. It is not a consumer of this codebase.
+    - What the two share is a FORMAT. Siksamitra exports it; the platform reads
+      it. Either side may gain a construct first, and the other is then brought
+      to match deliberately, against the written contract.
+    - The arbiter between two independent implementations is the CONFORMANCE
+      FIXTURE SUITE, not a shared library.
+    - Optionally, an authenticated "online mode" lets the editor read and write
+      platform documents over the platform's own API.
+
+  Governing conventions:
+    - ONE implementation of each thing WITHIN this repository. v1 produced marks
+      in four places and could not say which was right; that is the defect being
+      escaped. Across the two projects the rule is different: two independent
+      implementations are intended, and the fixture suite is what keeps them
+      agreed.
+    - Marks are DATA, never CSS-classed HTML. A document is not its presentation.
+    - Derived fields (scripts, marks) are OUTPUTS. They are recomputed, never edited.
+    - A rule is data with an id, a stage and a when(profile). Never `if (slug === ...)`.
+    - Profile is the ONE parametrization: every difference between documents is a
+      field there.
+    - Rule zero: a document with no `src` has attested marks and MUST NOT be
+      re-derived.
+    - Gates ratchet. A number may improve; a regression fails the build.
+
+rules:
+  proposal:
+    - State what moves from vedaunion.org rather than what is written fresh, wherever that is the case.
+    - Never propose a second implementation of the engine or the renderer.
+  design:
+    - Record rejected alternatives with the evidence that rejected them, including measurements where they exist.
+  tasks:
+    - Every task that ports verified code must also port its gate.
+
+operations:
+  apply:
+    guidance:
+      - Run `npm run check` before marking a task group complete.
+  archive:
+    guidance:
+      - Confirm the corpus and transliteration gates still pass before archiving.

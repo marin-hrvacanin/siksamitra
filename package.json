@@ -1,0 +1,50 @@
+{
+  "name": "siksamitra",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "description": "\u015bik\u1e63\u0101mitra \u2014 the editor for Vedic and classical Sanskrit recitation text. v2.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/format",
+    "packages/engine",
+    "packages/render",
+    "packages/interop",
+    "packages/cli",
+    "apps/web",
+    "apps/desktop"
+  ],
+  "scripts": {
+    "build": "npm-run-all --serial build:format build:engine build:interop build:render build:cli",
+    "build:format": "npm run -w @siksamitra/format build",
+    "build:engine": "npm run -w @siksamitra/engine build",
+    "build:interop": "npm run -w @siksamitra/interop build",
+    "build:render": "npm run -w @siksamitra/render build",
+    "build:cli": "npm run -w @siksamitra/cli build",
+    "dev": "npm run -w @siksamitra/web dev",
+    "desktop:dev": "npm run -w @siksamitra/desktop dev",
+    "desktop:build": "npm run -w @siksamitra/desktop build",
+    "typecheck": "tsc -b --pretty",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sm": "tsx packages/cli/src/main.ts",
+    "check": "npm-run-all --serial typecheck test check:fixtures check:conformance check:transliteration check:engine",
+    "check:transliteration": "tsx packages/cli/src/gates/transliteration.ts",
+    "check:engine": "tsx packages/cli/src/gates/corpus.ts",
+    "spec": "openspec",
+    "check:conformance": "tsx packages/cli/src/gates/conformance.ts",
+    "gen:conformance": "node tools/build-conformance.mjs",
+    "check:fixtures": "node tools/build-conformance.mjs --check"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "^1.12.0",
+    "@types/node": "^22.10.2",
+    "npm-run-all": "^4.1.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

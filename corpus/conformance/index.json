@@ -1,0 +1,85 @@
+{
+  "contractVersion": 4,
+  "generated": "tools/build-conformance.mjs",
+  "note": "Mined from corpus/chants. See docs/INTERCHANGE.md §8. Any reader of the format may run these; they import nothing.",
+  "fixtures": [
+    {
+      "id": "syllable-four-scripts",
+      "construct": "a syllable carrying all four script forms",
+      "file": "syllable-four-scripts.json"
+    },
+    {
+      "id": "unit-hold-short",
+      "construct": "a short holding on a letter",
+      "file": "unit-hold-short.json"
+    },
+    {
+      "id": "unit-hold-long",
+      "construct": "a long holding on a letter",
+      "file": "unit-hold-long.json"
+    },
+    {
+      "id": "unit-hold-group",
+      "construct": "a holding GROUP id, joining a box across letters",
+      "file": "unit-hold-group.json"
+    },
+    {
+      "id": "unit-svara-anudatta",
+      "construct": "an anudātta accent",
+      "file": "unit-svara-anudatta.json"
+    },
+    {
+      "id": "unit-svara-svarita",
+      "construct": "a svarita accent",
+      "file": "unit-svara-svarita.json"
+    },
+    {
+      "id": "unit-svara-dirgha-svarita",
+      "construct": "a dīrgha-svarita accent",
+      "file": "unit-svara-dirgha-svarita.json"
+    },
+    {
+      "id": "unit-change",
+      "construct": "a change-style letter (an anusvāra rewritten by rule)",
+      "file": "unit-change.json"
+    },
+    {
+      "id": "unit-candra",
+      "construct": "the Vedic candrabindu on a letter",
+      "file": "unit-candra.json"
+    },
+    {
+      "id": "unit-sup-aid",
+      "construct": "a superscript reading aid",
+      "file": "unit-sup-aid.json"
+    },
+    {
+      "id": "unit-sbhakti",
+      "construct": "an epenthetic svarabhakti vowel",
+      "file": "unit-sbhakti.json"
+    },
+    {
+      "id": "token-danda",
+      "construct": "a daṇḍa as structure rather than as text",
+      "file": "token-danda.json"
+    },
+    {
+      "id": "token-pause",
+      "construct": "a recitation pause",
+      "file": "token-pause.json"
+    },
+    {
+      "id": "token-break",
+      "construct": "a line break inside a verse",
+      "file": "token-break.json"
+    },
+    {
+      "id": "token-text",
+      "construct": "literal text that is not recited",
+      "file": "token-text.json"
+    }
+  ],
+  "constructsWithoutFixture": [
+    "unit-conjunct-control"
+  ]
+}

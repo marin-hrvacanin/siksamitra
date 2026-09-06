@@ -1,0 +1,19 @@
+/* GENERATED — do not edit. Run: npm run gen:tokens
+ * Source: shared/src/marking/geometry.ts
+ * See specs/chant-editor/06-SINGLE-SOURCE.md §3.2. */
+:root {
+  --mark-hold-pad: 0.1em 0.07em 0.12em;
+  --mark-hold-margin: 0 0.03em;
+  --mark-hold-stroke-short: max(1px, 0.032em);
+  --mark-hold-stroke-long: max(1px, 0.075em);
+  --mark-hold-radius: var(--radius-sm);
+  --mark-svara-width: 3px;
+  --mark-svara-height: 0.34em;
+  --mark-svara-top: -0.36em;
+  --mark-svara-radius: 1.5px;
+  --mark-svara-dirgha-sep: 3.5px;
+  --mark-anudatta-thickness: 0.035em;
+  --mark-anudatta-drop: 0.14em;
+  --mark-sbhakti-r: 0.055em;
+  --mark-sbhakti-gap: 0.05em;
+}

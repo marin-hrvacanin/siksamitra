@@ -1,0 +1,44 @@
+{
+  "name": "@siksamitra/render",
+  "version": "2.0.0-alpha.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./theme": {
+      "development": "./src/theme/marks.ts",
+      "types": "./dist/theme/marks.d.ts",
+      "import": "./dist/theme/marks.js"
+    },
+    "./chant.css": "./src/chant.css",
+    "./print.css": "./src/print.css",
+    "./mark-geometry.css": "./src/generated/mark-geometry.css"
+  },
+  "files": [
+    "dist",
+    "src/*.css",
+    "src/generated/*.css"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@siksamitra/format": "2.0.0-alpha.0",
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.3"
+  }
+}

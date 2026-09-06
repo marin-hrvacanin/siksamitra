@@ -1,0 +1,840 @@
+/* ==========================================================================
+   Veda Union — chant reader (embeddable container).
+   Presentation layer ONLY. All meaning lives in the data; this file decides how
+   the data looks. Marks land on the SPECIFIC letter they belong to. Script-
+   agnostic: IAST renders letter-by-letter; Devanāgarī/Telugu/Tamil render one
+   shaped akṣara with akṣara-level marks.
+
+   THEME: this reader INHERITS the website theme. Its private `--c-*` tokens are
+   thin aliases over the global design tokens (index.css @theme + [data-theme]),
+   so light/dark flips with the rest of the site — no local theme state.
+   ========================================================================== */
+
+/* `.chant-marks` is the same alias set without the reader's own layout: any
+   subtree that DRAWS recitation marks needs these tokens, and the chant editor
+   is one. Without it every `--c-*` resolves to nothing, so the holding boxes
+   and svara strokes render invisible while the elements are still in the DOM —
+   which looks like plain text with mysterious gaps in it. */
+.chant-root,
+.chant-marks {
+  --c-bg: var(--color-vellum);
+  --c-bg-raise: var(--color-vellum-dim);
+  --c-bg-sink: var(--color-vellum-warm);
+  --c-ink: var(--color-ink);
+  --c-ink-soft: var(--color-ink-soft);
+  --c-ink-mute: var(--color-ink-mute);
+  --c-line: var(--color-rule);
+  --c-line-soft: color-mix(in srgb, var(--color-rule) 55%, transparent);
+  --c-violet: var(--color-violet);
+  --c-violet-soft: var(--color-violet-glow);
+  /* owned VU marking vocabulary — now global tokens (flip with theme) */
+  --c-svara: var(--color-svara);
+  --c-hold: var(--color-hold);
+  --c-change: var(--color-change);
+  --c-pause-short: var(--color-pause-short);
+  --c-pause-long: var(--color-pause-long);
+  --shadow-card: var(--shadow-md);
+
+  position: relative;
+  color: var(--c-ink);
+  background: var(--c-bg);
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+/* Embedded inside a document/class: no full-viewport height, no page fill —
+   sit as a bordered, rounded card within the host page and inherit its paper. */
+.chant-root.is-embedded {
+  min-height: 0;
+  /* Blend with the host page — no card fill (owner's call). Keep a light frame. */
+  background: transparent;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
+  /* no overflow:hidden — the floating settings popover is absolutely positioned
+     inside and must be allowed to extend past the card edge. */
+}
+
+.ic { display: inline-flex; align-items: center; justify-content: center; vertical-align: -.14em; font-size: 1.1em; }
+
+/* ---- in-document chant "track" entry + fullscreen reader modal ----------- */
+.vu-chant-block { margin: 1.6rem 0; }
+.chant-track {
+  display: flex; align-items: center; gap: 1.1rem; width: 100%; text-align: left;
+  border: 1px solid var(--color-rule); border-radius: var(--radius-card);
+  background: var(--color-bg-alt); padding: 1.15rem 1.3rem; cursor: pointer; font: inherit; color: inherit;
+  transition: border-color .15s, box-shadow .15s, transform .1s;
+}
+.chant-track:hover { border-color: var(--color-violet); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.chant-track__play {
+  flex: none; width: 58px; height: 58px; border-radius: var(--radius-pill);
+  background: var(--color-violet); color: var(--color-vellum);
+  display: grid; place-items: center;
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--color-violet) 55%, transparent);
+  transition: transform .12s ease;
+}
+.chant-track__play svg { margin-left: 3px; }
+.chant-track:hover .chant-track__play { transform: scale(1.06); }
+.chant-track__text { min-width: 0; flex: 1; }
+.chant-track__eyebrow { display: block; font-family: var(--font-grotesk); font-size: .6rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--color-violet); }
+.chant-track__title { display: block; font-family: var(--font-display); font-size: 1.55rem; line-height: 1.08; letter-spacing: -.01em; color: var(--color-ink); margin-top: .15rem; }
+.chant-track__preview {
+  display: block; font-family: "Gentium Book Plus", "Noto Serif Devanagari", serif;
+  font-size: 1.02rem; color: var(--color-ink-mute); margin-top: .25rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chant-track__note { display: block; font-family: var(--font-grotesk); font-size: .72rem; color: var(--color-ink-mute); margin-top: .35rem; line-height: 1.4; }
+.chant-track__go { flex: none; color: var(--color-violet); display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; border: 1px solid var(--color-rule-violet); border-radius: var(--radius-pill); }
+.chant-track:hover .chant-track__go { background: color-mix(in srgb, var(--color-violet) 8%, transparent); }
+@media (max-width: 520px) {
+  .chant-track { padding: .95rem 1rem; gap: .85rem; }
+  .chant-track__play { width: 48px; height: 48px; }
+  .chant-track__title { font-size: 1.3rem; }
+  .chant-track__go { display: none; }
+}
+
+.chant-modal {
+  position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column;
+  background: var(--color-vellum); animation: chant-pop .18s ease;
+}
+.chant-modal__head {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  /* Title is CENTRED; symmetric padding keeps it clear of the stacked Contents/
+     Settings controls (far left, labelled ~8rem) and the Close button (far
+     right). Padding tracks the same 520px breakpoint the button LABELS use. */
+  padding: .8rem 9rem;
+  min-height: 3.6rem;
+  border-bottom: 1px solid var(--color-rule);
+  background: color-mix(in srgb, var(--color-vellum) 94%, transparent); backdrop-filter: blur(8px);
+}
+.chant-modal__title {
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  text-align: center;
+  font-family: var(--font-display); font-size: clamp(1.15rem, 3vw, 1.45rem); letter-spacing: -.01em;
+}
+.chant-modal__close {
+  position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; gap: .4rem; cursor: pointer;
+  border: 1px solid var(--color-rule); background: var(--color-bg); color: var(--color-ink);
+  border-radius: var(--radius-pill); padding: .45rem .9rem; font-family: var(--font-grotesk); font-size: .72rem; letter-spacing: .06em;
+}
+.chant-modal__close:hover { border-color: var(--color-violet); color: var(--color-violet); }
+@media (max-width: 520px) {
+  .chant-modal__close-label { display: none; }
+  .chant-modal__close { padding: .45rem; }
+  /* Icon-only controls (labels hidden) → far less to clear. */
+  .chant-modal__head { padding-left: 3.4rem; padding-right: 3.4rem; }
+}
+.chant-modal__body { flex: 1; overflow-y: auto; overflow-x: clip; }
+/* Inside the modal the reader IS the frame — drop its embedded border/fill. */
+.chant-modal__body .chant-root.is-embedded { border: 0; border-radius: 0; background: transparent; }
+
+/* ---- floating controls (Contents + Settings) ----------------------------- */
+/* A viewport-fixed cluster at the top-left, stacked one below the other, so
+   both stay reachable as you scroll. Inside the fullscreen modal it sits BELOW
+   the sticky head (title + Close) so it never overlaps the tray — it floats
+   over the document. Outside the modal (full-page test) there is no tray. */
+.chant-controls {
+  position: fixed; top: 1rem; left: 1rem; z-index: 60;
+  display: flex; flex-direction: column; align-items: flex-start; gap: .5rem;
+}
+.chant-modal .chant-controls { top: calc(3.6rem + .75rem); }
+.chant-fab,
+.chant-nav-toggle,
+.chant-more {
+  display: inline-flex; align-items: center; gap: .45rem;
+  appearance: none; cursor: pointer;
+  border: 1px solid var(--c-line); background: color-mix(in srgb, var(--c-bg-raise) 92%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: var(--c-ink); border-radius: var(--radius-pill); padding: .6rem .95rem;
+  font-family: var(--font-grotesk); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+  box-shadow: var(--shadow-md);
+  transition: border-color .15s, background .15s, color .15s, transform .1s;
+}
+.chant-fab:hover, .chant-nav-toggle:hover, .chant-more:hover { border-color: var(--c-violet); color: var(--c-violet); }
+.chant-fab:active, .chant-nav-toggle:active, .chant-more:active { transform: scale(.96); }
+.chant-fab[aria-expanded="true"], .chant-nav-toggle[aria-expanded="true"], .chant-more[aria-expanded="true"] { border-color: var(--c-violet); color: var(--c-violet); }
+.chant-more { padding: .6rem; }
+/* The "⋯" trigger only exists on phones — it collapses the two controls so they
+   don't take two rows over the (narrow) reading column. */
+.chant-more { display: none; }
+@media (max-width: 520px) {
+  .chant-more { display: inline-flex; }
+  /* Collapsed by default: only the ⋯ shows. Opening reveals the two controls,
+     WITH their labels (there's room once they're the focus). */
+  .chant-controls:not(.is-open) .chant-nav-toggle,
+  .chant-controls:not(.is-open) .chant-fab { display: none; }
+  .chant-controls.is-open .chant-nav-toggle__label,
+  .chant-controls.is-open .chant-fab__label { display: inline; }
+}
+
+.chant-nav-backdrop { position: fixed; inset: 0; z-index: 65; background: rgba(20, 14, 28, .35); backdrop-filter: blur(2px); }
+.chant-nav {
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 66; width: min(20rem, 84vw);
+  background: var(--color-bg); border-right: 1px solid var(--color-rule); box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; animation: chant-nav-in .2s ease;
+}
+@keyframes chant-nav-in { from { transform: translateX(-100%); } to { transform: none; } }
+.chant-nav__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.1rem; border-bottom: 1px solid var(--color-rule);
+  font-family: var(--font-grotesk); font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--color-violet);
+}
+.chant-nav__x { appearance: none; border: none; background: transparent; color: var(--color-ink-mute); cursor: pointer; width: 30px; height: 30px; display: grid; place-items: center; border-radius: var(--radius-control); }
+.chant-nav__x:hover { background: var(--color-bg-alt); color: var(--color-ink); }
+.chant-nav__body { overflow-y: auto; padding: .9rem .9rem 1.4rem; }
+.chant-nav__list { list-style: none; margin: 0; padding: 0; }
+.chant-nav__sec { margin-bottom: .35rem; }
+.chant-nav__seclabel {
+  display: block; width: 100%; text-align: left; appearance: none; border: none; background: transparent; cursor: pointer;
+  font-family: var(--font-grotesk); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--color-ink);
+  padding: .45rem .45rem; font-weight: 600; border-radius: var(--radius-control);
+}
+.chant-nav__seclabel:hover { color: var(--color-violet); background: var(--color-bg-alt); }
+/* Verses as an indented hierarchical list with a guide line — not a chip grid. */
+.chant-nav__verses {
+  list-style: none; margin: .1rem 0 .4rem .55rem; padding-left: .55rem;
+  border-left: 1px solid var(--color-rule); display: flex; flex-direction: column; gap: 1px;
+}
+.chant-nav__v {
+  display: flex; align-items: baseline; gap: .6rem; width: 100%; text-align: left;
+  appearance: none; cursor: pointer; border: none; background: transparent;
+  border-radius: var(--radius-control); padding: .38rem .45rem; color: var(--color-ink-soft);
+}
+.chant-nav__v:hover { background: var(--color-bg-alt); color: var(--color-violet); }
+.chant-nav__vn {
+  flex: none; min-width: 1.5rem; text-align: right; font-family: var(--font-grotesk);
+  font-variant-numeric: lining-nums tabular-nums; font-size: .74rem; font-weight: 600; color: var(--color-violet);
+}
+.chant-nav__vtext {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: "Gentium Book Plus", "Noto Serif Devanagari", "Noto Serif Telugu", "Noto Serif Tamil", serif;
+  font-size: .95rem; line-height: 1.3; color: var(--color-ink);
+}
+.chant-nav__v:hover .chant-nav__vtext { color: var(--color-violet); }
+
+/* Settings panel — fixed card by the FAB on wide screens, bottom sheet on phones. */
+.chant-settings-pop {
+  position: fixed; top: 6.3rem; left: 1rem; z-index: 62;
+  width: min(30rem, calc(100vw - 2rem));
+  background: var(--color-bg); color: var(--color-ink);
+  border: 1px solid var(--color-rule); border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg); padding: 1.1rem 1.2rem 1.3rem;
+  max-height: 78vh; overflow-y: auto; animation: chant-pop .16s ease;
+}
+.chant-settings-pop__head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: .9rem;
+}
+.chant-settings-pop__title { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: -.01em; }
+.chant-settings-pop__x {
+  appearance: none; border: none; background: transparent; cursor: pointer;
+  color: var(--color-ink-mute); width: 30px; height: 30px; border-radius: var(--radius-control);
+  display: grid; place-items: center; font-size: 1.1rem;
+}
+.chant-settings-pop__x:hover { background: var(--color-bg-alt); color: var(--color-ink); }
+.chant-settings-backdrop { position: fixed; inset: 0; z-index: 61; }
+/* An extra settings group below the standard chant controls — shown only when
+   the text actually has something to set (a saṅkalpa module, a deity slot). */
+.chant-settings__group { margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px solid var(--c-line); }
+.chant-settings__group-title {
+  font-family: var(--font-grotesk); font-size: .68rem; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--c-violet); margin-bottom: .8rem;
+}
+.chant-settings__hint { font-family: var(--font-grotesk); font-size: .72rem; line-height: 1.5; color: var(--c-ink-mute); margin-top: .8rem; }
+@media (max-width: 640px) {
+  .chant-settings-pop {
+    position: fixed; inset: auto 0 0 0; top: auto; width: 100%;
+    border-radius: var(--radius-card) var(--radius-card) 0 0; max-height: 86vh;
+  }
+  .chant-settings-backdrop { background: rgba(20, 14, 28, .4); backdrop-filter: blur(2px); }
+}
+@keyframes chant-pop { from { transform: translateY(8px); opacity: 0 } to { transform: none; opacity: 1 } }
+
+/* Audio-speed slider (chant settings) — quantised 0.5×–2× range */
+.chant-speed { margin-top: 1.25rem; }
+.chant-speed .sk-label { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
+.chant-speed__val {
+  font-variant-numeric: tabular-nums; color: var(--color-violet); font-weight: 600;
+  font-family: var(--font-grotesk); font-size: .9rem;
+}
+.chant-speed__range {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin: .55rem 0 .2rem;
+  border-radius: 999px; background: var(--color-rule); cursor: pointer;
+}
+.chant-speed__range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--color-violet); border: 2px solid var(--color-surface);
+  box-shadow: 0 1px 4px rgba(42, 27, 71, .35);
+}
+.chant-speed__range::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%; background: var(--color-violet);
+  border: 2px solid var(--color-surface); box-shadow: 0 1px 4px rgba(42, 27, 71, .35);
+}
+.chant-speed__range:focus-visible { outline: 2px solid var(--color-violet); outline-offset: 3px; }
+.chant-speed__ticks {
+  display: flex; justify-content: space-between; font-size: .66rem; letter-spacing: .04em;
+  color: var(--color-ink-mute); font-variant-numeric: tabular-nums; font-family: var(--font-grotesk);
+}
+
+.seg { display: flex; flex-wrap: wrap; gap: .35rem; }
+.seg button {
+  appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: .35em;
+  font-family: var(--font-grotesk); font-size: .82rem;
+  padding: .42rem .8rem; border-radius: var(--radius-pill);
+  border: 1px solid var(--c-line); background: var(--c-bg);
+  color: var(--c-ink-soft); transition: all .14s;
+}
+.seg button:hover { border-color: var(--c-violet-soft); color: var(--c-ink); }
+.seg button[aria-pressed="true"] {
+  background: var(--c-violet); border-color: var(--c-violet); color: var(--color-vellum);
+}
+.seg--switch button { min-width: 3.2rem; justify-content: center; }
+
+/* ---- reading surface ----------------------------------------------------- */
+/* top padding clears the fixed top-left settings button */
+.chant-scroll { padding-bottom: 2.5rem; padding-top: 3rem; overflow-x: clip; }
+.chant-root:not(.is-embedded) .chant-scroll { padding-bottom: 6rem; }
+.chant-doc {
+  max-width: min(80rem, 94vw); margin: 0 auto;
+  padding: clamp(1.4rem, 4vw, 2.6rem) clamp(1rem, 4vw, 2.4rem);
+}
+.chant-root.is-embedded .chant-doc { padding: clamp(1.4rem, 4vw, 2.4rem) clamp(1rem, 4vw, 1.8rem) 1.5rem; }
+.chant-hero { text-align: center; margin-bottom: clamp(1.4rem, 5vw, 2.6rem); }
+.chant-hero__title {
+  font-family: var(--font-display);
+  font-weight: 500; font-size: clamp(2rem, 8vw, 3rem); line-height: 1.05; margin: 0 0 .3rem;
+}
+.chant-hero__sub { color: var(--c-ink-mute); font-style: italic; font-size: clamp(1rem,4vw,1.2rem); }
+
+/* `flow-root` so a step CONTAINS its own floated figure: without it a tall
+   illustration overhangs the next step's heading. */
+/* A long marked document is enormous in NODES, not bytes: every syllable is an
+   inline-block with a span per letter. Sections are therefore mounted lazily by
+   `LazySection` in ChantReader — off-screen sections have no DOM at all, which
+   is strictly better than having it and skipping its layout.
+   `content-visibility: auto` was tried here and REMOVED: it suppresses the
+   IntersectionObserver inside a skipped subtree, so the lazy contents could
+   fail to mount at all. The two mechanisms do the same job and only one of
+   them can see its own trigger. */
+.section { margin: clamp(1.6rem, 6vw, 2.8rem) 0 0; display: flow-root; }
+
+/* Stands in for a section whose contents have not been mounted yet. It only
+   has to hold the scroll open until the observer fires — the height is a
+   rough average of a real step, and being wrong costs a small scroll shift,
+   not a broken layout. */
+.section__placeholder { min-height: 420px; }
+/* In a manual the heading IS the ritual instruction ("13 · Dīpam — show the
+   lamp, ringing the bell…"), so it must never be cut. It used to be `nowrap`
+   inside `.chant-scroll { overflow-x: clip }`, which silently truncated 10+
+   headings at 375/414 px and 2 even at 1024. It wraps now; the rule keeps its
+   line to itself once the head is more than one row. */
+.section__head { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem .8rem; margin-bottom: 1rem; }
+.section__label {
+  font-family: var(--font-grotesk); font-size: .74rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--c-violet); min-width: 0;
+}
+.section__src { font-family: var(--font-grotesk); font-size: .64rem; letter-spacing: .04em; color: var(--c-ink-mute); font-style: normal; min-width: 0; }
+.section__rule { flex: 1 1 2rem; min-width: 2rem; height: 1px; background: var(--c-line); }
+
+/* A section the reader COMPOSES in place rather than reading from the document
+   — the saṅkalpa at preparatory step 4, built from the day's pañcāṅga and the
+   deity chosen in the reader's settings. It is NOT a card, a tint or a badge:
+   same head, same type, same marks, same colours as every other section. The
+   ONE signal is a faint dotted OUTLINE around it (outline, so it costs no
+   layout and the text sits exactly where it otherwise would).
+
+   Do not confuse the two dotted signals:
+     · dotted OUTLINE around a section = this section is composed;
+     · dotted UNDERLINE on a word (`.fill`) = that word is a variable you
+       supplied. That one is reserved for variables and nothing else. */
+.section.is-composed {
+  outline: 1px dotted color-mix(in srgb, var(--c-violet) 42%, transparent);
+  outline-offset: clamp(.45rem, 2vw, .85rem);
+  border-radius: 3px;
+}
+
+/* verse block */
+.verse {
+  position: relative; padding: clamp(.7rem,3vw,1.1rem) clamp(.5rem,2.5vw,.9rem);
+  border-radius: var(--radius-card); scroll-margin-top: 5rem; transition: background .25s;
+}
+.verse + .verse { margin-top: .4rem; }
+/* Focused/compact reading — just the marked text, tighter rhythm. */
+.chant-root.is-compact .verse { padding: .35rem clamp(.4rem,2vw,.7rem) .5rem; }
+.chant-root.is-compact .verse + .verse { margin-top: 0; border-top: 1px solid color-mix(in srgb, var(--c-line) 55%, transparent); }
+.verse.is-active { background: color-mix(in srgb, var(--c-violet) 8%, transparent); }
+/* Play sits in a STABLE left gutter (outside the text), so toggling audio never
+   reflows the text and the button doesn't ride up with short/long verses. */
+.verse__row { position: relative; }
+.verse__play {
+  position: absolute; left: 0; top: calc(var(--fs, 1) * 0.4rem);
+  appearance: none; cursor: pointer; width: 52px; height: 52px; border-radius: var(--radius-pill);
+  border: 1px solid var(--c-line); background: var(--c-bg-raise); color: var(--c-violet);
+  display: grid; place-items: center; font-size: 1.6rem; transition: all .14s;
+  -webkit-tap-highlight-color: transparent;
+}
+.verse__play:hover { border-color: var(--c-violet); background: color-mix(in srgb, var(--c-violet) 8%, var(--c-bg-raise)); }
+.verse__play:active { transform: scale(.94); }
+.verse__play.is-playing { background: var(--c-violet); color: var(--color-vellum); border-color: var(--c-violet); }
+/* The column the chant line has to fit in — `.pada` sizes itself off it (cqi). */
+.verse__body { padding-left: 3.95rem; min-width: 0; container-type: inline-size; }
+/* Focused/compact mode is audio-off by definition → no play, no empty gutter. */
+.chant-root.is-compact .verse__body { padding-left: 0; }
+
+/* ---- the chant line ------------------------------------------------------ */
+/* One declaration of the reading face, so `holdBox.ts` can read it back off the
+   DOM (`--pada-font`) and measure ink in exactly the font that will be drawn. */
+.chant-root {
+  --pada-font: "Gentium Book Plus", "Noto Serif Devanagari", "Noto Serif Telugu", "Noto Serif Tamil", serif;
+}
+.pada {
+  font-family: var(--pada-font);
+  /* Type tracks the COLUMN, not the viewport: `5.1vw` pinned at its maximum
+     from ~508 px up, so the line never shrank with the space it had and 26
+     pādas wrapped at 768 px (66 at 375). `cqi` is the width of `.verse__body` /
+     `.practice__card`, which is what the line actually has to fit in — so the
+     same rule holds in the fullscreen reader, in an embedded document and in
+     compact mode, where the gutter differs. 3.1cqi is the widest line in this
+     corpus fitting its column; below ~600 px of column the floor takes over and
+     lines wrap — between words, never mid-phrase (`.word` is nowrap). */
+  font-size: calc(var(--fs, 1) * clamp(1.06rem, 3.1cqi, 1.62rem));
+  line-height: 1.95; letter-spacing: .002em; word-spacing: .06em;
+  overflow-wrap: break-word;
+}
+.pada--deva, .pada--tel, .pada--tam { line-height: 2.0; }
+.pada-secondary {
+  font-family: var(--pada-font);
+  font-size: calc(var(--fs, 1) * clamp(.86rem, 2.22cqi, 1.16rem));
+  line-height: 1.85; color: var(--c-ink-mute); margin-top: .3rem;
+  overflow-wrap: break-word;
+  /* The secondary line is washed out (grey) vs the primary — so wash the MARKS
+     proportionally too (blend each toward the muted ink), otherwise saturated
+     red/green marks look wrong floating over grey text. */
+  --c-svara: color-mix(in srgb, var(--color-svara) 45%, var(--c-ink-mute));
+  --c-hold: color-mix(in srgb, var(--color-hold) 45%, var(--c-ink-mute));
+  --c-change: color-mix(in srgb, var(--color-change) 45%, var(--c-ink-mute));
+  --c-pause-short: var(--c-ink-mute);
+  --c-pause-long: var(--c-ink-mute);
+}
+
+.pada-line { display: block; }
+.pada-line + .pada-line { margin-top: .1em; }
+
+/* Per-pāda audio: a small inline play button + a karaoke highlight on the
+   pāda currently being sung. Offsets come from recording.byVerse[id].lines. */
+.pada-line--audio { border-radius: 8px; transition: background .15s; padding: .04em .12em; margin-left: -.12em; }
+.pada-line__play {
+  appearance: none; border: 0; padding: 0; cursor: pointer; margin-right: .5em;
+  width: 1.35em; height: 1.35em; border-radius: 50%; vertical-align: -0.2em;
+  display: inline-grid; place-items: center; line-height: 0;
+  background: var(--color-vellum-dim); color: var(--color-violet);
+  opacity: 0; transition: opacity .15s, background .15s, color .15s;
+}
+.pada-line__play svg { width: .62em; height: .62em; }
+.pada-line:hover .pada-line__play,
+.pada-line.is-active .pada-line__play { opacity: 1; }
+.pada-line__play:hover { background: var(--color-violet); color: #fff; }
+.pada-line.is-active { background: color-mix(in srgb, var(--color-violet) 12%, transparent); }
+@media (hover: none) { .pada-line__play { opacity: .85; } }
+.pada-tail { white-space: nowrap; }
+/* The word-space span forces white-space:normal (to allow wrapping between
+   words); inside the glued tail that would re-open a break and orphan the verse
+   number, so keep spaces non-breaking there. */
+.pada-tail .wsp { white-space: nowrap; }
+
+.word { display: inline-block; white-space: nowrap; cursor: pointer; border-radius: 5px; transition: background .12s; }
+.word.is-plain { cursor: default; }
+@media (hover: hover) { .word:not(.is-plain):hover { background: color-mix(in srgb, var(--c-violet) 12%, transparent); } }
+.wsp { white-space: normal; }
+
+.syl { position: relative; white-space: nowrap; }
+.syl--aksara { display: inline-block; position: relative; line-height: 1; }
+
+.u { position: relative; }
+.u.sv-svarita, .u.sv-dirgha-svarita, .u.sv-anudatta { display: inline-block; line-height: 1; }
+
+.hold { display: inline-block; line-height: 1; }
+/* Long and short differ by STROKE WEIGHT only — never by size (MARKING-RULES
+   §2.3). CONSTANT frame on purpose: every box on a line is the same height, so
+   the marks keep a steady rhythm. Sizing per-glyph ink was tried and reverted —
+   it made every box a different height, which the owner rejected on sight.
+   The margin is space AROUND the box, not padding inside it, so the box itself
+   is unchanged and the two stroke weights stay the only difference. */
+.hold.hold-short, .syl--aksara.hold-short {
+  box-shadow: inset 0 0 0 var(--mark-hold-stroke-short) var(--c-hold);
+  border-radius: var(--mark-hold-radius);
+  padding: var(--mark-hold-pad); margin: var(--mark-hold-margin);
+}
+.hold.hold-long, .syl--aksara.hold-long {
+  box-shadow: inset 0 0 0 var(--mark-hold-stroke-long) var(--c-hold);
+  border-radius: var(--mark-hold-radius);
+  padding: var(--mark-hold-pad); margin: var(--mark-hold-margin);
+}
+
+.u.sv-svarita::before,
+.u.sv-dirgha-svarita::before, .u.sv-dirgha-svarita::after,
+.syl--aksara.sv-svarita::before,
+.syl--aksara.sv-dirgha-svarita::before, .syl--aksara.sv-dirgha-svarita::after {
+  /* whole-pixel thickness renders crisply + uniformly; a fractional width
+     (2.4px) antialiased differently per glyph position → "some thicker/thinner". */
+  content: ""; position: absolute; top: var(--mark-svara-top);
+  width: var(--mark-svara-width); height: var(--mark-svara-height);
+  background: var(--c-svara); border-radius: var(--mark-svara-radius);
+  pointer-events: none;
+}
+.u.sv-svarita::before, .syl--aksara.sv-svarita::before { left: 50%; transform: translateX(-50%); }
+.u.sv-dirgha-svarita::before, .syl--aksara.sv-dirgha-svarita::before { left: calc(50% - var(--mark-svara-dirgha-sep)); }
+.u.sv-dirgha-svarita::after,  .syl--aksara.sv-dirgha-svarita::after  { left: calc(50% + var(--mark-svara-dirgha-sep) - var(--mark-svara-width)); }
+.u.sv-anudatta::after, .syl--aksara.sv-anudatta::after {
+  content: ""; position: absolute; left: 8%; right: 8%; bottom: -.13em; height: 2px;
+  background: var(--c-svara); border-radius: 1px; pointer-events: none;
+}
+.no-marks .u::before, .no-marks .u::after,
+.no-marks .syl--aksara::before, .no-marks .syl--aksara::after { display: none !important; }
+.no-marks .hold-short, .no-marks .hold-long { box-shadow: none; }
+.no-marks .hold-short, .no-marks .hold-long { margin: 0; }
+
+.pada-br { display: block; height: 0; content: ""; }
+
+/* Unmarked running text inside a marked stream. `.fill` is FREE TEXT the
+   reciter supplied (a name, a gotra, a place): never marked, never
+   transliterated — the dotted underline says "your input". `.plain` is text
+   that simply carries no marks. */
+.fill {
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, var(--c-violet) 70%, transparent);
+  text-underline-offset: .24em;
+  text-decoration-thickness: 1.5px;
+  font-style: normal;
+}
+/* A slot the reciter has not filled: the same dotted signal, one step quieter,
+   so it reads as an invitation rather than as a word of the mantra. It is never
+   emitted — not into the recitation, not into Copy, not into a snapshot. */
+.fill--empty { color: var(--c-ink-mute); font-size: .92em; letter-spacing: .01em; }
+.plain { font-style: normal; }
+
+.u.is-change, .syl--aksara.is-change { color: var(--c-change); }
+/* The virāma tick is a recitation mark, not a letter: same ink as the svaras,
+   and it goes quiet with them. See `VIRAMA` in ChantReader. */
+.u--virama { color: var(--c-svara); }
+.no-marks .u--virama { color: inherit; }
+.u__sup { font-size: .64em; line-height: 0; vertical-align: .26em; color: var(--c-change); font-weight: 600; font-style: normal; margin: 0 .03em 0 .04em; }
+.no-marks .u.is-change, .no-marks .syl--aksara.is-change { color: inherit; }
+
+/* svarabhakti — a bold, font-independent filled circle (the "·" glyph was too
+   thin), rendered as an empty span BETWEEN letters, never inside a holding box. */
+.sbhakti {
+  display: inline-block;
+  width: 0.24em;
+  height: 0.24em;
+  border-radius: 50%;
+  background: var(--c-svara);
+  vertical-align: 0.18em; /* sit at mid-letter height, like a middle dot */
+  margin: 0 0.1em;
+}
+.no-marks .sbhakti { background: var(--c-ink-mute); }
+
+/* A pause owns ALL the space around it. The token stream usually carries an
+   explicit `sp` on one side only (`oṁ` + sp + pause), so leaving both in place
+   stacked a real space plus the margin on the left and only the margin on the
+   right — visibly lopsided. Suppress an adjacent space and let the margin do
+   both sides, so every pause is symmetric in every chant. */
+.wsp:has(+ .pause), .pause + .wsp { display: none; }
+.pause { display: inline-block; margin: 0 .28em; font-weight: 600; }
+.pause--short { color: var(--c-pause-short); }
+.pause--long { color: var(--c-pause-long); }
+.bar { color: var(--c-ink-mute); margin: 0 .12em; }
+/* a daṇḍa needs air on both sides: the token stream carries no word space
+   around it, so without a margin it welds the two words it separates. */
+.danda { color: var(--c-ink-mute); margin: 0 .24em; }
+.vnum {
+  font-family: var(--font-grotesk); font-size: .6em; color: var(--c-violet);
+  background: color-mix(in srgb, var(--c-violet) 10%, transparent);
+  border-radius: var(--radius-control); padding: .05em .45em; vertical-align: .2em; margin-left: .3em; letter-spacing: .04em;
+  font-variant-numeric: lining-nums;
+}
+
+.translation {
+  margin-top: .5rem; color: var(--c-ink-soft); font-style: italic;
+  font-size: calc(var(--fs,1) * clamp(.9rem, 3.6vw, 1rem)); line-height: 1.55; max-width: 44rem;
+}
+/* The mantra's own locus, when the step holds several from different places.
+   Same quiet register as `.section__src`, so it reads as apparatus and never
+   competes with the mantra above it or the sense below. */
+.verse__src {
+  margin-top: .4rem; font-family: var(--font-grotesk); font-size: .64rem;
+  letter-spacing: .04em; color: var(--c-ink-mute); font-style: normal;
+  max-width: 44rem;
+}
+.translation__eyebrow { font-style: normal; font-family: var(--font-grotesk); font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:var(--c-ink-mute); margin-right:.5rem; }
+
+/* ---- practice mode ------------------------------------------------------- */
+.practice { max-width: min(80rem, 94vw); margin: 0 auto; padding: 3.4rem clamp(1rem,4vw,1.6rem) 7rem; }
+.practice__card {
+  background: var(--c-bg-raise); border: 1px solid var(--c-line); border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card); padding: clamp(1.4rem,6vw,2.6rem) clamp(1.1rem,5vw,2rem);
+  min-height: 44dvh; display: flex; flex-direction: column; justify-content: center; text-align: center;
+  container-type: inline-size;   /* the column `.pada` sizes itself off */
+}
+.practice__meta { font-family: var(--font-grotesk); font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:var(--c-ink-mute); margin-bottom: 1.2rem; }
+.practice .pada, .practice .pada-secondary { text-align: center; }
+.practice__controls {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  padding: .9rem; background: color-mix(in srgb,var(--c-bg) 90%,transparent); backdrop-filter: blur(8px);
+  border-top: 1px solid var(--c-line);
+}
+.practice__nav {
+  appearance:none; cursor:pointer; border:1px solid var(--c-line); background:var(--c-bg-raise); color:var(--c-ink);
+  border-radius: var(--radius-control); padding:.55rem .9rem; font-size:1.1rem; display:grid; place-items:center; transition: all .14s;
+}
+.practice__nav:hover { border-color: var(--c-violet); }
+.practice__nav:disabled { opacity:.4; cursor: default; }
+.practice__play {
+  appearance:none; cursor:pointer; border:none; background: var(--c-violet); color:var(--color-vellum);
+  width: 66px; height:66px; border-radius:var(--radius-pill); font-size:1.7rem; display:grid; place-items:center;
+  box-shadow: 0 6px 20px -6px color-mix(in srgb,var(--c-violet) 60%, transparent); transition: transform .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.practice__play:active { transform: scale(.93); }
+.practice__play:disabled { opacity:.4; }
+.dotrow { display:flex; gap:.3rem; justify-content:center; flex-wrap:wrap; margin-top:1rem; }
+.dot { width:7px; height:7px; border-radius:var(--radius-pill); background:var(--c-line); cursor:pointer; }
+.dot.is-on { background: var(--c-violet); }
+
+/* ---- word popover -------------------------------------------------------- */
+.wp-float {
+  position: fixed; z-index: 64; box-sizing: border-box;
+  background: var(--c-bg-raise); color: var(--c-ink);
+  border: 1px solid var(--c-line); border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+  padding: .95rem 1.05rem 1.05rem; overflow-y: auto; animation: wp-in .16s ease;
+}
+.wp-float__x {
+  position: absolute; top: .5rem; right: .5rem; width: 28px; height: 28px;
+  display: grid; place-items: center; border: none; background: transparent;
+  color: var(--c-ink-mute); cursor: pointer; border-radius: var(--radius-control); font-size: 1rem;
+}
+.wp-float__x:hover { background: var(--c-bg); color: var(--c-ink); }
+.wp-float .wp__head { text-align: left; padding-right: 1.6rem; }
+.wp-float .wp__word { font-size: 1.6rem; }
+.wp-float .wp__lemma { margin-top: .7rem; }
+
+.wp-backdrop { position: fixed; inset: 0; z-index: 64; background: rgba(20,14,28,.4); backdrop-filter: blur(2px); display:flex; align-items:flex-end; justify-content:center; }
+@media (min-width: 640px){ .wp-backdrop { align-items:center; } }
+.wp {
+  width: min(30rem, 96vw); background: var(--c-bg-raise); color: var(--c-ink);
+  border: 1px solid var(--c-line); border-radius: var(--radius-card) var(--radius-card) 0 0; box-shadow: var(--shadow-card);
+  padding: 1rem 1.3rem 1.5rem; animation: wp-in .22s ease; max-height: 88dvh; overflow-y: auto;
+}
+@media (min-width:640px){ .wp { border-radius: var(--radius-card); } }
+@keyframes wp-in { from { transform: translateY(14px); opacity: 0 } to { transform: none; opacity: 1 } }
+.wp__grip { width: 40px; height: 4px; border-radius: var(--radius-pill); background: var(--c-line); margin: 0 auto .9rem; }
+.wp__head { text-align: center; }
+.wp__word { font-family:"Gentium Book Plus","Noto Serif Devanagari","Noto Serif Telugu","Noto Serif Tamil",serif; font-size: 2rem; line-height:1.25; }
+.wp__word-sec { font-family:"Gentium Book Plus","Noto Serif Devanagari","Noto Serif Telugu","Noto Serif Tamil",serif; font-size: 1.25rem; color: var(--c-ink-mute); margin-top: .1rem; }
+
+.wp__sandhi-note { font-family: var(--font-grotesk); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--c-violet); margin-top:.35rem; }
+.wp__entry + .wp__entry { margin-top:1.1rem; padding-top:1.1rem; border-top:1px dashed var(--c-line); }
+.wp__lemma { display:flex; align-items:baseline; gap:.5rem; flex-wrap:wrap; margin: 1rem 0 .2rem; padding-bottom:.7rem; border-bottom:1px solid var(--c-line-soft); }
+.wp__lemma-label { font-family: var(--font-grotesk); font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--c-ink-mute); }
+.wp__lemma-form { font-family:"Gentium Book Plus",serif; font-size:1.3rem; color:var(--c-ink); }
+.wp__pill { margin-left:auto; font-family: var(--font-grotesk); font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; padding:.2rem .55rem; border-radius:var(--radius-pill); border:1px solid var(--c-line); color:var(--c-ink-soft); }
+.wp__pill--subanta { color: var(--c-hold); border-color: color-mix(in srgb,var(--c-hold) 40%,var(--c-line)); }
+.wp__pill--tinanta { color: var(--c-svara); border-color: color-mix(in srgb,var(--c-svara) 40%,var(--c-line)); }
+
+.wp__grid { display:grid; grid-template-columns: auto 1fr; gap: .45rem 1rem; margin: .8rem 0; }
+.wp__grid dt { font-family: var(--font-grotesk); font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; color:var(--c-ink-mute); align-self:center; }
+.wp__grid dd { margin:0; font-size:1rem; }
+.wp__meaning { margin-top:.6rem; font-style: italic; color: var(--c-ink-soft); line-height:1.5; }
+.wp__note { margin-top:.5rem; font-size:.85rem; color: var(--c-ink-mute); }
+.wp__note::before { content:"sandhi · "; font-variant: small-caps; }
+.wp__dict {
+  display:flex; align-items:center; gap:.5rem; margin-top:1rem; text-decoration:none;
+  border:1px solid var(--c-line); border-radius:var(--radius-control); padding:.6rem .8rem;
+  color: var(--c-violet); background: color-mix(in srgb,var(--c-violet) 6%, transparent);
+  font-family: var(--font-grotesk); font-size:.85rem; transition: border-color .14s;
+}
+.wp__dict:hover { border-color: var(--c-violet); }
+.wp__dict b { font-family:"Gentium Book Plus",serif; font-style: normal; }
+.wp__close { margin-top:1rem; width:100%; appearance:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; border:1px solid var(--c-line); background:var(--c-bg); color:var(--c-ink); border-radius:var(--radius-control); padding:.7rem; font-family: var(--font-grotesk); }
+
+/* ---- legend -------------------------------------------------------------- */
+.legend { display:flex; flex-wrap:wrap; gap:.5rem 1.1rem; margin-top:2.5rem; padding-top:1.4rem; border-top:1px solid var(--c-line); font-family: var(--font-grotesk); font-size:.72rem; color:var(--c-ink-mute); }
+.legend span { display:inline-flex; align-items:center; gap:.45rem; }
+.lg { width: 1.3em; height: 1.3em; display:inline-block; border-radius:3px; position: relative; flex:none; }
+/* the key swatch stands for a holding box — same stroke, same air */
+.lg-hold { box-shadow: inset 0 0 0 1.6px var(--c-hold); margin: 0 .03em; }
+.lg-change { background: color-mix(in srgb,var(--c-change) 22%, transparent); }
+.lg-svarita::before { content:""; position:absolute; left:50%; top:1px; transform:translateX(-50%); width:2.4px; height:5px; background:var(--c-svara); }
+.lg-anudatta::after { content:""; position:absolute; left:15%; right:15%; bottom:1px; height:2.4px; background:var(--c-svara); }
+
+.chant-foot { text-align:center; color:var(--c-ink-mute); font-family: var(--font-grotesk); font-size:.7rem; letter-spacing:.1em; padding: 2rem 1rem 2.5rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wp, .wp-float, .verse, .chant-settings-pop, .chant-modal, .chant-fab { animation: none !important; transition: none !important; }
+}
+
+/* ==========================================================================
+   Composition layer — directions, figures, embeds, optional groups
+   (docs/DOCUMENT-COMPOSITION.md §2–§5)
+
+   THE THIRD REGISTER. The reader already runs two type registers — mantra
+   (chant serif, upright, ink) and translation (serif, italic, soft ink). A
+   DIRECTION is a third, and it is separated from both on TWO axes at once,
+   never one: the UI face (--font-grotesk, the same family as the contents menu
+   and the section labels) AND muted ink on a tinted strip.
+
+   Critically it is NOT multiplied by --fs. The font-size slider grows mantra
+   and translation; chrome stays put. So a reader who has scaled the text up for
+   chanting gets a continuous, visible signal that a direction is a different
+   kind of thing. (The real guarantee is structural — an instruction carries no
+   tokens, so no code path can route it through the mark renderer.)
+   ========================================================================== */
+
+/* the step number, ahead of the step's own name */
+.section__n { font-weight: 600; margin-right: .5em; opacity: .85; }
+
+/* ---- a direction --------------------------------------------------------- */
+/* QUIET, NOT SHRUNKEN. A direction is not a callout: no accent bar, no tinted
+   panel, nothing that competes with the mantra. It recedes by COLOUR — muted
+   ink, the supporting register the translation already uses — and stays at a
+   comfortably readable size, because a person reads it mid-rite with the phone
+   at arm's length. It is still not multiplied by `--fs`: the slider grows the
+   mantra, chrome holds its size, and that difference is the signal.
+   The test: the mantra is the loud thing, and the direction is quietly
+   readable beneath it. */
+.doc-dirs { margin-bottom: clamp(1rem, 4vw, 1.6rem); display: grid; gap: .35rem; }
+.dir {
+  display: block;
+  margin: .55rem 0; padding: 0 0 0 clamp(.2rem, 2vw, 1rem);
+  background: none; border: 0;
+  font-family: var(--font-grotesk);
+  font-size: clamp(.9rem, 3.4vw, .97rem); line-height: 1.55;
+  color: var(--c-ink-mute);
+}
+.dir--tight { margin: .5rem 0 0; }
+/* Only `caution` earns a marker, and even that one is restrained: a "DO" badge
+   on every direction was noise that told the reader nothing. */
+.dir__eyebrow { display: none; }
+.dir--caution .dir__eyebrow {
+  display: inline-flex; align-items: center; gap: .3em; margin-right: .4em;
+  vertical-align: baseline;
+  font-size: .95em; font-style: italic; color: var(--color-change, var(--c-ink-mute));
+  text-transform: none; letter-spacing: 0; font-weight: 500;
+}
+.dir__text { color: inherit; }
+
+/* ---- figures ------------------------------------------------------------- */
+.fig { margin: 1rem 0; min-width: 0; }
+.fig--thumb { width: 88px; }
+.fig--small { width: clamp(120px, 25%, 210px); }
+.fig--medium { width: clamp(160px, 50%, 340px); }
+.fig--large { width: 75%; }
+.fig--full { width: 100%; }
+.fig--flow-block { margin-left: auto; margin-right: auto; }
+.fig--flow-start { float: left; margin: .2rem 1.1rem .8rem 0; }
+.fig--flow-end { float: right; margin: .2rem 0 .8rem 1.1rem; }
+/* The box reserves the aspect BEFORE the file loads, so a figure landing
+   mid-step never pushes the mantra being read down the screen. */
+.fig__box { position: relative; width: 100%; display: block; }
+.fig[data-crop="square"] .fig__box { aspect-ratio: 1 / 1; }
+.fig[data-crop="portrait"] .fig__box { aspect-ratio: 3 / 4; }
+.fig[data-crop="wide"] .fig__box { aspect-ratio: 16 / 9; }
+.fig__img { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* No backing plate and no frame by default: VU procedural art is transparent
+   art that must read against the page in BOTH themes. */
+.fig--frame-thin .fig__box { border: 1px solid var(--c-line); }
+.fig--frame-violet .fig__box { border: 1px solid var(--color-rule-violet, var(--c-violet)); }
+.fig--rounded .fig__box, .fig--rounded .fig__img { border-radius: var(--radius-card, 10px); }
+.fig__cap {
+  font-family: var(--font-grotesk); font-size: .72rem; line-height: 1.5;
+  color: var(--c-ink-mute); margin-top: .45rem;
+}
+.fig--cap-above .fig__cap { margin: 0 0 .45rem; }
+.fig--cap-beside { display: flex; gap: .9rem; align-items: center; }
+.fig--cap-beside .fig__box { flex: 1 1 auto; }
+.fig--cap-beside .fig__cap { flex: 1 1 40%; margin: 0; }
+
+/* ---- an embed, and its fallbacks ----------------------------------------- */
+.emb { margin: .9rem 0; padding: .2rem 0 .2rem .9rem; border-left: 2px dashed var(--c-line); }
+.emb__head { display: flex; align-items: baseline; gap: .5em; margin-bottom: .3rem; }
+.emb__eyebrow {
+  font-family: var(--font-grotesk); font-size: .6rem; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--c-ink-mute);
+}
+.emb__title { font-family: var(--font-grotesk); font-size: .8rem; color: var(--c-violet); text-decoration: none; }
+.emb__title:hover { text-decoration: underline; }
+.emb__msg { font-family: var(--font-grotesk); font-size: .84rem; color: var(--c-ink-mute); margin: .3rem 0; }
+.emb__actions { display: flex; gap: .8rem; align-items: center; margin-top: .4rem; flex-wrap: wrap; }
+.emb__link, .emb__retry {
+  font-family: var(--font-grotesk); font-size: .74rem; color: var(--c-violet);
+  background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none;
+}
+.emb__link:hover, .emb__retry:hover { text-decoration: underline; }
+.emb__skeleton { height: 2.4rem; border-radius: 6px; background: color-mix(in srgb, var(--c-line) 45%, transparent); }
+/* Gating is a CORRECT state of the system, not breakage: no red, no warning. */
+.emb--locked { border-left-style: solid; border-left-color: var(--c-violet-soft); }
+
+/* ---- an omitted optional group, still discoverable ------------------------ */
+.grp-row {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  margin: clamp(1.4rem, 5vw, 2.2rem) 0 0; padding: .75rem .9rem;
+  border: 1px dotted color-mix(in srgb, var(--c-violet) 42%, transparent);
+  border-radius: var(--radius-card, 10px);
+  font-family: var(--font-grotesk);
+}
+.grp-row__text { min-width: 0; flex: 1; display: grid; gap: .15rem; }
+.grp-row__label { font-size: .82rem; color: var(--c-ink); }
+.grp-row__meta { font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: var(--c-violet); }
+.grp-row__note { font-size: .74rem; line-height: 1.5; color: var(--c-ink-mute); }
+.grp-row__btn {
+  flex: none; cursor: pointer; font-family: inherit; font-size: .72rem; letter-spacing: .06em;
+  border: 1px solid var(--c-line); background: var(--c-bg-raise); color: var(--c-ink);
+  border-radius: var(--radius-pill); padding: .4rem .9rem;
+}
+.grp-row__btn:hover { border-color: var(--c-violet); color: var(--c-violet); }
+.grp-row__choices { display: flex; flex-wrap: wrap; gap: .4rem; }
+
+/* ---- contents: numbering runs + the include row -------------------------- */
+.chant-nav__part {
+  font-family: var(--font-grotesk); font-size: .6rem; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--c-ink-mute);
+  margin: .9rem 0 .3rem; padding: 0 .55rem;
+}
+.chant-nav__sec--opt .chant-nav__seclabel { font-style: italic; color: var(--c-ink-mute); }
+
+/* ---- responsive (project rule: 375 / 768 / 1024) ------------------------- */
+@media (max-width: 1023px) {
+  /* `aside` has no margin rail below 1024 — it becomes a block, keeping its
+     position in the step's item order. */
+  .fig--flow-aside { float: none; width: 100%; margin-left: auto; margin-right: auto; }
+  .fig--cap-beside { display: block; }
+  .fig--cap-beside .fig__cap { margin-top: .45rem; }
+  .fig__img { max-height: 50vh; }
+}
+@media (max-width: 768px) {
+  /* A floated figure only survives at thumb/small; anything wider would leave
+     two or three words per line beside it. */
+  .fig--flow-start:not(.fig--thumb):not(.fig--small),
+  .fig--flow-end:not(.fig--thumb):not(.fig--small) { float: none; width: 100%; margin-left: auto; margin-right: auto; }
+}
+@media (max-width: 520px) {
+  .fig--flow-start, .fig--flow-end { float: none; margin-left: auto; margin-right: auto; }
+  .fig--small, .fig--medium, .fig--large, .fig--full { width: 100%; }
+  .fig--thumb { width: 64px; }
+  /* The BOX, not just the image, has to be capped on a phone: a reserved square
+     box at the full column width is ~340px on a 375px screen, which would push
+     the mantra the performer is reading off the top. Drop the aspect here and
+     give the figure a fixed band; `object-fit: contain` keeps the drawing whole
+     inside it. No wrapper is involved — the figure caps itself. */
+  .fig .fig__box { aspect-ratio: auto; height: min(26vh, 168px); }
+  .fig__img { max-height: 38vh; }
+  .dir { padding-left: 0; }
+}
+@media print {
+  .fig { float: none !important; width: 25% !important; margin: .6rem auto !important; }
+  .fig__cap { margin-top: .3rem; }
+}

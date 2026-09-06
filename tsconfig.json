@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/format" },
+    { "path": "packages/engine" },
+    { "path": "packages/interop" },
+    { "path": "packages/render" },
+    { "path": "packages/cli" }
+  ]
+}

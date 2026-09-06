@@ -1,0 +1,34 @@
+{
+  "client/public/library/sri-rudram-iast.pdf": {
+    "family": "calibri",
+    "sections": 44,
+    "verses": 185,
+    "syllables": 7320,
+    "translations": 181,
+    "marks": {
+      "hold-short": 1493,
+      "hold-long": 588,
+      "svara": 2895,
+      "change": 336,
+      "sup": 119,
+      "candra": 43,
+      "pause": 222
+    }
+  },
+  "client/public/library/sarva-devata-gayatri-iast.pdf": {
+    "family": "calibri",
+    "sections": 1,
+    "verses": 1,
+    "syllables": 389,
+    "translations": 0,
+    "marks": {
+      "hold-short": 0,
+      "hold-long": 0,
+      "svara": 1,
+      "change": 0,
+      "sup": 0,
+      "candra": 0,
+      "pause": 0
+    }
+  }
+}

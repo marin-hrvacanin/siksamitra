@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+# The corpus and the fixtures are compared byte-for-byte by the gates.
+# A line-ending rewrite would change a hash and fail a ratchet for no reason.
+corpus/**/*.json  -text
+*.docx            binary
+*.pdf             binary
+*.smdoc           binary
+*.vuchant         binary
