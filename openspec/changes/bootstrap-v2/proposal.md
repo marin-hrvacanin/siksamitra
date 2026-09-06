@@ -42,6 +42,11 @@ it, so that śikṣāmitra owns authoring and Veda Union owns publishing.
 - A new editing model: a continuous caret over the token stream within a
   section, replacing v1's whole-document contenteditable and replacing the
   platform editor's modal per-verse rows.
+- Scripts become modules rather than columns. Today a phoneme row carries a
+  field per script and `letterFor` is an if-chain, so IAST is privileged twice
+  over — as a readable script AND as the engine's internal key — and ITRANS sits
+  in the tables while being excluded from the document type. Separating the
+  phoneme inventory from its renderings makes every script a peer.
 - A new interchange contract: siksamitra exports the format vedaunion.org
   reads, with a conformance fixture suite as the arbiter between two
   independent implementations. Neither project depends on the other.
@@ -55,7 +60,8 @@ it, so that śikṣāmitra owns authoring and Veda Union owns publishing.
 ### New Capabilities
 - `format`: the presentation-independent document format — hierarchy, provenance, multi-script, marks as data
 - `engine`: derivation of marks from source text and a profile; the rule registry; the profile parametrization
-- `render`: the ONE renderer from tokens to screen and paper, in four scripts
+- `render`: the ONE renderer from tokens to screen and paper, in every registered script
+- `scripts`: writing systems as interchangeable modules — equal, open-ended, added one file at a time
 - `interop/word`: `.docx` import and export against the owner's own style table
 - `interop/pdf`: PDF import from the vector layer, and PDF export through the renderer
 - `interop/package`: the `.vuchant` portable package

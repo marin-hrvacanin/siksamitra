@@ -102,10 +102,26 @@
 - [ ] 11.6 Run the fixture suite against vedaunion.org's own reader and record the result
 - [ ] 11.7 Preserve-and-report unmodelled constructs through an import/edit/export round trip
 
-## 12. Distribution
+## 12. Scripts as modules (design D8)
 
-- [ ] 12.1 Windows Authenticode certificate
-- [ ] 12.2 Apple Developer ID and notarisation
-- [ ] 12.3 A macOS machine for the universal build
-- [ ] 12.4 Updater keypair, generated outside the repository
-- [ ] 12.5 Publish installers, and a download reference from vedaunion.org
+- [x] 12.1 Record the requirement and the design — measured starting point, root cause, and cost
+- [ ] 12.2 Extract a script-neutral phoneme inventory: sound + classification, no glyph in any script
+- [ ] 12.3 Turn each writing system into a module: id, name, kind, phoneme-to-form map, signs, virama, pranava, reversibility, gaps
+- [ ] 12.4 Register IAST as a module like any other, ending its double role as substrate
+- [ ] 12.5 Replace the closed `ChantScriptKey` union with an open id resolved against the registry
+- [ ] 12.6 Delete `AnyScriptKey` and promote ITRANS to a first-class registered script
+- [ ] 12.7 Move representational gaps and approximations into each script module; remove the named Tamil branches from shared code
+- [ ] 12.8 Change the document shape: `Record<ScriptId, string>` per syllable, plus a declared script list
+- [ ] 12.9 Migrate the eleven corpus documents to the new shape with both ratchets held
+- [ ] 12.10 Raise the interchange contract version and regenerate the conformance fixtures
+- [ ] 12.11 Extend the transliteration gate to every registered script, each with its own baseline
+- [ ] 12.12 Add a second Indic script (Kannada) as the proof that adding one costs a module and a registration
+- [ ] 12.13 Authoring in any reversible script; read-only registration for those that are not
+
+## 13. Distribution
+
+- [ ] 13.1 Windows Authenticode certificate
+- [ ] 13.2 Apple Developer ID and notarisation
+- [ ] 13.3 A macOS machine for the universal build
+- [ ] 13.4 Updater keypair, generated outside the repository
+- [ ] 13.5 Publish installers, and a download reference from vedaunion.org

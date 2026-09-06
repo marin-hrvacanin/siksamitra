@@ -58,16 +58,46 @@ A verse's text is a flat token list. Every token has a discriminator `t`.
 
 | `t` | meaning | fields |
 | --- | --- | --- |
-| `syl` | one syllable | `iast`, `deva`, `tel`, `tam`, `units[]` |
+| `syl` | one syllable | `iast`, `deva`, `tel`, `tam`, `units[]` — see §1.3 |
 | `sp` | a space | — |
 | `br` | a line break within the verse | — |
 | `danda` | `।` or `॥` as structure | `s` |
 | `pause` | a recitation pause | `len: 'short' \| 'long'` |
 | `text` | literal text that is not recited | `s` |
 
-The four script fields on a `syl` are **derived and equal**. IAST is the
-authored surface; the other three are produced by transliteration. A reader
-displays whichever the user asked for. None is privileged in the model.
+The script fields on a `syl` are **derived**. A reader displays whichever the
+user asked for.
+
+They are *not yet* equal in the way they should be — see §1.3, which is the one
+part of this contract known to be changing.
+
+### 1.3 Scripts — a planned change, stated in advance
+
+**Contract v4 fixes four script fields on every syllable: `iast`, `deva`, `tel`,
+`tam`. This is a defect, and it will change in v5.**
+
+It is written down here rather than quietly fixed because a reader built against
+v4 will meet v5 documents, and it should know now what is coming.
+
+What is wrong with it:
+
+- The set of writing systems is closed by the format. Adding Kannada, Bengali,
+  Grantha or ISO-15919 requires a format change, which is backwards — a writing
+  system is not a property of the format.
+- ITRANS already exists in the exporter's tables and cannot be carried by a
+  document at all, because there is no field for it. It is implemented and
+  unrepresentable.
+- Four named fields make IAST look like the real text and the rest like
+  translations of it. They are all renderings of the same phonemes.
+
+**v5 will carry `scripts: Record<ScriptId, string>`** on a syllable, plus a
+document-level declaration of which scripts it carries. A reader that meets a
+script it has no support for reports it by name, renders the ones it has, and
+**passes the unknown forms through untouched** on a round trip.
+
+Implementers on both sides: a reader written to iterate the script fields it
+finds, rather than to destructure four known names, will survive v5 unchanged.
+That is the cheapest thing either side can do today.
 
 ### 1.2 Units — where the marks live
 
@@ -176,6 +206,9 @@ Deliberately, and permanently:
   marks. It is **not** an instruction to reproduce them.
 - **Presentation.** Colours, weights, geometry, fonts, spacing. Each side draws
   the format as it sees fit; the fixtures constrain *meaning*, not pixels.
+- **How a script is written.** The phoneme-to-glyph mapping, vowel signs,
+  virama placement and approximations belong to whichever program is producing
+  the forms. The contract carries the RESULT, per script, not the tables.
 - **Reading preferences.** Which script is on top, font scale, whether marks are
   shown. Those belong to whoever is displaying.
 

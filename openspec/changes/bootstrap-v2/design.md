@@ -185,6 +185,73 @@ documents exist in **both** formats, the `.smdoc` and the shipped v2 JSON, so
 the importer is scored against them by the same letter-by-letter comparison the
 corpus gate uses, and ratcheted.
 
+### D8. Scripts are modules over a phonemic core, not columns beside IAST
+
+**Owner requirement:** all writing systems equal and interchangeable, ITRANS and
+others addable without disturbing what exists.
+
+**Measured starting point.** They are not equal today, and the reason is
+structural rather than accidental:
+
+```
+Phoneme { iast, deva, tel, tam, tamApprox, itrans }    a FIELD per script
+letterFor(p, s) { if iast… if itrans… if tam… return p[s] }   an IF per script
+ChantScriptKey = 'iast' | 'deva' | 'tel' | 'tam'       closed union
+```
+
+ITRANS already exists in the tables and is excluded from the document type, via
+a second type (`AnyScriptKey`) that quietly means "the scripts plus ITRANS".
+That is the shape of a system where one script is real and the rest are
+attributes of it. Adding Kannada today costs ~200 phoneme rows, two if-chains,
+four `Record<ScriptKey, …>` tables, a union type, four fixed fields on every
+syllable in the format, and a row of buttons in the reader.
+
+**The root cause is that IAST plays two roles.** It is a script a reader can
+choose, AND it is the key every table is indexed by and the surface the rules
+match against. Nothing can be its peer while it is also the substrate.
+
+**Decision.** Split the two roles.
+
+1. **A script-neutral phoneme inventory.** A phoneme is a sound with its
+   classification — vowel or consonant, varga, sibilant, voiced, length. No
+   glyph, in any script, including IAST.
+2. **A script is a module**: an id, a display name, a kind (abugida,
+   alphabetic, romanisation), a phoneme-to-form mapping, vowel signs, virama,
+   pranava, its reversibility, and its own table of gaps and approximations.
+   IAST becomes one of these, registered like the rest.
+3. **An open identifier resolved against a registry**, not a closed union. An
+   unregistered script is a run-time report, not a compile error.
+4. **The rules read phonemes**, so a rule can never be accidentally
+   script-specific.
+5. **Documents carry `Record<ScriptId, string>`**, and declare which scripts
+   they carry.
+
+Adding a writing system then costs one module and one registration.
+
+**Two things this does NOT mean.**
+
+*It does not mean the engine has no canonical form.* It has one — the phoneme
+inventory. The change is that the canonical form stops being a writing system.
+This is the distinction that makes "all scripts equal" implementable rather than
+merely agreeable: siksa rules are phonological, so they must run on sounds, and
+a system whose substrate is a script will always privilege that script.
+
+*It does not mean every script can express everything.* Tamil has no character
+for vocalic ṛ, and `lossless.ts` already models collisions and variation
+selectors. Equality means a gap is DATA in that script's module and is reported
+as an approximation — not a named exception for Tamil in shared code. A script
+whose mapping is not reversible is registered read-only, and the editor says so
+rather than silently accepting input it cannot round-trip.
+
+**Cost, stated plainly.** This touches the format (four fixed fields per
+syllable become a map), the engine's tables, the transliterator, the reader, the
+conformance fixture generator, and the interchange contract — and every one of
+the eleven corpus documents is written in the old shape, so it needs a
+migration with the ratchets held. It is the largest single item in this change
+and it is deliberately NOT bundled into the move: the move is
+behaviour-preserving and gate-verified, and this is a redesign. It follows,
+against the gates the move established.
+
 ## Risks / Trade-offs
 
 - **Two independent readers of one format can drift.** This is the standing
@@ -207,6 +274,11 @@ corpus gate uses, and ratcheted.
 - **`main` and `v2` share no history.** Deliberate: an orphan branch is the
   honest form of "this is a rewrite". `main` stays checked-out-able as the
   behavioural reference. It is never merged.
+- **The script modularisation lands after the move, not with it.** Until it
+  does, ITRANS remains in the tables and out of the document type, and every
+  script but IAST is a column rather than a peer. The corpus is written in the
+  old shape, so the migration must run with the transliteration and corpus
+  ratchets held — which is precisely why the move went first.
 - **Signing remains unsolved and blocks distribution, not development.** macOS
   refuses an unsigned app outright rather than warning; Windows SmartScreen
   warns until the binary earns reputation. Neither can be produced from a repo.
