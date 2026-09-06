@@ -78,6 +78,7 @@
 
 ## 9. The applications
 
+- [ ] 9.0 **Rethink the v1 surfaces before rebuilding them** (owner, 2026-09-06): keep the visual design, question the structure. v1 has BOTH a Recents list and a Library browser — two answers to one question — in a tool whose documents are files the OS already catalogues. Decide what each surface is for, or that it is not needed, before any of it is ported.
 - [ ] 9.1 Web application entry over the editor
 - [ ] 9.2 Tauri 2 shell: window, menu, file dialogs, association, launch arguments, single instance — its own identity, NOT the platform's
 - [ ] 9.3 Least-privilege capability configuration
@@ -118,10 +119,32 @@
 - [ ] 12.12 Add a second Indic script (Kannada) as the proof that adding one costs a module and a registration
 - [ ] 12.13 Authoring in any reversible script; read-only registration for those that are not
 
-## 13. Distribution
+## 13. Design system (nothing hardcoded)
 
-- [ ] 13.1 Windows Authenticode certificate
-- [ ] 13.2 Apple Developer ID and notarisation
-- [ ] 13.3 A macOS machine for the universal build
-- [ ] 13.4 Updater keypair, generated outside the repository
-- [ ] 13.5 Publish installers, and a download reference from vedaunion.org
+- [x] 13.1 Record the requirements — tokens, themes, fonts, shared components, one renderer
+- [ ] 13.2 One machine-readable token source; generate the CSS, the TS module, the print sheet and the Word style table from it
+- [ ] 13.3 A **token gate** that scans for literal colours, sizes, families and durations outside the token source and fails on any it finds
+- [ ] 13.4 Themes as data — adding one is one entry, and no component names a theme
+- [ ] 13.5 Fonts declared once by ROLE, with fallbacks and loading strategy; components may not name a family
+- [ ] 13.6 The shared component library: buttons, fields, menus, dialogs, tabs, status bar, icons
+- [ ] 13.7 Prove the one-renderer rule by adding a surface that displays documents and contains no mark-drawing code
+
+## 14. Performance (measured, ratcheted)
+
+- [x] 14.1 Record the budgets, and how "100x" is being made falsifiable
+- [ ] 14.2 Build the measurement harness; record baselines with the machine they were taken on
+- [ ] 14.3 Measure v1 on the same documents, so the comparison is real rather than rhetorical
+- [ ] 14.4 Time-to-first-verse independent of document size
+- [ ] 14.5 Live node count proportional to what has been viewed, not to the document
+- [ ] 14.6 Keystroke derive-and-repaint within one frame, one verse only
+- [ ] 14.7 Code and asset splitting; packaged size recorded and ratcheted
+- [ ] 14.8 One-section saves that merge rather than replace document-level data
+- [ ] 14.9 Prove no path can base64 an asset into a document, package or payload
+
+## 15. Distribution
+
+- [ ] 15.1 Windows Authenticode certificate
+- [ ] 15.2 Apple Developer ID and notarisation
+- [ ] 15.3 A macOS machine for the universal build
+- [ ] 15.4 Updater keypair, generated outside the repository
+- [ ] 15.5 Publish installers, and a download reference from vedaunion.org

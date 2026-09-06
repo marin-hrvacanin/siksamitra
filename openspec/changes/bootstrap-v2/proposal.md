@@ -62,6 +62,8 @@ it, so that śikṣāmitra owns authoring and Veda Union owns publishing.
 - `engine`: derivation of marks from source text and a profile; the rule registry; the profile parametrization
 - `render`: the ONE renderer from tokens to screen and paper, in every registered script
 - `scripts`: writing systems as interchangeable modules — equal, open-ended, added one file at a time
+- `design-system`: one home for every design value and every shared surface; nothing hardcoded, enforced by a gate
+- `performance`: measured budgets that fail the build, replacing v1's collapse on large documents
 - `interop/word`: `.docx` import and export against the owner's own style table
 - `interop/pdf`: PDF import from the vector layer, and PDF export through the renderer
 - `interop/package`: the `.vuchant` portable package

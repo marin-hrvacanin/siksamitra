@@ -1,0 +1,599 @@
+{
+  "provenance": "Extracted from packages/engine/src/script/tables.ts at commit 59897bd — the last commit before the column table was replaced by script modules. Frozen so tools/gen-script-modules.mjs is reproducible and can never read its own output.",
+  "PHONEMES": [
+    {
+      "iast": "a",
+      "deva": "अ",
+      "tel": "అ",
+      "tam": "அ",
+      "itrans": "a",
+      "type": "vowel"
+    },
+    {
+      "iast": "ā",
+      "deva": "आ",
+      "tel": "ఆ",
+      "tam": "ஆ",
+      "itrans": "aa",
+      "type": "vowel"
+    },
+    {
+      "iast": "i",
+      "deva": "इ",
+      "tel": "ఇ",
+      "tam": "இ",
+      "itrans": "i",
+      "type": "vowel"
+    },
+    {
+      "iast": "ī",
+      "deva": "ई",
+      "tel": "ఈ",
+      "tam": "ஈ",
+      "itrans": "ii",
+      "type": "vowel"
+    },
+    {
+      "iast": "u",
+      "deva": "उ",
+      "tel": "ఉ",
+      "tam": "உ",
+      "itrans": "u",
+      "type": "vowel"
+    },
+    {
+      "iast": "ū",
+      "deva": "ऊ",
+      "tel": "ఊ",
+      "tam": "ஊ",
+      "itrans": "uu",
+      "type": "vowel"
+    },
+    {
+      "iast": "ṛ",
+      "deva": "ऋ",
+      "tel": "ఋ",
+      "tam": null,
+      "tamApprox": "ரு",
+      "itrans": "R^i",
+      "type": "vowel"
+    },
+    {
+      "iast": "ṝ",
+      "deva": "ॠ",
+      "tel": "ౠ",
+      "tam": null,
+      "tamApprox": "ரூ",
+      "itrans": "R^I",
+      "type": "vowel"
+    },
+    {
+      "iast": "ḷ",
+      "deva": "ऌ",
+      "tel": "ఌ",
+      "tam": null,
+      "tamApprox": "லு",
+      "itrans": "L^i",
+      "type": "vowel"
+    },
+    {
+      "iast": "ḹ",
+      "deva": "ॡ",
+      "tel": "ౡ",
+      "tam": null,
+      "tamApprox": "லூ",
+      "itrans": "L^I",
+      "type": "vowel"
+    },
+    {
+      "iast": "e",
+      "deva": "ए",
+      "tel": "ఏ",
+      "tam": "ஏ",
+      "itrans": "e",
+      "type": "vowel"
+    },
+    {
+      "iast": "ai",
+      "deva": "ऐ",
+      "tel": "ఐ",
+      "tam": "ஐ",
+      "itrans": "ai",
+      "type": "vowel"
+    },
+    {
+      "iast": "o",
+      "deva": "ओ",
+      "tel": "ఓ",
+      "tam": "ஓ",
+      "itrans": "o",
+      "type": "vowel"
+    },
+    {
+      "iast": "au",
+      "deva": "औ",
+      "tel": "ఔ",
+      "tam": "ஔ",
+      "itrans": "au",
+      "type": "vowel"
+    },
+    {
+      "iast": "k",
+      "deva": "क",
+      "tel": "క",
+      "tam": "க",
+      "itrans": "k",
+      "type": "consonant",
+      "varga": "ka"
+    },
+    {
+      "iast": "kh",
+      "deva": "ख",
+      "tel": "ఖ",
+      "tam": null,
+      "tamApprox": "க",
+      "itrans": "kh",
+      "type": "consonant",
+      "varga": "ka"
+    },
+    {
+      "iast": "g",
+      "deva": "ग",
+      "tel": "గ",
+      "tam": null,
+      "tamApprox": "க",
+      "itrans": "g",
+      "type": "consonant",
+      "varga": "ka"
+    },
+    {
+      "iast": "gh",
+      "deva": "घ",
+      "tel": "ఘ",
+      "tam": null,
+      "tamApprox": "க",
+      "itrans": "gh",
+      "type": "consonant",
+      "varga": "ka"
+    },
+    {
+      "iast": "ṅ",
+      "deva": "ङ",
+      "tel": "ఙ",
+      "tam": "ங",
+      "itrans": "N^",
+      "type": "consonant",
+      "varga": "ka"
+    },
+    {
+      "iast": "c",
+      "deva": "च",
+      "tel": "చ",
+      "tam": "ச",
+      "itrans": "ch",
+      "type": "consonant",
+      "varga": "ca"
+    },
+    {
+      "iast": "ch",
+      "deva": "छ",
+      "tel": "ఛ",
+      "tam": null,
+      "tamApprox": "ச",
+      "itrans": "Ch",
+      "type": "consonant",
+      "varga": "ca"
+    },
+    {
+      "iast": "j",
+      "deva": "ज",
+      "tel": "జ",
+      "tam": "ஜ",
+      "itrans": "j",
+      "type": "consonant",
+      "varga": "ca"
+    },
+    {
+      "iast": "jh",
+      "deva": "झ",
+      "tel": "ఝ",
+      "tam": null,
+      "tamApprox": "ஜ",
+      "itrans": "jh",
+      "type": "consonant",
+      "varga": "ca"
+    },
+    {
+      "iast": "ñ",
+      "deva": "ञ",
+      "tel": "ఞ",
+      "tam": "ஞ",
+      "itrans": "~n",
+      "type": "consonant",
+      "varga": "ca"
+    },
+    {
+      "iast": "ṭ",
+      "deva": "ट",
+      "tel": "ట",
+      "tam": "ட",
+      "itrans": "T",
+      "type": "consonant",
+      "varga": "ta-retroflex"
+    },
+    {
+      "iast": "ṭh",
+      "deva": "ठ",
+      "tel": "ఠ",
+      "tam": null,
+      "tamApprox": "ட",
+      "itrans": "Th",
+      "type": "consonant",
+      "varga": "ta-retroflex"
+    },
+    {
+      "iast": "ḍ",
+      "deva": "ड",
+      "tel": "డ",
+      "tam": null,
+      "tamApprox": "ட",
+      "itrans": "D",
+      "type": "consonant",
+      "varga": "ta-retroflex"
+    },
+    {
+      "iast": "ḍh",
+      "deva": "ढ",
+      "tel": "ఢ",
+      "tam": null,
+      "tamApprox": "ட",
+      "itrans": "Dh",
+      "type": "consonant",
+      "varga": "ta-retroflex"
+    },
+    {
+      "iast": "ṇ",
+      "deva": "ण",
+      "tel": "ణ",
+      "tam": "ண",
+      "itrans": "N",
+      "type": "consonant",
+      "varga": "ta-retroflex"
+    },
+    {
+      "iast": "t",
+      "deva": "त",
+      "tel": "త",
+      "tam": "த",
+      "itrans": "t",
+      "type": "consonant",
+      "varga": "ta-dental"
+    },
+    {
+      "iast": "th",
+      "deva": "थ",
+      "tel": "థ",
+      "tam": null,
+      "tamApprox": "த",
+      "itrans": "th",
+      "type": "consonant",
+      "varga": "ta-dental"
+    },
+    {
+      "iast": "d",
+      "deva": "द",
+      "tel": "ద",
+      "tam": null,
+      "tamApprox": "த",
+      "itrans": "d",
+      "type": "consonant",
+      "varga": "ta-dental"
+    },
+    {
+      "iast": "dh",
+      "deva": "ध",
+      "tel": "ధ",
+      "tam": null,
+      "tamApprox": "த",
+      "itrans": "dh",
+      "type": "consonant",
+      "varga": "ta-dental"
+    },
+    {
+      "iast": "n",
+      "deva": "न",
+      "tel": "న",
+      "tam": "ந",
+      "itrans": "n",
+      "type": "consonant",
+      "varga": "ta-dental"
+    },
+    {
+      "iast": "p",
+      "deva": "प",
+      "tel": "ప",
+      "tam": "ப",
+      "itrans": "p",
+      "type": "consonant",
+      "varga": "pa"
+    },
+    {
+      "iast": "ph",
+      "deva": "फ",
+      "tel": "ఫ",
+      "tam": null,
+      "tamApprox": "ப",
+      "itrans": "ph",
+      "type": "consonant",
+      "varga": "pa"
+    },
+    {
+      "iast": "b",
+      "deva": "ब",
+      "tel": "బ",
+      "tam": null,
+      "tamApprox": "ப",
+      "itrans": "b",
+      "type": "consonant",
+      "varga": "pa"
+    },
+    {
+      "iast": "bh",
+      "deva": "भ",
+      "tel": "భ",
+      "tam": null,
+      "tamApprox": "ப",
+      "itrans": "bh",
+      "type": "consonant",
+      "varga": "pa"
+    },
+    {
+      "iast": "m",
+      "deva": "म",
+      "tel": "మ",
+      "tam": "ம",
+      "itrans": "m",
+      "type": "consonant",
+      "varga": "pa"
+    },
+    {
+      "iast": "y",
+      "deva": "य",
+      "tel": "య",
+      "tam": "ய",
+      "itrans": "y",
+      "type": "consonant",
+      "varga": "misc"
+    },
+    {
+      "iast": "r",
+      "deva": "र",
+      "tel": "ర",
+      "tam": "ர",
+      "itrans": "r",
+      "type": "consonant",
+      "varga": "misc"
+    },
+    {
+      "iast": "l",
+      "deva": "ल",
+      "tel": "ల",
+      "tam": "ல",
+      "itrans": "l",
+      "type": "consonant",
+      "varga": "misc"
+    },
+    {
+      "iast": "v",
+      "deva": "व",
+      "tel": "వ",
+      "tam": "வ",
+      "itrans": "v",
+      "type": "consonant",
+      "varga": "misc"
+    },
+    {
+      "iast": "ś",
+      "deva": "श",
+      "tel": "శ",
+      "tam": "ஶ",
+      "itrans": "sh",
+      "type": "consonant",
+      "varga": "sibilant"
+    },
+    {
+      "iast": "ṣ",
+      "deva": "ष",
+      "tel": "ష",
+      "tam": "ஷ",
+      "itrans": "Sh",
+      "type": "consonant",
+      "varga": "sibilant"
+    },
+    {
+      "iast": "s",
+      "deva": "स",
+      "tel": "స",
+      "tam": "ஸ",
+      "itrans": "s",
+      "type": "consonant",
+      "varga": "sibilant"
+    },
+    {
+      "iast": "h",
+      "deva": "ह",
+      "tel": "హ",
+      "tam": "ஹ",
+      "itrans": "h",
+      "type": "consonant",
+      "varga": "misc"
+    },
+    {
+      "iast": "ḻ",
+      "deva": "ळ",
+      "tel": "ళ",
+      "tam": "ழ",
+      "itrans": "lh",
+      "type": "consonant",
+      "varga": "misc"
+    },
+    {
+      "iast": "ṁ",
+      "deva": "ं",
+      "tel": "ం",
+      "tam": "ஂ",
+      "itrans": "M",
+      "type": "special",
+      "label": "anusvāra"
+    },
+    {
+      "iast": "ḥ",
+      "deva": "ः",
+      "tel": "ః",
+      "tam": "ஃ",
+      "itrans": "H",
+      "type": "special",
+      "label": "visarga"
+    },
+    {
+      "iast": "'",
+      "deva": "ऽ",
+      "tel": "ఽ",
+      "tam": null,
+      "itrans": ".a",
+      "type": "special",
+      "label": "avagraha"
+    },
+    {
+      "iast": "।",
+      "deva": "।",
+      "tel": "।",
+      "tam": "।",
+      "itrans": "|",
+      "type": "special",
+      "label": "daṇḍa"
+    },
+    {
+      "iast": "॥",
+      "deva": "॥",
+      "tel": "॥",
+      "tam": "॥",
+      "itrans": "||",
+      "type": "special",
+      "label": "double daṇḍa"
+    }
+  ],
+  "VOWEL_SIGNS": [
+    {
+      "iast": "a",
+      "deva": "",
+      "tel": "",
+      "tam": "",
+      "itrans": "a"
+    },
+    {
+      "iast": "ā",
+      "deva": "ा",
+      "tel": "ా",
+      "tam": "ா",
+      "itrans": "aa"
+    },
+    {
+      "iast": "i",
+      "deva": "ि",
+      "tel": "ి",
+      "tam": "ி",
+      "itrans": "i"
+    },
+    {
+      "iast": "ī",
+      "deva": "ी",
+      "tel": "ీ",
+      "tam": "ீ",
+      "itrans": "ii"
+    },
+    {
+      "iast": "u",
+      "deva": "ु",
+      "tel": "ు",
+      "tam": "ு",
+      "itrans": "u"
+    },
+    {
+      "iast": "ū",
+      "deva": "ू",
+      "tel": "ూ",
+      "tam": "ூ",
+      "itrans": "uu"
+    },
+    {
+      "iast": "ṛ",
+      "deva": "ृ",
+      "tel": "ృ",
+      "tam": null,
+      "itrans": "R^i"
+    },
+    {
+      "iast": "ṝ",
+      "deva": "ॄ",
+      "tel": "ౄ",
+      "tam": null,
+      "itrans": "R^I"
+    },
+    {
+      "iast": "ḷ",
+      "deva": "ॢ",
+      "tel": "ౢ",
+      "tam": null,
+      "itrans": "L^i"
+    },
+    {
+      "iast": "ḹ",
+      "deva": "ॣ",
+      "tel": "ౣ",
+      "tam": null,
+      "itrans": "L^I"
+    },
+    {
+      "iast": "e",
+      "deva": "े",
+      "tel": "ే",
+      "tam": "ே",
+      "itrans": "e"
+    },
+    {
+      "iast": "ai",
+      "deva": "ै",
+      "tel": "ై",
+      "tam": "ை",
+      "itrans": "ai"
+    },
+    {
+      "iast": "o",
+      "deva": "ो",
+      "tel": "ో",
+      "tam": "ோ",
+      "itrans": "o"
+    },
+    {
+      "iast": "au",
+      "deva": "ौ",
+      "tel": "ౌ",
+      "tam": "ௌ",
+      "itrans": "au"
+    }
+  ],
+  "VIRAMA": {
+    "iast": "",
+    "deva": "्",
+    "tel": "్",
+    "tam": "்",
+    "itrans": ""
+  },
+  "PRANAVA_FORMS": {
+    "iast": "oṁ",
+    "deva": "ॐ",
+    "tel": "ఓం",
+    "tam": "ௐ"
+  }
+}

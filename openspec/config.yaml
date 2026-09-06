@@ -43,6 +43,19 @@ context: |
     - Gates ratchet. A number may improve; a regression fails the build.
 
 rules:
+  ui:
+    - Perfect UI and UX. Zero AI slop, zero drift (owner, 2026-09-06, binding).
+    - Slop is the generic default that no one chose - centred hero, three equal cards,
+      emoji as iconography, gradient headings, lorem-shaped copy, a control for every
+      option. If it could belong to any product, it belongs to none.
+    - Drift is a surface that stops matching the ones already shipped. The design
+      language is v1's, kept deliberately - reuse it rather than inventing per screen.
+    - Tool chrome, not a landing page. Dense controls, hairlines, one UI face, a real
+      status bar. The only reading face on screen is the text being edited.
+    - Every value is a token. A literal colour, size or spacing in a component is drift
+      by definition.
+    - Question a v1 surface before porting it. Recents AND a Library browser are two
+      answers to one question in a tool whose documents the OS already catalogues.
   proposal:
     - State what moves from vedaunion.org rather than what is written fresh, wherever that is the case.
     - Never propose a second implementation of the engine or the renderer.

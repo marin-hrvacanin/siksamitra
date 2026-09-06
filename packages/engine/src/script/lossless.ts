@@ -39,8 +39,9 @@
  *
  * See specs/chant-editor/02-ENGINE.md §13.
  */
-import { BY_IAST, PHONEMES, letterFor } from './tables.js';
-import type { ScriptKey } from './tables.js';
+import { PHONEME_INVENTORY, type PhonemeId } from './phonemes.js';
+import { formOf, type ScriptId } from './module.js';
+import { getScript } from './registry.js';
 
 /**
  * The "this is an approximation" marker — VS16, kept clear of the ordinals.
@@ -63,13 +64,19 @@ const VS_MAX = 15;
 
 const VS_RE = /[︀-️]/;
 
-/** Is this script's rendering of the phoneme an approximation rather than a
- *  letter of its own? */
-export function isApproximation(
-  p: { tam: string | null; tamApprox?: string },
-  script: ScriptKey,
-): boolean {
-  return script === 'tam' && p.tam === null && p.tamApprox !== undefined;
+/**
+ * Is this script's rendering of the phoneme an approximation rather than a
+ * letter of its own?
+ *
+ * This used to read `script === 'tam' && p.tam === null && …`, which put one
+ * writing system's limitation into shared code and meant the next script with
+ * a gap would need its own branch here. A gap is now data on the script module,
+ * so this answers for every script including ones added after it was written.
+ */
+export function isApproximation(phoneme: PhonemeId, script: ScriptId): boolean {
+  const module = getScript(script);
+  if (module === undefined) return false;
+  return formOf(module, phoneme)?.approximate === true;
 }
 
 /** Is this a variation selector? */
@@ -85,34 +92,47 @@ export function isVariationSelector(ch: string): boolean {
  * Computed from the tables, so adding a script or a letter cannot leave this
  * out of date.
  */
-function collisionsFor(script: ScriptKey): Map<string, string[]> {
+function collisionsFor(script: ScriptId): Map<string, string[]> {
   const byGlyph = new Map<string, string[]>();
-  for (const p of PHONEMES) {
-    const g = letterFor(p, script);
-    if (g === null || g === '') continue;
+  const module = getScript(script);
+  if (module === undefined) return byGlyph;
+  for (const p of PHONEME_INVENTORY) {
+    const g = formOf(module, p.id)?.form;
+    if (g === undefined || g === '') continue;
     const list = byGlyph.get(g);
-    if (list === undefined) byGlyph.set(g, [p.iast]);
-    else list.push(p.iast);
+    if (list === undefined) byGlyph.set(g, [p.id]);
+    else list.push(p.id);
   }
   for (const [g, list] of [...byGlyph]) if (list.length < 2) byGlyph.delete(g);
   return byGlyph;
 }
 
-const COLLISIONS: Record<ScriptKey, Map<string, string[]>> = {
-  iast: new Map(),
-  deva: collisionsFor('deva'),
-  tel: collisionsFor('tel'),
-  tam: collisionsFor('tam'),
-};
+/**
+ * Computed on first use, per script, and cached.
+ *
+ * It used to be a literal of the four known scripts, with IAST hand-written as
+ * an empty map. A registry has no fixed membership, so it cannot be a literal —
+ * and IAST needs no special case, because a script whose forms are all distinct
+ * simply produces no collisions.
+ */
+const COLLISION_CACHE = new Map<ScriptId, Map<string, string[]>>();
+
+function collisions(script: ScriptId): Map<string, string[]> {
+  const cached = COLLISION_CACHE.get(script);
+  if (cached !== undefined) return cached;
+  const computed = collisionsFor(script);
+  COLLISION_CACHE.set(script, computed);
+  return computed;
+}
 
 /** Which IAST letters a script cannot tell apart. Empty for a lossless script. */
-export function ambiguitiesIn(script: ScriptKey): { glyph: string; letters: string[] }[] {
-  return [...COLLISIONS[script]].map(([glyph, letters]) => ({ glyph, letters }));
+export function ambiguitiesIn(script: ScriptId): { glyph: string; letters: string[] }[] {
+  return [...collisions(script)].map(([glyph, letters]) => ({ glyph, letters }));
 }
 
 /** Is this script lossless on its own, with no selectors? */
-export function isLosslessScript(script: ScriptKey): boolean {
-  return COLLISIONS[script].size === 0;
+export function isLosslessScript(script: ScriptId): boolean {
+  return collisions(script).size === 0;
 }
 
 /**
@@ -124,16 +144,16 @@ export function isLosslessScript(script: ScriptKey): boolean {
  * voiceless letter (`k` of `k/kh/g/gh`). That is the conventional reading of a
  * bare Tamil glyph, so unmarked text reads correctly.
  */
-export function selectorFor(iast: string, script: ScriptKey): string {
-  const p = BY_IAST.get(iast);
-  if (p === undefined) return '';
-  const glyph = letterFor(p, script);
-  if (glyph === null) return '';
-  const group = COLLISIONS[script].get(glyph);
+export function selectorFor(iast: PhonemeId, script: ScriptId): string {
+  const module = getScript(script);
+  if (module === undefined) return '';
+  const glyph = formOf(module, iast)?.form;
+  if (glyph === undefined) return '';
+  const group = collisions(script).get(glyph);
   if (group === undefined) {
     // No glyph collision — but a multi-character approximation still needs the
     // marker, or `ரு` (`ṛ`) is indistinguishable from `ர` + `ு` (`ru`).
-    return isApproximation(p, script) && glyph.length > 1 ? VS_APPROX : '';
+    return isApproximation(iast, script) && glyph.length > 1 ? VS_APPROX : '';
   }
   const ordinal = group.indexOf(iast);
   if (ordinal <= 0) return '';
@@ -148,9 +168,9 @@ export function selectorFor(iast: string, script: ScriptKey): string {
 export function letterFromSelector(
   glyph: string,
   selector: string,
-  script: ScriptKey,
+  script: ScriptId,
 ): string | null {
-  const group = COLLISIONS[script].get(glyph);
+  const group = collisions(script).get(glyph);
   if (group === undefined) return null;
   if (selector === '') return group[0] ?? null;
   const cp = selector.codePointAt(0);

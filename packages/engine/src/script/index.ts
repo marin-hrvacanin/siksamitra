@@ -18,10 +18,13 @@
  */
 import { ANU, DIGRAPHS, VIS, VIRAMA_TICK, ZWJ, ZWNJ, isConsonant, isVowel } from '../alphabet.js';
 import {
-  ACCENT_MARKS, BY_IAST, PRANAVA_FORMS, SIGN_BY_IAST, VIRAMA,
+  ACCENT_MARKS, BY_IAST, SIGN_BY_IAST,
   letterFor, signFor,
 } from './tables.js';
 import type { ScriptKey } from './tables.js';
+import { formOf, type ScriptModule } from './module.js';
+import { PHONEME_INVENTORY } from './phonemes.js';
+import { getScript, registeredScripts, requireScript } from './registry.js';
 import {
   VS_APPROX, isApproximation, isVariationSelector, letterFromSelector, selectorFor,
 } from './lossless.js';
@@ -115,16 +118,21 @@ export function transliterateSyllable(
   script: ScriptKey,
   opts?: ScriptOptions,
 ): string {
-  if (script === 'iast') {
-    return units.map((u) => u.c).join('');
+  const module = requireScript(script);
+  // A romanisation writes its vowels in line: there are no matras to fold into
+  // an onset, so the forms concatenate. This used to read `if (script ===
+  // 'iast')`, which is the privilege this refactor exists to remove — the same
+  // path now serves ITRANS and any romanisation added later.
+  if (module.kind === 'romanisation') {
+    return units.map((u) => formOf(module, u.c)?.form ?? u.c).join('');
   }
-  const virama = VIRAMA[script];
+  const virama = module.virama;
   const sel = (c: string): string =>
     opts?.lossless === true ? selectorFor(c, script) : '';
 
   // The praṇava, when a script has its own ligature for it.
   const plain = units.map((u) => u.c).join('');
-  if (PRANAVA_IAST.has(bare(plain))) return PRANAVA_FORMS[script];
+  if (PRANAVA_IAST.has(bare(plain)) && module.pranava !== null) return module.pranava;
 
   // Partition into onset / nucleus / coda.
   const seq = units.filter((u) => bare(u.c) !== '');
@@ -219,8 +227,23 @@ export function transliterateSyllable(
  * syllable. Splits on word boundaries, syllabifies each word the same way the
  * engine does, and builds each akṣara.
  */
+/**
+ * Does this script write each phoneme as its own identifier?
+ *
+ * True for IAST, whose forms and the phoneme ids coincide. Asking the question
+ * of the DATA rather than hardcoding the answer means a second such scheme —
+ * or a change to IAST's own table — is handled without editing this file.
+ */
+function isIdentityMapping(module: ScriptModule): boolean {
+  return PHONEME_INVENTORY.every((p) => module.letters[p.id] === p.id);
+}
+
 export function transliterate(iast: string, script: ScriptKey, opts?: ScriptOptions): string {
-  if (script === 'iast') return iast;
+  // A romanisation whose forms are the phoneme ids themselves is already the
+  // answer. Stated as a property of the module rather than as `script ===
+  // 'iast'`, so a second such scheme needs no second branch.
+  const target = requireScript(script);
+  if (target.kind === 'romanisation' && isIdentityMapping(target)) return iast;
   let out = '';
   for (const chunk of iast.split(/(\s+)/)) {
     if (chunk.trim() === '') {
@@ -234,7 +257,8 @@ export function transliterate(iast: string, script: ScriptKey, opts?: ScriptOpti
 
 function transliterateWord(word: string, script: ScriptKey, opts?: ScriptOptions): string {
   const src = bare(word.replace(/ṃ/g, ANU));
-  if (PRANAVA_IAST.has(src)) return PRANAVA_FORMS[script];
+  const pranava = getScript(script)?.pranava ?? null;
+  if (PRANAVA_IAST.has(src) && pranava !== null) return pranava;
   const ls = letters(src);
   // Punctuation and anything unmapped passes through.
   const isLetter = (c: string) => isVowel(c) || isConsonant(c);
@@ -282,15 +306,23 @@ function transliterateWord(word: string, script: ScriptKey, opts?: ScriptOptions
  */
 export function detectScript(text: string): ScriptKey | 'mixed' | 'unknown' {
   const seen = new Set<ScriptKey>();
+  // Every script that claims Unicode ranges, asked in registration order. This
+  // was a chain of hardcoded block comparisons, which meant a newly registered
+  // writing system was invisible to detection until someone remembered to add
+  // a branch for it.
+  const claimants = registeredScripts()
+    .filter((m): m is typeof m & { blocks: readonly (readonly [number, number])[] } =>
+      m.blocks !== undefined && m.blocks.length > 0);
   for (const ch of text) {
     const cp = ch.codePointAt(0)!;
     // `।` and `॥` live in the Devanāgarī block but are used by every script and
     // by IAST, so they are not evidence of anything.
     if (cp === 0x0964 || cp === 0x0965) continue;
-    if (cp >= 0x0900 && cp <= 0x097f) seen.add('deva');
-    else if (cp >= 0x0c00 && cp <= 0x0c7f) seen.add('tel');
-    else if (cp >= 0x0b80 && cp <= 0x0bff) seen.add('tam');
+    const owner = claimants.find((m) => m.blocks.some(([lo, hi]) => cp >= lo && cp <= hi));
+    if (owner !== undefined) seen.add(owner.id as ScriptKey);
     else if ((cp >= 0x0041 && cp <= 0x007a) || (cp >= 0x0100 && cp <= 0x1eff)) {
+      // Latin with diacritics. The romanisations share this range and are not
+      // told apart by codepoint, so it reads as the default romanisation.
       seen.add('iast');
     }
   }
@@ -324,7 +356,9 @@ export function toIast(
   from: ScriptKey,
   opts?: ScriptOptions,
 ): ToIastResult {
-  if (from === 'iast') return { iast: text, ambiguous: [] };
+  if (requireScript(from).kind === 'romanisation' && isIdentityMapping(requireScript(from))) {
+    return { iast: text, ambiguous: [] };
+  }
   // Losslessness is a property of the ENCODING, so the decoder has to be told
   // which encoding it is reading — like a character set. In lossless text the
   // ABSENCE of a selector is itself meaningful: it positively says "the group's
@@ -332,12 +366,13 @@ export function toIast(
   // letters happens to be its group's default, emits no selectors at all and is
   // indistinguishable from plain text.
   const lossless = opts?.lossless === true;
-  const virama = VIRAMA[from];
+  const source = requireScript(from);
+  const virama = source.virama;
   // The praṇava ligatures are single glyphs standing for a whole syllable, so
   // they are matched before anything else. Telugu has no ligature and reverses
   // through the ordinary letter + sign path.
-  const pranava = PRANAVA_FORMS[from];
-  if (pranava !== '' && pranava.length === 1) {
+  const pranava = source.pranava;
+  if (pranava !== null && pranava !== '' && pranava.length === 1) {
     text = text.split(pranava).join(' OM ');
   }
   // Longest-first so a two-character sign is matched before its first half.
@@ -347,7 +382,7 @@ export function toIast(
       glyph: letterFor(p, from),
       // An approximation is a FORWARD-only mapping unless it is marked: see
       // `VS_APPROX` in ./lossless.ts.
-      approx: isApproximation(p, from),
+      approx: isApproximation(p.id, from),
     }))
     .filter((e): e is { iast: string; glyph: string; approx: boolean } =>
       e.glyph !== null && e.glyph !== '')
