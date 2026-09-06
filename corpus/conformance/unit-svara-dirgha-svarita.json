@@ -5,14 +5,15 @@
   "minedFrom": {
     "document": "bhagya-suktam",
     "section": "sec-1",
-    "verse": "v-1",
-    "tokenIndex": 33
+    "verse": "v-1"
   },
   "document": {
     "format": "vedaunion.chant",
     "version": 2,
-    "id": "conformance-unit-svara-dirgha-svarita",
-    "title": "conformance: a dīrgha-svarita accent",
+    "id": "bhagya-suktam",
+    "title": "bhāgya sūktam",
+    "subtitle": "Hymn for fortune and the awakening of dawn",
+    "source": "kṛṣṇayajurveda · Taittirīya Brāhmaṇa 2.8.9",
     "primaryScript": "iast",
     "scripts": [
       "iast",
@@ -20,6 +21,12 @@
       "telugu",
       "tamil"
     ],
+    "titleForms": {
+      "iast": "bhāgya sūktam",
+      "devanagari": "भाग्य सूक्तम्",
+      "telugu": "భాగ్య సూక్తమ్",
+      "tamil": "பாக்ய ஸூக்தம்"
+    },
     "sections": [
       {
         "id": "sec-1",
@@ -980,35 +987,684 @@
             ],
             "translation": {
               "en": "At dawn we invoke Agni, at dawn Indra, at dawn Mitra and Varuṇa, at dawn the Aśvins. At dawn Bhaga, the deity of fortune, Pūṣan, Brahmaṇaspati, at dawn we invoke Soma, and also Rudra."
-            }
+            },
+            "words": [
+              {
+                "surface": "oṁ",
+                "entries": [
+                  {
+                    "lemma": "oṁ",
+                    "type": "avyaya",
+                    "meaning": "the sacred syllable Oṁ (praṇava)",
+                    "forms": {
+                      "deva": "ॐ",
+                      "tel": "ఓం",
+                      "tam": "ௐ"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/oṁ"
+                  }
+                ]
+              },
+              {
+                "surface": "prātara-gnim",
+                "entries": [
+                  {
+                    "lemma": "prātar",
+                    "type": "avyaya",
+                    "meaning": "at dawn, early in the morning",
+                    "forms": {
+                      "deva": "प्रातर्",
+                      "tel": "ప్రాతర్",
+                      "tam": "ப்ராதர்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/prātar"
+                  },
+                  {
+                    "lemma": "agni",
+                    "type": "subanta",
+                    "meaning": "Agni, the fire-god",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अग्नि",
+                      "tel": "అగ్ని",
+                      "tam": "அக்நி"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/agni"
+                  }
+                ]
+              },
+              {
+                "surface": "prātari-ndram",
+                "entries": [
+                  {
+                    "lemma": "prātar",
+                    "type": "avyaya",
+                    "meaning": "at dawn, early in the morning",
+                    "forms": {
+                      "deva": "प्रातर्",
+                      "tel": "ప్రాతర్",
+                      "tam": "ப்ராதர்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/prātar"
+                  },
+                  {
+                    "lemma": "indra",
+                    "type": "subanta",
+                    "meaning": "Indra",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "इन्द्र",
+                      "tel": "ఇన్ద్ర",
+                      "tam": "இந்த்ர"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/indra"
+                  }
+                ]
+              },
+              {
+                "surface": "havāmahe",
+                "entries": [
+                  {
+                    "lemma": "hve",
+                    "type": "tinanta",
+                    "meaning": "we invoke",
+                    "forms": {
+                      "deva": "ह्वे",
+                      "tel": "హ్వే",
+                      "tam": "ஹ்வே"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/hve",
+                    "purusha": "prathama→uttama",
+                    "vacana": "bahu",
+                    "lakara": "laṭ (ātmanepada)",
+                    "note": "1st pl. mid. 'havāmahe'"
+                  }
+                ]
+              },
+              {
+                "surface": "prātar",
+                "entries": [
+                  {
+                    "lemma": "prātar",
+                    "type": "avyaya",
+                    "meaning": "at dawn, early in the morning",
+                    "forms": {
+                      "deva": "प्रातर्",
+                      "tel": "ప్రాతర్",
+                      "tam": "ப்ராதர்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/prātar"
+                  }
+                ]
+              },
+              {
+                "surface": "mitrā",
+                "entries": [
+                  {
+                    "lemma": "mitra",
+                    "type": "subanta",
+                    "meaning": "Mitra",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "dvi",
+                    "forms": {
+                      "deva": "मित्र",
+                      "tel": "మిత్ర",
+                      "tam": "மித்ர"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/mitra",
+                    "note": "Mitrā-Varuṇā dual compound"
+                  }
+                ]
+              },
+              {
+                "surface": "varuṇā",
+                "entries": [
+                  {
+                    "lemma": "varuṇa",
+                    "type": "subanta",
+                    "meaning": "Varuṇa",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "dvi",
+                    "forms": {
+                      "deva": "वरुण",
+                      "tel": "వరుణ",
+                      "tam": "வருண"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/varuṇa"
+                  }
+                ]
+              },
+              {
+                "surface": "prātara-śvinā",
+                "entries": [
+                  {
+                    "lemma": "prātar",
+                    "type": "avyaya",
+                    "meaning": "at dawn, early in the morning",
+                    "forms": {
+                      "deva": "प्रातर्",
+                      "tel": "ప్రాతర్",
+                      "tam": "ப்ராதர்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/prātar"
+                  },
+                  {
+                    "lemma": "aśvin",
+                    "type": "subanta",
+                    "meaning": "the two Aśvins",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "dvi",
+                    "forms": {
+                      "deva": "अश्विन्",
+                      "tel": "అశ్విన్",
+                      "tam": "அஶ்விந்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/aśvin"
+                  }
+                ]
+              },
+              {
+                "surface": "prātar",
+                "entries": [
+                  {
+                    "lemma": "prātar",
+                    "type": "avyaya",
+                    "meaning": "at dawn, early in the morning",
+                    "forms": {
+                      "deva": "प्रातर्",
+                      "tel": "ప్రాతర్",
+                      "tam": "ப்ராதர்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/prātar"
+                  }
+                ]
+              },
+              {
+                "surface": "bhagam",
+                "entries": [
+                  {
+                    "lemma": "bhaga",
+                    "type": "subanta",
+                    "meaning": "Bhaga, the dispenser of fortune (an Āditya)",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "भग",
+                      "tel": "భగ",
+                      "tam": "பக"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/bhaga"
+                  }
+                ]
+              },
+              {
+                "surface": "pūṣaṇam",
+                "entries": [
+                  {
+                    "lemma": "pūṣan",
+                    "type": "subanta",
+                    "meaning": "Pūṣan, the nourisher",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "पूषन्",
+                      "tel": "పూషన్",
+                      "tam": "பூஷந்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/pūṣan"
+                  }
+                ]
+              },
+              {
+                "surface": "brahmaṇaspatim",
+                "entries": [
+                  {
+                    "lemma": "brahmaṇaspati",
+                    "type": "subanta",
+                    "meaning": "Brahmaṇaspati, lord of prayer",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "ब्रह्मणस्पति",
+                      "tel": "బ్రహ్మణస్పతి",
+                      "tam": "ப்ரஹ்மணஸ்பதி"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/brahmaṇaspati"
+                  }
+                ]
+              },
+              {
+                "surface": "prātas",
+                "entries": [
+                  {
+                    "lemma": "prātar",
+                    "type": "avyaya",
+                    "meaning": "at dawn",
+                    "forms": {
+                      "deva": "प्रातर्",
+                      "tel": "ప్రాతర్",
+                      "tam": "ப்ராதர்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/prātar"
+                  }
+                ]
+              },
+              {
+                "surface": "somamu-ta",
+                "entries": [
+                  {
+                    "lemma": "soma",
+                    "type": "subanta",
+                    "meaning": "Soma",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "सोम",
+                      "tel": "సోమ",
+                      "tam": "ஸோம"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/soma"
+                  },
+                  {
+                    "lemma": "uta",
+                    "type": "avyaya",
+                    "meaning": "and, also",
+                    "forms": {
+                      "deva": "उत",
+                      "tel": "ఉత",
+                      "tam": "உத"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/uta"
+                  }
+                ]
+              },
+              {
+                "surface": "rudram",
+                "entries": [
+                  {
+                    "lemma": "rudra",
+                    "type": "subanta",
+                    "meaning": "Rudra",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "रुद्र",
+                      "tel": "రుద్ర",
+                      "tam": "ருத்ர"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/rudra"
+                  }
+                ]
+              },
+              {
+                "surface": "huvema",
+                "entries": [
+                  {
+                    "lemma": "hve",
+                    "type": "tinanta",
+                    "meaning": "may we invoke",
+                    "forms": {
+                      "deva": "ह्वे",
+                      "tel": "హ్వే",
+                      "tam": "ஹ்வே"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/hve",
+                    "vacana": "bahu",
+                    "lakara": "leṭ/āśīr (opt.)",
+                    "note": "1st pl. 'huvema'"
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
-    ]
+    ],
+    "recording": {
+      "byVerse": {
+        "v-1": {
+          "file": "bhagya-suktam-1.mp3",
+          "duration": 21.736,
+          "label": "Verse 1",
+          "lines": [
+            {
+              "start": 0,
+              "end": 6.952
+            },
+            {
+              "start": 6.952,
+              "end": 13.08
+            },
+            {
+              "start": 13.08,
+              "end": 17.064
+            },
+            {
+              "start": 17.064,
+              "end": 21.736
+            }
+          ]
+        },
+        "v-2": {
+          "file": "bhagya-suktam-2.mp3",
+          "duration": 17.432,
+          "label": "Verse 2",
+          "lines": [
+            {
+              "start": 0,
+              "end": 3.528
+            },
+            {
+              "start": 3.528,
+              "end": 8.184
+            },
+            {
+              "start": 8.184,
+              "end": 12.368
+            },
+            {
+              "start": 12.368,
+              "end": 17.432
+            }
+          ]
+        },
+        "v-3": {
+          "file": "bhagya-suktam-3.mp3",
+          "duration": 15.504,
+          "label": "Verse 3",
+          "lines": [
+            {
+              "start": 0,
+              "end": 3.472
+            },
+            {
+              "start": 3.472,
+              "end": 7.864
+            },
+            {
+              "start": 7.864,
+              "end": 11.4
+            },
+            {
+              "start": 11.4,
+              "end": 15.504
+            }
+          ]
+        },
+        "v-4": {
+          "file": "bhagya-suktam-4.mp3",
+          "duration": 17.664,
+          "label": "Verse 4",
+          "lines": [
+            {
+              "start": 0,
+              "end": 3.648
+            },
+            {
+              "start": 3.648,
+              "end": 9.256
+            },
+            {
+              "start": 9.256,
+              "end": 12.704
+            },
+            {
+              "start": 12.704,
+              "end": 17.664
+            }
+          ]
+        },
+        "v-5": {
+          "file": "bhagya-suktam-5.mp3",
+          "duration": 15.808,
+          "label": "Verse 5",
+          "lines": [
+            {
+              "start": 0,
+              "end": 4.056
+            },
+            {
+              "start": 4.056,
+              "end": 8.16
+            },
+            {
+              "start": 8.16,
+              "end": 11.632
+            },
+            {
+              "start": 11.632,
+              "end": 15.808
+            }
+          ]
+        },
+        "v-6": {
+          "file": "bhagya-suktam-6.mp3",
+          "duration": 16.152,
+          "label": "Verse 6",
+          "lines": [
+            {
+              "start": 0,
+              "end": 3.136
+            },
+            {
+              "start": 3.136,
+              "end": 7.696
+            },
+            {
+              "start": 7.696,
+              "end": 11.256
+            },
+            {
+              "start": 11.256,
+              "end": 16.152
+            }
+          ]
+        },
+        "v-7": {
+          "file": "bhagya-suktam-7.mp3",
+          "duration": 17.728,
+          "label": "Verse 7",
+          "lines": [
+            {
+              "start": 0,
+              "end": 4.16
+            },
+            {
+              "start": 4.16,
+              "end": 9.304
+            },
+            {
+              "start": 9.304,
+              "end": 12.976
+            },
+            {
+              "start": 12.976,
+              "end": 17.728
+            }
+          ]
+        },
+        "v-8": {
+          "file": "bhagya-suktam-8.mp3",
+          "duration": 14.2,
+          "label": "Verse 8",
+          "lines": [
+            {
+              "start": 0,
+              "end": 7.784
+            },
+            {
+              "start": 7.784,
+              "end": 14.2
+            }
+          ]
+        },
+        "v-9": {
+          "file": "bhagya-suktam-9.mp3",
+          "duration": 4.093,
+          "label": "Verse 9",
+          "lines": [
+            {
+              "start": 0,
+              "end": 4.093
+            }
+          ]
+        }
+      }
+    },
+    "audioBase": "/tests/bhagya-suktam/audio/"
   },
   "expect": {
-    "sections": 1,
-    "verses": 1,
-    "tokens": 71,
-    "syllables": 48,
     "attested": true,
-    "tokenAt": {
-      "index": 33,
-      "token": {
-        "iast": "nā",
-        "deva": "ना",
-        "tel": "నా",
-        "tam": "நா",
-        "units": [
-          {
-            "c": "n"
-          },
-          {
-            "c": "ā",
-            "svara": "dirgha-svarita"
-          }
-        ]
+    "syllables": 48,
+    "recitation": {
+      "iast": "oṁ | prātara-gnim prātari-ndram havāmahe\nprātar mitrā varuṇā prātara-śvinā ।\nprātar bhagam pūṣaṇam brahmaṇaspatim\nprātas somamu-ta rudram huvema ॥॥",
+      "deva": "ॐ | प्रातर-ग्निम् प्रातरि-न्द्रम् हवामहे\nप्रातर् मित्रा वरुणा प्रातर-श्विना ।\nप्रातर् भगम् पूषणम् ब्रह्मणस्पतिम्\nप्रातस् सोममु-त रुद्रम् हुवेम ॥॥",
+      "tel": "ఓం | ప్రాతర-గ్నిమ్ ప్రాతరి-న్ద్రమ్ హవామహే\nప్రాతర్ మిత్రా వరుణా ప్రాతర-శ్వినా ।\nప్రాతర్ భగమ్ పూషణమ్ బ్రహ్మణస్పతిమ్\nప్రాతస్ సోమము-త రుద్రమ్ హువేమ ॥॥",
+      "tam": "ௐ | ப்ராதர-க்நிம் ப்ராதரி-ந்த்ரம் ஹவாமஹே\nப்ராதர் மித்ரா வருணா ப்ராதர-ஶ்விநா ।\nப்ராதர் பகம் பூஷணம் ப்ரஹ்மணஸ்பதிம்\nப்ராதஸ் ஸோமமு-த ருத்ரம் ஹுவேம ॥॥"
+    },
+    "holdings": [
+      {
+        "group": 1,
+        "len": "short",
+        "from": 10,
+        "to": 10,
+        "letters": "g"
+      },
+      {
+        "group": 2,
+        "len": "short",
+        "from": 14,
+        "to": 14,
+        "letters": "p"
+      },
+      {
+        "group": 3,
+        "len": "short",
+        "from": 23,
+        "to": 23,
+        "letters": "d"
+      },
+      {
+        "group": 4,
+        "len": "short",
+        "from": 27,
+        "to": 27,
+        "letters": "h"
+      },
+      {
+        "group": 1,
+        "len": "long",
+        "from": 35,
+        "to": 35,
+        "letters": "p"
+      },
+      {
+        "group": 2,
+        "len": "short",
+        "from": 41,
+        "to": 41,
+        "letters": "m"
+      },
+      {
+        "group": 3,
+        "len": "short",
+        "from": 43,
+        "to": 43,
+        "letters": "t"
+      },
+      {
+        "group": 4,
+        "len": "long",
+        "from": 52,
+        "to": 52,
+        "letters": "p"
+      },
+      {
+        "group": 5,
+        "len": "short",
+        "from": 61,
+        "to": 61,
+        "letters": "v"
+      },
+      {
+        "group": 1,
+        "len": "short",
+        "from": 71,
+        "to": 71,
+        "letters": "bh"
+      },
+      {
+        "group": 2,
+        "len": "short",
+        "from": 76,
+        "to": 76,
+        "letters": "p"
+      },
+      {
+        "group": 3,
+        "len": "short",
+        "from": 83,
+        "to": 83,
+        "letters": "b"
+      },
+      {
+        "group": 4,
+        "len": "short",
+        "from": 86,
+        "to": 86,
+        "letters": "h"
+      },
+      {
+        "group": 5,
+        "len": "short",
+        "from": 92,
+        "to": 92,
+        "letters": "p"
+      },
+      {
+        "group": 1,
+        "len": "short",
+        "from": 97,
+        "to": 97,
+        "letters": "p"
+      },
+      {
+        "group": 2,
+        "len": "short",
+        "from": 103,
+        "to": 103,
+        "letters": "s"
+      },
+      {
+        "group": 3,
+        "len": "short",
+        "from": 114,
+        "to": 114,
+        "letters": "d"
+      },
+      {
+        "group": 4,
+        "len": "short",
+        "from": 118,
+        "to": 118,
+        "letters": "h"
       }
+    ],
+    "provenance": {
+      "source": "kṛṣṇayajurveda · Taittirīya Brāhmaṇa 2.8.9 · Ṛgveda 7.41",
+      "from": "section"
     }
   }
 }

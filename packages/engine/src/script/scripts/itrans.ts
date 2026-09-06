@@ -15,7 +15,7 @@ export const ITRANS: ScriptModule = {
   id: "itrans",
   name: "ITRANS",
   kind: "romanisation",
-  reversible: true,
+  reversible: false,
   verified: false,
   virama: "",
   pranava: null,

@@ -41,7 +41,7 @@
  */
 import { PHONEME_INVENTORY, type PhonemeId } from './phonemes.js';
 import { formOf, type ScriptId } from './module.js';
-import { getScript } from './registry.js';
+import { getScript, onScriptReplaced } from './registry.js';
 
 /**
  * The "this is an approximation" marker — VS16, kept clear of the ordinals.
@@ -116,6 +116,16 @@ function collisionsFor(script: ScriptId): Map<string, string[]> {
  * simply produces no collisions.
  */
 const COLLISION_CACHE = new Map<ScriptId, Map<string, string[]>>();
+const SEQUENCE_CACHE = new Map<ScriptId, string[]>();
+
+// A replaced module must not be served from a computation over the old one.
+// Without this the forward transliterator picks up new forms while `selectorFor`
+// keeps indexing group ordinals from the table it first saw, which in lossless
+// mode decodes to the wrong phoneme rather than merely reporting stale.
+onScriptReplaced((id) => {
+  COLLISION_CACHE.delete(id);
+  SEQUENCE_CACHE.delete(id);
+});
 
 function collisions(script: ScriptId): Map<string, string[]> {
   const cached = COLLISION_CACHE.get(script);
@@ -125,14 +135,76 @@ function collisions(script: ScriptId): Map<string, string[]> {
   return computed;
 }
 
+/**
+ * Forms that are indistinguishable from a SEQUENCE of other forms.
+ *
+ * Glyph-collision analysis compares one phoneme's form against another's, and
+ * is structurally blind to this: in ITRANS nothing collides one-to-one, yet
+ * `sh` is both a phoneme's form and the pair `s` + `h`, and `aa` is both a
+ * vowel and `a` + `a`. `isLosslessScript` reported a confident `true` for a
+ * script whose round trip demonstrably corrupts — "sahasra" returns as
+ * "sahasara".
+ *
+ * Any multi-character form that can be spelled out of other forms is ambiguous,
+ * because a decoder reading left to right cannot know which reading was meant.
+ */
+function sequenceAmbiguitiesFor(script: ScriptId): string[] {
+  const module = getScript(script);
+  if (module === undefined) return [];
+  const forms = new Set<string>();
+  for (const p of PHONEME_INVENTORY) {
+    const f = formOf(module, p.id)?.form;
+    if (f !== undefined && f !== '') forms.add(f);
+  }
+  const composable = (target: string, start: number): boolean => {
+    if (start === target.length) return true;
+    for (const f of forms) {
+      if (f.length >= target.length && start === 0) continue; // not a proper part
+      if (f !== '' && target.startsWith(f, start) && composable(target, start + f.length)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  return [...forms].filter((f) => f.length > 1 && composable(f, 0)).sort();
+}
+
+function sequenceAmbiguities(script: ScriptId): string[] {
+  const cached = SEQUENCE_CACHE.get(script);
+  if (cached !== undefined) return cached;
+  const computed = sequenceAmbiguitiesFor(script);
+  SEQUENCE_CACHE.set(script, computed);
+  return computed;
+}
+
 /** Which IAST letters a script cannot tell apart. Empty for a lossless script. */
 export function ambiguitiesIn(script: ScriptId): { glyph: string; letters: string[] }[] {
   return [...collisions(script)].map(([glyph, letters]) => ({ glyph, letters }));
 }
 
-/** Is this script lossless on its own, with no selectors? */
+/**
+ * Is this script lossless on its own, with no selectors?
+ *
+ * BOTH kinds of ambiguity, because for a long time this asked only the first
+ * and answered `true` for a script that loses data:
+ *
+ *   - glyph collisions: two phonemes written the same way (Tamil's `k`/`kh`/`g`)
+ *   - sequence ambiguity: one form spellable out of others (ITRANS `sh`, `aa`)
+ *
+ * Note that IAST answers `false`, on account of its digraphs — `ai` is also
+ * `a` + `i`, `bh` is also `b` + `h`. That is a true statement about the WRITING
+ * SYSTEM and not a defect here: a longest-match decoder resolves the reading
+ * deterministically (which is what `parseLetters` does), but a writer still
+ * cannot express "a then i" distinctly from the diphthong. Devanagari and
+ * Telugu, which give each sound its own character, answer `true`.
+ */
 export function isLosslessScript(script: ScriptId): boolean {
-  return collisions(script).size === 0;
+  return collisions(script).size === 0 && sequenceAmbiguities(script).length === 0;
+}
+
+/** The forms this script cannot tell apart from a sequence of other forms. */
+export function sequenceAmbiguitiesIn(script: ScriptId): readonly string[] {
+  return sequenceAmbiguities(script);
 }
 
 /**

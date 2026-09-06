@@ -17,8 +17,13 @@
  *
  *     if (script === 'iast') … if (script === 'itrans') … if (script === 'tam') …
  *
- * and each of those branches is now a FIELD on a script module. Adding a script
- * touches no code in this package.
+ * and each of those branches is now a FIELD on a script module.
+ *
+ * That does NOT yet mean adding a script touches no code here. `emit.ts` and
+ * `profile.ts` both still name the four built-ins, because the document format
+ * carries four fixed script fields. See design D8 for the full cost, which is
+ * about fifteen files across five packages and not the one this refactor set
+ * out to reach.
  *
  * The Devanāgarī and Telugu forms are verified against the shipped corpus; the
  * Tamil forms are NOT — the owner has confirmed they have never been reviewed,

@@ -81,13 +81,20 @@ Everything below is measured by running it, not asserted.
 ```
 npx tsc -b                 five packages, 0 errors
 npx vitest run             83 tests pass
-npm run check:transliteration   31 762 / 31 762   (100 %)
+npm run check:transliteration   31 762 / 31 762   (Devanagari + Telugu only)
 npm run check:engine            15 506 / 16 021   (96.79 %, 11 documents, ratcheted)
 npm run check:conformance       90 assertions, 15 fixtures
 ```
 
 The transliteration and corpus numbers are **identical to the platform's**, which
 is the point: the engine was moved, not rewritten, and the gates moved with it.
+
+Read the transliteration figure precisely: it is 15 881 syllables checked in
+**two** scripts, two assertions each. **Tamil is carried and unverified** — the
+owner has confirmed those forms were never reviewed, so fitting the tables to
+them would bake in their errors. ITRANS is registered **read-only**: its
+ambiguity is at the sequence level (`sh` is also `s`+`h`), and round-tripping
+through it corrupts text.
 
 **Built:** the format, the engine, the renderer (with its platform coupling
 extracted into a host contract), Word and package interop, the CLI, the corpus,

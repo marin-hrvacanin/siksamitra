@@ -56,14 +56,38 @@ ChantDoc
 
 A verse's text is a flat token list. Every token has a discriminator `t`.
 
-| `t` | meaning | fields |
-| --- | --- | --- |
-| `syl` | one syllable | `iast`, `deva`, `tel`, `tam`, `units[]` — see §1.3 |
-| `sp` | a space | — |
-| `br` | a line break within the verse | — |
-| `danda` | `।` or `॥` as structure | `s` |
-| `pause` | a recitation pause | `len: 'short' \| 'long'` |
-| `text` | literal text that is not recited | `s` |
+| `t` | meaning | fields | in the corpus |
+| --- | --- | --- | --- |
+| `syl` | one syllable | `iast`, `deva`, `tel`, `tam`, `units[]` — see §1.3 | 15 875 |
+| `sp` | a word space | — | 7 148 |
+| `danda` | `।` or `॥` as structure | `s` | 1 081 |
+| `br` | a line break within the verse | — | 800 |
+| `pause` | a recitation pause | `len: 'short' \| 'long'` | 488 |
+| `num` | a verse number — **structure, never recited** | `s` | 204 |
+| `bar` | a structural rule | — | 59 |
+| `text` | text that is not marked syllables | `s`, `deva`, `tel`, `tam`, `fill`, `placeholder` | 14 |
+| `slot` | **a variable slot — RECURSIVE** | `name`, `tokens[]` | 3 |
+
+The union has **nine** members. An earlier version of this document listed six,
+omitting `num`, `bar` and `slot` — 266 tokens in the shipped corpus that a
+reader built from the contract would not have known existed.
+
+**Three reader obligations live in this table**, and each fails silently:
+
+1. **`slot` is recursive and transparent.** It carries its own `tokens[]` and a
+   reader must descend into them: they are real syllables and they are really
+   chanted. A reader that treats the union as flat drops them. It is the only
+   recursive construct in the format, so it is the one most likely to be missed.
+2. **`text.placeholder` is NEVER emitted as text.** It is the marker standing
+   where a reciter has not supplied a name or a gotra. It is shown on screen and
+   it is not speech: emitting it puts `(your name)` into the recitation, into a
+   copy-to-clipboard and into an export.
+3. **`num` and `bar` are not speech.** A reader that concatenates every token
+   carrying an `s` recites the verse numbers.
+
+`text.fill` marks free text the reciter supplied, rendered under a dotted
+underline. `text` without `fill` is plain unmarked text; `deva`/`tel`/`tam` give
+its per-script form, and where absent `s` is used in every script.
 
 The script fields on a `syl` are **derived**. A reader displays whichever the
 user asked for.
@@ -114,7 +138,7 @@ class name, never an element, never a style.
 | `sup` | a superscript reading aid | 359 |
 | `candra` | the Vedic candrabindu | 89 |
 | `sbhakti` | the epenthetic svarabhakti vowel | 31 |
-| `cj` | a conjunct control: `split` or `join` | 0 — modelled, unattested |
+
 
 The counts are measured over the eleven documents in `corpus/chants/`, not
 estimated. They matter because they say which constructs a reader will actually
@@ -122,10 +146,12 @@ meet: a reader that handles `c` and `svara` and nothing else already renders
 most of the corpus wrongly but recognisably, whereas one that ignores `hg` draws
 every multi-letter holding as separate boxes.
 
-`cj` is modelled by the format and occurs nowhere in the corpus. It is
-**unexercised**, listed as such by the fixture index, and therefore the most
-likely construct for the two implementations to disagree about without anyone
-noticing.
+An earlier version of this table listed a `cj` conjunct control as "modelled but
+unattested". **`ChantUnit` has no such field** — `cj` exists only on the
+engine's internal lexer type and never reaches a document. It was reported as
+the flagship unexercised construct every run, which is worse than silence: the
+one place the suite admitted a gap, it admitted a gap that does not exist while
+saying nothing about `num`, `bar` and `slot`, which do.
 
 **This is the whole of why the format exists.** v1 stored a holding as
 `<span class="ql-hold-short">`, which made the document inseparable from one
@@ -244,3 +270,133 @@ The suite is plain JSON with a documented shape, so the platform can run it too
 without importing anything from this repository. That is the entire mechanism
 keeping two independent implementations honest, which is why it is a file format
 and not a library.
+
+---
+
+## 9. Byte-level definitions
+
+Everything above describes meaning. This section is what a second implementer
+actually needs and could not previously get from this document: the exact bytes.
+Each item here was asserted somewhere above without being defined, which made
+"binding on both sides" untrue in practice.
+
+### 9.1 `format` and the two versions
+
+Three fields are easy to conflate and mean different things:
+
+| field | example | what it is |
+| --- | --- | --- |
+| `format` | `"vedaunion.chant"` | the discriminator. Present on every corpus document. A reader checks it before anything else. |
+| `version` | `2` or `3` | the document's **SHAPE generation**. `2` = verses only. `3` = adds `items`, `instructions`, `figures`, `groups`. |
+| contract version | `4` | the version of THIS DOCUMENT, carried by fixtures as `contractVersion`. |
+
+They are not the same number and never have been. A reader told to "refuse
+anything above 4" while reading `version` will accept a v3-shaped document it
+cannot render, and refuse nothing. **Refuse on `version` above what your reader
+supports; read this document at whatever contract version it declares.**
+
+### 9.2 Canonical JSON
+
+One serialisation, or no hash can ever agree:
+
+```
+canonical(v):
+  null / number / string / boolean  ->  JSON scalar
+  array   ->  "[" + canonical(each) joined by "," + "]"
+  object  ->  "{" + for each key in SORTED order:
+                    JSON-quoted key + ":" + canonical(value)
+              joined by "," + "}"
+```
+
+- Keys sorted by code unit (JavaScript `Array.prototype.sort` default; Python
+  `sort_keys=True`).
+- **No whitespace anywhere** — separators are `,` and `:`.
+- Non-ASCII is emitted literally, NOT escaped (`ensure_ascii=False`). Devanagari
+  stays Devanagari.
+- Text must be **NFC**-normalised before hashing. IAST and Devanagari both have
+  multiple encodings of the same grapheme, and an unnormalised hash disagrees
+  across platforms for text that is identical on screen.
+
+### 9.3 `docHash`
+
+```
+docHash = sha256( utf8( canonical(document) + "\n" ) ), lower-case hex
+```
+
+**The trailing newline is part of the input.** It is not decorative and it is
+not guessable; a reader that omits it computes a different hash for identical
+content and refuses every package.
+
+Those same bytes — `canonical(document) + "\n"` — are the definition of "the
+document as it is served". `document.json` inside a package must be exactly
+them.
+
+### 9.4 The `.vuchant` container
+
+A **zip**. Members:
+
+```
+document.json        canonical bytes per 9.3            deflated
+source/…             the authored source, iff derived   deflated
+assets/…             audio, figures                     STORED (level 0)
+originals/…          the .docx / .pdf it came from      STORED (level 0)
+manifest.json        format, version, slug, title, engine, createdAt,
+                     docHash, contents{documentBytes,assets,assetBytes}
+```
+
+- `manifest.format` is `"vedaunion.chant.package"`.
+- Assets and originals are **stored, not deflated**: they are already-compressed
+  media and deflating them costs time to no benefit.
+- Every member is written with a **fixed mtime** (`315532800000` ms — 1980-01-01),
+  so packing the same document twice produces identical bytes. Without it a zip
+  carries the clock and nothing downstream can be compared.
+
+### 9.5 `hold` is about the vowel before, not about duration
+
+`hold: 'short' | 'long'` reads like a duration and is not one. It names the
+vowel **preceding** the holding: `short` renders a thin box, `long` a thick one.
+An implementer who reads it as "hold this letter longer" marks the wrong
+syllables and nothing in the format contradicts them.
+
+### 9.6 Script ids versus syllable field names
+
+A document declares `"scripts": ["iast","devanagari","telugu","tamil"]` and a
+syllable carries `iast`, `deva`, `tel`, `tam`. These are **different spellings
+of the same four scripts**:
+
+| declared id | syllable field |
+| --- | --- |
+| `iast` | `iast` |
+| `devanagari` | `deva` |
+| `telugu` | `tel` |
+| `tamil` | `tam` |
+
+On a syllable, `iast` and `deva` are required; `tel` and `tam` are optional and
+fall back to `deva`. When §1.3's change lands in v5 this mismatch goes with it —
+one id, everywhere.
+
+### 9.7 `src`, and what "attested" means exactly
+
+```
+ChantVerse.src?: { lines: string[]; accented?: string[]; departures?: {from,to,why}[] }
+```
+
+A verse is **attested** — rule zero, §2 — when `src` is absent **or** when
+`src.lines` is empty. Both, not just the first: two readers in this repository
+disagreed about it, one checking absence and one checking emptiness, over the
+rule the contract calls its most important.
+
+`@siksamitra/format` exports `isAttested(verse)` as the single definition.
+
+### 9.8 What is verified, and what is merely carried
+
+Not everything in this contract is evidence:
+
+| | status |
+| --- | --- |
+| Devanagari, Telugu forms | **verified** — 15 881 syllables, 31 762 assertions, against the owner's own corpus |
+| Tamil forms | **carried, unreviewed.** Asserted by the fixtures so both implementations agree, NOT evidence that they are correct Tamil |
+| ITRANS | **read-only.** Sequence-ambiguous (`sh` is also `s`+`h`); round-tripping corrupts |
+
+A fixture asserting a Tamil form is pinning two implementations to the same
+output. It is not a claim that the output is right.

@@ -14,12 +14,13 @@
     "packages/engine",
     "packages/render",
     "packages/interop",
+    "packages/storage",
     "packages/cli",
     "apps/web",
     "apps/desktop"
   ],
   "scripts": {
-    "build": "npm-run-all --serial build:format build:engine build:interop build:render build:cli",
+    "build": "npm-run-all --serial build:format build:engine build:interop build:storage build:render build:cli",
     "build:format": "npm run -w @siksamitra/format build",
     "build:engine": "npm run -w @siksamitra/engine build",
     "build:interop": "npm run -w @siksamitra/interop build",
@@ -37,11 +38,12 @@
     "check:engine": "tsx packages/cli/src/gates/corpus.ts",
     "spec": "openspec",
     "check:conformance": "tsx packages/cli/src/gates/conformance.ts",
-    "gen:conformance": "node tools/build-conformance.mjs",
-    "check:fixtures": "node tools/build-conformance.mjs --check",
+    "gen:conformance": "tsx tools/build-conformance.mjs",
+    "check:fixtures": "tsx tools/build-conformance.mjs --check",
     "gen:tokens": "tsx packages/tokens/gen.mjs",
     "check:tokens": "tsx packages/tokens/gen.mjs --check",
-    "check:literals": "node tools/check-tokens.mjs"
+    "check:literals": "node tools/check-tokens.mjs",
+    "build:storage": "npm run -w @siksamitra/storage build"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

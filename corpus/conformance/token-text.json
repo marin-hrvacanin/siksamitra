@@ -1,24 +1,44 @@
 {
   "id": "token-text",
-  "construct": "literal text that is not recited",
+  "construct": "literal text that is not recited as marked syllables",
   "contractVersion": 4,
   "minedFrom": {
     "document": "ganapati-atharvashirsham",
     "section": "phalasruti",
-    "verse": "phalasruti-v4",
-    "tokenIndex": 159
+    "verse": "phalasruti-v4"
   },
   "document": {
     "format": "vedaunion.chant",
     "version": 3,
-    "id": "conformance-token-text",
-    "title": "conformance: literal text that is not recited",
+    "id": "ganapati-atharvashirsham",
+    "title": "gaṇapatyatharvaśīrṣam",
+    "subtitle": "The Atharvavedic upaniṣad of Gaṇeśa",
+    "source": "atharvaveda · Gaṇapati Atharvaśīrṣa Upaniṣad",
     "primaryScript": "iast",
     "scripts": [
       "iast",
       "devanagari",
       "telugu",
       "tamil"
+    ],
+    "titleForms": {
+      "iast": "gaṇapatyatharvaśīrṣam",
+      "devanagari": "गणपत्यथर्वशीर्षम्",
+      "telugu": "గణపత్యథర్వశీర్షమ్",
+      "tamil": "கணபத்யதர்வஶீர்ஷம்"
+    },
+    "lineBreak": "source",
+    "features": {
+      "audio": false,
+      "grammar": true
+    },
+    "instructions": [
+      {
+        "kind": "note",
+        "text": {
+          "en": "Transcribed from the Veda Union Gaṇapati Atharvaśīrṣam (IAST, v3.3). The recitation marks are the owner’s own: holdings, svara, the anusvāra and visarga forms, svarabhakti and the pauses are carried as data, not redrawn."
+        }
+      }
     ],
     "sections": [
       {
@@ -1995,24 +2015,942 @@
             ],
             "translation": {
               "en": "Who provides eight brāhmaṇas to learn it, becomes vigorous as Sūrya. Observing the reflection of a solar eclipse from the shore of a great river, while also whispering this perfect mantra, one becomes: - free from the great obstacle, - free from the great disease, - free from the great sin, - free from the great detriment, - he becomes omniscient, he becomes omniscient. For he who knows so, (what is said is confidential.)"
-            }
+            },
+            "words": [
+              {
+                "surface": "aṣṭau",
+                "entries": [
+                  {
+                    "lemma": "aṣṭan",
+                    "type": "subanta",
+                    "meaning": "eight",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "bahu",
+                    "forms": {
+                      "deva": "अष्टन्",
+                      "tel": "అష్టన్",
+                      "tam": "அஷ்டந்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "brāhmaṇān",
+                "entries": [
+                  {
+                    "lemma": "brāhmaṇa",
+                    "type": "subanta",
+                    "meaning": "brāhmaṇas",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "bahu",
+                    "forms": {
+                      "deva": "ब्राह्मण",
+                      "tel": "బ్రాహ్మణ",
+                      "tam": "ப்ராஹ்மண"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "samyag",
+                "entries": [
+                  {
+                    "lemma": "samyak",
+                    "type": "avyaya",
+                    "meaning": "properly, thoroughly",
+                    "forms": {
+                      "deva": "सम्यक्",
+                      "tel": "సమ్యక్",
+                      "tam": "ஸம்யக்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "grāhayitvā",
+                "entries": [
+                  {
+                    "lemma": "grah",
+                    "type": "tinanta",
+                    "meaning": "having caused to learn",
+                    "root": "grah",
+                    "gana": "9 (kryādi), caus. grāhaya-",
+                    "lakara": "ktvā",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "ग्रह्",
+                      "tel": "గ్రహ్",
+                      "tam": "க்ரஹ்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "sūrya",
+                "entries": [
+                  {
+                    "lemma": "sūrya",
+                    "type": "other",
+                    "meaning": "the sun",
+                    "forms": {
+                      "deva": "सूर्य",
+                      "tel": "సూర్య",
+                      "tam": "ஸூர்ய"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "varcasvī",
+                "entries": [
+                  {
+                    "lemma": "varcasvin",
+                    "type": "subanta",
+                    "meaning": "lustrous",
+                    "gender": "m",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "वर्चस्विन्",
+                      "tel": "వర్చస్విన్",
+                      "tam": "வர்சஸ்விந்"
+                    },
+                    "note": "Second member of <em>sūryavarcasvī</em>, \"lustrous as the sun\"."
+                  }
+                ]
+              },
+              {
+                "surface": "bhavati",
+                "entries": [
+                  {
+                    "lemma": "bhū",
+                    "type": "tinanta",
+                    "meaning": "becomes",
+                    "root": "bhū",
+                    "gana": "1 (bhvādi)",
+                    "lakara": "laṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "भू",
+                      "tel": "భూ",
+                      "tam": "பூ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "sūrya",
+                "entries": [
+                  {
+                    "lemma": "sūrya",
+                    "type": "other",
+                    "meaning": "the sun",
+                    "forms": {
+                      "deva": "सूर्य",
+                      "tel": "సూర్య",
+                      "tam": "ஸூர்ய"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "grahe",
+                "entries": [
+                  {
+                    "lemma": "graha",
+                    "type": "subanta",
+                    "meaning": "at the eclipse",
+                    "gender": "m",
+                    "vibhakti": 7,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "ग्रह",
+                      "tel": "గ్రహ",
+                      "tam": "க்ரஹ"
+                    },
+                    "note": "Second member of <em>sūryagrahe</em>, \"at a solar eclipse\"."
+                  }
+                ]
+              },
+              {
+                "surface": "mahānadyām",
+                "entries": [
+                  {
+                    "lemma": "mahānadī",
+                    "type": "subanta",
+                    "meaning": "on a great river",
+                    "gender": "f",
+                    "vibhakti": 7,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "महानदी",
+                      "tel": "మహానదీ",
+                      "tam": "மஹாநதீ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "pratimā",
+                "entries": [
+                  {
+                    "lemma": "pratimā",
+                    "type": "other",
+                    "meaning": "an image",
+                    "forms": {
+                      "deva": "प्रतिमा",
+                      "tel": "ప్రతిమా",
+                      "tam": "ப்ரதிமா"
+                    },
+                    "note": "The source writes this compound with a space; this is its first member. The compound is <em>pratimāsannidhi</em>."
+                  }
+                ]
+              },
+              {
+                "surface": "sannidhau",
+                "entries": [
+                  {
+                    "lemma": "sannidhi",
+                    "type": "subanta",
+                    "meaning": "in the presence of",
+                    "gender": "m",
+                    "vibhakti": 7,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "सन्निधि",
+                      "tel": "సన్నిధి",
+                      "tam": "ஸந்நிதி"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "vā",
+                "entries": [
+                  {
+                    "lemma": "vā",
+                    "type": "avyaya",
+                    "meaning": "or",
+                    "forms": {
+                      "deva": "वा",
+                      "tel": "వా",
+                      "tam": "வா"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "japtvā",
+                "entries": [
+                  {
+                    "lemma": "jap",
+                    "type": "tinanta",
+                    "meaning": "having muttered",
+                    "root": "jap",
+                    "gana": "1 (bhvādi)",
+                    "lakara": "ktvā",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "जप्",
+                      "tel": "జప్",
+                      "tam": "ஜப்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "siddhamantro",
+                "entries": [
+                  {
+                    "lemma": "siddhamantra",
+                    "type": "subanta",
+                    "meaning": "one whose mantra is accomplished",
+                    "gender": "m",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "सिद्धमन्त्र",
+                      "tel": "సిద్ధమన్త్ర",
+                      "tam": "ஸித்தமந்த்ர"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "bhavati",
+                "entries": [
+                  {
+                    "lemma": "bhū",
+                    "type": "tinanta",
+                    "meaning": "becomes",
+                    "root": "bhū",
+                    "gana": "1 (bhvādi)",
+                    "lakara": "laṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "भू",
+                      "tel": "భూ",
+                      "tam": "பூ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "mahāvighnāt",
+                "entries": [
+                  {
+                    "lemma": "mahāvighna",
+                    "type": "subanta",
+                    "meaning": "from the great obstacle",
+                    "gender": "m",
+                    "vibhakti": 5,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "महाविघ्न",
+                      "tel": "మహావిఘ్న",
+                      "tam": "மஹாவிக்ந"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "pramucyate",
+                "entries": [
+                  {
+                    "lemma": "pra",
+                    "type": "upasarga",
+                    "meaning": "forth, completely",
+                    "forms": {
+                      "deva": "प्र",
+                      "tel": "ప్ర",
+                      "tam": "ப்ர"
+                    }
+                  },
+                  {
+                    "lemma": "muc",
+                    "type": "tinanta",
+                    "meaning": "is released",
+                    "root": "muc",
+                    "gana": "6 (tudādi)",
+                    "lakara": "laṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "मुच्",
+                      "tel": "ముచ్",
+                      "tam": "முச்"
+                    },
+                    "note": "Passive (karmaṇi prayoga)."
+                  }
+                ]
+              },
+              {
+                "surface": "mahādoṣāt",
+                "entries": [
+                  {
+                    "lemma": "mahādoṣa",
+                    "type": "subanta",
+                    "meaning": "from the great affliction",
+                    "gender": "m",
+                    "vibhakti": 5,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "महादोष",
+                      "tel": "మహాదోష",
+                      "tam": "மஹாதோஷ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "pramucyate",
+                "entries": [
+                  {
+                    "lemma": "pra",
+                    "type": "upasarga",
+                    "meaning": "forth, completely",
+                    "forms": {
+                      "deva": "प्र",
+                      "tel": "ప్ర",
+                      "tam": "ப்ர"
+                    }
+                  },
+                  {
+                    "lemma": "muc",
+                    "type": "tinanta",
+                    "meaning": "is released",
+                    "root": "muc",
+                    "gana": "6 (tudādi)",
+                    "lakara": "laṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "मुच्",
+                      "tel": "ముచ్",
+                      "tam": "முச்"
+                    },
+                    "note": "Passive (karmaṇi prayoga)."
+                  }
+                ]
+              },
+              {
+                "surface": "mahāpāpāt",
+                "entries": [
+                  {
+                    "lemma": "mahāpāpa",
+                    "type": "subanta",
+                    "meaning": "from the great sin",
+                    "gender": "n",
+                    "vibhakti": 5,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "महापाप",
+                      "tel": "మహాపాప",
+                      "tam": "மஹாபாப"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "pramucyate",
+                "entries": [
+                  {
+                    "lemma": "pra",
+                    "type": "upasarga",
+                    "meaning": "forth, completely",
+                    "forms": {
+                      "deva": "प्र",
+                      "tel": "ప్ర",
+                      "tam": "ப்ர"
+                    }
+                  },
+                  {
+                    "lemma": "muc",
+                    "type": "tinanta",
+                    "meaning": "is released",
+                    "root": "muc",
+                    "gana": "6 (tudādi)",
+                    "lakara": "laṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "मुच्",
+                      "tel": "ముచ్",
+                      "tam": "முச்"
+                    },
+                    "note": "Passive (karmaṇi prayoga)."
+                  }
+                ]
+              },
+              {
+                "surface": "mahāpratyavāyāt",
+                "entries": [
+                  {
+                    "lemma": "mahāpratyavāya",
+                    "type": "subanta",
+                    "meaning": "from the great detriment",
+                    "gender": "m",
+                    "vibhakti": 5,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "महाप्रत्यवाय",
+                      "tel": "మహాప్రత్యవాయ",
+                      "tam": "மஹாப்ரத்யவாய"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "pramucyate",
+                "entries": [
+                  {
+                    "lemma": "pra",
+                    "type": "upasarga",
+                    "meaning": "forth, completely",
+                    "forms": {
+                      "deva": "प्र",
+                      "tel": "ప్ర",
+                      "tam": "ப்ர"
+                    }
+                  },
+                  {
+                    "lemma": "muc",
+                    "type": "tinanta",
+                    "meaning": "is released",
+                    "root": "muc",
+                    "gana": "6 (tudādi)",
+                    "lakara": "laṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "मुच्",
+                      "tel": "ముచ్",
+                      "tam": "முச்"
+                    },
+                    "note": "Passive (karmaṇi prayoga)."
+                  }
+                ]
+              },
+              {
+                "surface": "sa",
+                "entries": [
+                  {
+                    "lemma": "tad",
+                    "type": "subanta",
+                    "meaning": "he",
+                    "gender": "m",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "तद्",
+                      "tel": "తద్",
+                      "tam": "தத்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "sarvavid",
+                "entries": [
+                  {
+                    "lemma": "sarvavid",
+                    "type": "subanta",
+                    "meaning": "all-knowing",
+                    "gender": "m",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "सर्वविद्",
+                      "tel": "సర్వవిద్",
+                      "tam": "ஸர்வவித்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "bhavati",
+                "entries": [
+                  {
+                    "lemma": "bhū",
+                    "type": "tinanta",
+                    "meaning": "becomes",
+                    "root": "bhū",
+                    "gana": "1 (bhvādi)",
+                    "lakara": "laṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "भू",
+                      "tel": "భూ",
+                      "tam": "பூ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "sa",
+                "entries": [
+                  {
+                    "lemma": "tad",
+                    "type": "subanta",
+                    "meaning": "he",
+                    "gender": "m",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "तद्",
+                      "tel": "తద్",
+                      "tam": "தத்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "sarvavid",
+                "entries": [
+                  {
+                    "lemma": "sarvavid",
+                    "type": "subanta",
+                    "meaning": "all-knowing",
+                    "gender": "m",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "सर्वविद्",
+                      "tel": "సర్వవిద్",
+                      "tam": "ஸர்வவித்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "bhavati",
+                "entries": [
+                  {
+                    "lemma": "bhū",
+                    "type": "tinanta",
+                    "meaning": "becomes",
+                    "root": "bhū",
+                    "gana": "1 (bhvādi)",
+                    "lakara": "laṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "भू",
+                      "tel": "భూ",
+                      "tam": "பூ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "ya",
+                "entries": [
+                  {
+                    "lemma": "yad",
+                    "type": "subanta",
+                    "meaning": "who",
+                    "gender": "m",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "यद्",
+                      "tel": "యద్",
+                      "tam": "யத்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "evaṁ",
+                "entries": [
+                  {
+                    "lemma": "evam",
+                    "type": "avyaya",
+                    "meaning": "thus",
+                    "forms": {
+                      "deva": "एवम्",
+                      "tel": "ఏవమ్",
+                      "tam": "ஏவம்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "veda",
+                "entries": [
+                  {
+                    "lemma": "vid",
+                    "type": "tinanta",
+                    "meaning": "knows",
+                    "root": "vid",
+                    "gana": "2 (adādi)",
+                    "lakara": "laṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "विद्",
+                      "tel": "విద్",
+                      "tam": "வித்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "ityu-paniṣatˎ",
+                "entries": [
+                  {
+                    "lemma": "iti",
+                    "type": "avyaya",
+                    "meaning": "thus",
+                    "forms": {
+                      "deva": "इति",
+                      "tel": "ఇతి",
+                      "tam": "இதி"
+                    }
+                  },
+                  {
+                    "lemma": "upaniṣad",
+                    "type": "subanta",
+                    "meaning": "the upaniṣad",
+                    "gender": "f",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "उपनिषद्",
+                      "tel": "ఉపనిషద్",
+                      "tam": "உபநிஷத்"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
-    ]
+    ],
+    "recording": {
+      "byVerse": {}
+    }
   },
   "expect": {
-    "sections": 1,
-    "verses": 1,
-    "tokens": 171,
-    "syllables": 101,
     "attested": true,
-    "tokenAt": {
-      "index": 159,
-      "token": {
-        "t": "text",
-        "s": "("
+    "syllables": 101,
+    "recitation": {
+      "iast": "aṣṭau brāhmaṇān samyag grāhayitvā sūrya varcasvī bhavati । \nsūrya grahe mahānadyām pratimā sannidhau  \nvā japtvā siddhamantro bhavati ।  \nmahāvighnāt pramucyate ।  \nmahādoṣāt pramucyate ।  \nmahāpāpāt pramucyate ।  \nmahāpratyavāyāt pramucyate ।  \nsa sarvavid bhavati sa sarvavid bhavati । \nya evaṁ veda । (ityu-paniṣatˎ) ॥॥ ",
+      "deva": "अष्टौ ब्राह्मणान् सम्यग् ग्राहयित्वा सूर्य वर्चस्वी भवति । \nसूर्य ग्रहे महानद्याम् प्रतिमा सन्निधौ  \nवा जप्त्वा सिद्धमन्त्रो भवति ।  \nमहाविघ्नात् प्रमुच्यते ।  \nमहादोषात् प्रमुच्यते ।  \nमहापापात् प्रमुच्यते ।  \nमहाप्रत्यवायात् प्रमुच्यते ।  \nस सर्वविद् भवति स सर्वविद् भवति । \nय एवं वेद । (इत्यु-पनिषत्) ॥॥ ",
+      "tel": "అష్టౌ బ్రాహ్మణాన్ సమ్యగ్ గ్రాహయిత్వా సూర్య వర్చస్వీ భవతి । \nసూర్య గ్రహే మహానద్యామ్ ప్రతిమా సన్నిధౌ  \nవా జప్త్వా సిద్ధమన్త్రో భవతి ।  \nమహావిఘ్నాత్ ప్రముచ్యతే ।  \nమహాదోషాత్ ప్రముచ్యతే ।  \nమహాపాపాత్ ప్రముచ్యతే ।  \nమహాప్రత్యవాయాత్ ప్రముచ్యతే ।  \nస సర్వవిద్ భవతి స సర్వవిద్ భవతి । \nయ ఏవం వేద । (ఇత్యు-పనిషత్) ॥॥ ",
+      "tam": "அஷ்டௌ ப்ராஹ்மணாந் ஸம்யக் க்ராஹயித்வா ஸூர்ய வர்சஸ்வீ பவதி । \nஸூர்ய க்ரஹே மஹாநத்யாம் ப்ரதிமா ஸந்நிதௌ  \nவா ஜப்த்வா ஸித்தமந்த்ரோ பவதி ।  \nமஹாவிக்நாத் ப்ரமுச்யதே ।  \nமஹாதோஷாத் ப்ரமுச்யதே ।  \nமஹாபாபாத் ப்ரமுச்யதே ।  \nமஹாப்ரத்யவாயாத் ப்ரமுச்யதே ।  \nஸ ஸர்வவித் பவதி ஸ ஸர்வவித் பவதி । \nய ஏவம் வேத । (இத்யு-பநிஷத்) ॥॥ "
+    },
+    "holdings": [
+      {
+        "group": 1,
+        "len": "short",
+        "from": 2,
+        "to": 2,
+        "letters": "ṭ"
+      },
+      {
+        "group": 2,
+        "len": "long",
+        "from": 4,
+        "to": 4,
+        "letters": "b"
+      },
+      {
+        "group": 3,
+        "len": "long",
+        "from": 7,
+        "to": 7,
+        "letters": "h"
+      },
+      {
+        "group": 4,
+        "len": "long",
+        "from": 13,
+        "to": 13,
+        "letters": "s"
+      },
+      {
+        "group": 5,
+        "len": "short",
+        "from": 18,
+        "to": 18,
+        "letters": "g"
+      },
+      {
+        "group": 6,
+        "len": "short",
+        "from": 26,
+        "to": 26,
+        "letters": "t"
+      },
+      {
+        "group": 7,
+        "len": "long",
+        "from": 32,
+        "to": 32,
+        "letters": "y"
+      },
+      {
+        "group": 8,
+        "len": "short",
+        "from": 37,
+        "to": 37,
+        "letters": "c"
+      },
+      {
+        "group": 9,
+        "len": "short",
+        "from": 40,
+        "to": 40,
+        "letters": "v"
+      },
+      {
+        "group": 10,
+        "len": "long",
+        "from": 51,
+        "to": 51,
+        "letters": "y"
+      },
+      {
+        "group": 11,
+        "len": "short",
+        "from": 53,
+        "to": 53,
+        "letters": "g"
+      },
+      {
+        "group": 12,
+        "len": "short",
+        "from": 64,
+        "to": 64,
+        "letters": "d"
+      },
+      {
+        "group": 13,
+        "len": "long",
+        "from": 68,
+        "to": 68,
+        "letters": "p"
+      },
+      {
+        "group": 14,
+        "len": "short",
+        "from": 77,
+        "to": 77,
+        "letters": "n"
+      },
+      {
+        "group": 15,
+        "len": "short",
+        "from": 86,
+        "to": 86,
+        "letters": "p"
+      },
+      {
+        "group": 16,
+        "len": "short",
+        "from": 92,
+        "to": 92,
+        "letters": "d"
+      },
+      {
+        "group": 17,
+        "len": "short",
+        "from": 98,
+        "to": 98,
+        "letters": "t"
+      },
+      {
+        "group": 18,
+        "len": "short",
+        "from": 113,
+        "to": 113,
+        "letters": "gh"
+      },
+      {
+        "group": 19,
+        "len": "long",
+        "from": 117,
+        "to": 117,
+        "letters": "p"
+      },
+      {
+        "group": 20,
+        "len": "short",
+        "from": 123,
+        "to": 123,
+        "letters": "y"
+      },
+      {
+        "group": 21,
+        "len": "long",
+        "from": 136,
+        "to": 136,
+        "letters": "p"
+      },
+      {
+        "group": 22,
+        "len": "short",
+        "from": 142,
+        "to": 142,
+        "letters": "y"
+      },
+      {
+        "group": 23,
+        "len": "long",
+        "from": 155,
+        "to": 155,
+        "letters": "p"
+      },
+      {
+        "group": 24,
+        "len": "short",
+        "from": 161,
+        "to": 161,
+        "letters": "y"
+      },
+      {
+        "group": 25,
+        "len": "long",
+        "from": 169,
+        "to": 169,
+        "letters": "p"
+      },
+      {
+        "group": 26,
+        "len": "short",
+        "from": 172,
+        "to": 172,
+        "letters": "t"
+      },
+      {
+        "group": 27,
+        "len": "long",
+        "from": 180,
+        "to": 180,
+        "letters": "p"
+      },
+      {
+        "group": 28,
+        "len": "short",
+        "from": 186,
+        "to": 186,
+        "letters": "y"
+      },
+      {
+        "group": 29,
+        "len": "short",
+        "from": 195,
+        "to": 195,
+        "letters": "v"
+      },
+      {
+        "group": 30,
+        "len": "short",
+        "from": 200,
+        "to": 200,
+        "letters": "bh"
+      },
+      {
+        "group": 31,
+        "len": "short",
+        "from": 211,
+        "to": 211,
+        "letters": "v"
+      },
+      {
+        "group": 32,
+        "len": "short",
+        "from": 216,
+        "to": 216,
+        "letters": "bh"
+      },
+      {
+        "group": 33,
+        "len": "short",
+        "from": 228,
+        "to": 228,
+        "letters": "v"
+      },
+      {
+        "group": 34,
+        "len": "short",
+        "from": 233,
+        "to": 233,
+        "letters": "t"
       }
+    ],
+    "provenance": {
+      "source": "atharvaveda · Gaṇapati Atharvaśīrṣa Upaniṣad",
+      "from": "document"
     }
   }
 }

@@ -1,0 +1,2215 @@
+{
+  "id": "token-bar",
+  "construct": "a structural rule",
+  "contractVersion": 4,
+  "minedFrom": {
+    "document": "purusha-suktam",
+    "section": "sec-1",
+    "verse": "v-1"
+  },
+  "document": {
+    "format": "vedaunion.chant",
+    "version": 2,
+    "id": "purusha-suktam",
+    "title": "puruṣa sūktam",
+    "subtitle": "Hymn of the Cosmic Man",
+    "source": "Ṛgveda 10.90 · Taittirīya Āraṇyaka 3.12",
+    "primaryScript": "iast",
+    "scripts": [
+      "iast",
+      "devanagari",
+      "telugu",
+      "tamil"
+    ],
+    "sections": [
+      {
+        "id": "sec-1",
+        "label": "Introductory stanza",
+        "verses": [
+          {
+            "id": "v-1",
+            "n": null,
+            "tokens": [
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "o"
+                  },
+                  {
+                    "c": "ṁ"
+                  }
+                ],
+                "iast": "oṁ",
+                "deva": "ॐ",
+                "tel": "ఓం",
+                "tam": "ௐ"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "pause",
+                "len": "short"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "t",
+                    "hold": "long",
+                    "hg": 1
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "c",
+                    "hold": "short",
+                    "hg": 2
+                  }
+                ],
+                "iast": "tac",
+                "deva": "तच्",
+                "tel": "తచ్",
+                "tam": "தச்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ch"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "anudatta"
+                  },
+                  {
+                    "c": "ṁ",
+                    "change": true,
+                    "sup": "i"
+                  }
+                ],
+                "iast": "chaṁ",
+                "deva": "छं",
+                "tel": "ఛం",
+                "tam": "சம்"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "y",
+                    "hold": "short",
+                    "hg": 3
+                  },
+                  {
+                    "c": "o"
+                  }
+                ],
+                "iast": "yo",
+                "deva": "यो",
+                "tel": "యో",
+                "tam": "யோ"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "r"
+                  },
+                  {
+                    "c": "ā"
+                  },
+                  {
+                    "c": "-"
+                  }
+                ],
+                "iast": "rā-",
+                "deva": "रा-",
+                "tel": "రా-",
+                "tam": "ரா-"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "v"
+                  },
+                  {
+                    "c": "ṛ",
+                    "svara": "svarita"
+                  }
+                ],
+                "iast": "vṛ",
+                "deva": "वृ",
+                "tel": "వృ",
+                "tam": "வ்ரு'"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ṇ"
+                  },
+                  {
+                    "c": "ī"
+                  }
+                ],
+                "iast": "ṇī",
+                "deva": "णी",
+                "tel": "ణీ",
+                "tam": "ணீ"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "m"
+                  },
+                  {
+                    "c": "a"
+                  }
+                ],
+                "iast": "ma",
+                "deva": "म",
+                "tel": "మ",
+                "tam": "ம"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "h"
+                  },
+                  {
+                    "c": "e"
+                  }
+                ],
+                "iast": "he",
+                "deva": "हे",
+                "tel": "హే",
+                "tam": "ஹே"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "bar"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "g"
+                  },
+                  {
+                    "c": "ā",
+                    "svara": "anudatta"
+                  }
+                ],
+                "iast": "gā",
+                "deva": "गा",
+                "tel": "గా",
+                "tam": "கா"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "t"
+                  },
+                  {
+                    "c": "u"
+                  },
+                  {
+                    "c": "ṁ",
+                    "change": true,
+                    "sup": "i"
+                  }
+                ],
+                "iast": "tuṁ",
+                "deva": "तुं",
+                "tel": "తుం",
+                "tam": "தும்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "y",
+                    "hold": "short",
+                    "hg": 4
+                  },
+                  {
+                    "c": "a",
+                    "svara": "anudatta"
+                  }
+                ],
+                "iast": "ya",
+                "deva": "य",
+                "tel": "య",
+                "tam": "ய"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "j",
+                    "hold": "short",
+                    "hg": 5,
+                    "sup": "g"
+                  },
+                  {
+                    "c": "ñ"
+                  },
+                  {
+                    "c": "ā"
+                  }
+                ],
+                "iast": "jñā",
+                "deva": "ज्ञा",
+                "tel": "జ్ఞా",
+                "tam": "ஜ்ஞா"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "y"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "svarita"
+                  }
+                ],
+                "iast": "ya",
+                "deva": "य",
+                "tel": "య",
+                "tam": "ய"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "danda",
+                "s": "।"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "br"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "g"
+                  },
+                  {
+                    "c": "ā",
+                    "svara": "anudatta"
+                  }
+                ],
+                "iast": "gā",
+                "deva": "गा",
+                "tel": "గా",
+                "tam": "கா"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "t"
+                  },
+                  {
+                    "c": "u"
+                  },
+                  {
+                    "c": "ṁ",
+                    "change": true,
+                    "sup": "i"
+                  }
+                ],
+                "iast": "tuṁ",
+                "deva": "तुं",
+                "tel": "తుం",
+                "tam": "தும்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "y",
+                    "hold": "short",
+                    "hg": 6
+                  },
+                  {
+                    "c": "a",
+                    "svara": "anudatta"
+                  }
+                ],
+                "iast": "ya",
+                "deva": "य",
+                "tel": "య",
+                "tam": "ய"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "j",
+                    "hold": "short",
+                    "hg": 7,
+                    "sup": "g"
+                  },
+                  {
+                    "c": "ñ"
+                  },
+                  {
+                    "c": "a"
+                  }
+                ],
+                "iast": "jña",
+                "deva": "ज्ञ",
+                "tel": "జ్ఞ",
+                "tam": "ஜ்ஞ"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "p"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "svarita"
+                  }
+                ],
+                "iast": "pa",
+                "deva": "प",
+                "tel": "ప",
+                "tam": "ப"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "t"
+                  },
+                  {
+                    "c": "a"
+                  }
+                ],
+                "iast": "ta",
+                "deva": "त",
+                "tel": "త",
+                "tam": "த"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "y"
+                  },
+                  {
+                    "c": "e"
+                  }
+                ],
+                "iast": "ye",
+                "deva": "ये",
+                "tel": "యే",
+                "tam": "யே"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "pause",
+                "len": "short"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "d"
+                  },
+                  {
+                    "c": "ai"
+                  }
+                ],
+                "iast": "dai",
+                "deva": "दै",
+                "tel": "దై",
+                "tam": "தை"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "v"
+                  },
+                  {
+                    "c": "ī",
+                    "svara": "dirgha-svarita"
+                  }
+                ],
+                "iast": "vī",
+                "deva": "वी",
+                "tel": "వీ",
+                "tam": "வீ"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "s",
+                    "hold": "long",
+                    "hg": 8
+                  },
+                  {
+                    "c": "v"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "anudatta"
+                  }
+                ],
+                "iast": "sva",
+                "deva": "स्व",
+                "tel": "స్వ",
+                "tam": "ஸ்வ"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "s"
+                  },
+                  {
+                    "c": "t",
+                    "hold": "short",
+                    "hg": 9
+                  },
+                  {
+                    "c": "i"
+                  }
+                ],
+                "iast": "sti",
+                "deva": "स्ति",
+                "tel": "స్తి",
+                "tam": "ஸ்தி"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "r"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "svarita"
+                  },
+                  {
+                    "c": "-"
+                  }
+                ],
+                "iast": "ra-",
+                "deva": "र-",
+                "tel": "ర-",
+                "tam": "ர-"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "s"
+                  },
+                  {
+                    "c": "t",
+                    "hold": "short",
+                    "hg": 10
+                  },
+                  {
+                    "c": "u"
+                  }
+                ],
+                "iast": "stu",
+                "deva": "स्तु",
+                "tel": "స్తు",
+                "tam": "ஸ்து"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "ḥ"
+                  }
+                ],
+                "iast": "naḥ",
+                "deva": "नः",
+                "tel": "నః",
+                "tam": "நஃ"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "danda",
+                "s": "।"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "br"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "s"
+                  },
+                  {
+                    "c": "v"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "anudatta"
+                  }
+                ],
+                "iast": "sva",
+                "deva": "स्व",
+                "tel": "స్వ",
+                "tam": "ஸ்வ"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "s"
+                  },
+                  {
+                    "c": "t",
+                    "hold": "short",
+                    "hg": 11
+                  },
+                  {
+                    "c": "i"
+                  },
+                  {
+                    "c": "r"
+                  }
+                ],
+                "iast": "stir",
+                "deva": "स्तिर्",
+                "tel": "స్తిర్",
+                "tam": "ஸ்திர்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "m",
+                    "hold": "short",
+                    "hg": 12
+                  },
+                  {
+                    "c": "ā"
+                  }
+                ],
+                "iast": "mā",
+                "deva": "मा",
+                "tel": "మా",
+                "tam": "மா"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "u",
+                    "svara": "svarita"
+                  }
+                ],
+                "iast": "nu",
+                "deva": "नु",
+                "tel": "ను",
+                "tam": "நு"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ṣ"
+                  },
+                  {
+                    "c": "e"
+                  }
+                ],
+                "iast": "ṣe",
+                "deva": "षे",
+                "tel": "షే",
+                "tam": "ஷே"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "bh",
+                    "hold": "long",
+                    "hg": 13
+                  },
+                  {
+                    "c": "y"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "ḥ"
+                  }
+                ],
+                "iast": "bhyaḥ",
+                "deva": "भ्यः",
+                "tel": "భ్యః",
+                "tam": "ப்யஃ"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "bar"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ū",
+                    "svara": "anudatta"
+                  }
+                ],
+                "iast": "ū",
+                "deva": "ऊ",
+                "tel": "ఊ",
+                "tam": "ஊ"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "r"
+                  },
+                  {
+                    "c": "dh",
+                    "hold": "long",
+                    "hg": 14
+                  },
+                  {
+                    "c": "v"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "ñ",
+                    "change": true
+                  }
+                ],
+                "iast": "rdhvañ",
+                "deva": "र्ध्वञ्",
+                "tel": "ర్ధ్వఞ్",
+                "tam": "ர்த்வஞ்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "j",
+                    "hold": "short",
+                    "hg": 15
+                  },
+                  {
+                    "c": "i",
+                    "svara": "svarita"
+                  }
+                ],
+                "iast": "ji",
+                "deva": "जि",
+                "tel": "జి",
+                "tam": "ஜி"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "g"
+                  },
+                  {
+                    "c": "ā"
+                  }
+                ],
+                "iast": "gā",
+                "deva": "गा",
+                "tel": "గా",
+                "tam": "கா"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "t"
+                  },
+                  {
+                    "c": "u"
+                  }
+                ],
+                "iast": "tu",
+                "deva": "तु",
+                "tel": "తు",
+                "tam": "து"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "bh"
+                  },
+                  {
+                    "c": "e"
+                  }
+                ],
+                "iast": "bhe",
+                "deva": "भे",
+                "tel": "భే",
+                "tam": "பே"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ṣ"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "anudatta"
+                  }
+                ],
+                "iast": "ṣa",
+                "deva": "ष",
+                "tel": "ష",
+                "tam": "ஷ"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "j"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "m"
+                  }
+                ],
+                "iast": "jam",
+                "deva": "जम्",
+                "tel": "జమ్",
+                "tam": "ஜம்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "danda",
+                "s": "।"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "br"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ś"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "n",
+                    "change": true
+                  }
+                ],
+                "iast": "śan",
+                "deva": "शन्",
+                "tel": "శన్",
+                "tam": "ஶந்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "n",
+                    "hold": "short",
+                    "hg": 16
+                  },
+                  {
+                    "c": "o",
+                    "svara": "svarita"
+                  }
+                ],
+                "iast": "no",
+                "deva": "नो",
+                "tel": "నో",
+                "tam": "நோ"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "bar"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "a"
+                  }
+                ],
+                "iast": "a",
+                "deva": "अ",
+                "tel": "అ",
+                "tam": "அ"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "s"
+                  },
+                  {
+                    "c": "t",
+                    "hold": "short",
+                    "hg": 17
+                  },
+                  {
+                    "c": "u"
+                  }
+                ],
+                "iast": "stu",
+                "deva": "स्तु",
+                "tel": "స్తు",
+                "tam": "ஸ்து"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "d",
+                    "hold": "short",
+                    "hg": 18
+                  },
+                  {
+                    "c": "v"
+                  },
+                  {
+                    "c": "i",
+                    "svara": "anudatta"
+                  }
+                ],
+                "iast": "dvi",
+                "deva": "द्वि",
+                "tel": "ద్వి",
+                "tam": "த்வி"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "p"
+                  },
+                  {
+                    "c": "a"
+                  }
+                ],
+                "iast": "pa",
+                "deva": "प",
+                "tel": "ప",
+                "tam": "ப"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "d"
+                  },
+                  {
+                    "c": "e",
+                    "svara": "dirgha-svarita"
+                  }
+                ],
+                "iast": "de",
+                "deva": "दे",
+                "tel": "దే",
+                "tam": "தே"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "pause",
+                "len": "short"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ś"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "ñ",
+                    "change": true
+                  }
+                ],
+                "iast": "śañ",
+                "deva": "शञ्",
+                "tel": "శఞ్",
+                "tam": "ஶஞ்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "c",
+                    "hold": "short",
+                    "hg": 19
+                  },
+                  {
+                    "c": "a"
+                  }
+                ],
+                "iast": "ca",
+                "deva": "च",
+                "tel": "చ",
+                "tam": "ச"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "t"
+                  },
+                  {
+                    "c": "u",
+                    "svara": "svarita"
+                  },
+                  {
+                    "c": "ṣ"
+                  }
+                ],
+                "iast": "tuṣ",
+                "deva": "तुष्",
+                "tel": "తుష్",
+                "tam": "துஷ்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "p",
+                    "hold": "short",
+                    "hg": 20
+                  },
+                  {
+                    "c": "a"
+                  }
+                ],
+                "iast": "pa",
+                "deva": "प",
+                "tel": "ప",
+                "tam": "ப"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "d"
+                  },
+                  {
+                    "c": "e"
+                  }
+                ],
+                "iast": "de",
+                "deva": "दे",
+                "tel": "దే",
+                "tam": "தே"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "danda",
+                "s": "॥"
+              },
+              {
+                "t": "br"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "o"
+                  },
+                  {
+                    "c": "ṁ"
+                  }
+                ],
+                "iast": "oṁ",
+                "deva": "ॐ",
+                "tel": "ఓం",
+                "tam": "ௐ"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "pause",
+                "len": "short"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ś",
+                    "hold": "long",
+                    "hg": 1
+                  },
+                  {
+                    "c": "ā"
+                  }
+                ],
+                "iast": "śā",
+                "deva": "शा",
+                "tel": "శా",
+                "tam": "ஶா"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "t",
+                    "hold": "long",
+                    "hg": 2
+                  },
+                  {
+                    "c": "i"
+                  },
+                  {
+                    "c": "ś"
+                  }
+                ],
+                "iast": "ntiś",
+                "deva": "न्तिश्",
+                "tel": "న్తిశ్",
+                "tam": "ந்திஶ்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ś",
+                    "hold": "short",
+                    "hg": 3
+                  },
+                  {
+                    "c": "ā"
+                  }
+                ],
+                "iast": "śā",
+                "deva": "शा",
+                "tel": "శా",
+                "tam": "ஶா"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "t",
+                    "hold": "long",
+                    "hg": 4
+                  },
+                  {
+                    "c": "i"
+                  },
+                  {
+                    "c": "ś",
+                    "change": true
+                  }
+                ],
+                "iast": "ntiś",
+                "deva": "न्तिश्",
+                "tel": "న్తిశ్",
+                "tam": "ந்திஶ்"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "ś",
+                    "hold": "short",
+                    "hg": 5
+                  },
+                  {
+                    "c": "ā"
+                  }
+                ],
+                "iast": "śā",
+                "deva": "शा",
+                "tel": "శా",
+                "tam": "ஶா"
+              },
+              {
+                "t": "syl",
+                "units": [
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "t",
+                    "hold": "long",
+                    "hg": 6
+                  },
+                  {
+                    "c": "i",
+                    "svara": "svarita"
+                  },
+                  {
+                    "c": "ḥ"
+                  }
+                ],
+                "iast": "ntiḥ",
+                "deva": "न्तिः",
+                "tel": "న్తిః",
+                "tam": "ந்திஃ"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "danda",
+                "s": "॥"
+              }
+            ],
+            "translation": {
+              "en": "Oṁ, we crave that peace and well-being. Good for the offering. Good for the offeror. Divine prosperity to us all. Prosperity to mankind. May there be rise in healing. Peace among the bipeds (humans). Peace among the quadrupeds (animals). Oṁ, peace, peace, peace."
+            },
+            "words": [
+              {
+                "surface": "oṁ",
+                "entries": [
+                  {
+                    "lemma": "oṁ",
+                    "type": "avyaya",
+                    "meaning": "the sacred syllable Om",
+                    "forms": {
+                      "deva": "ॐ",
+                      "tel": "ఓం",
+                      "tam": "ௐ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "tac",
+                "entries": [
+                  {
+                    "lemma": "tad",
+                    "type": "subanta",
+                    "meaning": "that",
+                    "gender": "n",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "stem": "pronominal a-stem",
+                    "note": "tat + śam → tac cham (sandhi); accusative object of vṛṇīmahe",
+                    "forms": {
+                      "deva": "तद्",
+                      "tel": "తద్",
+                      "tam": "தத்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "chaṁyorā-vṛṇīmahe",
+                "entries": [
+                  {
+                    "lemma": "śam",
+                    "type": "avyaya",
+                    "meaning": "well-being, happiness, auspiciousness",
+                    "note": "indeclinable, traditionally paired with yoḥ",
+                    "forms": {
+                      "deva": "शम्",
+                      "tel": "శమ్",
+                      "tam": "ஶம்"
+                    }
+                  },
+                  {
+                    "lemma": "yoḥ",
+                    "type": "avyaya",
+                    "meaning": "protection from evil, warding off affliction",
+                    "note": "archaic form (from noun yu), paired adverbially with śam",
+                    "forms": {
+                      "deva": "योः",
+                      "tel": "యోః",
+                      "tam": "யோஃ"
+                    }
+                  },
+                  {
+                    "lemma": "vṛ",
+                    "type": "tinanta",
+                    "meaning": "we choose, we select",
+                    "root": "vṛ",
+                    "gana": "9 (kryādi)",
+                    "lakara": "laṭ",
+                    "purusha": 1,
+                    "vacana": "bahu",
+                    "note": "ā + √vṛ 'to choose', ātmanepada vṛṇīmahe",
+                    "forms": {
+                      "deva": "वृ",
+                      "tel": "వృ",
+                      "tam": "வ்ரு'"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "gātuṁ",
+                "entries": [
+                  {
+                    "lemma": "gātu",
+                    "type": "subanta",
+                    "meaning": "path, right course, welfare",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "stem": "u-stem",
+                    "forms": {
+                      "deva": "गातु",
+                      "tel": "గాతు",
+                      "tam": "காது"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "yajñāya",
+                "entries": [
+                  {
+                    "lemma": "yajña",
+                    "type": "subanta",
+                    "meaning": "sacrifice, offering",
+                    "gender": "m",
+                    "vibhakti": 4,
+                    "vacana": "eka",
+                    "stem": "a-stem",
+                    "forms": {
+                      "deva": "यज्ञ",
+                      "tel": "యజ్ఞ",
+                      "tam": "யஜ்ஞ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "gātuṁ",
+                "entries": [
+                  {
+                    "lemma": "gātu",
+                    "type": "subanta",
+                    "meaning": "path, right course, welfare",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "stem": "u-stem",
+                    "forms": {
+                      "deva": "गातु",
+                      "tel": "గాతు",
+                      "tam": "காது"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "yajña",
+                "entries": [
+                  {
+                    "lemma": "yajña",
+                    "type": "other",
+                    "meaning": "sacrifice",
+                    "note": "uninflected prior member of compound yajña-pati 'lord of the sacrifice'",
+                    "forms": {
+                      "deva": "यज्ञ",
+                      "tel": "యజ్ఞ",
+                      "tam": "யஜ்ஞ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "pataye",
+                "entries": [
+                  {
+                    "lemma": "pati",
+                    "type": "subanta",
+                    "meaning": "lord, master",
+                    "gender": "m",
+                    "vibhakti": 4,
+                    "vacana": "eka",
+                    "stem": "irregular i-stem (pati-declension)",
+                    "forms": {
+                      "deva": "पति",
+                      "tel": "పతి",
+                      "tam": "பதி"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "daivī",
+                "entries": [
+                  {
+                    "lemma": "daiva",
+                    "type": "subanta",
+                    "meaning": "divine",
+                    "gender": "f",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "stem": "a-stem + ī (feminine)",
+                    "note": "agrees with svastiḥ",
+                    "forms": {
+                      "deva": "दैव",
+                      "tel": "దైవ",
+                      "tam": "தைவ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "svastira-stu",
+                "entries": [
+                  {
+                    "lemma": "svasti",
+                    "type": "subanta",
+                    "meaning": "well-being, prosperity, blessing",
+                    "gender": "f",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "stem": "i-stem",
+                    "forms": {
+                      "deva": "स्वस्ति",
+                      "tel": "స్వస్తి",
+                      "tam": "ஸ்வஸ்தி"
+                    }
+                  },
+                  {
+                    "lemma": "as",
+                    "type": "tinanta",
+                    "meaning": "may (it) be",
+                    "root": "as",
+                    "gana": "2 (adādi)",
+                    "lakara": "loṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अस्",
+                      "tel": "అస్",
+                      "tam": "அஸ்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "naḥ",
+                "entries": [
+                  {
+                    "lemma": "asmad",
+                    "type": "subanta",
+                    "meaning": "to us, our",
+                    "vibhakti": 4,
+                    "vacana": "bahu",
+                    "stem": "pronominal (asmad)",
+                    "forms": {
+                      "deva": "अस्मद्",
+                      "tel": "అస్మద్",
+                      "tam": "அஸ்மத்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "svastir",
+                "entries": [
+                  {
+                    "lemma": "svasti",
+                    "type": "subanta",
+                    "meaning": "well-being, prosperity",
+                    "gender": "f",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "stem": "i-stem",
+                    "forms": {
+                      "deva": "स्वस्ति",
+                      "tel": "స్వస్తి",
+                      "tam": "ஸ்வஸ்தி"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "mānuṣebhyaḥ",
+                "entries": [
+                  {
+                    "lemma": "mānuṣa",
+                    "type": "subanta",
+                    "meaning": "human, mankind",
+                    "gender": "m",
+                    "vibhakti": 4,
+                    "vacana": "bahu",
+                    "stem": "a-stem",
+                    "forms": {
+                      "deva": "मानुष",
+                      "tel": "మానుష",
+                      "tam": "மாநுஷ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "ūrdhvañ",
+                "entries": [
+                  {
+                    "lemma": "ūrdhva",
+                    "type": "subanta",
+                    "meaning": "upward",
+                    "gender": "n",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "stem": "a-stem",
+                    "note": "accusative used adverbially with jigātu",
+                    "forms": {
+                      "deva": "ऊर्ध्व",
+                      "tel": "ఊర్ధ్వ",
+                      "tam": "ஊர்த்வ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "jigātu",
+                "entries": [
+                  {
+                    "lemma": "gā",
+                    "type": "tinanta",
+                    "meaning": "let it go, let it advance/rise",
+                    "root": "gā",
+                    "gana": "3 (juhotyādi, reduplicating)",
+                    "lakara": "loṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "note": "reduplicated present root gā 'to go' (distinct from gam)",
+                    "forms": {
+                      "deva": "गा",
+                      "tel": "గా",
+                      "tam": "கா"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "bheṣajam",
+                "entries": [
+                  {
+                    "lemma": "bheṣaja",
+                    "type": "subanta",
+                    "meaning": "medicine, remedy, healing",
+                    "gender": "n",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "stem": "a-stem",
+                    "forms": {
+                      "deva": "भेषज",
+                      "tel": "భేషజ",
+                      "tam": "பேஷஜ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "śan",
+                "entries": [
+                  {
+                    "lemma": "śam",
+                    "type": "avyaya",
+                    "meaning": "peace, well-being",
+                    "note": "indeclinable, functions as subject of astu",
+                    "forms": {
+                      "deva": "शम्",
+                      "tel": "శమ్",
+                      "tam": "ஶம்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "no",
+                "entries": [
+                  {
+                    "lemma": "asmad",
+                    "type": "subanta",
+                    "meaning": "to us",
+                    "vibhakti": 4,
+                    "vacana": "bahu",
+                    "stem": "pronominal (asmad)",
+                    "forms": {
+                      "deva": "अस्मद्",
+                      "tel": "అస్మద్",
+                      "tam": "அஸ்மத்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "astu",
+                "entries": [
+                  {
+                    "lemma": "as",
+                    "type": "tinanta",
+                    "meaning": "may (it) be",
+                    "root": "as",
+                    "gana": "2 (adādi)",
+                    "lakara": "loṭ",
+                    "purusha": 3,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अस्",
+                      "tel": "అస్",
+                      "tam": "அஸ்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "dvi",
+                "entries": [
+                  {
+                    "lemma": "dvi",
+                    "type": "other",
+                    "meaning": "two",
+                    "note": "uninflected prior member of compound dvi-pada 'biped'",
+                    "forms": {
+                      "deva": "द्वि",
+                      "tel": "ద్వి",
+                      "tam": "த்வி"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "pade",
+                "entries": [
+                  {
+                    "lemma": "pada",
+                    "type": "subanta",
+                    "meaning": "foot, leg (compound sense: -footed)",
+                    "gender": "n",
+                    "vibhakti": 7,
+                    "vacana": "eka",
+                    "stem": "a-stem",
+                    "note": "locative forming dvipade 'among bipeds'",
+                    "forms": {
+                      "deva": "पद",
+                      "tel": "పద",
+                      "tam": "பத"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "śañ",
+                "entries": [
+                  {
+                    "lemma": "śam",
+                    "type": "avyaya",
+                    "meaning": "peace, well-being",
+                    "note": "indeclinable, functions as subject of astu",
+                    "forms": {
+                      "deva": "शम्",
+                      "tel": "శమ్",
+                      "tam": "ஶம்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "catuṣ",
+                "entries": [
+                  {
+                    "lemma": "catur",
+                    "type": "other",
+                    "meaning": "four",
+                    "note": "uninflected prior member of compound catuṣ-pada 'quadruped'",
+                    "forms": {
+                      "deva": "चतुर्",
+                      "tel": "చతుర్",
+                      "tam": "சதுர்"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "pade",
+                "entries": [
+                  {
+                    "lemma": "pada",
+                    "type": "subanta",
+                    "meaning": "foot, leg (compound sense: -footed)",
+                    "gender": "n",
+                    "vibhakti": 7,
+                    "vacana": "eka",
+                    "stem": "a-stem",
+                    "note": "locative forming catuṣpade 'among quadrupeds'",
+                    "forms": {
+                      "deva": "पद",
+                      "tel": "పద",
+                      "tam": "பத"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "oṁ",
+                "entries": [
+                  {
+                    "lemma": "oṁ",
+                    "type": "avyaya",
+                    "meaning": "the sacred syllable Om",
+                    "forms": {
+                      "deva": "ॐ",
+                      "tel": "ఓం",
+                      "tam": "ௐ"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "śāntiś",
+                "entries": [
+                  {
+                    "lemma": "śānti",
+                    "type": "subanta",
+                    "meaning": "peace",
+                    "gender": "f",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "stem": "i-stem",
+                    "forms": {
+                      "deva": "शान्ति",
+                      "tel": "శాన్తి",
+                      "tam": "ஶாந்தி"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "śāntiś",
+                "entries": [
+                  {
+                    "lemma": "śānti",
+                    "type": "subanta",
+                    "meaning": "peace",
+                    "gender": "f",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "stem": "i-stem",
+                    "forms": {
+                      "deva": "शान्ति",
+                      "tel": "శాన్తి",
+                      "tam": "ஶாந்தி"
+                    }
+                  }
+                ]
+              },
+              {
+                "surface": "śāntiḥ",
+                "entries": [
+                  {
+                    "lemma": "śānti",
+                    "type": "subanta",
+                    "meaning": "peace",
+                    "gender": "f",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "stem": "i-stem",
+                    "forms": {
+                      "deva": "शान्ति",
+                      "tel": "శాన్తి",
+                      "tam": "ஶாந்தி"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "audio": {
+          "audioId": "audio-1762807734247-8h3zai",
+          "file": "audio-1762807734247-8h3zai.mp3",
+          "duration": null,
+          "label": "introductory_stanza"
+        },
+        "source": "Taittirīya Brāhmaṇa 3.5.11 · Maitrāyaṇī Saṃhitā 4.13.10"
+      }
+    ],
+    "recording": {
+      "id": "standard",
+      "label": "Puruṣa Sūkta — standard recitation",
+      "byVerse": {
+        "v-3": {
+          "audioId": "audio-1762807764109-ewyiiv",
+          "label": "1.1",
+          "duration": null,
+          "file": "audio-1762807764109-ewyiiv.mp3"
+        },
+        "v-4": {
+          "audioId": "audio-1762807780414-5bhyt5",
+          "label": "1.2",
+          "duration": null,
+          "file": "audio-1762807780414-5bhyt5.mp3"
+        },
+        "v-5": {
+          "audioId": "audio-1762807803367-7i9nyd",
+          "label": "1.3",
+          "duration": null,
+          "file": "audio-1762807803367-7i9nyd.mp3"
+        },
+        "v-6": {
+          "audioId": "audio-1762807816181-unco5o",
+          "label": "1.4",
+          "duration": null,
+          "file": "audio-1762807816181-unco5o.mp3"
+        },
+        "v-7": {
+          "audioId": "audio-1762807833894-ho5seo",
+          "label": "1.5",
+          "duration": null,
+          "file": "audio-1762807833894-ho5seo.mp3"
+        },
+        "v-8": {
+          "audioId": "audio-1762807881502-94mic8",
+          "label": "1.6",
+          "duration": null,
+          "file": "audio-1762807881502-94mic8.mp3"
+        },
+        "v-9": {
+          "audioId": "audio-1762807891375-zcdwu6",
+          "label": "1.7",
+          "duration": null,
+          "file": "audio-1762807891375-zcdwu6.mp3"
+        },
+        "v-10": {
+          "audioId": "audio-1762807901669-1ceh38",
+          "label": "1.8",
+          "duration": null,
+          "file": "audio-1762807901669-1ceh38.mp3"
+        },
+        "v-11": {
+          "audioId": "audio-1762807915269-5w8b70",
+          "label": "1.9",
+          "duration": null,
+          "file": "audio-1762807915269-5w8b70.mp3"
+        },
+        "v-12": {
+          "audioId": "audio-1762807939023-04loco",
+          "label": "1.10",
+          "duration": null,
+          "file": "audio-1762807939023-04loco.mp3"
+        },
+        "v-13": {
+          "audioId": "audio-1762807958102-yyzinr",
+          "label": "1.11",
+          "duration": null,
+          "file": "audio-1762807958102-yyzinr.mp3"
+        },
+        "v-14": {
+          "audioId": "audio-1762807971528-s39ygl",
+          "label": "1.12",
+          "duration": null,
+          "file": "audio-1762807971528-s39ygl.mp3"
+        },
+        "v-15": {
+          "audioId": "audio-1762807984266-1slza7",
+          "label": "1.13",
+          "duration": null,
+          "file": "audio-1762807984266-1slza7.mp3"
+        },
+        "v-16": {
+          "audioId": "audio-1762807997352-5bxqqv",
+          "label": "1.14",
+          "duration": null,
+          "file": "audio-1762807997352-5bxqqv.mp3"
+        },
+        "v-17": {
+          "audioId": "audio-1762808009713-jm1eri",
+          "label": "1.15",
+          "duration": null,
+          "file": "audio-1762808009713-jm1eri.mp3"
+        },
+        "v-18": {
+          "audioId": "audio-1762808024538-g2pywm",
+          "label": "1.16",
+          "duration": null,
+          "file": "audio-1762808024538-g2pywm.mp3"
+        },
+        "v-19": {
+          "audioId": "audio-1762808033918-3h4197",
+          "label": "1.17",
+          "duration": null,
+          "file": "audio-1762808033918-3h4197.mp3"
+        },
+        "v-20": {
+          "audioId": "audio-1762808053766-mgxi88",
+          "label": "1.18",
+          "duration": null,
+          "file": "audio-1762808053766-mgxi88.mp3"
+        },
+        "v-21": {
+          "audioId": "audio-1762808071102-1gza5h",
+          "label": "2.1",
+          "duration": null,
+          "file": "audio-1762808071102-1gza5h.mp3"
+        },
+        "v-22": {
+          "audioId": "audio-1762808082834-e74bb1",
+          "label": "2.2",
+          "duration": null,
+          "file": "audio-1762808082834-e74bb1.mp3"
+        },
+        "v-23": {
+          "audioId": "audio-1762808092493-79wpwu",
+          "label": "2.3",
+          "duration": null,
+          "file": "audio-1762808092493-79wpwu.mp3"
+        },
+        "v-24": {
+          "audioId": "audio-1762808104397-jhckr7",
+          "label": "2.4",
+          "duration": null,
+          "file": "audio-1762808104397-jhckr7.mp3"
+        },
+        "v-25": {
+          "audioId": "audio-1762808125672-9vospx",
+          "label": "2.5",
+          "duration": null,
+          "file": "audio-1762808125672-9vospx.mp3"
+        },
+        "v-26": {
+          "audioId": "audio-1762808132656-k3hlsn",
+          "label": "2.6",
+          "duration": null,
+          "file": "audio-1762808132656-k3hlsn.mp3"
+        }
+      }
+    },
+    "titleForms": {
+      "iast": "puruṣa sūktam",
+      "devanagari": "पुरुष सूक्तम्",
+      "telugu": "పురుష సూక్తమ్",
+      "tamil": "புருஷ ஸூக்தம்"
+    },
+    "audioBase": "/tests/purusha-suktam/audio/"
+  },
+  "expect": {
+    "attested": true,
+    "syllables": 61,
+    "recitation": {
+      "iast": "oṁ |tac chaṁyorā-vṛṇīmahe  gātuṁ yajñāya । \ngātuṁ yajña pataye | daivī svastira-stu naḥ । \nsvastir mānuṣebhyaḥ  ūrdhvañ jigātu bheṣajam । \nśan no  astu dvi pade | śañ catuṣ pade ॥\noṁ |śāntiś śāntiś śāntiḥ ॥",
+      "deva": "ॐ |तच् छंयोरा-वृणीमहे  गातुं यज्ञाय । \nगातुं यज्ञ पतये | दैवी स्वस्तिर-स्तु नः । \nस्वस्तिर् मानुषेभ्यः  ऊर्ध्वञ् जिगातु भेषजम् । \nशन् नो  अस्तु द्वि पदे | शञ् चतुष् पदे ॥\nॐ |शान्तिश् शान्तिश् शान्तिः ॥",
+      "tel": "ఓం |తచ్ ఛంయోరా-వృణీమహే  గాతుం యజ్ఞాయ । \nగాతుం యజ్ఞ పతయే | దైవీ స్వస్తిర-స్తు నః । \nస్వస్తిర్ మానుషేభ్యః  ఊర్ధ్వఞ్ జిగాతు భేషజమ్ । \nశన్ నో  అస్తు ద్వి పదే | శఞ్ చతుష్ పదే ॥\nఓం |శాన్తిశ్ శాన్తిశ్ శాన్తిః ॥",
+      "tam": "ௐ |தச் சம்யோரா-வ்ரு'ணீமஹே  காதும் யஜ்ஞாய । \nகாதும் யஜ்ஞ பதயே | தைவீ ஸ்வஸ்திர-ஸ்து நஃ । \nஸ்வஸ்திர் மாநுஷேப்யஃ  ஊர்த்வஞ் ஜிகாது பேஷஜம் । \nஶந் நோ  அஸ்து த்வி பதே | ஶஞ் சதுஷ் பதே ॥\nௐ |ஶாந்திஶ் ஶாந்திஶ் ஶாந்திஃ ॥"
+    },
+    "holdings": [
+      {
+        "group": 1,
+        "len": "long",
+        "from": 2,
+        "to": 2,
+        "letters": "t"
+      },
+      {
+        "group": 2,
+        "len": "short",
+        "from": 4,
+        "to": 4,
+        "letters": "c"
+      },
+      {
+        "group": 3,
+        "len": "short",
+        "from": 8,
+        "to": 8,
+        "letters": "y"
+      },
+      {
+        "group": 4,
+        "len": "short",
+        "from": 26,
+        "to": 26,
+        "letters": "y"
+      },
+      {
+        "group": 5,
+        "len": "short",
+        "from": 28,
+        "to": 28,
+        "letters": "j"
+      },
+      {
+        "group": 6,
+        "len": "short",
+        "from": 38,
+        "to": 38,
+        "letters": "y"
+      },
+      {
+        "group": 7,
+        "len": "short",
+        "from": 40,
+        "to": 40,
+        "letters": "j"
+      },
+      {
+        "group": 8,
+        "len": "long",
+        "from": 53,
+        "to": 53,
+        "letters": "s"
+      },
+      {
+        "group": 9,
+        "len": "short",
+        "from": 57,
+        "to": 57,
+        "letters": "t"
+      },
+      {
+        "group": 10,
+        "len": "short",
+        "from": 63,
+        "to": 63,
+        "letters": "t"
+      },
+      {
+        "group": 11,
+        "len": "short",
+        "from": 72,
+        "to": 72,
+        "letters": "t"
+      },
+      {
+        "group": 12,
+        "len": "short",
+        "from": 75,
+        "to": 75,
+        "letters": "m"
+      },
+      {
+        "group": 13,
+        "len": "long",
+        "from": 81,
+        "to": 81,
+        "letters": "bh"
+      },
+      {
+        "group": 14,
+        "len": "long",
+        "from": 87,
+        "to": 87,
+        "letters": "dh"
+      },
+      {
+        "group": 15,
+        "len": "short",
+        "from": 91,
+        "to": 91,
+        "letters": "j"
+      },
+      {
+        "group": 16,
+        "len": "short",
+        "from": 107,
+        "to": 107,
+        "letters": "n"
+      },
+      {
+        "group": 17,
+        "len": "short",
+        "from": 111,
+        "to": 111,
+        "letters": "t"
+      },
+      {
+        "group": 18,
+        "len": "short",
+        "from": 113,
+        "to": 113,
+        "letters": "d"
+      },
+      {
+        "group": 19,
+        "len": "short",
+        "from": 123,
+        "to": 123,
+        "letters": "c"
+      },
+      {
+        "group": 20,
+        "len": "short",
+        "from": 128,
+        "to": 128,
+        "letters": "p"
+      },
+      {
+        "group": 1,
+        "len": "long",
+        "from": 134,
+        "to": 134,
+        "letters": "ś"
+      },
+      {
+        "group": 2,
+        "len": "long",
+        "from": 137,
+        "to": 137,
+        "letters": "t"
+      },
+      {
+        "group": 3,
+        "len": "short",
+        "from": 140,
+        "to": 140,
+        "letters": "ś"
+      },
+      {
+        "group": 4,
+        "len": "long",
+        "from": 143,
+        "to": 143,
+        "letters": "t"
+      },
+      {
+        "group": 5,
+        "len": "short",
+        "from": 146,
+        "to": 146,
+        "letters": "ś"
+      },
+      {
+        "group": 6,
+        "len": "long",
+        "from": 149,
+        "to": 149,
+        "letters": "t"
+      }
+    ],
+    "provenance": {
+      "source": "Taittirīya Brāhmaṇa 3.5.11 · Maitrāyaṇī Saṃhitā 4.13.10",
+      "from": "section"
+    }
+  }
+}

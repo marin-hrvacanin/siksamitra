@@ -1,23 +1,38 @@
 /**
- * The conformance gate — does THIS implementation read the interchange format
- * the way the contract says it must?
+ * The conformance gate — does this implementation read the format the way the
+ * contract says it must?
  *
- * There is no compiler between siksamitra and vedaunion.org, by design (D1).
- * Both implement the format themselves, and nothing catches a disagreement. So
- * the fixtures under `corpus/conformance/` state the required interpretation as
- * plain data, and each side runs them against its own reader.
+ * There is no compiler between siksamitra and vedaunion.org (design D1). Both
+ * implement the format themselves and nothing catches a disagreement, so the
+ * fixtures state the required interpretation as data and each side runs them
+ * against its own reader.
  *
- * This runner deliberately uses ONLY the format package. It never calls the
- * engine, because the platform has no engine and the interpretation being
- * checked must be reachable without one. If a check here needed `derive`, that
- * would be evidence the construct belongs in the engine and not in the contract.
+ * WHAT THIS GATE IS NOT ALLOWED TO DO, learned the hard way: it must not
+ * recompute an expectation from the same bytes the fixture carries. The first
+ * version did — it re-derived the token count and the token at index n from the
+ * fixture's own token array — and a reader consisting of `JSON.parse` and
+ * re-emit passed all ninety assertions while printing CONFORMANCE PASSES.
  *
- *   npm run check:conformance
+ * So every assertion here is a DERIVED fact, produced by `@siksamitra/format`'s
+ * own reader functions and compared against a value frozen in the fixture:
+ *
+ *   recitation  the chanted text per script — catches dropped slot contents,
+ *               leaked placeholders, recited verse numbers
+ *   holdings    box spans — catches a box drawn per `hold` instead of per run
+ *   provenance  the resolved citation — catches a reader that ignores inheritance
+ *   attested    rule zero
+ *
+ * It uses only `@siksamitra/format`. It must not reach for the engine: the
+ * platform has no engine, and an interpretation that needed one would not
+ * belong in the contract.
  */
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { normalizeChantDoc, type ChantDoc, type ChantToken } from '@siksamitra/format';
+import {
+  holdingSpans, isAttested, recitationText, resolveSource, syllableCount,
+  type ChantDoc, type ChantScriptKey, type HoldingSpan,
+} from '@siksamitra/format';
 
 const DIR = 'corpus/conformance';
 const CONTRACT = 4;
@@ -26,49 +41,31 @@ interface Fixture {
   id: string;
   construct: string;
   contractVersion: number;
-  minedFrom: { document: string; section: string; verse: string; tokenIndex: number };
+  minedFrom: { document: string; section: string; verse: string };
   document: ChantDoc;
   expect: {
-    sections: number;
-    verses: number;
-    tokens: number;
-    syllables: number;
     attested: boolean;
-    tokenAt: { index: number; token: Record<string, unknown> };
+    syllables: number;
+    recitation: Record<string, string>;
+    holdings: HoldingSpan[];
+    provenance: { source: string | null; from: string };
   };
 }
 
 if (!existsSync(join(DIR, 'index.json'))) {
-  console.error(`no fixtures in ${DIR} — run: node tools/build-conformance.mjs`);
+  console.error(`no fixtures in ${DIR} — run: npm run gen:conformance`);
   process.exit(2);
 }
 
 const index = JSON.parse(readFileSync(join(DIR, 'index.json'), 'utf8')) as {
   contractVersion: number;
   constructsWithoutFixture: string[];
+  scriptsUnverified?: string[];
 };
 
 if (index.contractVersion !== CONTRACT) {
-  console.error(`fixture set is contract v${index.contractVersion}, this reader is v${CONTRACT}`);
+  console.error(`fixtures are contract v${index.contractVersion}, this reader is v${CONTRACT}`);
   process.exit(2);
-}
-
-const MARKS = ['hold', 'hg', 'svara', 'change', 'cj', 'candra', 'sup', 'sbhakti'] as const;
-
-/** Read one syllable the way the contract says a reader must — no engine. */
-function readSyllable(t: ChantToken): Record<string, unknown> {
-  const syl = t as unknown as {
-    iast: string; deva?: string; tel?: string; tam?: string;
-    units?: ReadonlyArray<Record<string, unknown>>;
-  };
-  return {
-    iast: syl.iast, deva: syl.deva, tel: syl.tel, tam: syl.tam,
-    units: (syl.units ?? []).map((u) => {
-      const out: Record<string, unknown> = { c: u['c'] };
-      for (const k of MARKS) if (u[k] !== undefined) out[k] = u[k];
-      return out;
-    }),
-  };
 }
 
 const files = readdirSync(DIR).filter((f) => f.endsWith('.json') && f !== 'index.json').sort();
@@ -85,35 +82,28 @@ for (const file of files) {
     checks += 1;
     const a = JSON.stringify(got);
     const b = JSON.stringify(want);
-    if (a !== b) problems.push(`${what}: got ${a}, contract says ${b}`);
+    if (a !== b) problems.push(`${what}\n           got  ${a}\n           want ${b}`);
   };
 
-  // Read it exactly as the application would.
-  const doc = normalizeChantDoc(fx.document);
+  // Read the document exactly as an application would — through the reader,
+  // not by looking at the JSON.
+  const doc = fx.document;
   const section = doc.sections[0];
   const verse = section?.verses[0];
 
   if (section === undefined || verse === undefined) {
-    problems.push('the document did not survive normalisation as one section and one verse');
+    problems.push('the fixture document has no first section/verse');
   } else {
-    check('sections', doc.sections.length, fx.expect.sections);
-    check('verses', section.verses.length, fx.expect.verses);
-    check('tokens', verse.tokens.length, fx.expect.tokens);
-    check('syllables', verse.tokens.filter((t) => t.t === 'syl').length, fx.expect.syllables);
+    check('attested (rule zero)', isAttested(verse), fx.expect.attested);
+    check('syllables (through slots)', syllableCount(verse.tokens), fx.expect.syllables);
 
-    // Rule zero: a verse with no source layer is attested and must not be
-    // re-derived. This is the check most likely to be quietly wrong in a
-    // reader that "helpfully" fills things in.
-    check('attested (rule zero)', verse.src === undefined, fx.expect.attested);
-
-    const token = verse.tokens[fx.expect.tokenAt.index];
-    if (token === undefined) {
-      problems.push(`no token at index ${fx.expect.tokenAt.index}`);
-    } else {
-      check('the construct itself',
-        token.t === 'syl' ? readSyllable(token) : token,
-        fx.expect.tokenAt.token);
+    for (const [script, want] of Object.entries(fx.expect.recitation)) {
+      check(`recitation[${script}]`,
+        recitationText(verse.tokens, script as ChantScriptKey), want);
     }
+
+    check('holding spans', holdingSpans(verse.tokens), fx.expect.holdings);
+    check('provenance', resolveSource(doc, section, verse), fx.expect.provenance);
   }
 
   if (problems.length === 0) {
@@ -125,15 +115,17 @@ for (const file of files) {
   }
 }
 
-console.log(`\n     ${checks} assertions across ${files.length} fixtures`);
+console.log(`\n     ${checks} derived assertions across ${files.length} fixtures`);
 
 if (index.constructsWithoutFixture.length > 0) {
-  // Not a failure — an honest report. A construct the corpus never exercises is
-  // one neither implementation is being held to, and that is worth saying out
-  // loud every run rather than discovering after a divergence.
-  console.log(`\n     UNEXERCISED — modelled by the format, absent from the corpus:`);
+  console.log(`\n     UNEXERCISED — no example in the corpus, so neither`);
+  console.log(`     implementation is held to them:`);
   for (const c of index.constructsWithoutFixture) console.log(`       ${c}`);
-  console.log(`     These are the constructs most likely to drift unnoticed.`);
+}
+if (index.scriptsUnverified !== undefined && index.scriptsUnverified.length > 0) {
+  console.log(`\n     UNVERIFIED SCRIPTS: ${index.scriptsUnverified.join(', ')} — the forms`);
+  console.log(`     asserted for these are unreviewed output, carried so both`);
+  console.log(`     implementations agree, not evidence that they are correct.`);
 }
 
 if (failures > 0) {

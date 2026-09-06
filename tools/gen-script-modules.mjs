@@ -45,8 +45,8 @@ const SCRIPTS = [
     note: 'Verified against the shipped corpus: the owner has confirmed these forms.' },
   { id: 'tam', name: 'Tamil', kind: 'abugida', reversible: false, verified: false,
     note: 'NOT verified — the owner has confirmed these forms have never been\n * reviewed, so the transliteration gate excludes Tamil and this module is\n * registered `verified: false`.\n *\n * Tamil does not distinguish aspiration or voicing in its native orthography,\n * so `kh`, `g` and `gh` all render as `க`. That is correct Tamil AND it is\n * lossy, which is why `reversible` is false and why `approximations` is a\n * first-class field rather than a special case in shared code.' },
-  { id: 'itrans', name: 'ITRANS', kind: 'romanisation', reversible: true, verified: false,
-    note: 'ASCII transliteration. Present in v1 tables and unrepresentable in v1\n * documents, because the old format had no field for it. Registered here as a\n * peer; whether a document may carry it is the format\'s business, not this\n * module\'s.' },
+  { id: 'itrans', name: 'ITRANS', kind: 'romanisation', reversible: false, verified: false,
+    note: 'ASCII transliteration. Present in v1 tables and unrepresentable in v1\n * documents, because the old format had no field for it.\n *\n * READ-ONLY, and that is measured rather than assumed. Its ambiguity is at the\n * SEQUENCE level, which glyph-collision analysis cannot see: "sh" is both the\n * form of one phoneme and the pair s+h; "aa" is both one vowel and a+a. It was\n * briefly registered reversible, which offered it as an authoring surface that\n * silently corrupts: "sahasra" round-trips to "sahasara", "sha" to a single\n * palatal sibilant.' },
 ];
 
 /**

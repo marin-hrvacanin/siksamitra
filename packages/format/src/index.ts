@@ -15,6 +15,13 @@
 // ── the profile reference a document carries ────────────────────────────────
 export type { ChantProfileKey, ChantProfileRef } from './profile-ref.js';
 
+// ── what a document SAYS: the conformance surface ───────────────────────────
+export {
+  recitationText, syllablesOf, syllableCount, holdingSpans, resolveSource,
+  isAttested,
+} from './text.js';
+export type { HoldingSpan } from './text.js';
+
 // ── the document model ──────────────────────────────────────────────────────
 export * from './chant.js';
 export * from './chant-doc.js';

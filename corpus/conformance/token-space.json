@@ -1,6 +1,6 @@
 {
-  "id": "unit-hold-long",
-  "construct": "a long holding on a letter",
+  "id": "token-space",
+  "construct": "a word space",
   "contractVersion": 4,
   "minedFrom": {
     "document": "bhagya-suktam",

@@ -5,14 +5,15 @@
   "minedFrom": {
     "document": "bhagya-suktam",
     "section": "sec-1",
-    "verse": "v-8",
-    "tokenIndex": 19
+    "verse": "v-8"
   },
   "document": {
     "format": "vedaunion.chant",
     "version": 2,
-    "id": "conformance-unit-sbhakti",
-    "title": "conformance: an epenthetic svarabhakti vowel",
+    "id": "bhagya-suktam",
+    "title": "bhāgya sūktam",
+    "subtitle": "Hymn for fortune and the awakening of dawn",
+    "source": "kṛṣṇayajurveda · Taittirīya Brāhmaṇa 2.8.9",
     "primaryScript": "iast",
     "scripts": [
       "iast",
@@ -20,6 +21,12 @@
       "telugu",
       "tamil"
     ],
+    "titleForms": {
+      "iast": "bhāgya sūktam",
+      "devanagari": "भाग्य सूक्तम्",
+      "telugu": "భాగ్య సూక్తమ్",
+      "tamil": "பாக்ய ஸூக்தம்"
+    },
     "sections": [
       {
         "id": "sec-1",
@@ -656,40 +663,562 @@
             ],
             "translation": {
               "en": "O Agni, whoever wishes to deprive me, the fortunate one, make him dispossessed, o Agni! Make me fortunate, o Agni!"
-            }
+            },
+            "words": [
+              {
+                "surface": "yo",
+                "entries": [
+                  {
+                    "lemma": "yad",
+                    "type": "sarvanāma",
+                    "meaning": "who (rel.)",
+                    "gender": "m",
+                    "vibhakti": 1,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "यद्",
+                      "tel": "యద్",
+                      "tam": "யத்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/yad",
+                    "note": "'yo'"
+                  }
+                ]
+              },
+              {
+                "surface": "mā'gne",
+                "entries": [
+                  {
+                    "lemma": "asmad",
+                    "type": "sarvanāma",
+                    "meaning": "me",
+                    "gender": "-",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अस्मद्",
+                      "tel": "అస్మద్",
+                      "tam": "அஸ்மத்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/asmad",
+                    "note": "'mā'"
+                  },
+                  {
+                    "lemma": "agni",
+                    "type": "subanta",
+                    "meaning": "O Agni",
+                    "gender": "m",
+                    "vibhakti": 8,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अग्नि",
+                      "tel": "అగ్ని",
+                      "tam": "அக்நி"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/agni",
+                    "note": "'agne'"
+                  }
+                ]
+              },
+              {
+                "surface": "bhāginam",
+                "entries": [
+                  {
+                    "lemma": "bhāgin",
+                    "type": "subanta",
+                    "meaning": "having a share, fortunate",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "भागिन्",
+                      "tel": "భాగిన్",
+                      "tam": "பாகிந்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/bhāgin",
+                    "note": "'bhāginam'"
+                  }
+                ]
+              },
+              {
+                "surface": "santama-thā-bhāgañ",
+                "entries": [
+                  {
+                    "lemma": "as",
+                    "type": "tinanta",
+                    "meaning": "being",
+                    "forms": {
+                      "deva": "अस्",
+                      "tel": "అస్",
+                      "tam": "அஸ்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/as",
+                    "note": "'santam' pres. part."
+                  },
+                  {
+                    "lemma": "atha",
+                    "type": "avyaya",
+                    "meaning": "then, thereupon",
+                    "forms": {
+                      "deva": "अथ",
+                      "tel": "అథ",
+                      "tam": "அத"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/atha"
+                  },
+                  {
+                    "lemma": "abhāga",
+                    "type": "subanta",
+                    "meaning": "shareless, without a portion",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अभाग",
+                      "tel": "అభాగ",
+                      "tam": "அபாக"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/abhāga",
+                    "note": "'abhāgam'"
+                  }
+                ]
+              },
+              {
+                "surface": "cikīrṣati",
+                "entries": [
+                  {
+                    "lemma": "kṛ",
+                    "type": "tinanta",
+                    "meaning": "wishes to make",
+                    "forms": {
+                      "deva": "कृ",
+                      "tel": "కృ",
+                      "tam": "க்ரு'"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
+                    "note": "'cikīrṣati' desiderative 3rd sg."
+                  }
+                ]
+              },
+              {
+                "surface": "abhāgama-gne",
+                "entries": [
+                  {
+                    "lemma": "abhāga",
+                    "type": "subanta",
+                    "meaning": "shareless",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अभाग",
+                      "tel": "అభాగ",
+                      "tam": "அபாக"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/abhāga",
+                    "note": "'abhāgam'"
+                  },
+                  {
+                    "lemma": "agni",
+                    "type": "subanta",
+                    "meaning": "O Agni",
+                    "gender": "m",
+                    "vibhakti": 8,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अग्नि",
+                      "tel": "అగ్ని",
+                      "tam": "அக்நி"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/agni",
+                    "note": "'agne'"
+                  }
+                ]
+              },
+              {
+                "surface": "taṅ",
+                "entries": [
+                  {
+                    "lemma": "tad",
+                    "type": "sarvanāma",
+                    "meaning": "him",
+                    "gender": "-",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "तद्",
+                      "tel": "తద్",
+                      "tam": "தத்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/tad",
+                    "note": "'tam'"
+                  }
+                ]
+              },
+              {
+                "surface": "kuru",
+                "entries": [
+                  {
+                    "lemma": "kṛ",
+                    "type": "tinanta",
+                    "meaning": "make!",
+                    "forms": {
+                      "deva": "कृ",
+                      "tel": "కృ",
+                      "tam": "க்ரு'"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
+                    "note": "'kuru' imperative 2nd sg."
+                  }
+                ]
+              },
+              {
+                "surface": "māma-gne",
+                "entries": [
+                  {
+                    "lemma": "asmad",
+                    "type": "sarvanāma",
+                    "meaning": "me",
+                    "gender": "-",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अस्मद्",
+                      "tel": "అస్మద్",
+                      "tam": "அஸ்மத்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/asmad",
+                    "note": "'mām'"
+                  },
+                  {
+                    "lemma": "agni",
+                    "type": "subanta",
+                    "meaning": "O Agni",
+                    "gender": "m",
+                    "vibhakti": 8,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "अग्नि",
+                      "tel": "అగ్ని",
+                      "tam": "அக்நி"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/agni",
+                    "note": "'agne'"
+                  }
+                ]
+              },
+              {
+                "surface": "bhāginaṅ",
+                "entries": [
+                  {
+                    "lemma": "bhāgin",
+                    "type": "subanta",
+                    "meaning": "a sharer, fortunate",
+                    "gender": "m",
+                    "vibhakti": 2,
+                    "vacana": "eka",
+                    "forms": {
+                      "deva": "भागिन्",
+                      "tel": "భాగిన్",
+                      "tam": "பாகிந்"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/bhāgin",
+                    "note": "'bhāginam'"
+                  }
+                ]
+              },
+              {
+                "surface": "kuru",
+                "entries": [
+                  {
+                    "lemma": "kṛ",
+                    "type": "tinanta",
+                    "meaning": "make!",
+                    "forms": {
+                      "deva": "कृ",
+                      "tel": "కృ",
+                      "tam": "க்ரு'"
+                    },
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
+                    "note": "'kuru' imperative 2nd sg."
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
-    ]
+    ],
+    "recording": {
+      "byVerse": {
+        "v-1": {
+          "file": "bhagya-suktam-1.mp3",
+          "duration": 21.736,
+          "label": "Verse 1",
+          "lines": [
+            {
+              "start": 0,
+              "end": 6.952
+            },
+            {
+              "start": 6.952,
+              "end": 13.08
+            },
+            {
+              "start": 13.08,
+              "end": 17.064
+            },
+            {
+              "start": 17.064,
+              "end": 21.736
+            }
+          ]
+        },
+        "v-2": {
+          "file": "bhagya-suktam-2.mp3",
+          "duration": 17.432,
+          "label": "Verse 2",
+          "lines": [
+            {
+              "start": 0,
+              "end": 3.528
+            },
+            {
+              "start": 3.528,
+              "end": 8.184
+            },
+            {
+              "start": 8.184,
+              "end": 12.368
+            },
+            {
+              "start": 12.368,
+              "end": 17.432
+            }
+          ]
+        },
+        "v-3": {
+          "file": "bhagya-suktam-3.mp3",
+          "duration": 15.504,
+          "label": "Verse 3",
+          "lines": [
+            {
+              "start": 0,
+              "end": 3.472
+            },
+            {
+              "start": 3.472,
+              "end": 7.864
+            },
+            {
+              "start": 7.864,
+              "end": 11.4
+            },
+            {
+              "start": 11.4,
+              "end": 15.504
+            }
+          ]
+        },
+        "v-4": {
+          "file": "bhagya-suktam-4.mp3",
+          "duration": 17.664,
+          "label": "Verse 4",
+          "lines": [
+            {
+              "start": 0,
+              "end": 3.648
+            },
+            {
+              "start": 3.648,
+              "end": 9.256
+            },
+            {
+              "start": 9.256,
+              "end": 12.704
+            },
+            {
+              "start": 12.704,
+              "end": 17.664
+            }
+          ]
+        },
+        "v-5": {
+          "file": "bhagya-suktam-5.mp3",
+          "duration": 15.808,
+          "label": "Verse 5",
+          "lines": [
+            {
+              "start": 0,
+              "end": 4.056
+            },
+            {
+              "start": 4.056,
+              "end": 8.16
+            },
+            {
+              "start": 8.16,
+              "end": 11.632
+            },
+            {
+              "start": 11.632,
+              "end": 15.808
+            }
+          ]
+        },
+        "v-6": {
+          "file": "bhagya-suktam-6.mp3",
+          "duration": 16.152,
+          "label": "Verse 6",
+          "lines": [
+            {
+              "start": 0,
+              "end": 3.136
+            },
+            {
+              "start": 3.136,
+              "end": 7.696
+            },
+            {
+              "start": 7.696,
+              "end": 11.256
+            },
+            {
+              "start": 11.256,
+              "end": 16.152
+            }
+          ]
+        },
+        "v-7": {
+          "file": "bhagya-suktam-7.mp3",
+          "duration": 17.728,
+          "label": "Verse 7",
+          "lines": [
+            {
+              "start": 0,
+              "end": 4.16
+            },
+            {
+              "start": 4.16,
+              "end": 9.304
+            },
+            {
+              "start": 9.304,
+              "end": 12.976
+            },
+            {
+              "start": 12.976,
+              "end": 17.728
+            }
+          ]
+        },
+        "v-8": {
+          "file": "bhagya-suktam-8.mp3",
+          "duration": 14.2,
+          "label": "Verse 8",
+          "lines": [
+            {
+              "start": 0,
+              "end": 7.784
+            },
+            {
+              "start": 7.784,
+              "end": 14.2
+            }
+          ]
+        },
+        "v-9": {
+          "file": "bhagya-suktam-9.mp3",
+          "duration": 4.093,
+          "label": "Verse 9",
+          "lines": [
+            {
+              "start": 0,
+              "end": 4.093
+            }
+          ]
+        }
+      }
+    },
+    "audioBase": "/tests/bhagya-suktam/audio/"
   },
   "expect": {
-    "sections": 1,
-    "verses": 1,
-    "tokens": 50,
-    "syllables": 33,
     "attested": true,
-    "tokenAt": {
-      "index": 19,
-      "token": {
-        "iast": "rṣa",
-        "deva": "र्ष",
-        "tel": "ర్ష",
-        "tam": "ர்ஷ",
-        "units": [
-          {
-            "c": "r"
-          },
-          {
-            "c": "ṣ",
-            "hold": "long",
-            "hg": 5,
-            "sbhakti": true
-          },
-          {
-            "c": "a"
-          }
-        ]
+    "syllables": 33,
+    "recitation": {
+      "iast": "yo mā'gne bhāginam santama-thā-bhāgañ cikīrṣati । \nabhāgama-gne taṅ kuru māma-gne bhāginaṅ kuru ॥॥",
+      "deva": "यो माऽग्ने भागिनम् सन्तम-था-भागञ् चिकीर्षति । \nअभागम-ग्ने तङ् कुरु माम-ग्ने भागिनङ् कुरु ॥॥",
+      "tel": "యో మాఽగ్నే భాగినమ్ సన్తమ-థా-భాగఞ్ చికీర్షతి । \nఅభాగమ-గ్నే తఙ్ కురు మామ-గ్నే భాగినఙ్ కురు ॥॥",
+      "tam": "யோ மாऽக்நே பாகிநம் ஸந்தம-தா-பாகஞ் சிகீர்ஷதி । \nஅபாகம-க்நே தங் குரு மாம-க்நே பாகிநங் குரு ॥॥"
+    },
+    "holdings": [
+      {
+        "group": 1,
+        "len": "long",
+        "from": 5,
+        "to": 5,
+        "letters": "g"
+      },
+      {
+        "group": 2,
+        "len": "short",
+        "from": 15,
+        "to": 15,
+        "letters": "s"
+      },
+      {
+        "group": 3,
+        "len": "short",
+        "from": 18,
+        "to": 18,
+        "letters": "t"
+      },
+      {
+        "group": 4,
+        "len": "short",
+        "from": 31,
+        "to": 31,
+        "letters": "c"
+      },
+      {
+        "group": 5,
+        "len": "long",
+        "from": 36,
+        "to": 36,
+        "letters": "ṣ"
+      },
+      {
+        "group": 1,
+        "len": "short",
+        "from": 48,
+        "to": 48,
+        "letters": "g"
+      },
+      {
+        "group": 2,
+        "len": "short",
+        "from": 54,
+        "to": 54,
+        "letters": "k"
+      },
+      {
+        "group": 3,
+        "len": "short",
+        "from": 63,
+        "to": 63,
+        "letters": "g"
+      },
+      {
+        "group": 4,
+        "len": "short",
+        "from": 73,
+        "to": 73,
+        "letters": "k"
       }
+    ],
+    "provenance": {
+      "source": "kṛṣṇayajurveda · Taittirīya Brāhmaṇa 2.8.9 · Ṛgveda 7.41",
+      "from": "section"
     }
   }
 }

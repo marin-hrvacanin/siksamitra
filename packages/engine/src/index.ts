@@ -54,6 +54,22 @@ export {
 } from './script/index.js';
 export type { ScriptKey, ScriptOptions, ToIastResult, ScriptUnit } from './script/index.js';
 
+// ── the script registry ─────────────────────────────────────────────────────
+// Exported because the design says a host may install or replace a writing
+// system at run time. It could not: none of this was on the package surface,
+// so "a plug-in rather than a release" was a docstring over a private map.
+export {
+  registerScript, validateScriptModule, ScriptModuleError,
+  getScript, requireScript, isRegistered, partitionScripts,
+  registeredScripts, registeredScriptIds, authorableScripts, verifiedScripts,
+  onScriptReplaced,
+} from './script/registry.js';
+export { formOf, signOf } from './script/module.js';
+export type { ScriptModule, ScriptId, ScriptKind } from './script/module.js';
+export { PHONEME_INVENTORY, PHONEME_BY_ID, NUCLEUS_IDS } from './script/phonemes.js';
+export type { Phoneme, PhonemeId, PhonemeType, Varga } from './script/phonemes.js';
+export { sequenceAmbiguitiesIn } from './script/lossless.js';
+
 // ── geometry ────────────────────────────────────────────────────────────────
 export {
   MARK_GEOMETRY, holdBoxEm, holdStrokeCss,

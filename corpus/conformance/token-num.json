@@ -1,6 +1,6 @@
 {
-  "id": "unit-hold-long",
-  "construct": "a long holding on a letter",
+  "id": "token-num",
+  "construct": "a verse number — structure, never recited",
   "contractVersion": 4,
   "minedFrom": {
     "document": "bhagya-suktam",

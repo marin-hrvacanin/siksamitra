@@ -5,13 +5,13 @@ is strictly worse than one that moves them.
 
 | asset | state | evidence |
 | --- | --- | --- |
-| marking engine | ~10 k lines pure isomorphic TS | 53 tests |
-| transliteration | four scripts, lossless | 31 762 / 31 762 |
+| marking engine | ~10 k lines pure isomorphic TS | 83 tests |
+| transliteration | **two** scripts verified (Devanagari, Telugu) | 31 762 / 31 762 = 15 881 syllables x 2. Tamil is carried and NOT verified; ITRANS is read-only |
 | corpus re-derivation | 11 documents, letter by letter | 15 506 / 16 021 syllables = 96.79 %, ratcheted |
-| Word interop | measured off the owner's own 4.5 MB file | 340 verses / 11 360 syllables / 3 411 holdings / 4 644 accents round-trip; `styles.xml` byte-identical |
-| PDF import | two calibrated readers | 553/554 Calibri family, 106/106 Arial family, 93 letters recovered from vector paths |
+| Word interop (moved, gate not yet wired here) | measured off the owner's own 4.5 MB file | 340 verses / 11 360 syllables / 3 411 holdings / 4 644 accents round-trip; `styles.xml` byte-identical |
+| PDF import (moved, gate not yet wired here) | two calibrated readers | 553/554 Calibri family, 106/106 Arial family, 93 letters recovered from vector paths |
 | `.vuchant` | no asset ever inlined | Sri Rudram 1554 KB to 124 KB |
-| desktop shell | Tauri 2, gate D1 passing on Windows | 16 MB installer, against Electron's 103 MB |
+| desktop shell | Tauri 2, gate D1 passed **in the platform repo** | 16 MB installer against Electron's 103 MB. Not yet rebuilt here: `apps/desktop` is empty |
 
 The constraint that shaped all of it, and must survive the move: **one
 implementation of each thing, within one codebase**. It is why PDF export goes

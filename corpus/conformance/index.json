@@ -1,7 +1,16 @@
 {
   "contractVersion": 4,
   "generated": "tools/build-conformance.mjs",
-  "note": "Mined from corpus/chants. See docs/INTERCHANGE.md §8. Any reader of the format may run these; they import nothing.",
+  "note": "Every expectation is DERIVED — the recitation text, the holding spans, the resolved provenance. A reader that echoes the document fails all of them. See docs/INTERCHANGE.md §8.",
+  "scriptsVerified": [
+    "deva",
+    "tel"
+  ],
+  "scriptsUnverified": [
+    "tam",
+    "itrans"
+  ],
+  "scriptCaveat": "The `tam` forms asserted here are UNREVIEWED output, carried so both implementations agree, not evidence that they are correct Tamil.",
   "fixtures": [
     {
       "id": "syllable-four-scripts",
@@ -20,7 +29,7 @@
     },
     {
       "id": "unit-hold-group",
-      "construct": "a holding GROUP id, joining a box across letters",
+      "construct": "a holding GROUP spanning several letters",
       "file": "unit-hold-group.json"
     },
     {
@@ -74,12 +83,30 @@
       "file": "token-break.json"
     },
     {
+      "id": "token-space",
+      "construct": "a word space",
+      "file": "token-space.json"
+    },
+    {
       "id": "token-text",
-      "construct": "literal text that is not recited",
+      "construct": "literal text that is not recited as marked syllables",
       "file": "token-text.json"
+    },
+    {
+      "id": "token-num",
+      "construct": "a verse number — structure, never recited",
+      "file": "token-num.json"
+    },
+    {
+      "id": "token-bar",
+      "construct": "a structural rule",
+      "file": "token-bar.json"
+    },
+    {
+      "id": "token-slot",
+      "construct": "a variable slot, whose tokens are recited through it",
+      "file": "token-slot.json"
     }
   ],
-  "constructsWithoutFixture": [
-    "unit-conjunct-control"
-  ]
+  "constructsWithoutFixture": []
 }

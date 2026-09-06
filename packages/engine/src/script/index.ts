@@ -10,13 +10,18 @@
  *   - build the gum from `m` + candra + a `g`-run, one letter;
  *   - render the praṇava as the ligature a script actually has.
  *
- * VERIFIED against the shipped corpus: every syllable of all 11 documents in
- * all three Indic scripts. That is the gate (02 G6), and it is what licenses
- * trusting the tables.
+ * VERIFIED against the shipped corpus: every syllable of all 11 documents, in
+ * DEVANĀGARĪ AND TELUGU — 15 881 syllables, 31 762 assertions, two per
+ * syllable. That is the gate, and it is what licenses trusting those two
+ * tables.
  *
- * See specs/chant-editor/02-ENGINE.md §13.
+ * NOT Tamil. The owner has confirmed the Tamil forms in the shipped chants were
+ * never reviewed, so fitting the tables to them would bake in their errors;
+ * `gates/transliteration.ts` excludes it and the module is registered
+ * `verified: false`. This comment used to claim "all three Indic scripts",
+ * which was a third more verification than exists.
  */
-import { ANU, DIGRAPHS, VIS, VIRAMA_TICK, ZWJ, ZWNJ, isConsonant, isVowel } from '../alphabet.js';
+import { ANU, DIGRAPHS, PRANAVA, VIS, VIRAMA_TICK, ZWJ, ZWNJ, isConsonant, isVowel } from '../alphabet.js';
 import {
   ACCENT_MARKS, BY_IAST, SIGN_BY_IAST,
   letterFor, signFor,
@@ -48,7 +53,16 @@ export interface ScriptOptions {
 }
 
 const ACCENTS = new Set(ACCENT_MARKS);
-const PRANAVA_IAST = new Set(['oṁ', 'oṃ', 'om']);
+/**
+ * What counts as the pranava on the way IN.
+ *
+ * Imported rather than redeclared. There were two of these — this file had
+ * {'oṁ','oṃ','om'} and `alphabet.ts` had {'oṁ','oṃ','auṁ','om'} — so `auṁ`
+ * was the pranava to the marking rules and an ordinary diphthong to the
+ * transliterator, which rendered it `औं` instead of `ॐ`. One definition, one
+ * home.
+ */
+const PRANAVA_IAST = PRANAVA;
 
 /** One letter of a syllable, as the transliterator needs to see it. */
 export interface ScriptUnit {
