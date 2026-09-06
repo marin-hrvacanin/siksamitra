@@ -1,0 +1,10 @@
+{
+  "note": "Literal design values still to be moved into packages/tokens. This may only go DOWN. See tools/check-tokens.mjs.",
+  "total": 495,
+  "files": {
+    "packages/render/src/chant.css": 464,
+    "packages/render/src/ChantReader.tsx": 15,
+    "packages/render/src/print.css": 14,
+    "packages/render/src/ChantEmbed.tsx": 2
+  }
+}

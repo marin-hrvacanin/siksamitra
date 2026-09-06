@@ -9,6 +9,7 @@
     "node": ">=22"
   },
   "workspaces": [
+    "packages/tokens",
     "packages/format",
     "packages/engine",
     "packages/render",
@@ -31,13 +32,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sm": "tsx packages/cli/src/main.ts",
-    "check": "npm-run-all --serial typecheck test check:fixtures check:conformance check:transliteration check:engine",
+    "check": "npm-run-all --serial typecheck test check:tokens check:literals check:fixtures check:conformance check:transliteration check:engine",
     "check:transliteration": "tsx packages/cli/src/gates/transliteration.ts",
     "check:engine": "tsx packages/cli/src/gates/corpus.ts",
     "spec": "openspec",
     "check:conformance": "tsx packages/cli/src/gates/conformance.ts",
     "gen:conformance": "node tools/build-conformance.mjs",
-    "check:fixtures": "node tools/build-conformance.mjs --check"
+    "check:fixtures": "node tools/build-conformance.mjs --check",
+    "gen:tokens": "tsx packages/tokens/gen.mjs",
+    "check:tokens": "tsx packages/tokens/gen.mjs --check",
+    "check:literals": "node tools/check-tokens.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",
