@@ -53,7 +53,10 @@
     "build:layout": "npm run -w @siksamitra/layout build",
     "check:modules": "node tools/check-modules.mjs",
     "build:web": "npm run -w @siksamitra/web build",
-    "design": "tsx tools/design/preview.mjs"
+    "design": "tsx tools/design/preview.mjs",
+    "fonts": "node tools/fonts/fetch.mjs && node tools/fonts/gen-css.mjs",
+    "fonts:css": "node tools/fonts/gen-css.mjs",
+    "check:fonts": "node tools/fonts/verify.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

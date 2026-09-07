@@ -1,39 +1,120 @@
 /**
  * Design options for śikṣāmitra's own identity.
  *
- * The brief: the TOOL must not look like vedaunion.org. The platform is
- * vellum-and-violet, editorial and warm; this is an instrument someone sits in
- * front of for hours, and it should read as one. The `web` view still previews
- * the platform's appearance — that is a preview of somewhere else and is
- * unaffected by anything here.
+ * śikṣāmitra is its own open-source program — a workbench for Sanskrit text —
+ * and vedaunion.org is one integration among others. So it must not borrow the
+ * platform's vellum-and-violet: that would say the wrong thing about what this
+ * is. (The `web` view still previews the platform's appearance. That is a
+ * preview of somewhere else and nothing here touches it.)
  *
- * Each option is a complete palette in both modes, plus the two faces that
- * matter: one for the CHROME and one for the TEXT BEING EDITED. They are never
- * the same face. The document face has to carry IAST diacritics and four Indic
- * scripts; the chrome face has to disappear.
+ * WHY THE FIRST ATTEMPT FAILED. Four palettes that differed only in hue read as
+ * one design in four moods — and worse, all four named the same text face and
+ * three named UI faces that are not installed, so every option fell back to
+ * Segoe UI and the typography was literally identical. A palette is the least
+ * of what makes a program feel like itself.
+ *
+ * So each option now differs along FIVE axes, and every face named here is
+ * verified present on the target machine:
+ *
+ *   1. the TEXT face — the dominant thing on screen, and never the UI face
+ *   2. the UI face
+ *   3. the palette
+ *   4. radius and chrome treatment — flat and hairlined, or raised and shadowed
+ *   5. density — how much air the document is given
  *
  * MARK COLOURS ARE PART OF THE PALETTE, not decoration. A holding box, a svara
- * stroke and a change-style letter have to stay separable from each other and
- * from the text at every size, in both modes. An option that looks handsome and
- * loses the svaras is not a candidate.
+ * stroke and a change-style letter must stay separable from each other and from
+ * the text, in both modes. An option that looks handsome and loses the svaras
+ * is not a candidate.
  */
 
-/** Fallbacks that exist on Windows without installing anything. */
-const SERIF_TEXT = '"Gentium Book Plus", "Gentium Plus", "URW Palladio ITU", "Palatino Linotype", "Book Antiqua", Palatino, "Noto Serif Devanagari", "Nirmala UI", Georgia, serif';
-const SANS_UI = '"IBM Plex Sans", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif';
-const GROTESK_UI = '"Inter", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif';
-const HUMANIST_UI = '"Source Sans 3", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif';
-const MONO_UI = '"IBM Plex Mono", "Cascadia Mono", Consolas, monospace';
+/*
+ * Faces, all VENDORED (assets/fonts) — not requested from the system.
+ *
+ * Every text stack ends with Gentium Book Plus: `tools/fonts/verify.mjs`
+ * measured, in a browser, that Source Serif 4 and Crimson Pro do not carry the
+ * Vedic candrabindu (U+0310), of which the corpus has 89. Rather than drop two
+ * good faces, the backstop supplies that one mark.
+ */
+const T = (name) => name === 'Gentium Book Plus'
+  ? `'Gentium Book Plus', Georgia, serif`
+  : `'${name}', 'Gentium Book Plus', Georgia, serif`;
+
+/* The Indic faces are appended to every text stack: the document switches
+   script without switching design. */
+const INDIC = `'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil'`;
+const TEXT = (name) => `${T(name).replace(', Georgia, serif', '')}, ${INDIC}, Georgia, serif`;
+
+const F = {
+  gentium: TEXT('Gentium Book Plus'),
+  garamond: TEXT('EB Garamond'),
+  sourceSerif: TEXT('Source Serif 4'),
+  crimson: TEXT('Crimson Pro'),
+
+  inter: `'Inter', system-ui, sans-serif`,
+  plex: `'IBM Plex Sans', system-ui, sans-serif`,
+  sourceSans: `'Source Sans 3', system-ui, sans-serif`,
+
+  mono: `'IBM Plex Mono', Consolas, monospace`,
+};
+
+/** Structure: how tight, how round, how raised. */
+const DENSITY = {
+  /* Word-like: a lot on screen, small controls. */
+  dense: { tb: 30, pad: 18, leading: 1.75, gap: 12, ui: 11, doc: 15, deskPad: 14 },
+  medium: { tb: 34, pad: 22, leading: 1.95, gap: 15, ui: 11.5, doc: 15.5, deskPad: 18 },
+  /* Room to think. Fewer verses visible, each easier to read. */
+  airy: { tb: 40, pad: 34, leading: 2.25, gap: 22, ui: 12, doc: 16.5, deskPad: 26 },
+};
 
 export const OPTIONS = [
+  {
+    id: 'shanta',
+    name: 'Śānta',
+    tagline: 'zen · saffron',
+    note: 'The quiet one. Warm off-white, almost no lines, no shadows at all, '
+        + 'and a muted saffron used sparingly — on the active thing and nothing '
+        + 'else. Crimson Pro is a calm book face with an even '
+        + 'colour, so the marks are the only thing that draws the eye. Generous '
+        + 'leading: fewer verses on screen, each one easier to hold.',
+    fonts: { ui: F.sourceSans, text: F.crimson, mono: F.mono },
+    radius: 2,
+    chrome: 'flat',
+    density: 'airy',
+    light: {
+      'chrome-bg': '#f6f4f0', 'chrome-raise': '#fbfaf7', 'chrome-sunk': '#efece6',
+      'chrome-line': '#e4e0d8', 'chrome-line-soft': '#eeebe4',
+      'chrome-ink': '#2f2c27', 'chrome-ink-soft': '#6b665d', 'chrome-ink-mute': '#a29c92',
+      accent: '#c8781f', 'accent-hover': '#a86217', 'accent-on': '#fffdf9',
+      'doc-bg': '#fdfcf9', 'doc-ink': '#26241f', 'doc-line': '#ece8e0',
+      hold: '#3d7a52', 'hold-long': '#a8442f', svara: '#c8781f', change: '#3f6f8f',
+      'pause-short': '#3f6f8f', 'pause-long': '#c8781f',
+      desk: '#efece6',
+    },
+    dark: {
+      'chrome-bg': '#1a1917', 'chrome-raise': '#211f1d', 'chrome-sunk': '#151412',
+      'chrome-line': '#2e2c28', 'chrome-line-soft': '#252320',
+      'chrome-ink': '#eae6df', 'chrome-ink-soft': '#a8a29a', 'chrome-ink-mute': '#736e67',
+      accent: '#e2a44f', 'accent-hover': '#f0bd6e', 'accent-on': '#1a1917',
+      'doc-bg': '#211f1c', 'doc-ink': '#ece8e1', 'doc-line': '#2c2a26',
+      hold: '#6bbd83', 'hold-long': '#e08069', svara: '#e6a44f', change: '#82aecb',
+      'pause-short': '#82aecb', 'pause-long': '#e6a44f',
+      desk: '#131211',
+    },
+  },
+
   {
     id: 'palladio',
     name: 'Palladio',
     tagline: 'v1, tightened',
-    note: 'The palette śikṣāmitra already had — cool neutral greys with a bronze '
-        + 'accent — with the spacing and hierarchy tightened. The safest choice: '
-        + 'nothing to relearn, and it already reads as an editor rather than a site.',
-    fonts: { ui: SANS_UI, text: SERIF_TEXT, mono: MONO_UI },
+    note: 'What śikṣāmitra already had: cool neutral greys, a bronze accent, and '
+        + 'Palatino for the text — the face v1 actually shipped. Dense, squarish '
+        + 'controls and a lot on screen at once. The most Word-like of the five, '
+        + 'and the one with nothing to relearn.',
+    fonts: { ui: F.plex, text: F.gentium, mono: F.mono },
+    radius: 4,
+    chrome: 'raised',
+    density: 'dense',
     light: {
       'chrome-bg': '#f2f2f5', 'chrome-raise': '#ffffff', 'chrome-sunk': '#e9e9ee',
       'chrome-line': '#dddde1', 'chrome-line-soft': '#e8e8ec',
@@ -60,11 +141,14 @@ export const OPTIONS = [
     id: 'bhurja',
     name: 'Bhūrja',
     tagline: 'birch bark',
-    note: 'Warm ivory paper and umber ink, with a rust accent. Scholarly and '
-        + 'quiet, and warm WITHOUT being the platform: the heat comes from brown '
-        + 'and rust rather than violet and gold, so the two never look like the '
-        + 'same product.',
-    fonts: { ui: HUMANIST_UI, text: SERIF_TEXT, mono: MONO_UI },
+    note: 'Warm ivory and umber with a rust accent, set in EB Garamond — classical and light on '
+        + 'the page, so it reads as printed rather than displayed. Warm '
+        + 'WITHOUT being the platform: the heat is brown and rust, never violet '
+        + 'and gold, so the two can never be mistaken for one product.',
+    fonts: { ui: F.sourceSans, text: F.garamond, mono: F.mono },
+    radius: 3,
+    chrome: 'raised',
+    density: 'medium',
     light: {
       'chrome-bg': '#eeeae1', 'chrome-raise': '#f7f4ee', 'chrome-sunk': '#e4dfd3',
       'chrome-line': '#d6cfc0', 'chrome-line-soft': '#e2dccf',
@@ -91,11 +175,15 @@ export const OPTIONS = [
     id: 'slate',
     name: 'Slate',
     tagline: 'near-monochrome',
-    note: 'Cool grey chrome, one teal accent, nothing else coloured except the '
-        + 'marks. The most restrained option, and the one that gives the marks '
+    note: 'Cool grey, one teal accent, sharp corners and hairlines only — no '
+        + 'shadow anywhere. Source Serif 4 is built for screens and stays '
+        + 'even at small sizes. The most restrained option and the one that gives the marks '
         + 'the most room: when the only colour on screen is a holding box and a '
         + 'svara, you cannot miss either.',
-    fonts: { ui: GROTESK_UI, text: SERIF_TEXT, mono: MONO_UI },
+    fonts: { ui: F.inter, text: F.sourceSerif, mono: F.mono },
+    radius: 0,
+    chrome: 'flat',
+    density: 'dense',
     light: {
       'chrome-bg': '#eef1f4', 'chrome-raise': '#ffffff', 'chrome-sunk': '#e3e8ed',
       'chrome-line': '#d3dae1', 'chrome-line-soft': '#e2e7ec',
@@ -123,10 +211,14 @@ export const OPTIONS = [
     name: 'Nirṇaya',
     tagline: 'dark chrome, bright page',
     note: 'Charcoal chrome around a bright page, the way a photo or design tool '
-        + 'frames its artefact. The strongest separation between the instrument '
-        + 'and the text — the page is the only bright thing on screen. In dark '
-        + 'mode the page dims with it rather than staying a lamp.',
-    fonts: { ui: GROTESK_UI, text: SERIF_TEXT, mono: MONO_UI },
+        + 'frames its artefact — the page is the only bright thing on screen. '
+        + 'Gentium keeps the diacritics crisp against the bright ground. Rounder corners and '
+        + 'real elevation. In dark mode the page dims with the room rather than '
+        + 'staying a lamp.',
+    fonts: { ui: F.inter, text: F.gentium, mono: F.mono },
+    radius: 6,
+    chrome: 'raised',
+    density: 'medium',
     light: {
       'chrome-bg': '#2b2f36', 'chrome-raise': '#353a43', 'chrome-sunk': '#22262c',
       'chrome-line': '#454b55', 'chrome-line-soft': '#3a4049',
@@ -151,16 +243,15 @@ export const OPTIONS = [
 ];
 
 /**
- * The option palette, expressed as the token names the real stylesheets read.
+ * The option, expressed as the token names the real stylesheets read.
  *
  * The preview must drive the ACTUAL `chant.css`, or it is a drawing of a design
- * rather than the design. So each option is mapped onto `--color-*`, and the
- * marks come out of the same rules the app uses.
+ * rather than the design itself.
  */
 export function tokensFor(option, mode) {
   const p = option[mode];
+  const d = DENSITY[option.density];
   return {
-    /* chrome */
     'color-vellum': p['chrome-raise'],
     'color-vellum-dim': p['chrome-bg'],
     'color-vellum-warm': p['chrome-sunk'],
@@ -183,23 +274,31 @@ export function tokensFor(option, mode) {
     'color-bg-alt': p['chrome-sunk'],
     'color-border': p['chrome-line'],
     'color-brand': p.accent,
-    /* the document */
     'doc-bg': p['doc-bg'],
     'doc-ink': p['doc-ink'],
-    /* the marks */
     'color-hold': p.hold,
     'color-svara': p.svara,
     'color-change': p.change,
     'color-pause-short': p['pause-short'],
     'color-pause-long': p['pause-long'],
     'color-danger': p['hold-long'],
-    /* faces */
     'font-ui': option.fonts.ui,
     'font-body': option.fonts.text,
     'font-display': option.fonts.text,
     'font-mono': option.fonts.mono,
-    /* the desk the pages sit on */
     desk: p.desk,
     'accent-on': p['accent-on'],
+    /* structure */
+    'o-radius': `${option.radius}px`,
+    'o-tb': `${d.tb}px`,
+    'o-pad': `${d.pad}px`,
+    'o-leading': String(d.leading),
+    'o-gap': `${d.gap}px`,
+    'o-ui-size': `${d.ui}px`,
+    'o-doc-size': `${d.doc}px`,
+    'o-desk-pad': `${d.deskPad}px`,
+    'o-shadow': option.chrome === 'flat'
+      ? 'none'
+      : (mode === 'dark' ? '0 2px 14px rgba(0,0,0,.5)' : '0 2px 12px rgba(0,0,0,.13)'),
   };
 }

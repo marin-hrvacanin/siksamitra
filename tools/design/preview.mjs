@@ -115,6 +115,7 @@ const page = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>śikṣāmitra — design options</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
 <style>
 /* The real mark rules, so what you judge is what you get. */
 ${GEOMETRY_CSS}
@@ -147,40 +148,41 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px}
 
 /* The mocked screen, driven entirely by the option's tokens. */
 .dp-screen{font-family:var(--font-ui);background:var(--color-vellum-dim);color:var(--color-ink)}
-.dp-tb{display:flex;align-items:center;gap:7px;padding:0 9px;height:34px;
-  background:var(--color-vellum);border-bottom:1px solid var(--color-rule);font-size:11.5px}
+.dp-tb{display:flex;align-items:center;gap:7px;padding:0 10px;height:var(--o-tb);
+  background:var(--color-vellum);border-bottom:1px solid var(--color-rule);
+  font-size:var(--o-ui-size)}
 .dp-brand{font-family:var(--font-display);font-size:14px;color:var(--color-violet)}
-.dp-sel{border:1px solid var(--color-rule);border-radius:3px;padding:2px 7px;
+.dp-sel{border:1px solid var(--color-rule);border-radius:var(--o-radius);padding:2px 7px;
   background:var(--color-vellum-dim);color:var(--color-ink)}
 .dp-flex{flex:1}
-.dp-seg{display:inline-flex;border:1px solid var(--color-rule);border-radius:3px;overflow:hidden}
+.dp-seg{display:inline-flex;border:1px solid var(--color-rule);border-radius:var(--o-radius);overflow:hidden}
 .dp-seg b,.dp-seg i{font-style:normal;padding:3px 8px;color:var(--color-ink-soft)}
 .dp-seg b{background:var(--color-violet);color:var(--accent-on);font-weight:600}
 .dp-grp{display:inline-flex;gap:1px;padding-left:8px;margin-left:3px;border-left:1px solid var(--color-rule)}
-.dp-grp b,.dp-grp i{font-style:normal;padding:3px 7px;border-radius:3px;color:var(--color-ink-soft)}
+.dp-grp b,.dp-grp i{font-style:normal;padding:3px 7px;border-radius:var(--o-radius);color:var(--color-ink-soft)}
 .dp-grp b{background:var(--color-vellum-warm);color:var(--color-violet);font-weight:600}
 
-.dp-desk{background:var(--desk);padding:18px;display:flex;gap:14px;align-items:flex-start;
-  height:400px;overflow:hidden}
-.dp-page{flex:1 1 0;background:var(--doc-bg);color:var(--doc-ink);padding:20px 22px;
+.dp-desk{background:var(--desk);padding:var(--o-desk-pad);display:flex;gap:var(--o-desk-pad);
+  align-items:flex-start;height:400px;overflow:hidden}
+.dp-page{flex:1 1 0;background:var(--doc-bg);color:var(--doc-ink);padding:var(--o-pad);
   height:100%;overflow:hidden;
   /* Fade the cut rather than clipping through a glyph: a hard edge across the
      middle of a line reads as a rendering bug and distracts from the palette,
      which is the only thing being judged here. */
   -webkit-mask-image:linear-gradient(to bottom,#000 84%,transparent 100%);
   mask-image:linear-gradient(to bottom,#000 84%,transparent 100%);
-  border-radius:2px;box-shadow:0 2px 14px rgba(0,0,0,.28);min-width:0;
-  font-family:var(--font-body);font-size:15px;line-height:1.95}
+  border-radius:var(--o-radius);box-shadow:var(--o-shadow);min-width:0;
+  font-family:var(--font-body);font-size:var(--o-doc-size);line-height:var(--o-leading)}
 .dp-page--half{flex:0 0 34%}
-.dp-title{font-family:var(--font-display);font-size:17px;margin:0 0 14px;
+.dp-title{font-family:var(--font-display);font-size:calc(var(--o-doc-size) * 1.18);margin:0 0 var(--o-gap);
   color:var(--color-violet);font-weight:600}
-.dp-page .verse{margin:0 0 15px;display:block}
+.dp-page .verse{margin:0 0 var(--o-gap);display:block}
 .dp-page .verse__n{font-family:var(--font-ui);font-size:10px;color:var(--color-ink-mute);
   display:block;margin-bottom:2px}
 
 .dp-status{display:flex;align-items:center;gap:5px;height:23px;padding:0 10px;
   background:var(--color-vellum);border-top:1px solid var(--color-rule);
-  color:var(--color-ink-mute);font-size:11px}
+  color:var(--color-ink-mute);font-size:var(--o-ui-size)}
 .dp-dot{color:var(--color-ink-mute);opacity:.6}
 
 .dp-note{margin:0;padding:11px 13px;color:#9a9aa4;line-height:1.6;border-top:1px solid #23232b}
@@ -193,7 +195,8 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px}
 <div class="dp-wrap">
   <h1>śikṣāmitra — its own look</h1>
   <p class="dp-lead">
-    Four palettes, each in light and dark. The marked text is rendered by the
+    ${OPTIONS.length} designs, each in light and dark — differing in typeface,
+    density, radius and palette, not only in hue. The marked text is rendered by the
     <b>real renderer</b> against the <b>real stylesheet</b>, from a real corpus
     document — so the holding boxes, svara strokes and the anusvāra change you
     see are exactly what the editor draws. Judge the marks as much as the
