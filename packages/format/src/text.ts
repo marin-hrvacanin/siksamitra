@@ -150,41 +150,28 @@ export function holdingSpans(tokens: readonly ChantToken[]): HoldingSpan[] {
   }
 
   /*
-   * Merge runs that share a GROUP across a syllable boundary.
+   * NOT merged across a syllable boundary, and that decision was made twice.
    *
-   * A geminate does this: the corpus marks `dan·naḥ` with one `hg` on the two
-   * `n`s, and `ij·jo` likewise — one box over `nn`, which Devanagari writes as
-   * a single conjunct akṣara and IAST syllabifies apart. Scanning per syllable
-   * therefore reports one authored box as two, and an invariant test caught it
-   * on exactly those two verses.
+   * Two verses of bhagya-suktam carry adjacent single-letter boxes sharing one
+   * `hg` — `dadan naḥ` and `sarva ij johavīmi`. It looked like one authored box
+   * that per-syllable scanning had split, so this merged them.
    *
-   * The group id is the author's statement of intent, so it wins over the
-   * syllable split. Runs with NO group are left alone: two boxes that merely
-   * happen to touch were not claimed to be one.
+   * It is the opposite. Owner (2026-09-07): NEWER documents put two identical
+   * consonants under a single holding; this program follows the OLDER rules —
+   * one holding on one letter. `ij jo` takes a single holding on the first `j`,
+   * `tak nu` a single holding on `n`, and the engine already does exactly that
+   * (a cross-word cluster hosts on the second word's initial).
+   *
+   * So those two verses are marked in a convention this program does not use.
+   * Merging here made the reader silently adopt that convention for every
+   * document — the wrong place to make such a decision, and invisible once
+   * made. Spans stay per syllable, matching the renderer; the two verses are
+   * listed in the holding-invariant suite so they stay visible.
+   *
+   * If the newer convention is ever wanted, it belongs in `Profile` as a
+   * declared option, where a document can say which practice it follows.
    */
-  const merged: HoldingSpan[] = [];
-  for (const span of spans) {
-    const prev = merged[merged.length - 1];
-    if (
-      prev !== undefined
-      && prev.group !== null
-      && prev.group === span.group
-      && prev.len === span.len
-      && span.from === prev.to + 1
-    ) {
-      merged[merged.length - 1] = {
-        group: prev.group,
-        len: prev.len,
-        from: prev.from,
-        to: span.to,
-        letters: prev.letters + span.letters,
-      };
-      continue;
-    }
-    merged.push(span);
-  }
-
-  return merged;
+  return spans;
 }
 
 /**

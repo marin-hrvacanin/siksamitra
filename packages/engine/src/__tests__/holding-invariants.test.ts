@@ -140,16 +140,47 @@ describe('adjacent holdings of the same kind are merged', () => {
     return bad;
   };
 
-  it('the corpus contains no unmerged adjacent pair of the same length', () => {
+  /**
+   * TWO VERSES USE THE NEWER CONVENTION, which this program does not follow.
+   *
+   * Owner (2026-09-07): newer documents put two identical consonants under a
+   * SINGLE holding — a geminate as one box. Śikṣāmitra follows the OLDER rules:
+   * one holding, on one letter. `ij jo` takes a single holding on the first
+   * `j`; `tak nu` a single holding on `n`. The engine already does exactly
+   * that.
+   *
+   * So `bhagya-suktam` v-3 (`dadan naḥ`) and v-5 (`sarva ij johavīmi`) are not
+   * errors. They were marked under the newer convention and imported as
+   * attested — evidence of how someone else marks, which rule zero says is not
+   * ours to rewrite.
+   *
+   * They are listed so the invariant can be asserted for everything else while
+   * these stay visible rather than quietly excused. If the corpus is ever
+   * re-marked under the older rules, the count assertion below fails and the
+   * entry comes out.
+   */
+  const NEWER_CONVENTION = new Set([
+    'bhagya-suktam/sec-1/v-3',
+    'bhagya-suktam/sec-1/v-5',
+  ]);
+
+  it('no unmerged adjacent pair, outside the two verses in the newer convention', () => {
     const failures: string[] = [];
+    const expected: string[] = [];
     for (const { where, tokens } of VERSES) {
-      for (const pair of unmerged(tokens)) failures.push(`${where}: ${pair}`);
+      for (const pair of unmerged(tokens)) {
+        (NEWER_CONVENTION.has(where) ? expected : failures).push(`${where}: ${pair}`);
+      }
     }
     expect(failures).toEqual([]);
+    expect(expected.length, 'a listed verse no longer uses the newer convention')
+      .toBe(NEWER_CONVENTION.size);
   });
 
-  it('derivation never produces one', () => {
+  it('derivation never produces one — including the cases the ruling named', () => {
     const lines = [
+      // Owner's ruling, 2026-09-07: one box on the first `j`; one box on `n`.
+      'ij jo', 'tak nu', 'dan naḥ', 'ijjo', 'taknu', 'dannaḥ',
       'uttamam', 'satyam uttaram', 'ucchantu bhadrāḥ', 'viddhi tad dhi',
       'agnim īḷe purohitam yajñasya devam ṛtvijam',
       'tvamagne dyubhistvamāśuśukṣaṇistvamadbhyastvamaśmanaspari',
@@ -158,6 +189,37 @@ describe('adjacent holdings of the same kind are merged', () => {
       const d = derive({ lines: [line] }, profile);
       expect(unmerged(d.tokens), line).toEqual([]);
     }
+  });
+});
+
+describe('where a cross-word cluster hosts', () => {
+  /**
+   * Owner's ruling, 2026-09-07, verified against the engine:
+   *
+   *   ij jo   -> one box on the FIRST `j`
+   *   tak nu  -> one box on `n`
+   *
+   * The second is not "the first letter of the cluster": a cluster split across
+   * a word join hosts on the SECOND word's initial. Both are single-letter
+   * boxes, which is the part that matters — derivation never groups a geminate.
+   */
+  const boxesOf = (line: string): string[] => {
+    const out: string[] = [];
+    for (const syl of syllablesOf(derive({ lines: [line] }, profile).tokens)) {
+      if (syl.t !== 'syl') continue;
+      for (const u of syl.units as Unit[]) if (u.hold !== undefined) out.push(u.c);
+    }
+    return out;
+  };
+
+  it.each([
+    ['ij jo', ['j']],
+    ['tak nu', ['n']],
+    ['dan naḥ', ['n']],
+    ['uttamam', ['t']],
+    ['gacchati', ['c']],
+  ])('%s hosts on %s, once', (line, expected) => {
+    expect(boxesOf(line)).toEqual(expected);
   });
 });
 

@@ -40,6 +40,10 @@ tests/
 specs/
 śikṣāmitra/
 
+# Fonts are vendored in assets/fonts and COPIED into the app at build
+# time. One source of truth; the copy is build output.
+apps/web/public/fonts/
+
 # === Generated previews ===
 design-preview.html
 shots/

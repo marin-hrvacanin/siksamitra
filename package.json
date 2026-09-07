@@ -56,7 +56,10 @@
     "design": "tsx tools/design/preview.mjs",
     "fonts": "node tools/fonts/fetch.mjs && node tools/fonts/gen-css.mjs",
     "fonts:css": "node tools/fonts/gen-css.mjs",
-    "check:fonts": "node tools/fonts/verify.mjs"
+    "check:fonts": "node tools/fonts/verify.mjs",
+    "package": "node scripts/package.mjs",
+    "copy:fonts": "node scripts/copy-fonts.mjs",
+    "desktop:icons": "npm run -w @siksamitra/desktop icons"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

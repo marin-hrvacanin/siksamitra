@@ -1,0 +1,24 @@
+{
+  "name": "@siksamitra/desktop",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "description": "The desktop shell — Tauri 2 around the same bundle the web app serves.",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:windows": "tauri build --bundles nsis,msi",
+    "build:macos": "tauri build --bundles app,dmg",
+    "build:linux": "tauri build --bundles deb,appimage",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.2",
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.34.4"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/plugin-dialog": "^2.4.0",
+    "@tauri-apps/plugin-opener": "^2.5.0"
+  }
+}
