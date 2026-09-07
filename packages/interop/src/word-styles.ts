@@ -2,6 +2,12 @@
  * The Word contract — ONE table, used by both the importer and the exporter, so
  * the two cannot disagree.
  *
+ * THE COLOURS COME FROM `@siksamitra/tokens/word`, which is where they were
+ * recorded. They used to be typed here as well, and a palette written down
+ * twice is a palette that will disagree with itself — the on-screen `word`
+ * document theme is generated from the same table, so "1:1 with the Word
+ * document" is a property of one value rather than a coincidence between two.
+ *
  * Measured from the owner's own file, not invented:
  * `Veda Union Youth Wing sAdhanA v1.0.1 IAST (1).docx` — 845 paragraphs,
  * 22 586 runs, 10 embedded fonts. Every value below was read out of its
@@ -9,6 +15,7 @@
  *
  * See specs/chant-editor/03-INTEROP.md §2.
  */
+import { WORD_MARKS } from '@siksamitra/tokens/word';
 import type { ChantSvara } from '@siksamitra/format';
 
 /** What a character style means in the chant model. */
@@ -67,16 +74,23 @@ export const WORD_CHAR_STYLES: readonly WordCharStyle[] = [
     note: 'the letter actually recited; superscript when w:vertAlign says so',
   },
   {
-    id: 'VedicAnusvara', role: 'gum', color: '0070C0', italic: true, seen: 64,
+    id: 'VedicAnusvara', role: 'gum', color: WORD_MARKS.change.color, italic: true, seen: 64,
     note: 'base m + candra, the following g-run becomes the reading aid',
   },
   {
-    id: 'Pause', role: 'pause', color: 'C00000', italic: true, seen: 119,
+    id: 'Pause', role: 'pause', color: WORD_MARKS.pause.color, italic: true, seen: 119,
     note: 'ONE style for both lengths — the glyph count decides: | short, || long',
   },
-  { id: 'Comment', role: 'comment', color: '808080', sz: 22, italic: true, seen: 167 },
   {
-    id: 'Long', role: 'dirgha', color: '4472C4', sz: 36, seen: 12,
+    id: 'Comment',
+    role: 'comment',
+    color: WORD_MARKS.comment.color,
+    sz: 22,
+    italic: true,
+    seen: 167,
+  },
+  {
+    id: 'Long', role: 'dirgha', color: WORD_MARKS.dirgha.color, sz: 36, seen: 12,
     note: 'UNRESOLVED — almost certainly the dīrgha overline (00 §5.1)',
   },
   { id: 'Name', role: 'name', color: '0070C0', seen: 0, note: 'UNRESOLVED (00 §5.1)' },

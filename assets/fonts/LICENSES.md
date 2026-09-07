@@ -30,6 +30,12 @@ under a licence that permits it, and the notice travels with the file.
   Humanist and gentle — the softest of the three, for a quieter shell.
 - **IBM Plex Mono** (`ibm-plex-mono`) — mono
   For the source view and anywhere a codepoint is shown.
+- **Arimo** (`arimo`) — word
+  Metric-compatible with Arial — the `Translit` style, his mantra line.
+- **Tinos** (`tinos`) — word
+  Metric-compatible with Times New Roman — the `Prijevod` style, the translation.
+- **Carlito** (`carlito`) — word
+  Metric-compatible with Calibri — the headings and the body text.
 
 Full text: https://openfontlicense.org/open-font-license-official-text/
 

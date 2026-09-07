@@ -11,10 +11,17 @@
  */
 
 @import './styles/base.css';
+@import './styles/titlebar.css';
 @import './styles/controls.css';
 @import './styles/ribbon.css';
 @import './styles/canvas.css';
+@import './styles/nav.css';
 @import './styles/popover.css';
+/* The document comes after the shell and after `chant.css` (imported in
+   `main.tsx`), because it overrides the inherited platform stylesheet's idea
+   of how a mantra is set. It must stay before `editor.css`, whose caret and
+   selection are drawn ON the document. */
+@import './styles/document.css';
 @import './styles/editor.css';
 @import './styles/status.css';
 @import './styles/diagnostics.css';

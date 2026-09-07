@@ -20,8 +20,13 @@
  */
 import type { ChantDoc, ChantOverride, ChantSection } from '@siksamitra/format';
 import type { OverrideField } from '@siksamitra/engine';
-import { addressAt, flatten, type Selection, type VerseSource } from './caret.js';
+import {
+  addressAt, flatten, type Selection, type VerseSource,
+} from './caret.js';
 import { replaceRange } from './range.js';
+import {
+  attestedInRange, refusalForEdit, refusalForMark, refusalForOutside,
+} from './rule-zero.js';
 import {
   autoHoldings, clearMarks, markLetters,
   type MarkPatch, type MarkReason, type UnitAddress,
@@ -31,6 +36,7 @@ import {
   changedVerses, rebaseSection, rederive, sourcesOf, writeSources, type LostMark,
 } from './sync.js';
 import { record, restore, snapshot, type History } from './history.js';
+import { setProfile, type ProfileChange } from './set-profile.js';
 
 export type EditCommand =
   /** Replace a flat range of one section's source. Every text change is this. */
@@ -67,7 +73,9 @@ export type EditCommand =
     sectionId: string;
     verseIds: readonly string[];
     mode: 'keep' | 'replace';
-  };
+  }
+  /** Change which register's rules govern the document, or one section. */
+  | ProfileChange;
 
 export interface EditState {
   doc: ChantDoc;
@@ -120,38 +128,6 @@ const refuse = (state: EditState, history: History, why: string): Applied => ({
   history,
 });
 
-/**
- * Rule zero at the surface: does this range reach a transcribed verse?
- *
- * A verse with no source layer was hand-marked from a Word file or a PDF and
- * its marks exist nowhere else. Refusing here — before anything is changed —
- * is the difference between a guard and an apology.
- */
-function attestedInRange(
-  section: ChantSection,
-  sources: readonly VerseSource[],
-  from: number,
-  to: number,
-): string[] {
-  const transcribed = new Set(
-    section.verses.filter((v) => v.src === undefined).map((v) => v.id),
-  );
-  if (transcribed.size === 0) return [];
-
-  const names = new Set<string>();
-  for (const line of flatten(sources).lineStarts) {
-    if (!transcribed.has(line.verseId)) continue;
-    const end = line.at + line.length;
-    const reaches = from === to
-      // A collapsed caret: refuse anywhere in the line, its edges included —
-      // typing at column 0 of a transcribed verse still writes into it.
-      ? from >= line.at && from <= end
-      : from < end && to > line.at;
-    if (reaches) names.add(line.verseId);
-  }
-  return [...names];
-}
-
 /** Group mark targets by verse, since a source map is per verse. */
 function byVerse(targets: readonly UnitAddress[]): Map<string, UnitAddress[]> {
   const out = new Map<string, UnitAddress[]>();
@@ -160,6 +136,27 @@ function byVerse(targets: readonly UnitAddress[]): Map<string, UnitAddress[]> {
 }
 
 export function apply(state: EditState, history: History, command: EditCommand): Applied {
+  /*
+   * A REGISTER CHANGE IS NOT A SECTION EDIT, so it is dispatched before the
+   * section is looked up: `document` scope has no section to name, and the
+   * command re-derives across all of them.
+   */
+  if (command.k === 'profile') {
+    const done = setProfile(state.doc, history, command);
+    if (done === null) {
+      return refuse(state, history, `no section "${command.sectionId ?? ''}"`);
+    }
+    return {
+      state: {
+        ...quiet(state),
+        doc: done.doc,
+        reports: done.reports,
+        refusals: done.refusals,
+      },
+      history: done.history,
+    };
+  }
+
   const section = sectionOf(state.doc, command.sectionId);
   if (section === undefined) {
     return refuse(state, history, `no section "${command.sectionId}"`);
@@ -181,9 +178,14 @@ export function apply(state: EditState, history: History, command: EditCommand):
       return refuse(
         state,
         history,
-        `this edit reaches transcribed verse(s) ${blocked.join(', ')}, whose marks `
-        + 'are evidence rather than output — edit the transcription itself, or give '
-        + 'the verse a source layer first',
+        /*
+         * SAID PLAINLY. This read "whose marks are evidence rather than
+         * output — edit the transcription itself, or give the verse a source
+         * layer first", which is this program's private vocabulary and told
+         * the person nothing they could act on. What they need to know is
+         * what the verse IS and why the keystroke did nothing.
+         */
+        refusalForEdit(section, blocked),
       );
     }
 
@@ -192,11 +194,22 @@ export function apply(state: EditState, history: History, command: EditCommand):
       to: command.to,
       insert: command.insert,
       ...(command.newIds === undefined ? {} : { newIds: command.newIds }),
+      /*
+       * Every id in the DOCUMENT, not just this section. An override is
+       * addressed `{verse, line, letter}` and applied document-wide, so a
+       * minted id that collided with a verse in another section made the new
+       * verse inherit that verse's hand-placed holding — a box the author
+       * never drew, on text they never marked.
+       */
+      taken: state.doc.sections.flatMap((s) => s.verses.map((v) => v.id)),
     });
     nextSources = result.verses;
     orphaned.push(...result.removed);
 
-    const rebased = rebaseSection(overrides, sources, nextSources);
+    const rebased = rebaseSection(overrides, sources, nextSources, {
+      from: command.from,
+      to: command.to,
+    });
     overrides = rebased.overrides;
     lostMarks.push(...rebased.lost);
 
@@ -220,10 +233,7 @@ export function apply(state: EditState, history: History, command: EditCommand):
          * worst of the three possible behaviours.
          */
         touched.delete(verseId);
-        blockedMarks.push(
-          `verse "${verseId}" is transcribed and has no source layer to address a `
-          + 'mark into — its marks are the record, and are edited as one',
-        );
+        blockedMarks.push(refusalForMark(section, verseId));
         continue;
       }
       overrides = command.k === 'mark'
@@ -231,6 +241,22 @@ export function apply(state: EditState, history: History, command: EditCommand):
         : clearMarks(overrides, map, targets, command.fields);
     }
   } else {
+    /*
+     * The verses must be in the named section. `autoHoldings` in `replace` mode
+     * DELETES hold overrides for the ids it is given, and it was given them
+     * unchecked: naming another section's verse deleted an `owner-hand`
+     * decision there, silently, while that section's tokens — not being
+     * re-derived — went on drawing a box no override justified.
+     */
+    const here = new Set(section.verses.map((v) => v.id));
+    const outside = command.verseIds.filter((id) => !here.has(id));
+    if (outside.length > 0) {
+      return refuse(
+        state,
+        history,
+        refusalForOutside(section, outside),
+      );
+    }
     overrides = autoHoldings(overrides, command.verseIds, command.mode);
     touched = new Set(command.verseIds);
   }
@@ -252,7 +278,21 @@ export function apply(state: EditState, history: History, command: EditCommand):
 
   // Source first, then tokens: the derivation reads the source, so writing it
   // second would derive the text as it was before the edit.
-  const withSource = writeSources(section, nextSources);
+  const written = writeSources(section, nextSources);
+  const withSource = written.section;
+  for (const cost of written.accentsLost) {
+    blockedMarks.push(
+      `${cost.count} transcribed accent(s) in verse "${cost.verseId}" were on `
+      + 'letters this edit replaced, and went with them',
+    );
+  }
+  for (const drop of written.refused) {
+    blockedMarks.push(
+      `verse "${drop.verseId}" is transcribed and cannot hold source text, so `
+      + `${drop.lines.join(' / ').slice(0, 60)}… was NOT written. The edit that `
+      + 'produced it should have been refused.',
+    );
+  }
   /*
    * An empty `overrides` is OMITTED, not written.
    *

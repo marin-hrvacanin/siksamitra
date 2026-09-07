@@ -24,14 +24,19 @@
  *   3. **Adjacent same-type boxes are one box.** Two adjacent letters both
  *      marked `short` are one thin box, not two touching ones. Left alone this
  *      is visible: two strokes where the author drew one.
- *   4. **A run does not cross a syllable boundary.** This is the owner's older
- *      convention and it is deliberate — see the note in `holdingSpans`. The
- *      newer convention groups geminates across the boundary; this program
- *      does not follow it.
+ * A FOURTH is often stated with them — "a run does not cross a syllable
+ * boundary", which is the owner's older convention, against the newer one that
+ * groups geminates across it. That one is NOT checked here, because it cannot
+ * be violated: every reader in the program (`holdingSpans` in
+ * `@siksamitra/format`, and `renderIastUnits` in `@siksamitra/render`) scans
+ * runs within one syllable and stops at its edge, so a group id shared across
+ * a boundary draws two boxes rather than one. Saying it was checked here was
+ * wrong, and it stayed wrong while `holdingProblems` was documented as
+ * "check the four invariants".
  *
- * Pure, and shared by three callers: the session asserts it after every
- * command, the invariant tests use it as the oracle, and the importer uses it
- * to report what a Word file actually contained.
+ * Pure, and shared by three callers: `deriveVerse` asserts it after every
+ * derivation, the invariant tests use it as the oracle, and the importer uses
+ * it to report what a Word file actually contained.
  */
 import type { ChantSyllable, ChantToken, ChantUnit } from '@siksamitra/format';
 
@@ -47,7 +52,8 @@ export interface HoldingProblem {
 const isSyl = (t: ChantToken): t is ChantSyllable => t.t === 'syl';
 
 /**
- * Check the four invariants. An empty result is the only acceptable one.
+ * Check the three representable invariants. An empty result is the only
+ * acceptable one.
  *
  * Reports EVERY problem rather than the first: an importer wants the list, and
  * a test that only ever sees one problem per document hides the others behind
@@ -117,7 +123,12 @@ export function holdingProblems(tokens: readonly ChantToken[]): HoldingProblem[]
 }
 
 /**
- * Rewrite group ids so the invariants hold, changing no `hold` value.
+ * Rewrite group ids so the representable invariants hold, changing no `hold`
+ * value.
+ *
+ * It cannot repair `hold-without-letter` — a holding on an empty letter is a
+ * malformed token, not a mis-grouping, and inventing a letter for it would be
+ * worse than reporting it.
  *
  * The distinction matters: this function never adds or removes a holding, so
  * it cannot change what the author marked. It only decides which marked

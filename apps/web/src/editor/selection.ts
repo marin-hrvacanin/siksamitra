@@ -9,10 +9,7 @@
  */
 import type { SrcMap } from '@siksamitra/engine';
 import type { UnitAddress } from '@siksamitra/edit';
-import {
-  offsetOf, selectionRange, versesInSelection,
-  type FlatSource, type Selection,
-} from '@siksamitra/edit';
+import { selectionRange, versesInSelection, type FlatSource, type Selection } from '@siksamitra/edit';
 
 /** A run of units within one verse, inclusive at both ends. */
 export interface UnitRange {
@@ -28,26 +25,42 @@ export interface UnitRange {
  * containment, because a selection that starts in the middle of a syllable
  * still has that syllable's letters in it — and a holding applied to a partial
  * selection must land on the letters the author can see are highlighted.
+ *
+ * Bounded by the SELECTION, not by the document: it walks the source map of
+ * the selected verses only, and a collapsed caret returns nothing at all
+ * without walking anything.
  */
 export function selectedUnits(
   flat: FlatSource,
   selection: Selection,
   srcMapOf: (verseId: string) => SrcMap | null,
 ): UnitRange[] {
-  const { from, to } = selectionRange(flat, selection);
+  const range = selectionRange(flat, selection);
+  if (range === null || range.from === range.to) return [];
+  const { from, to } = range;
   const out: UnitRange[] = [];
 
   for (const verseId of versesInSelection(flat, selection)) {
     const srcMap = srcMapOf(verseId);
     if (srcMap === null) continue;
 
+    /*
+     * The verse's own lines, looked up ONCE. `offsetOf` is a linear scan of
+     * the section's line list, and calling it twice per unit made a selection
+     * cost O(units × lines) on every caret move.
+     */
+    const lineAt = new Map<number, number>();
+    for (const line of flat.lineStarts) {
+      if (line.verseId === verseId) lineAt.set(line.line, line.at);
+    }
+
     let first = -1;
     let last = -1;
     for (const [unit, span] of srcMap.units.entries()) {
-      const start = offsetOf(flat, { verseId, line: span.line, column: span.start });
-      const end = offsetOf(flat, { verseId, line: span.line, column: span.end });
-      // Half-open against a collapsed selection would select nothing, which is
-      // right: a caret covers no letters.
+      const base = lineAt.get(span.line);
+      if (base === undefined) continue;
+      const start = base + span.start;
+      const end = base + span.end;
       if (end <= from || start >= to) continue;
       if (first === -1) first = unit;
       last = unit;

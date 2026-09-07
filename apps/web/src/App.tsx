@@ -12,17 +12,24 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChantScriptKey } from '@siksamitra/format';
+import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
 import { anchorAt, scrollTopFor, type BlockOffset, type ViewKind } from '@siksamitra/layout';
 import { FlowView } from './views/FlowView.js';
 import { PagedView } from './views/PagedView.js';
 import { StatusBar } from './shell/StatusBar.js';
+import { TitleBar } from './shell/TitleBar.js';
+import { NavPanel } from './shell/NavPanel.js';
+import { Backstage } from './shell/Backstage.js';
+import { useRecents } from './shell/useRecents.js';
+import { FileGroup } from './shell/FileGroup.js';
 import { Toolbar } from './shell/Toolbar.js';
+import { Icon } from './ui/Icon.js';
 import { handleKey, type CommandContext } from './shell/commands.js';
-import { EditorSurface, startCaret } from './editor/EditorSurface.js';
+import { EditorSurface } from './editor/EditorSurface.js';
 import { useSession } from './editor/useSession.js';
 import { useViewState } from './state/useViewState.js';
 import { useViewport } from './state/useViewport.js';
+import { useElementWidth } from './state/useElementWidth.js';
 import { useDocument } from './state/useDocument.js';
 import { useAppearance } from './state/useAppearance.js';
 
@@ -39,9 +46,33 @@ const DOCUMENTS = [
 export function App() {
   const viewport = useViewport();
   const look = useAppearance();
-  const state = useViewState(viewport, look.mode);
+  const scroller = useRef<HTMLDivElement>(null);
+  /*
+   * The zoom fits the DOCUMENT's column, not the window. With the navigation
+   * panel open the two differ by its width, and fitting to the window put a
+   * 793px page into a 676px column with its right margin off the edge.
+   */
+  const canvasWidth = useElementWidth(scroller);
+  const documentViewport = useMemo(
+    () => ({
+      width: canvasWidth > 0 ? canvasWidth : viewport.width,
+      height: viewport.height,
+    }),
+    [canvasWidth, viewport],
+  );
+  const state = useViewState(documentViewport, look.mode);
   const [slug, setSlug] = useState(DOCUMENTS[0]!.slug);
-  const { doc: opened, error } = useDocument(slug);
+  const fetched = useDocument(slug);
+  /*
+   * A document opened FROM A FILE outranks the one fetched by slug, until
+   * another slug is picked. Two sources, one winner, and the rule stated here
+   * rather than in the picker — otherwise "Open" and the document list would
+   * each think they were in charge.
+   */
+  const [file, setFile] = useState<{ doc: ChantDoc; name: string } | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const opened = file?.doc ?? fetched.doc;
+  const error = file === null ? fetched.error : null;
   /*
    * The session owns the document from here on: what is on screen is the
    * EDITED document, not the one that was fetched. One source of truth, so a
@@ -51,7 +82,46 @@ export function App() {
   const doc = opened === null ? null : session.doc;
   const [script, setScript] = useState<ChantScriptKey>('iast');
   const [showMarks, setShowMarks] = useState(true);
-  const scroller = useRef<HTMLDivElement>(null);
+  /*
+   * The shell's own state: which ribbon tab is front, whether the ribbon is
+   * folded away (Ctrl+F1), and whether the navigation panel is open. Here
+   * rather than in each component because all three survive a document change
+   * — closing the panel and having it reopen when you open another chant is
+   * the kind of small betrayal that stops a panel being used.
+   */
+  const [tab, setTab] = useState('home');
+  const [folded, setFolded] = useState(false);
+  const [navOpen, setNavOpen] = useState(true);
+  /* Which outline rows are expanded. HERE rather than in the panel, because
+     the panel unmounts when it is hidden and would forget them. */
+  const [navRows, setNavRows] = useState<ReadonlySet<string>>(new Set());
+  /** The File view — a place, over the whole window, not a panel. */
+  const [fileOpen, setFileOpen] = useState(false);
+
+  const recents = useRecents(slug, doc?.title ?? null);
+  /*
+   * THE PANEL GETS OUT OF THE WAY, rather than being closed for good. Below
+   * this width the navigator and an A4 column cannot both have room — at
+   * 620px the panel took 224 of it and the page was cut off — so it hides
+   * itself and comes back when the window does. The user's own choice is
+   * remembered separately, which is why this is two values and not one:
+   * closing it at 1400px must not reopen it at 1400px next time, and hiding it
+   * at 600px must not look like the user closed it.
+   */
+  const navShown = navOpen && viewport.width >= 880;
+
+  /** Scroll a block into view — what the navigation panel asks for. */
+  const goToBlock = useCallback((id: string) => {
+    const el = scroller.current;
+    if (el === null) return;
+    const block = [...el.querySelectorAll<HTMLElement>('[data-block-id]')]
+      .find((b) => b.dataset['blockId'] === id && b.closest('.paged__probe') === null);
+    if (block === undefined) return;
+    /* Positioned, not `scrollIntoView`: the heading should land just under the
+       top of the column with a little air, not flush against the ribbon. */
+    const base = el.getBoundingClientRect().top - el.scrollTop;
+    el.scrollTo({ top: block.getBoundingClientRect().top - base - 24, behavior: 'smooth' });
+  }, []);
 
   /** Where each block sits in the CURRENT view, for anchoring. */
   const offsetsOf = useCallback((): BlockOffset[] => {
@@ -101,7 +171,8 @@ export function App() {
     setShowMarks,
     theme: look.mode,
     setTheme: (m: string) => look.setMode(m === 'dark' ? 'dark' : 'light'),
-  }), [state, switchView, script, showMarks, look]);
+    editing: session.editing,
+  }), [state, switchView, script, showMarks, look, session.editing]);
 
   /** One keyboard handler, reading the registry. No shortcut lives elsewhere. */
   useEffect(() => {
@@ -122,26 +193,40 @@ export function App() {
   }, [ctx]);
 
   /*
-   * Entering edit mode puts the caret somewhere; Escape leaves. A mode with no
-   * way out is a trap, and a mode you enter with no caret does nothing when
-   * you type — both were on the list of what made the platform's editor feel
-   * like a form.
+   * Escape leaves the mode — unless an IME is composing, in which case Escape
+   * belongs to the IME and taking it discarded the composition and dropped the
+   * author out of edit mode. The caret is placed by `EditorSurface`, which is
+   * also what knows whether a composition is open.
    */
-  useEffect(() => {
-    if (session.editing) startCaret(session);
-  }, [session]);
-
+  const escape = useRef(session);
+  escape.current = session;
   useEffect(() => {
     const onEscape = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape' && session.editing) session.setEditing(false);
+      const now = escape.current;
+      if (e.key !== 'Escape' || !now.editing || now.composing()) return;
+      /*
+       * ONE THING AT A TIME. Escape closes what is OPEN before it leaves the
+       * mode: with a menu up, one press was doing both — the popover closed
+       * and the editor silently stopped accepting keys, which is what
+       * "editing is still not working" looked like from the outside.
+       */
+      if (document.querySelector('.pop') !== null) return;
+      now.setEditing(false);
     };
     window.addEventListener('keydown', onEscape);
     return () => window.removeEventListener('keydown', onEscape);
-  }, [session]);
+  }, []);
 
+  /*
+   * THE REVISION IS IN THE KEY. The paged view re-measures when this changes,
+   * and it used to be built from the document's NAME and the view settings —
+   * so it never changed while typing, and the pages kept the heights they were
+   * measured with before the edit. 480 characters went in and the page count
+   * stayed at three.
+   */
   const contentKey = useMemo(
-    () => `${slug}|${script}|${showMarks}|${session.editing}`,
-    [slug, script, showMarks, session.editing],
+    () => `${slug}|${script}|${showMarks}|${session.editing}|${session.revision}`,
+    [slug, script, showMarks, session.editing, session.revision],
   );
 
   return (
@@ -158,20 +243,106 @@ export function App() {
       data-mode={look.mode}
       data-density={look.density}
     >
+      <TitleBar
+        title={doc === null ? 'śikṣāmitra' : doc.title}
+        subtitle={file === null ? 'śikṣāmitra' : file.name}
+        leading={<span className="tbar__mark" aria-hidden>śi</span>}
+        trailing={(
+          <>
+            <button
+              type="button"
+              className="tbar__b"
+              title="Undo (Ctrl+Z)"
+              disabled={!session.canUndo}
+              onClick={() => session.undoEdit()}
+            >
+              <Icon name="undo" size="md" />
+            </button>
+            <button
+              type="button"
+              className="tbar__b"
+              title="Redo (Ctrl+Shift+Z)"
+              disabled={!session.canRedo}
+              onClick={() => session.redoEdit()}
+            >
+              <Icon name="redo" size="md" />
+            </button>
+          </>
+        )}
+      />
+
       <Toolbar
         ctx={ctx}
-        documents={DOCUMENTS}
-        slug={slug}
-        onSlug={setSlug}
         onSwitchView={switchView}
         look={look}
         session={session}
+        onOpenFile={(d, name) => { setFile({ doc: d, name }); setNote(`Opened ${name}`); }}
+        onNote={setNote}
+        tab={tab}
+        onTab={setTab}
+        folded={folded}
+        onFolded={setFolded}
+        onFile={() => setFileOpen(true)}
       />
+
+      {fileOpen && (
+        <Backstage
+          doc={doc}
+          documents={DOCUMENTS}
+          slug={slug}
+          recents={recents}
+          onSlug={(next) => { setFile(null); setNote(null); setSlug(next); }}
+          onClose={() => setFileOpen(false)}
+          onAbout={() => setNote(
+            'śikṣāmitra 2.0.0-alpha — a workbench for marked Sanskrit recitation text. '
+            + 'Fonts under the SIL OFL; icons from Material Symbols, Apache-2.0.',
+          )}
+          actions={(
+            <FileGroup
+              doc={session.doc}
+              onOpen={(d, name) => {
+                setFile({ doc: d, name });
+                setNote(`Opened ${name}`);
+                setFileOpen(false);
+              }}
+              onNote={setNote}
+            />
+          )}
+        />
+      )}
+
+      <div className={navShown ? 'work' : 'work is-alone'}>
+      {navShown ? (
+        <NavPanel
+          doc={doc}
+          scroller={scroller}
+          onGo={goToBlock}
+          onClose={() => setNavOpen(false)}
+          open={navRows}
+          onOpen={setNavRows}
+        />
+      ) : (
+        <button
+          type="button"
+          className="work__reveal"
+          onClick={() => setNavOpen(true)}
+          aria-label="Show the navigation panel"
+          title="Show the navigation panel"
+        >
+          <Icon name="panel-open" size="md" />
+        </button>
+      )}
 
       <div
         className={`canvas canvas--${state.view.kind}${session.editing ? ' is-editing' : ''}`}
         ref={scroller}
-        data-doc={state.view.kind === 'web' ? 'warm' : look.document}
+        /*
+         * The APPEARANCE the author chose, in every view. The web view used to
+         * force the site's own theme, so switching to it repainted the page in
+         * someone else's colours and threw away the choice; the site's look is
+         * still one click away in Appearance -> Page (`Veda Union · web`).
+         */
+        data-doc={look.document}
       >
         {error !== null && <p className="canvas__msg">Could not open: {error}</p>}
         {error === null && doc === null && <p className="canvas__msg">Opening…</p>}
@@ -193,12 +364,14 @@ export function App() {
             page={state.page}
             zoom={state.zoom}
             addressable={session.editing}
+            web={state.view.kind === 'web'}
           />
         ))}
         {doc !== null && <EditorSurface session={session} scroller={scroller} />}
       </div>
+      </div>
 
-      <StatusBar doc={doc} state={state} script={script} look={look} session={session} />
+      <StatusBar doc={doc} state={state} script={script} session={session} note={note} />
     </div>
   );
 }

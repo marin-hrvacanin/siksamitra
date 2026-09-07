@@ -15,6 +15,7 @@
 
 import type { ChantScriptKey } from '@siksamitra/format';
 import type { ViewKind, ZoomMode } from '@siksamitra/layout';
+import type { IconName } from '../ui/Icon.js';
 
 /** Everything a command may act on. Explicit, so a command cannot reach past it. */
 export interface CommandContext {
@@ -35,6 +36,8 @@ export interface CommandContext {
   readonly setShowMarks: (on: boolean) => void;
   readonly theme: string;
   readonly setTheme: (t: string) => void;
+  /** The editor has the keyboard: a colliding accelerator stands down. */
+  readonly editing: boolean;
 }
 
 export type CommandGroup = 'view' | 'zoom' | 'text' | 'appearance';
@@ -42,6 +45,9 @@ export type CommandGroup = 'view' | 'zoom' | 'text' | 'appearance';
 export interface Command {
   readonly id: string;
   readonly label: string;
+  /** The glyph on its button. One table for the label and the icon, so a
+   *  command cannot be shown with another command's picture. */
+  readonly icon: IconName;
   /** One line, for a tooltip. Says what it is FOR, not what it does. */
   readonly hint?: string;
   readonly group: CommandGroup;
@@ -52,6 +58,14 @@ export interface Command {
   readonly key?: string;
   /** Available in this context? A command that cannot run is shown disabled. */
   readonly enabled?: (c: CommandContext) => boolean;
+  /**
+   * The accelerator collides with a text-editing gesture, so it is not fired
+   * while the editor has the keyboard. The BUTTON still works.
+   *
+   * One row today: Ctrl+Shift+V is paste-as-plain-text everywhere, and here it
+   * was cycling the view instead — in the middle of typing.
+   */
+  readonly textConflict?: boolean;
   /** For a toggle: is it currently on? */
   readonly active?: (c: CommandContext) => boolean;
   readonly run: (c: CommandContext) => void;
@@ -60,14 +74,17 @@ export interface Command {
 export const COMMANDS: readonly Command[] = [
   {
     id: 'view.cycle',
+    icon: 'view-pages',
     label: 'Next view',
     hint: 'Flow → Pages → Web',
     group: 'view',
     key: 'Ctrl+Shift+V',
+    textConflict: true,
     run: (c) => c.cycleView(),
   },
   {
     id: 'zoom.in',
+    icon: 'zoom-in',
     label: 'Zoom in',
     group: 'zoom',
     key: 'Ctrl+=',
@@ -76,6 +93,7 @@ export const COMMANDS: readonly Command[] = [
   },
   {
     id: 'zoom.out',
+    icon: 'zoom-out',
     label: 'Zoom out',
     group: 'zoom',
     key: 'Ctrl+-',
@@ -84,6 +102,7 @@ export const COMMANDS: readonly Command[] = [
   },
   {
     id: 'zoom.reset',
+    icon: 'zoom-actual',
     label: 'Actual size',
     group: 'zoom',
     key: 'Ctrl+0',
@@ -91,12 +110,14 @@ export const COMMANDS: readonly Command[] = [
   },
   {
     id: 'zoom.fitWidth',
+    icon: 'zoom-fit-width',
     label: 'Fit width',
     group: 'zoom',
     run: (c) => c.setZoomMode({ kind: 'fit-width' }),
   },
   {
     id: 'zoom.fitPage',
+    icon: 'zoom-fit-page',
     label: 'Fit page',
     group: 'zoom',
     // Fitting a whole page is meaningless where there is no page.
@@ -105,6 +126,7 @@ export const COMMANDS: readonly Command[] = [
   },
   {
     id: 'text.marks',
+    icon: 'marks',
     label: 'Marks',
     hint: 'Show the recitation marks',
     group: 'text',
@@ -114,6 +136,7 @@ export const COMMANDS: readonly Command[] = [
   },
   {
     id: 'appearance.theme',
+    icon: 'dark',
     label: 'Dark',
     hint: 'Switch the theme',
     group: 'appearance',
@@ -152,6 +175,7 @@ export function matches(key: string, e: KeyboardEvent): boolean {
 export function handleKey(e: KeyboardEvent, ctx: CommandContext): boolean {
   for (const command of COMMANDS) {
     if (command.key === undefined || !matches(command.key, e)) continue;
+    if (ctx.editing && command.textConflict === true) return false;
     if (command.enabled?.(ctx) === false) return false;
     command.run(ctx);
     return true;

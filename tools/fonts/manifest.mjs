@@ -63,7 +63,7 @@ export const DRAWN_NOT_TYPED = {
 };
 
 /** A role is what a face is FOR. Components name roles, never families. */
-export const ROLES = ['text', 'ui', 'mono', 'deva', 'telu', 'taml'];
+export const ROLES = ['text', 'ui', 'mono', 'deva', 'telu', 'taml', 'word'];
 
 export const FAMILIES = [
   /* ── text faces: the document itself ─────────────────────────────────── */
@@ -131,6 +131,33 @@ export const FAMILIES = [
     id: 'ibm-plex-mono', name: 'IBM Plex Mono', role: 'mono',
     licence: 'OFL-1.1', weights: [400], italics: false,
     why: 'For the source view and anywhere a codepoint is shown.',
+  },
+
+  /* ── the Veda Union Word document ─────────────────────────────────────────
+     Three METRIC-COMPATIBLE substitutes, and the compatibility is the whole
+     reason they are here. His `.docx` sets the mantra line in Arial 16pt, the
+     translation in Times New Roman and the headings in Calibri; none of the
+     three is redistributable, and a face requested and not found does not
+     error — it silently substitutes, and the line then breaks somewhere else.
+     These carry the same advance widths at the same point size, so the same
+     text occupies the same space and wraps in the same place, which is the
+     property "1:1 with the Word document" actually needs. Identical outlines
+     are not available at any price.                                           */
+  {
+    id: 'arimo', name: 'Arimo', role: 'word',
+    licence: 'OFL-1.1', weights: [400, 700], italics: true,
+    why: 'Metric-compatible with Arial — the `Translit` style, his mantra line.',
+  },
+  {
+    id: 'tinos', name: 'Tinos', role: 'word',
+    licence: 'OFL-1.1', weights: [400, 700], italics: true,
+    why: 'Metric-compatible with Times New Roman — the `Prijevod` style, the '
+       + 'translation.',
+  },
+  {
+    id: 'carlito', name: 'Carlito', role: 'word',
+    licence: 'OFL-1.1', weights: [400, 700], italics: true,
+    why: 'Metric-compatible with Calibri — the headings and the body text.',
   },
 ];
 

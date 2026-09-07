@@ -17,6 +17,7 @@
     "@siksamitra/render": "2.0.0-alpha.0",
     "@siksamitra/storage": "2.0.0-alpha.0",
     "@siksamitra/tokens": "2.0.0-alpha.0",
+    "@tauri-apps/api": "^2.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

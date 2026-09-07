@@ -68,8 +68,14 @@ describe('rule zero', () => {
   it('refuses a keystroke inside a transcribed verse, and names it', () => {
     const start = newState(mixed());
     const { state } = type(start, at(start, 'v-2', 0, 3), 'x');
-    expect(state.refusals[0]).toContain('v-2');
-    expect(state.refusals[0]).toContain('evidence');
+    /* "Verse 2" — its number on the page, not its internal id. The reader
+       has never seen `v-2` and cannot find it; the number is beside the line. */
+    expect(state.refusals[0]).toContain('Verse 2');
+    expect(state.refusals[0]).toContain('copied from a marked source');
+    /* And in words: none of the program's own vocabulary. */
+    for (const jargon of ['evidence rather than output', 'source layer', 'attested']) {
+      expect(state.refusals[0]).not.toContain(jargon);
+    }
     // Nothing changed.
     expect(state.doc).toEqual(start.doc);
   });
@@ -89,7 +95,7 @@ describe('rule zero', () => {
       to: at(start, 'v-3', 0, 2),
       insert: '',
     });
-    expect(state.refusals[0]).toContain('v-2');
+    expect(state.refusals[0]).toContain('Verse 2');
     expect(state.doc).toEqual(start.doc);
   });
 
@@ -109,8 +115,8 @@ describe('rule zero', () => {
       patch: { hold: 'long' },
       why: 'owner-hand',
     });
-    expect(state.refusals[0]).toContain('v-2');
-    expect(state.refusals[0]).toContain('no source layer');
+    expect(state.refusals[0]).toContain('Verse 2');
+    expect(state.refusals[0]).toContain('nowhere to put a new one');
   });
 
   it('never invents a source layer for a transcribed verse', () => {
@@ -128,11 +134,13 @@ describe('undo', () => {
     expect(canUndo(typed.history)).toBe(true);
 
     const back = undo(typed.state, typed.history);
-    // `sections` rather than the whole document: `apply` writes an empty
-    // `overrides` array where the fixture had no key, which is a difference in
-    // shape and not in content.
-    expect(back.state.doc.sections).toEqual(start.doc.sections);
-    expect(back.state.doc.overrides).toEqual([]);
+    /*
+     * BYTE-IDENTICAL, keys included. `apply` omits an empty `overrides` and
+     * `restore` used not to — so an edit and its undo left a document that
+     * hashed differently, on 5 of the 11 shipped files.
+     */
+    expect(back.state.doc).toEqual(start.doc);
+    expect(back.state.doc.overrides).toBeUndefined();
     expect(canUndo(back.history)).toBe(false);
     expect(canRedo(back.history)).toBe(true);
 
@@ -167,7 +175,7 @@ describe('undo', () => {
       k: 'mark', sectionId: 's1', targets: [{ verseId: 'v-1', unit: 0 }], patch: { hold: 'long' }, why: 'owner-hand',
     });
     const back = undo(marked.state, marked.history);
-    expect(back.state.doc.overrides).toEqual([]);
+    expect(back.state.doc.overrides).toBeUndefined();
     expect(section1(back.state).verses[0]!.tokens)
       .toEqual(section1(start).verses[0]!.tokens);
   });

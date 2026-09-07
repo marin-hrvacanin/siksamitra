@@ -14,7 +14,18 @@ export default defineWorkspace([
     extends: './vitest.config.ts',
     test: {
       name: 'unit',
-      include: ['packages/*/src/**/__tests__/**/*.test.ts?(x)'],
+      /*
+       * `apps/` as well as `packages/`, and the omission mattered: the shell's
+       * own logic — which groups fit in the ribbon, which host we are running
+       * in, what the document's outline is — lived where the fast tier could
+       * not see it, so it had no unit tests at all and three fitting bugs
+       * shipped. A unit test is defined by what would make it fail, not by
+       * which workspace the file happens to sit in.
+       */
+      include: [
+        'packages/*/src/**/__tests__/**/*.test.ts?(x)',
+        'apps/*/src/**/__tests__/**/*.test.ts?(x)',
+      ],
       environment: 'node',
     },
   },

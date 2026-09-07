@@ -115,7 +115,8 @@ const HELP = `vu-chant — the marking engine, headless
   profile <doc.json>         which profile reproduces this document
   roundtrip <doc.json>       re-derive and compare EVERY letter, mark and script
   attach-src <doc.json>      give a shipped document its source layer back, where
-                             a derivation reproduces it exactly (--write to save)
+                             a derivation reproduces it exactly (--write to save,
+                             --rewrite-tam to accept the engine's Tamil)
   validate <doc.json>        the document invariants
   words <doc.json>           every distinct word surface, with counts
   normalize "<text>"         fold any input to canonical IAST, reporting changes
@@ -298,7 +299,8 @@ switch (cmd) {
     if (path === undefined) die(2, 'which document?');
     const doc = readDoc(path!);
     const { doc: next, report, profile: fitted } = attachSource(doc, profileFor(), {
-      tamil: argv.includes('--include-tam'),
+      tamil: true,
+      rewriteTamil: argv.includes('--rewrite-tam'),
       fit: !argv.includes('--no-fit'),
       overrides: !argv.includes('--no-overrides'),
     });
@@ -314,6 +316,11 @@ switch (cmd) {
     if (fitted !== null) {
       say(`  parametrization: ${fitted.preset ?? 'default'}`
         + `${JSON.stringify(fitted.patch) === '{}' ? '' : ` ${JSON.stringify(fitted.patch)}`}`);
+    }
+    if (report.tamilReplaced.verses > 0) {
+      say(`  ${report.tamilReplaced.syllables} Tamil forms REPLACED by the engine's `
+        + `across ${report.tamilReplaced.verses} verses — Tamil is unreviewed on `
+        + 'both sides, and this is the price of making those verses editable');
     }
     if (report.overrides > 0) {
       say(`  ${report.overrides} marks recorded as overrides across `
@@ -339,6 +346,7 @@ switch (cmd) {
       withWitness: report.withWitness,
       overrides: report.overrides,
       versesWithOverrides: report.withOverrides,
+      tamilReplaced: report.tamilReplaced,
       profile: fitted,
       refused: report.refused,
     });

@@ -23,89 +23,14 @@
       }
     ],
     "lineBreak": "source",
-    "overrides": [
-      {
-        "at": {
-          "letter": 23,
-          "line": 0,
-          "verse": "santi-patha-v2"
-        },
-        "ch": "ś",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": "short"
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 24,
-          "line": 0,
-          "verse": "santi-patha-v2"
-        },
-        "ch": "r",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 11,
-          "line": 3,
-          "verse": "asta-nama-ganapati-v1"
-        },
-        "ch": "ś",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": "short"
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 12,
-          "line": 3,
-          "verse": "asta-nama-ganapati-v1"
-        },
-        "ch": "r",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 23,
-          "line": 0,
-          "verse": "santi-patha-2-v2"
-        },
-        "ch": "ś",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": "short"
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 24,
-          "line": 0,
-          "verse": "santi-patha-2-v2"
-        },
-        "ch": "r",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": null
-        },
-        "why": "source-witness"
-      }
-    ],
     "primaryScript": "iast",
     "profile": {
-      "patch": {},
+      "patch": {
+        "pauses": {
+          "bija": false,
+          "hiatus": true
+        }
+      },
       "preset": "taittiriya"
     },
     "recording": {

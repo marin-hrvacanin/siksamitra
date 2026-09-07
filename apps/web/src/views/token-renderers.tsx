@@ -52,13 +52,30 @@ export const TOKEN_RENDERERS: { readonly [T in ChantToken['t']]: Renderer<T> } =
   /** Structure, not speech — see the contract. Drawn, never recited. */
   num: (t, key) => <span className="num" key={key}>{t.s}</span>,
 
-  bar: (_t, key) => <span className="bar" key={key} aria-hidden />,
+  /**
+   * A BAR — the `|` that ends a pāda inside a line.
+   *
+   * It has a glyph, and it was drawn as an empty span: 59 of them in Puruṣa
+   * Sūktam alone, present in the DOM and invisible on the page. The exporter
+   * has always written a literal `|` for it (`docx.ts`), so a reader who
+   * printed the document saw marks the screen did not show.
+   */
+  bar: (_t, key) => <span className="bar" key={key}>|</span>,
 
   /**
-   * A pause has a duration and no glyph. Drawn as a gap whose width comes from
-   * a token, so short and long stay distinguishable at every text size.
+   * A PAUSE, drawn as the pipes his own documents carry: `|` short, `||` long.
+   *
+   * This drew an empty span too — "a gap whose width comes from a token" — so
+   * all 976 pauses in the corpus rendered as nothing at all. The Word exporter
+   * writes `|` and `||` in the `Pause` character style, the v1 importer counts
+   * those same pipes, and the PDF shows them in red: the glyph IS the mark, and
+   * a gap is not a notation anyone can read.
    */
-  pause: (t, key) => <span className={`pause pause--${t.len}`} key={key} aria-hidden />,
+  pause: (t, key) => (
+    <span className={`pause pause--${t.len}`} key={key}>
+      {t.len === 'long' ? '||' : '|'}
+    </span>
+  ),
 
   /**
    * `br` is handled by the line splitter before this registry is reached: a

@@ -191,8 +191,22 @@ export const BASE = {
      nothing useful, and a menu narrower than `menu-min` wraps its own labels —
      both are design decisions about how small a thing may get, which is why
      they are here and not in the three stylesheets that used to hold them. */
+  /* The navigation panel's width. A tool panel, not a sidebar: wide enough for
+     a section's name at this size, narrow enough that the page keeps its
+     measure at 1280px, which is the window this program opens at. */
+  "nav-w": "14rem",
+  /* The reading measure of the web view, where there is no page to take it
+     from — about 70 characters of the reading face, which is the width prose
+     has been set at since long before screens. */
+  "measure-web": "46rem",
+  /* How wide a popover may get before its columns stop being readable. */
+  "pop-max": "64rem",
   "group-min": "4rem",
   "menu-min": "11rem",
+  /* A menu that has to EXPLAIN its choices rather than only name them — the
+     register menu, where each row carries the texts it covers and what its
+     rules do. Wide enough for a sentence to be one line and a half. */
+  "menu-wide": "24rem",
   "panel-min": "13rem",
 
   /* ── borders ──────────────────────────────────────────────────────────────

@@ -4,9 +4,28 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "development": "./src/index.ts", "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -b", "typecheck": "tsc -b --noEmit" },
-  "dependencies": { "@siksamitra/format": "2.0.0-alpha.0", "@siksamitra/engine": "2.0.0-alpha.0", "fflate": "^0.8.3" },
-  "devDependencies": { "typescript": "^5.6.3" }
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@siksamitra/engine": "2.0.0-alpha.0",
+    "@siksamitra/format": "2.0.0-alpha.0",
+    "@siksamitra/tokens": "2.0.0-alpha.0",
+    "fflate": "^0.8.3",
+    "xz-decompress": "^0.2.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
 }

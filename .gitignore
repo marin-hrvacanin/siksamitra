@@ -47,6 +47,7 @@ apps/web/public/fonts/
 # === Generated previews ===
 design-preview.html
 shots/
+.shots/
 
 # === Portable packages are build output, not source ===
 *.vuchant

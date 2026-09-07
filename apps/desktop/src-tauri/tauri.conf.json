@@ -20,7 +20,9 @@
         "resizable": true,
         "center": true,
         "dragDropEnabled": true,
-        "theme": null
+        "theme": null,
+        "decorations": false,
+        "transparent": false
       }
     ],
     "security": {
@@ -37,7 +39,14 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi", "app", "dmg", "deb", "appimage"],
+    "targets": [
+      "nsis",
+      "msi",
+      "app",
+      "dmg",
+      "deb",
+      "appimage"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -52,40 +61,92 @@
     "publisher": "siksamitra",
     "fileAssociations": [
       {
-        "ext": ["vuchant"],
-        "name": "Chant package",
-        "description": "A chant document with its sources, audio and figures",
+        "ext": [
+          "smdoc"
+        ],
+        "name": "siksamitra document",
+        "description": "A siksamitra document: marked recitation text with its sources",
         "role": "Editor",
-        "mimeType": "application/vnd.siksamitra.chant+zip"
+        "mimeType": "application/vnd.siksamitra.document+zip",
+        "rank": "Owner",
+        "exportedType": {
+          "identifier": "org.siksamitra.document",
+          "conformsTo": [
+            "public.data",
+            "public.composite-content"
+          ]
+        }
       },
       {
-        "ext": ["smdoc"],
-        "name": "siksamitra v1 document",
-        "description": "A document from siksamitra v1",
-        "role": "Viewer",
-        "mimeType": "application/vnd.siksamitra.v1"
+        "ext": [
+          "vuchant"
+        ],
+        "name": "siksamitra chant package",
+        "description": "A chant document with its sources, audio and figures",
+        "role": "Editor",
+        "mimeType": "application/vnd.siksamitra.chant+zip",
+        "rank": "Owner",
+        "exportedType": {
+          "identifier": "org.siksamitra.chant",
+          "conformsTo": [
+            "public.data",
+            "public.composite-content"
+          ]
+        }
       }
     ],
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["English"],
-        "displayLanguageSelector": false
+        "languages": [
+          "English"
+        ],
+        "displayLanguageSelector": false,
+        "installerHooks": "windows/associations.nsh"
       },
-      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true }
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      }
     },
     "macOS": {
       "minimumSystemVersion": "10.15",
       "dmg": {
-        "appPosition": { "x": 180, "y": 200 },
-        "applicationFolderPosition": { "x": 480, "y": 200 },
-        "windowSize": { "width": 660, "height": 400 }
+        "appPosition": {
+          "x": 180,
+          "y": 200
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 200
+        },
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        }
       }
     },
     "linux": {
-      "deb": { "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"] }
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0"
+        ],
+        "files": {
+          "/usr/share/mime/packages/org.siksamitra.document.xml": "linux/org.siksamitra.document.xml",
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-vnd.siksamitra.document+zip.png": "icons/document-32.png",
+          "/usr/share/icons/hicolor/64x64/mimetypes/application-vnd.siksamitra.document+zip.png": "icons/document-64.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-vnd.siksamitra.document+zip.png": "icons/document-128.png",
+          "/usr/share/icons/hicolor/256x256/mimetypes/application-vnd.siksamitra.document+zip.png": "icons/document-256.png",
+          "/usr/share/icons/hicolor/512x512/mimetypes/application-vnd.siksamitra.document+zip.png": "icons/document-512.png"
+        }
+      }
     },
-    "createUpdaterArtifacts": false
+    "createUpdaterArtifacts": false,
+    "resources": {
+      "icons/document.ico": "resources/icons/document.ico",
+      "icons/document-512.png": "resources/icons/document-512.png"
+    }
   },
   "plugins": {}
 }

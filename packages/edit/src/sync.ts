@@ -15,12 +15,13 @@
  * stale mark addresses, and rebasing after deriving means the tokens were
  * built from marks that had already moved.
  */
+import { norm } from '@siksamitra/engine';
 import { withVerses } from '@siksamitra/format';
 import type { ChantDoc, ChantOverride, ChantSection, ChantVerse } from '@siksamitra/format';
-import type { VerseSource } from './caret.js';
-import { alignArrays, contiguousDiff } from './diff.js';
-import { rebase, rebaseLines } from './rebase.js';
+import { flatten, type VerseSource } from './caret.js';
+import { rebaseFlat, type FlatEdit } from './rebase.js';
 import { deriveVerse, type VerseReport } from './derive-verse.js';
+import { carryWitness } from './witness.js';
 
 export type LostMark = { override: ChantOverride; why: string };
 
@@ -43,7 +44,18 @@ export function linesFromTokens(verse: ChantVerse): string[] {
     else if (t.t === 'sp') put(' ');
     else if (t.t === 'danda') put(t.s);
   }
-  return lines;
+  /*
+   * NORMALISED, like every other line in the flat source.
+   *
+   * It was not, and the consequence was not local: an attested verse's tokens
+   * produce `… ॥॥ ` with a trailing space and a double space, which
+   * `replaceRange` then trims — so a NO-OP edit shortened the section's flat
+   * text by 11 characters, every offset after that verse moved, and the
+   * witness on 23 hand-placed marks correctly refused to follow. The stand-in
+   * has to be as canonical as a real source line, or it is a moving reference
+   * point.
+   */
+  return lines.map((l) => norm(l));
 }
 
 export const sourcesOf = (section: ChantSection): VerseSource[] =>
@@ -62,98 +74,30 @@ export function changedVerses(
   return out;
 }
 
-/** Drop every override addressed to a verse or line that no longer exists. */
-function forget(
-  overrides: readonly ChantOverride[],
-  matches: (ov: ChantOverride) => boolean,
-  why: string,
-  lost: LostMark[],
-): ChantOverride[] {
-  const kept: ChantOverride[] = [];
-  for (const ov of overrides) {
-    if (matches(ov)) lost.push({ override: ov, why });
-    else kept.push(ov);
-  }
-  return kept;
-}
-
 /**
  * Rebase a section's overrides across a source change.
  *
- * The edit is RECOVERED from before/after rather than threaded through the
- * string surgery — see `diff.ts` for why that is the safer direction. Lines
- * that survived and changed are rebased and checked against the letter each
- * mark was placed on; lines that did not survive give up their marks loudly.
+ * One call, in flat coordinates — see `rebaseFlat`, and the note there about
+ * what the three-pass per-line version did to four marked lines.
  */
 export function rebaseSection(
   overrides: readonly ChantOverride[],
   before: readonly VerseSource[],
   after: readonly VerseSource[],
+  edit: FlatEdit,
 ): { overrides: ChantOverride[]; lost: LostMark[] } {
-  let current = [...overrides];
-  const lost: LostMark[] = [];
-  const byId = new Map(after.map((v) => [v.id, v]));
+  const result = rebaseFlat(overrides, flatten(before), flatten(after), edit);
+  return { overrides: result.overrides, lost: result.dropped };
+}
 
-  for (const old of before) {
-    const now = byId.get(old.id);
-    if (now === undefined) {
-      current = forget(
-        current,
-        (ov) => ov.at.verse === old.id,
-        `verse "${old.id}" was deleted`,
-        lost,
-      );
-      continue;
-    }
-    if (old.lines.join('\n') === now.lines.join('\n')) continue;
-
-    const matched = alignArrays([...old.lines], [...now.lines]);
-    // A whole line added or removed moves every later line's marks with it.
-    current = rebaseLines(
-      current, old.id, old.lines.length, now.lines.length - old.lines.length,
-    );
-
-    matched.forEach((target, index) => {
-      const oldLine = old.lines[index]!;
-      if (target === null) {
-        current = forget(
-          current,
-          (ov) => ov.at.verse === old.id && ov.at.line === index,
-          `line ${index} of "${old.id}" was replaced`,
-          lost,
-        );
-        return;
-      }
-      // Move the line index first, then the offsets within it: applying both
-      // to one override in the other order double-counts the line shift.
-      if (target !== index) {
-        current = current.map((ov) => (
-          ov.at.verse === old.id && ov.at.line === index
-            ? { ...ov, at: { ...ov.at, line: target } }
-            : ov
-        ));
-      }
-      const newLine = now.lines[target]!;
-      const change = contiguousDiff(oldLine, newLine);
-      if (change === null) return;
-      const result = rebase(
-        current,
-        {
-          verseId: old.id,
-          line: target,
-          from: change.from,
-          to: change.to,
-          insert: change.insert,
-        },
-        oldLine,
-        newLine,
-      );
-      current = result.overrides;
-      lost.push(...result.dropped);
-    });
-  }
-
-  return { overrides: current, lost };
+export interface WriteResult {
+  section: ChantSection;
+  /** Text the write could not store, because its verse cannot hold source.
+   *  Never silent: this is a whole verse's words going missing. */
+  refused: { verseId: string; lines: string[] }[];
+  /** Accents the edit removed with the letters they were on, per verse. An
+   *  edit that costs a transcribed accent has to say so. */
+  accentsLost: { verseId: string; count: number }[];
 }
 
 /**
@@ -164,24 +108,59 @@ export function rebaseSection(
  * keeps every field that is not derived — `words`, `audioId`, `translation`,
  * the instructions — because none of them is this function's business.
  *
- * An attested verse's `src` is never written. It has none, and inventing one
- * from its own recited text is precisely the re-derivation rule zero forbids.
+ * AN ATTESTED VERSE'S SOURCE IS NEVER WRITTEN, and if the caller hands one
+ * lines that differ from its own stand-in, that text is REFUSED and named. It
+ * used to be dropped on the floor: a single Backspace at the start of the verse
+ * after a transcribed one merged the two, and the merged text — a whole verse
+ * of words — vanished with no refusal and no mention.
  */
 export function writeSources(
   section: ChantSection,
   sources: readonly VerseSource[],
-): ChantSection {
+): WriteResult {
   const existing = new Map(section.verses.map((v) => [v.id, v]));
+  const refused: WriteResult['refused'] = [];
+  const accentsLost: WriteResult['accentsLost'] = [];
+
   const verses: ChantVerse[] = sources.map((s) => {
     const was = existing.get(s.id);
     if (was === undefined) return { id: s.id, tokens: [], src: { lines: [...s.lines] } };
-    if (was.src === undefined) return was;
-    return { ...was, src: { ...was.src, lines: [...s.lines] } };
+    if (was.src === undefined) {
+      /*
+       * Compared NORMALISED. The stand-in comes from the verse's own tokens
+       * and every line `replaceRange` returns has been through `norm`, so an
+       * un-normalised comparison reported a refusal for every transcribed
+       * verse on every keystroke anywhere in the section — five warnings for a
+       * perfectly legal edit. What this has to catch is text genuinely merged
+       * INTO the verse, which differs by more than whitespace.
+       */
+      const stand = linesFromTokens(was).map((l) => norm(l)).join('\n');
+      if (s.lines.map((l) => norm(l)).join('\n') !== stand) {
+        refused.push({ verseId: s.id, lines: [...s.lines] });
+      }
+      return was;
+    }
+    /*
+     * The witness moves with the letters. Leaving it behind made the engine
+     * refuse the line — correctly, since the two no longer matched — and every
+     * transcribed accent on it vanished from the document.
+     */
+    const carried = carryWitness(was.src, s.lines);
+    if (carried.lost > 0) accentsLost.push({ verseId: s.id, count: carried.lost });
+    return {
+      ...was,
+      src: {
+        ...was.src,
+        lines: [...s.lines],
+        ...(carried.accented === undefined ? {} : { accented: carried.accented }),
+      },
+    };
   });
+
   // `withVerses` because a composed section keeps its verses in `items` too,
   // and `normalizeChantDoc` rebuilds `verses` from those — writing only
   // `verses` would discard the author's edit on the next load.
-  return withVerses(section, verses);
+  return { section: withVerses(section, verses), refused, accentsLost };
 }
 
 /** Re-derive the named verses. The one place a verse's tokens are replaced. */

@@ -159,6 +159,17 @@ describe('adjacent holdings of the same kind are merged', () => {
    * re-marked under the older rules, the count assertion below fails and the
    * entry comes out.
    */
+  /*
+   * The two verses of the corpus that use the NEWER convention: same
+   * consonants under a single holding, which this program does not follow —
+   * the older rules put one box on one letter. They are listed rather than
+   * corrected, because rule zero says a mark in the file is evidence.
+   *
+   * Both survive a source layer: `v-3` gained one, and the marks it carries
+   * were recorded as overrides, so re-deriving reproduces the same two
+   * adjacent boxes the file has. `v-5` is still transcribed. Either way the
+   * document keeps what the owner drew.
+   */
   const NEWER_CONVENTION = new Set([
     'bhagya-suktam/sec-1/v-3',
     'bhagya-suktam/sec-1/v-5',

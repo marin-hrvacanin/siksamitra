@@ -47,7 +47,17 @@ export interface MarkDiff {
 export type VerseDiff =
   | { kind: 'same' }
   | { kind: 'marks'; diffs: MarkDiff[] }
-  | { kind: 'text'; why: string };
+  /**
+   * The letters themselves disagree.
+   *
+   * `tamilOnly` says the ONLY disagreement is the Tamil column. That is worth
+   * separating because Tamil is the one field the contract calls carried
+   * rather than verified (INTERCHANGE §9.8): the corpus's forms were never
+   * reviewed by the owner, and neither were the transliterator's. Taking one
+   * over the other is a decision for a person, and a caller that makes it must
+   * be able to count how often it did.
+   */
+  | { kind: 'text'; why: string; tamilOnly: boolean };
 
 const sylsOf = (tokens: readonly ChantToken[]): ChantSyllable[] =>
   tokens.filter((t): t is ChantSyllable => t.t === 'syl');
@@ -61,26 +71,45 @@ const stable = (u: ChantUnit): string => {
 };
 
 /**
- * The structural tokens — spaces excluded.
+ * The structural tokens, with space RUNS collapsed and line edges trimmed.
  *
- * `sp` IS NOT COMPARED, and the reason is that it is not authored. `emit`
- * produces one for every word boundary in the source and its own on each side
- * of a daṇḍa; the older generator that wrote the corpus spaced daṇḍas
- * slightly differently, and comparing spaces froze verses over whitespace that
- * draws nothing. What is compared is the structure a reader can see: line
- * breaks, daṇḍas, pauses, pāda bars, verse numbers, and text.
+ * Not a loosening — a measurement. `.pada` is `white-space: normal`, and three
+ * adjacent `<span class="sp"> </span>` render at exactly the same width as one
+ * (55.8 px, measured in the browser), while a space at the end of a line draws
+ * nothing at all. So a run of spaces and a single space are the same document,
+ * and the corpus disagrees with itself about which it writes: bhāgya sets
+ * `naḥ · sp · ।` and Rudram sets `… · sp · sp · । · sp · sp`, because they were
+ * written by different generator versions.
  *
- * The consequence is stated plainly because it is a real one: where the two
- * disagree about spacing, the DERIVED spacing wins, since it is what this
- * program's one renderer draws everywhere else.
+ * What this still catches, and what a version of this function that ignored
+ * `sp` altogether did not: ZERO spaces against ONE. `॥3॥` and `॥ 3 ॥` are
+ * different documents, and 176 verses were quietly turned into the second by
+ * an emitter that added a space after every daṇḍa.
  */
 function shape(tokens: readonly ChantToken[]): string {
-  return tokens.filter((t) => t.t !== 'syl' && t.t !== 'sp').map((t) => t.t).join(',');
+  const kinds: string[] = [];
+  for (const token of tokens) {
+    if (token.t === 'syl') continue;
+    if (token.t === 'sp' && kinds[kinds.length - 1] === 'sp') continue;
+    kinds.push(token.t);
+  }
+  while (kinds[0] === 'sp') kinds.shift();
+  while (kinds[kinds.length - 1] === 'sp') kinds.pop();
+  return kinds.join(',');
 }
 
 export interface DiffOptions {
-  /** Compare Tamil. Off means a Tamil-only difference is not a difference —
-   *  the corpus's Tamil is unreviewed, so the caller decides. */
+  /**
+   * Compare Tamil.
+   *
+   * ON is the only safe setting, and the reason is worth recording. Holding
+   * Tamil out meant the caller had to copy the file's Tamil back over the
+   * derived tokens, and it did that BY TOKEN INDEX — which drifts the moment
+   * the two streams differ in any token, which is exactly when the hold-out
+   * matters. Measured: 239 verses had their Tamil column overwritten with a
+   * neighbouring syllable's. A field worth not checking is a field worth
+   * leaving the verse frozen over.
+   */
   tamil: boolean;
 }
 
@@ -90,19 +119,17 @@ export function diffVerse(
   got: readonly ChantToken[],
   opts: DiffOptions,
 ): VerseDiff {
+  const fail = (why: string, tamilOnly = false): VerseDiff =>
+    ({ kind: 'text', why, tamilOnly });
+  /** Set when a Tamil form differs; cleared the moment anything else does. */
+  let tamil: string | null = null;
   const a = sylsOf(want);
   const b = sylsOf(got);
   if (a.length !== b.length) {
-    return {
-      kind: 'text',
-      why: `${a.length} syllables in the file, ${b.length} derived`,
-    };
+    return fail(`${a.length} syllables in the file, ${b.length} derived`);
   }
   if (shape(want) !== shape(got)) {
-    return {
-      kind: 'text',
-      why: `the structure differs: ${shape(want)} in the file, ${shape(got)} derived`,
-    };
+    return fail(`the structure differs: ${shape(want)} in the file, ${shape(got)} derived`);
   }
 
   const scripts = opts.tamil
@@ -119,36 +146,30 @@ export function diffVerse(
       // fragment tables shipped without `tel` and `tam`.
       const mine = x[field];
       if (mine === undefined || mine === y[field]) continue;
-      return {
-        kind: 'text',
-        why: `syllable ${i + 1} ${field}: "${mine}" in the file, `
-          + `"${String(y[field])}" derived`,
-      };
+      const why = `syllable ${i + 1} ${field}: "${mine}" in the file, `
+        + `"${String(y[field])}" derived`;
+      // A Tamil difference is remembered and the walk CONTINUES: only if
+      // nothing else differs may the caller treat it as a Tamil-only case.
+      if (field === 'tam') { tamil ??= why; continue; }
+      return fail(why);
     }
     if (x.units.length !== y.units.length) {
-      return {
-        kind: 'text',
-        why: `syllable ${i + 1} "${x.iast}": ${x.units.length} letters, `
-          + `${y.units.length} derived`,
-      };
+      return fail(`syllable ${i + 1} "${x.iast}": ${x.units.length} letters, `
+        + `${y.units.length} derived`);
     }
 
     for (const [k, u] of x.units.entries()) {
       const v = y.units[k]!;
       if (u.c !== v.c) {
-        return {
-          kind: 'text',
-          why: `syllable ${i + 1} letter ${k + 1}: "${u.c}" in the file, "${v.c}" derived`,
-        };
+        return fail(
+          `syllable ${i + 1} letter ${k + 1}: "${u.c}" in the file, "${v.c}" derived`,
+        );
       }
       // The conjunct choice is authored, not a mark: it decides how the Indic
       // scripts SHAPE the letter, so a difference there is textual.
       if (u.cj !== v.cj) {
-        return {
-          kind: 'text',
-          why: `syllable ${i + 1} letter ${k + 1} "${u.c}": conjunct `
-            + `${String(u.cj)} in the file, ${String(v.cj)} derived`,
-        };
+        return fail(`syllable ${i + 1} letter ${k + 1} "${u.c}": conjunct `
+          + `${String(u.cj)} in the file, ${String(v.cj)} derived`);
       }
       if (stable(u) !== stable(v)) {
         const set: Partial<Record<MarkField, unknown>> = {};
@@ -164,5 +185,18 @@ export function diffVerse(
     unit += x.units.length;
   }
 
-  return diffs.length === 0 ? { kind: 'same' } : { kind: 'marks', diffs };
+  /*
+   * MARKS FIRST. A Tamil difference is only "Tamil only" when nothing else
+   * differs — and returning it while mark differences were also found threw
+   * those away: 21 attested svaras in one verse of Śiva Saṅkalpa Sūktam went
+   * unrecorded, the caller accepted the verse for its Tamil, and the accents
+   * vanished from the document.
+   *
+   * With the marks returned first, the caller records them as overrides and
+   * derives again; the second pass then reports the Tamil alone, and only then
+   * is it a decision about Tamil.
+   */
+  if (diffs.length > 0) return { kind: 'marks', diffs };
+  if (tamil !== null) return fail(tamil, true);
+  return { kind: 'same' };
 }

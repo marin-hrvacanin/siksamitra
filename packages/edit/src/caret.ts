@@ -97,15 +97,28 @@ export function addressAt(flat: FlatSource, offset: number): CaretAddress | null
   };
 }
 
-/** An address to a flat offset. */
-export function offsetOf(flat: FlatSource, at: CaretAddress): number {
+/**
+ * An address to a flat offset, or `null` if the address is not in this source.
+ *
+ * `null` RATHER THAN 0, and the difference is not academic: a stale selection
+ * — an anchor naming a verse the last edit removed — used to come back as
+ * offset 0, so a range that should have been refused became "from the start of
+ * the section to wherever the caret is" and the next keystroke deleted all of
+ * it. A missing address is a fact about the caller's state, and the caller has
+ * to see it.
+ */
+export function offsetOf(flat: FlatSource, at: CaretAddress): number | null {
   const entry = flat.lineStarts.find((e) => e.verseId === at.verseId && e.line === at.line);
-  if (entry === undefined) return 0;
+  if (entry === undefined) return null;
   return entry.at + Math.max(0, Math.min(at.column, entry.length));
 }
 
 const lineIndex = (flat: FlatSource, at: CaretAddress): number =>
   flat.lineStarts.findIndex((e) => e.verseId === at.verseId && e.line === at.line);
+
+/** The offset, or the nearest legal one. For a caret, where a guess is safe. */
+export const offsetOrStart = (flat: FlatSource, at: CaretAddress): number =>
+  offsetOf(flat, at) ?? 0;
 
 /**
  * Move the caret one line up or down, across verse boundaries.
@@ -134,7 +147,7 @@ export function moveChar(
   at: CaretAddress,
   direction: 1 | -1,
 ): CaretAddress {
-  return addressAt(flat, offsetOf(flat, at) + direction) ?? at;
+  return addressAt(flat, offsetOrStart(flat, at) + direction) ?? at;
 }
 
 /** Start or end of the current line — Home and End. */
@@ -157,7 +170,7 @@ export function moveWord(
   direction: 1 | -1,
 ): CaretAddress {
   const text = flat.text;
-  let i = offsetOf(flat, at);
+  let i = offsetOrStart(flat, at);
   const isSpace = (k: number): boolean => /\s/.test(text[k] ?? ' ');
 
   if (direction === 1) {
@@ -182,10 +195,20 @@ export const isCollapsed = (s: Selection): boolean =>
   && s.anchor.line === s.head.line
   && s.anchor.column === s.head.column;
 
-/** The selection as a flat range, low offset first. */
-export function selectionRange(flat: FlatSource, s: Selection): { from: number; to: number } {
+/**
+ * The selection as a flat range, low offset first — or `null` if either end is
+ * not in this source.
+ *
+ * A stale end is not clamped to the start of the section. It used to be, and
+ * the result was a selection that silently covered everything up to the caret.
+ */
+export function selectionRange(
+  flat: FlatSource,
+  s: Selection,
+): { from: number; to: number } | null {
   const a = offsetOf(flat, s.anchor);
   const b = offsetOf(flat, s.head);
+  if (a === null || b === null) return null;
   return { from: Math.min(a, b), to: Math.max(a, b) };
 }
 
@@ -194,7 +217,11 @@ export const caretAt = (at: CaretAddress): Selection => ({ anchor: at, head: at 
 
 /** Which verses a selection touches, in document order. */
 export function versesInSelection(flat: FlatSource, s: Selection): string[] {
-  const { from, to } = selectionRange(flat, s);
+  const range = selectionRange(flat, s);
+  // A selection with a stale end names no verses, rather than naming all the
+  // ones between the start of the section and the caret.
+  if (range === null) return [];
+  const { from, to } = range;
   const out: string[] = [];
   for (const entry of flat.lineStarts) {
     const end = entry.at + entry.length;

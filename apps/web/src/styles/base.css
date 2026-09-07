@@ -43,12 +43,115 @@ body {
    off the edge, and the person cannot know what. */
 html, body { overflow-x: hidden; }
 
+/*
+ * THE WINDOW, in four bands: its title bar, the ribbon, the work, the status.
+ *
+ * `auto` for the first two because both are content-sized and both can be
+ * absent — there is no title bar in a browser, and the ribbon folds away with
+ * Ctrl+F1. `1fr` for the work and a fixed status bar, so the document gets
+ * every pixel that is left and the bar never drifts off the bottom.
+ */
 .app {
   display: grid;
-  grid-template-rows: minmax(var(--toolbar-h), auto) 1fr var(--status-h);
+  grid-template-rows: auto auto minmax(0, 1fr) var(--status-h);
+  /*
+   * ONE COLUMN, DECLARED.
+   *
+   * The File view spans rows 2 to 4 so it covers the ribbon and everything
+   * under it without covering the title bar. With no declared column, grid's
+   * auto-placement saw those cells taken and put the ribbon, the work area and
+   * the status bar in a SECOND, implicit column beside it — the whole editor
+   * squeezed into the right half of the window whenever the File view opened.
+   * Naming the single column, and naming it on every band, is what keeps them
+   * stacked.
+   */
+  grid-template-columns: minmax(0, 1fr);
   height: 100%;
   overflow: hidden;
   /* The themed root. Everything inside inherits from here. */
   background: var(--chrome-bg);
   color: var(--chrome-ink);
+}
+
+/*
+ * EACH BAND NAMES ITS OWN ROW, rather than taking the row its position in the
+ * DOM happens to fall in. The title bar does not exist in a browser, and with
+ * implicit placement its absence slid everything up one: the work area took
+ * the `auto` row meant for the ribbon and the status bar took the `1fr`, so
+ * the document was as tall as its content and the status bar filled the rest
+ * of the window. A missing `auto` row costs nothing; a mis-assigned one costs
+ * the layout.
+ */
+.tbar { grid-row: 1; grid-column: 1; }
+.rbn { grid-row: 2; grid-column: 1; }
+.work { grid-row: 3; grid-column: 1; }
+.status { grid-row: 4; grid-column: 1; }
+
+/*
+ * The work: the navigation panel beside the document.
+ *
+ * A grid rather than flex, because the panel has a width the user will be able
+ * to drag and the document must take exactly what is left — `1fr` does that
+ * with no arithmetic. `min-height: 0` on both, or a long document stretches
+ * the row and the whole window scrolls instead of the canvas.
+ */
+.work {
+  position: relative;   /* the reveal button hangs over the document */
+  display: grid;
+  grid-template-columns: var(--nav-w) 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+.work.is-alone { grid-template-columns: 0 1fr; }
+/*
+ * EACH COLUMN NAMED, for the same reason the rows are.
+ *
+ * With the panel closed the first child in the DOM is the reveal button, and
+ * it is absolutely positioned — out of flow, so implicit placement gave the
+ * canvas column 1, which is the collapsed one. The document was laid out in a
+ * zero-width column and the page overflowed it by its whole width. Measured at
+ * 800px: canvas 0, paper 170.
+ */
+.nav { grid-column: 1; }
+.canvas { grid-column: 2; }
+
+/* The button that brings the panel back. It sits over the document's own
+   scroller, quiet until the pointer is near it. */
+.work__reveal {
+  position: absolute;
+  z-index: 5;
+  margin: var(--space-4);
+  width: var(--control-h);
+  height: var(--control-h);
+  display: grid;
+  place-items: center;
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink-mute);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.12s;
+}
+.work__reveal:hover { opacity: 1; color: var(--chrome-ink); }
+
+/* Hidden from sight and from the layout, but still clickable by script — a
+   file input's only real use. `display: none` would work too; this keeps it
+   focusable for a keyboard user who tabs into the ribbon. */
+.u-hidden {
+  position: absolute;
+  width: 1px;  /* token-exempt: the one-pixel box is the accessibility idiom for hiding an element from sight while leaving it focusable */
+  height: 1px;  /* token-exempt: as above */
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * A padlock, as a mask — the one shape the editor needs that is not an icon in
+ * a button. Inline SVG in a custom property so it takes the colour of whatever
+ * uses it and needs no file, no request and no <img>.
+ */
+:root {
+  --mask-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm0 2a3 3 0 0 1 3 3v3H9V7a3 3 0 0 1 3-3Z'/%3E%3C/svg%3E");
 }

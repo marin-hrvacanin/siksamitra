@@ -23,6 +23,30 @@ export type {
   ChantPackage, ChantPackageManifest, PackOptions,
 } from './package.js';
 
+/*
+ * ── the OLD document: `.smdoc` v1 ──────────────────────────────────────────
+ *
+ * Exported because back compatibility is a promise, and a promise nothing can
+ * call is not kept: the reader existed, was tested by hand against the owner's
+ * own Library, and was reachable from no application code at all — so `Open`
+ * on a years-old file would have thrown.
+ */
+export {
+  SMDOC_LIMITS, SmdocError, SmdocHtmlError, importSmdoc, parseSmdocContent,
+  readSmdoc, smdocFlavour, tokenizeSmdocHtml,
+} from './smdoc/index.js';
+export type {
+  ImportOptions, ImportResult, SmdocBlock, SmdocFile, SmdocFlavour, SmdocInflate,
+  SmdocLine, SmdocMark, SmdocNode,
+} from './smdoc/index.js';
+
+// ── the native document: `.smdoc` v2, the zip container ─────────────────────
+export {
+  DOCUMENT_FORMAT, DOCUMENT_VERSION, documentFlavour, fattenDocument, leanDocument,
+  packDocument, unpackDocument, verifyDocumentFile,
+} from './document.js';
+export type { DocumentFile, DocumentManifest, SaveOptions } from './document.js';
+
 export {
   CHAR_STYLE_BY_ID, PARA_STYLE_BY_ID, REFERENCE_COUNTS, SVARA_BY_CHAR, SVARA_CHAR,
   WORD_CHAR_STYLES, WORD_PARA_STYLES, paraRoleOf, roleOf,

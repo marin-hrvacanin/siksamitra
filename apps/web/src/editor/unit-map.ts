@@ -45,9 +45,39 @@ export function hitAt(target: EventTarget | null, x: number): UnitHit | null {
   const sectionId = verse.dataset['section'] ?? '';
   const attested = verse.dataset['attested'] === '1';
   if (el === null) {
-    // Clicked a verse but not a letter — the gutter, or past the end of a
-    // line. The caret goes to the start of the verse rather than nowhere.
-    return { verseId, sectionId, unit: 0, span: 1, after: false, attested };
+    /*
+     * A click inside a verse but not on a letter: past the end of a line, in
+     * the gutter, or on the verse number. The LINE it landed in decides where
+     * the caret goes — it used to go to the start of the verse, which on a
+     * four-line verse moved the caret three lines away from the click.
+     */
+    const pada = (target as Element).closest<HTMLElement>('.pada');
+    const letters = [...(pada ?? verse).querySelectorAll<HTMLElement>('[data-u]')];
+    const last = letters[letters.length - 1];
+    if (last === undefined) {
+      return { verseId, sectionId, unit: 0, span: 1, after: false, attested };
+    }
+    // Past the end of the line it hit, unless the click was left of its text.
+    const box = last.getBoundingClientRect();
+    const first = letters[0]!.getBoundingClientRect();
+    if (x < first.left) {
+      return {
+        verseId,
+        sectionId,
+        unit: Number(letters[0]!.dataset['u'] ?? '0'),
+        span: 1,
+        after: false,
+        attested,
+      };
+    }
+    return {
+      verseId,
+      sectionId,
+      unit: Number(last.dataset['u'] ?? '0'),
+      span: Number(last.dataset['un'] ?? '1'),
+      after: x >= box.left,
+      attested,
+    };
   }
 
   const box = el.getBoundingClientRect();
@@ -108,14 +138,24 @@ export function unitOfAddress(
   srcMap: SrcMap,
   at: CaretAddress,
 ): { unit: number; after: boolean } | null {
-  let last: { unit: number; after: boolean } | null = null;
+  let previous: { unit: number; after: boolean } | null = null;
   for (const [unit, span] of srcMap.units.entries()) {
     if (span.line !== at.line) continue;
-    if (at.column <= span.start) return { unit, after: false };
-    if (at.column < span.end) return { unit, after: false };
-    last = { unit, after: true };
+    // Inside this letter: the caret goes before it.
+    if (at.column >= span.start && at.column < span.end) return { unit, after: false };
+    /*
+     * BEFORE this letter but after the previous one — the caret is in a gap: a
+     * space, a daṇḍa, a pause, none of which contributes a unit. It belongs
+     * AFTER the letter it follows, not before the letter it precedes. Drawn
+     * the other way, the caret sat past the space and did not appear to move
+     * when you crossed one, so you could not tell what Backspace would take.
+     */
+    if (at.column < span.start) {
+      return previous ?? { unit, after: false };
+    }
+    previous = { unit, after: true };
   }
-  return last;
+  return previous;
 }
 
 /** The rectangle to draw a caret in, relative to a scrolling container. */
@@ -125,12 +165,40 @@ export interface CaretBox {
   height: number;
 }
 
+/**
+ * The element for one verse, scoped and addressable.
+ *
+ * TWO THINGS THIS GUARDS. The paged view renders the document TWICE — once
+ * off-screen at `left: -99999px` to measure block heights, and once into the
+ * pages — and the probe comes first in document order, so an unscoped
+ * `querySelector` always found it: the caret was drawn at x = −99985 and the
+ * selection highlight never appeared at all. And a verse id is only unique
+ * within a section, so the section is part of the address.
+ */
+function verseElement(
+  scroller: HTMLElement,
+  sectionId: string,
+  verseId: string,
+): HTMLElement | null {
+  const scope = sectionId === '' ? '' : `[data-section="${cssEscape(sectionId)}"]`;
+  const all = scroller.querySelectorAll<HTMLElement>(
+    `${scope}[data-verse="${cssEscape(verseId)}"]`,
+  );
+  for (const el of all) {
+    // Never the measuring probe. It is laid out (it has to be, or every height
+    // comes back zero) and it comes first in document order.
+    if (el.closest('.paged__probe') === null) return el;
+  }
+  return null;
+}
+
 export function caretBox(
   scroller: HTMLElement,
+  sectionId: string,
   verseId: string,
   place: { unit: number; after: boolean } | null,
 ): CaretBox | null {
-  const verse = scroller.querySelector<HTMLElement>(`[data-verse="${cssEscape(verseId)}"]`);
+  const verse = verseElement(scroller, sectionId, verseId);
   if (verse === null) return null;
 
   const el = place === null
@@ -174,15 +242,14 @@ function cssEscape(value: string): string {
  *  actually in range — bounded by the selection, not by the document. */
 export function paintSelection(
   scroller: HTMLElement,
+  sectionId: string,
   ranges: readonly { verseId: string; from: number; to: number }[],
 ): void {
   for (const el of scroller.querySelectorAll<HTMLElement>('.is-selected')) {
     el.classList.remove('is-selected');
   }
   for (const range of ranges) {
-    const verse = scroller.querySelector<HTMLElement>(
-      `[data-verse="${cssEscape(range.verseId)}"]`,
-    );
+    const verse = verseElement(scroller, sectionId, range.verseId);
     if (verse === null) continue;
     for (const el of verse.querySelectorAll<HTMLElement>('[data-u]')) {
       const unit = Number(el.dataset['u'] ?? '-1');

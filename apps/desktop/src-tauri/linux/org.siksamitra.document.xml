@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The MIME type, for Linux desktops.
+
+  Two things have to be true for a `.smdoc` to look like a document in a file
+  manager: the type must EXIST (this file, installed into
+  `/usr/share/mime/packages`), and it must have an icon (the PNGs installed
+  into the hicolor theme under `mimetypes/`, named after the type with the
+  slash replaced by a dash — that naming is the freedesktop convention, not a
+  choice).
+
+  Tauri's `.desktop` entry says the application HANDLES this type; it does not
+  declare the type or give it a picture. Both are this file's job.
+
+  The magic is the zip signature plus our own manifest entry: a `.smdoc` v2 is
+  a zip whose first entry is `manifest.json`. v1 files (`SMDI`, `SMDC`, bare
+  JSON) match by extension alone, which is all a file manager needs.
+-->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/vnd.siksamitra.document+zip">
+    <comment>śikṣāmitra document</comment>
+    <comment xml:lang="hr">śikṣāmitra dokument</comment>
+    <generic-icon name="x-office-document"/>
+    <sub-class-of type="application/zip"/>
+    <glob pattern="*.smdoc"/>
+    <magic priority="60">
+      <match type="string" value="PK\003\004" offset="0"/>
+      <match type="string" value="SMDI" offset="0"/>
+      <match type="string" value="SMDC" offset="0"/>
+    </magic>
+  </mime-type>
+
+  <mime-type type="application/vnd.siksamitra.chant+zip">
+    <comment>śikṣāmitra chant package</comment>
+    <generic-icon name="x-office-document"/>
+    <sub-class-of type="application/zip"/>
+    <glob pattern="*.vuchant"/>
+  </mime-type>
+</mime-info>

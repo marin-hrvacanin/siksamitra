@@ -1,0 +1,131 @@
+/**
+ * The navigation panel.
+ *
+ * A tool panel, not a page: dense rows, one hairline against the document, and
+ * a scrollbar of its own. It sits between the shell and the paper, so it takes
+ * the CHROME axis — the document's theme must not be able to restyle a
+ * navigator, and a dim shell around a bright page has to keep its panels dim.
+ */
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--chrome-raise);
+  border-inline-end: var(--border-hair) solid var(--chrome-line);
+  overflow: hidden;
+}
+
+.nav__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--toolbar-h);
+  padding-inline: var(--space-4);
+  border-bottom: var(--border-hair) solid var(--chrome-line-soft);
+  color: var(--chrome-ink-mute);
+  flex: 0 0 auto;
+}
+.nav__title {
+  margin: 0;
+  font-size: var(--text-ui);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--chrome-ink-soft);
+  flex: 1 1 auto;
+}
+.nav__close {
+  border: 0;
+  background: transparent;
+  color: var(--chrome-ink-mute);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: var(--space-1);
+  border-radius: var(--chrome-radius);
+}
+.nav__close:hover { background: var(--chrome-sunk); color: var(--chrome-ink); }
+
+.nav__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-block: var(--space-2);
+}
+.nav__empty {
+  margin: var(--space-5);
+  color: var(--chrome-ink-mute);
+}
+
+/* ── a row ───────────────────────────────────────────────────────────────── */
+.nav__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--control-h);
+}
+.nav__row:hover { background: var(--chrome-sunk); }
+
+/*
+ * The row you are looking at, marked with a bar in the margin rather than a
+ * filled background: the panel is beside a document being proofed, and a block
+ * of colour down the side pulls the eye off the text.
+ */
+.nav__row.is-here {
+  background: color-mix(in srgb, var(--chrome-accent) 10%, transparent);
+  box-shadow: inset var(--border-thick) 0 0 0 var(--chrome-accent);
+}
+
+.nav__twist {
+  width: var(--control-h);
+  height: var(--control-h);
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--chrome-ink-mute);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.nav__twist:hover { color: var(--chrome-ink); }
+.nav__caret { transition: transform 0.12s; }
+.nav__caret.is-open { transform: rotate(90deg); }
+
+.nav__go {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: start;
+  font: inherit;
+  color: var(--chrome-ink-soft);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-3) var(--space-1) 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav__go:hover { color: var(--chrome-ink); }
+
+/* A verse row is its number and its opening words: the number for the eye to
+   run down, the words for a person to recognise. */
+.nav__n {
+  display: inline-block;
+  min-width: 1.6em;
+  margin-inline-end: var(--space-3);
+  text-align: end;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--chrome-ink-mute);
+}
+.nav__text { color: inherit; }
+
+/* The levels read as levels: a part is the strongest, a verse the quietest,
+   and a verse number is tabular so a column of them lines up. */
+.nav__row--part .nav__go { color: var(--chrome-ink); font-weight: 600; }
+.nav__row--section .nav__go { color: var(--chrome-ink); }
+.nav__row--verse .nav__go {
+  color: var(--chrome-ink-mute);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.nav__row--verse { min-height: var(--status-h); }

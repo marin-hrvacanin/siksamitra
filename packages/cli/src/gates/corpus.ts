@@ -5,8 +5,26 @@
  * compares the result with what the document already says — the syllable text
  * in each verified script, and every mark on every letter.
  *
- * The numbers below are a RATCHET, not a target. They are what the engine
- * reproduces today; a change may raise them and may not lower them. Where a
+ * THE RULES ALONE. No overrides are applied: an override is a record of a
+ * disagreement between the file and these rules, so feeding them back in and
+ * counting the result as "reproduced" would measure nothing. What a verse with
+ * a source layer reproduces WITH its corrections is `check:source`, which is a
+ * test rather than a ratchet because the answer there must be all of them.
+ *
+ * The numbers are a RATCHET, not a target. They are what the engine reproduces
+ * today; a change may raise them and may not lower them. The baseline file is
+ * a flat map of slug to row and carries no prose, so the history of the number
+ * lives here:
+ *
+ *   97.52%  (2026-09-07) what the rules alone reproduce, each document under
+ *           its own declared profile. DOWN from 98.11%, deliberately: that
+ *           figure was measured with the override records `sm attach-src` had
+ *           written into the corpus in the same commit, and 117 of its 172
+ *           newly-matched syllables came from those records. A gate that
+ *           injects the engine's own list of disagreements and then counts the
+ *           result as agreement measures nothing.
+ *   98.11%  (2026-09-07) with overrides applied — withdrawn, see above.
+ *   96.79%  before the documents declared their own profiles. Where a
  * document falls short, the shortfall is named — several are the corpus
  * disagreeing with itself, and one is an unresolved question waiting on the
  * owner (00-OVERVIEW §5.6).
@@ -120,7 +138,18 @@ for (const [slug, got] of Object.entries(measured)) {
   }
   // The ratchet: fewer syllables reproduced, or fewer syllables compared at
   // all, both mean the engine now does less with this document than it did.
-  const worse = got.matched < want.matched || got.syllables < want.syllables;
+  /*
+ * A RATCHET THAT POINTS THE RIGHT WAY.
+ *
+ * `syllables` is the length of the alignment, so it FALLS when the engine
+ * stops inserting syllables the document does not have — an unambiguous
+ * improvement. Failing on that forced a re-record to accept a fix, which reset
+ * the `matched` ratchet at the same time: a mechanism that required baseline
+ * laundering in order to improve. What may not fall is the number matched, and
+ * the proportion.
+ */
+const ratio = (r: Row): number => (r.syllables === 0 ? 1 : r.matched / r.syllables);
+const worse = got.matched < want.matched || ratio(got) < ratio(want) - 1e-9;
   console.log(`${worse ? 'FAIL' : 'ok  '} ${slug.padEnd(26)} ${pct.toFixed(2).padStart(6)}%`
     + `  ${got.matched}/${got.syllables}`
     + (got.matched === want.matched && got.syllables === want.syllables
@@ -134,7 +163,7 @@ for (const slug of Object.keys(baseline)) {
 
 console.log(`\n     ${matched} of ${syllables} syllables across ${files.length} documents`
   + ` (${((matched / syllables) * 100).toFixed(2)}%)`);
-console.log('     one profile for all of them — `vu-chant profile <doc>` finds each document\'s own');
+console.log('     each document under its OWN declared profile, with NO overrides applied');
 
 console.log(`\n${fails.length === 0 ? 'ALL GATES PASS' : `${fails.length} FAILING:`}`);
 for (const f of fails) console.log(`  ✗ ${f}`);

@@ -11,6 +11,7 @@
  * a resolved ink, and a contrast between them.
  */
 import puppeteer from 'puppeteer-core';
+import { UI } from './_ui.mjs';
 
 const b = await puppeteer.launch({ executablePath: process.env.CHROME, headless: 'shell', args: ['--no-sandbox'] });
 const p = await b.newPage();
@@ -24,7 +25,7 @@ const lum = (rgb) => {
   return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(bl);
 };
 
-const result = await p.evaluate(async () => {
+const result = await p.evaluate(async (sel) => {
   const { CHROME_IDS, DOCUMENT_IDS, MODES } = await import('/@fs/D:/Projects/siksamitra/packages/tokens/generated/tokens.ts');
   const app = document.querySelector('.app');
   const canvas = document.querySelector('.canvas');
@@ -35,10 +36,13 @@ const result = await p.evaluate(async () => {
         app.setAttribute('data-chrome', chrome);
         app.setAttribute('data-mode', mode);
         canvas.setAttribute('data-doc', doc);
-        // `.rb` is the ribbon. This gate asked for `.tb`, which the toolbar
-        // stopped being when the responsive ribbon replaced it — so it threw
-        // on its first line and had never actually run since.
-        const tb = getComputedStyle(document.querySelector('.rb'));
+        /*
+          * `.rbn` is the ribbon. This gate has now asked for three different
+          * class names over three rebuilds of the toolbar — `.tb`, then `.rb`,
+          * now this — which is exactly why the selectors live in `_ui.mjs` and
+          * this one is read from there rather than written again.
+          */
+        const tb = getComputedStyle(document.querySelector(sel.ribbon));
         const page = document.querySelector('.flow__column') ?? canvas;
         const pg = getComputedStyle(page);
         out.push({
@@ -51,7 +55,7 @@ const result = await p.evaluate(async () => {
     }
   }
   return out;
-});
+}, UI);
 
 let bad = 0;
 const transparent = (c) => c === 'rgba(0, 0, 0, 0)' || c === 'transparent' || c === '';

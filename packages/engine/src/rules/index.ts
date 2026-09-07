@@ -132,6 +132,8 @@ export const STAGE_ORDER = [
 export * from './types.js';
 export { samePoint, collectSamyukta, selectHoldingComponent, holdingVowel } from './holdings.js';
 export {
-  SVARA_PLANS, applySvaraPlan, applyAttestedSvara, parsePlan, formatPlan, segments,
+  SVARA_PLANS, applySvaraPlan, parsePlan, formatPlan, segments,
 } from './svara.js';
 export type { SvaraPlan, SvaraPosition, Segment } from './svara.js';
+/** The transcription half, split out when `svara.ts` passed 400 lines. */
+export { applyAttestedSvara, witnessLine } from './witness.js';

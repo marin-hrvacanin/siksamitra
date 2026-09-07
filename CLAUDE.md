@@ -38,6 +38,11 @@ switch statement — see *Extension points* below.
 | touching the look | `openspec/.../specs/design-system/spec.md`, then `packages/tokens/src/` |
 | working on views, pages, zoom | `openspec/.../specs/render/spec.md` + `packages/layout/src/` |
 | working on the editor | `packages/edit/src/index.ts` — the layering is in its header — then `apps/web/src/editor/` |
+| working on the ribbon, tabs or a control | `apps/web/src/shell/Ribbon.tsx` (the shape), `Toolbar.tsx` (what is in it), `useOverflow.ts` (what happens when it does not fit) |
+| working on the window itself | `apps/web/src/shell/host.ts` (which host, which platform), `TitleBar.tsx`, and `apps/desktop/src-tauri/tauri*.conf.json` |
+| adding or changing an icon | `tools/icons/manifest.mjs` — our name → the library's — then `npm run icons` |
+| working on the page's type | `packages/tokens/src/document-type.ts` (the scale, and which of our elements takes which of HIS styles) then `apps/web/src/styles/document.css` |
+| working on the navigation panel | `apps/web/src/shell/NavPanel.tsx` — the tree is `blockRefs`, not a second model |
 | wondering why a document cannot be edited | `docs/INTERCHANGE.md` §9.7 (rule zero) and `packages/cli/src/attach-src.ts` |
 | adding a test | [`tests/README.md`](tests/README.md) — which tier, and what each may *not* do |
 | building an installer | [`docs/PACKAGING.md`](docs/PACKAGING.md) |
@@ -69,10 +74,26 @@ packages/
   storage/   the ChantStore interface + a local file store.
   cli/       the headless SDK, the CLI, and all the gates.
 apps/
-  web/       the application. Vite + React. `src/editor/` is the surface: a
-             caret over drawn text, nothing contenteditable.
+  web/       the application. Vite + React.
+               src/shell/    the window: our own title bar (per platform), the
+                             ribbon (tabs, groups, collapsing), the navigation
+                             panel, the status bar, the file actions, and
+                             `host.ts` — the ONE module that knows whether this
+                             is a browser or the desktop.
+               src/editor/   the surface: a caret over drawn text, nothing
+                             contenteditable.
+               src/views/    one renderer, three views (flow, paged, web).
+               src/ui/       `Icon.tsx` + the generated icon table.
+               src/styles/   one stylesheet per concern; `document.css` is the
+                             PAGE and nothing else touches it.
   desktop/   the Tauri 2 shell. Four commands, knows nothing about documents.
+             The window is frameless (`decorations: false`) so the title bar is
+             ours; `tauri.macos.conf.json` gives macOS back its real traffic
+             lights over an overlay bar.
 assets/fonts/  11 vendored OFL families. Committed on purpose.
+assets/icons/  55 icons: Material Symbols Rounded (Apache-2.0), our own
+             marking notation, and the window caption glyphs. Generated —
+             see `tools/icons/`.
 corpus/    11 verified documents + the interchange fixtures. What the gates
            measure against.
 tools/     the gates, the font pipeline, the design preview.
@@ -133,7 +154,8 @@ that is true today:
 | a page size | `packages/layout/src/geometry.ts` |
 | a view mode | `packages/layout/src/view.ts` |
 | a command (button + shortcut together) | `apps/web/src/shell/commands.ts` |
-| a ribbon group | the array in `apps/web/src/shell/Toolbar.tsx` |
+| a ribbon group, or a tab | the arrays in `apps/web/src/shell/Toolbar.tsx` |
+| an icon | `tools/icons/manifest.mjs`, then `npm run icons` |
 | a token type's rendering | `apps/web/src/views/token-renderers.tsx` |
 | an editing key or a marking button | `apps/web/src/editor/keymap.ts` — one table, buttons render from it |
 | an editing command | `EditCommand` in `packages/edit/src/session.ts` |
@@ -158,18 +180,37 @@ npm run fonts              # re-vendor the fonts
 npm run spec               # the OpenSpec CLI
 ```
 
-The gates, individually: `check:modules` `check:tokens` `check:literals`
-`check:fixtures` `check:conformance` `check:transliteration` `check:lossless`
-`check:engine` `check:fonts` `check:web`.
+The gates in `npm run check`: `check:web` `check:icons` `check:modules`
+`check:tokens` `check:literals` `check:fixtures` `check:conformance`
+`check:source` `check:transliteration` `check:lossless` `check:engine`.
 
 `sm attach-src <doc.json>` gives a document its source layer back where a
 derivation reproduces it exactly — which is what makes it editable at all.
 
-Browser-driven checks need a Chromium: `CHROME=<path> node tools/<name>.mjs`.
-`tools/theme-matrix.mjs`, `tools/responsive.mjs`, `tools/smoke.mjs` and
-`tools/edit-smoke.mjs` all need `npm run dev` running. On this machine the
-Chromium is Edge:
+**The browser gates are not in `npm run check`**, because they need a running
+dev server and a Chromium. Run them after any change to the shell, the
+stylesheets or the tokens — they are the only things that check what a person
+actually sees:
+
+```bash
+npm run dev                     # in another terminal, first
+CHROME=<path> npm run check:document    # the page against his .docx, in points
+CHROME=<path> npm run check:responsive  # 15 widths x 3 tabs: nothing clipped
+CHROME=<path> npm run check:themes      # 84 theme combinations resolve
+CHROME=<path> npm run check:edit        # 17 editing checks, end to end
+CHROME=<path> node tools/walkthrough.mjs   # 24 screenshots, to LOOK at
+```
+
+`tools/_ui.mjs` holds the selectors and gestures those tools use — one place,
+because rebuilding the toolbar used to break six tools silently. A
+`querySelector` that finds nothing does not throw.
+
+On this machine the Chromium is Edge:
 `CHROME="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"`.
+
+`?chrome=native&os=macos|windows|linux` draws the desktop title bar in a plain
+browser, so the per-platform window chrome can be seen without three machines
+(and without a Rust toolchain).
 
 ---
 

@@ -10,13 +10,13 @@
  * which is what makes the two views feel like one document.
  */
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
-import { flowColumnWidthPx, type PageGeometry } from '@siksamitra/layout';
+import { px, type PageGeometry } from '@siksamitra/layout';
 import { DocumentBlocks } from './DocumentBlocks.js';
 
 export function FlowView(
-  { doc, script, showMarks, page, zoom, addressable = false }: {
+  { doc, script, showMarks, page, zoom, addressable = false, web = false }: {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
@@ -24,13 +24,61 @@ export function FlowView(
     zoom: number;
     /** The editor is drawing: letters carry `data-u` so a click finds them. */
     addressable?: boolean;
+    /**
+     * NO PAGE — the web shape.
+     *
+     * The same document, laid out as HTML: no sheet, no paper margins, no page
+     * width. It fills the window with a reading measure, which is what a web
+     * page is and what the third view mode means.
+     */
+    web?: boolean;
   },
 ): ReactNode {
+  if (web) {
+    return (
+      <div className="flow flow--web">
+        <div
+          className="doc web__column"
+          style={{ ...({ '--doc-zoom': String(zoom) } as CSSProperties) }}
+        >
+          <DocumentBlocks
+            doc={doc}
+            script={script}
+            showMarks={showMarks}
+            addressable={addressable}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flow">
       <div
-        className="flow__column chant-marks"
-        style={{ width: `${flowColumnWidthPx(page, zoom)}px`, fontSize: `${zoom}rem` }}
+        className="doc flow__column"
+        /*
+         * Zoom is a MULTIPLIER the document tokens read (`--doc-zoom`), not a
+         * font-size on the column: as a font-size it scaled only the values
+         * that happened to be in `em`, so the paper grew and the mantra line
+         * stayed put. As a custom property every size, leading and indent on
+         * the page moves together, because each token is `calc(x * zoom)`.
+         */
+        /*
+         * The paper is the PAGE's width with the PAGE's margins as padding, so
+         * the column inside it is the same measure as a page's — switching to
+         * Pages reflows nothing, and a verse number has a margin to sit in.
+         * It used to be the bare content box with `padding: var(--doc-pad)`, a
+         * token no longer emitted by anything: the padding resolved to zero and
+         * every line of the document touched the edge of the sheet.
+         */
+        style={{
+          width: `${px(page.width, zoom)}px`,
+          paddingTop: `${px(page.margins.top, zoom)}px`,
+          paddingRight: `${px(page.margins.right, zoom)}px`,
+          paddingBottom: `${px(page.margins.bottom, zoom)}px`,
+          paddingLeft: `${px(page.margins.left, zoom)}px`,
+          ...({ '--doc-zoom': String(zoom) } as CSSProperties),
+        }}
       >
         <DocumentBlocks
           doc={doc}

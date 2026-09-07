@@ -40,6 +40,20 @@ export interface ChromeMode {
   /** Text ON the accent. Contrast is checked by the theme gate. */
   readonly accentOn: string;
   readonly danger: string;
+  /**
+   * THE WINDOW'S TITLE BAR — its own colour, and the program's face.
+   *
+   * The bar we draw instead of the operating system's caption (see
+   * `TitleBar.tsx`). A SURFACE, one step from the ribbon — not a brand banner:
+   * the accent is for the thing being acted on, and a whole bar of it makes
+   * every window in the program shout its own name. (It was a deep bronze
+   * once. It was wrong.)
+   *
+   * `titleInk` is the text on it; the theme gate checks the contrast between
+   * the two like any other pair.
+   */
+  readonly title: string;
+  readonly titleInk: string;
 }
 
 export interface ChromeTheme {
@@ -73,6 +87,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#2f2c27', inkSoft: '#6b665d', inkMute: '#a29c92',
       accent: '#c8781f', accentHover: '#a86217', accentOn: '#fffdf9',
       danger: '#a8442f',
+      title: '#eceae5', titleInk: '#2f2c27',
     },
     dark: {
       bg: '#1a1917', raise: '#211f1d', sunk: '#151412', desk: '#131211',
@@ -80,6 +95,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#eae6df', inkSoft: '#a8a29a', inkMute: '#736e67',
       accent: '#e2a44f', accentHover: '#f0bd6e', accentOn: '#1a1917',
       danger: '#e08069',
+      title: '#191817', titleInk: '#e8e3d9',
     },
   },
   {
@@ -96,6 +112,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#1b1b1f', inkSoft: '#5c5c66', inkMute: '#9898a0',
       accent: '#b8813d', accentHover: '#9a6b2f', accentOn: '#ffffff',
       danger: '#c0392b',
+      title: '#e6e6ea', titleInk: '#1b1b1f',
     },
     dark: {
       bg: '#111113', raise: '#1c1c1f', sunk: '#0c0c0e', desk: '#0a0a0b',
@@ -103,6 +120,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#e8e8ec', inkSoft: '#a0a0a8', inkMute: '#666670',
       accent: '#d4a574', accentHover: '#e6b886', accentOn: '#1b1b1f',
       danger: '#f87171',
+      title: '#161618', titleInk: '#e8e8ec',
     },
   },
   {
@@ -119,6 +137,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#1d1f22', inkSoft: '#5b6068', inkMute: '#949aa2',
       accent: '#c8781f', accentHover: '#a86217', accentOn: '#ffffff',
       danger: '#b3402c',
+      title: '#e9ebee', titleInk: '#1d1f22',
     },
     dark: {
       bg: '#16181a', raise: '#1d2022', sunk: '#111314', desk: '#101112',
@@ -126,6 +145,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#e7e9ec', inkSoft: '#a3a9b0', inkMute: '#6e747b',
       accent: '#e2a44f', accentHover: '#f0bd6e', accentOn: '#16181a',
       danger: '#e08069',
+      title: '#171a1c', titleInk: '#e6e9ec',
     },
   },
   {
@@ -142,6 +162,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#2c2419', inkSoft: '#5f5445', inkMute: '#95897a',
       accent: '#a2542a', accentHover: '#8a4522', accentOn: '#fdfbf7',
       danger: '#a63a2f',
+      title: '#ece5d9', titleInk: '#2c2419',
     },
     dark: {
       bg: '#1a1611', raise: '#241f18', sunk: '#12100c', desk: '#0e0c09',
@@ -149,6 +170,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#ece5d8', inkSoft: '#b3a894', inkMute: '#7b7263',
       accent: '#d98b5a', accentHover: '#e8a273', accentOn: '#1a1611',
       danger: '#e0705f',
+      title: '#1b1712', titleInk: '#efe4d6',
     },
   },
   {
@@ -165,6 +187,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#16202a', inkSoft: '#4a5a69', inkMute: '#8a99a8',
       accent: '#0f766e', accentHover: '#0c5f59', accentOn: '#ffffff',
       danger: '#b91c1c',
+      title: '#e6eaee', titleInk: '#16202a',
     },
     dark: {
       bg: '#0f1418', raise: '#171e24', sunk: '#0a0e11', desk: '#080b0d',
@@ -172,6 +195,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#e6edf3', inkSoft: '#9fb0be', inkMute: '#6b7c8a',
       accent: '#2dd4bf', accentHover: '#5eead4', accentOn: '#0f1418',
       danger: '#f87171',
+      title: '#121820', titleInk: '#dfe7ee',
     },
   },
   {
@@ -188,6 +212,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#eceef1', inkSoft: '#b3b9c2', inkMute: '#7d848e',
       accent: '#e8a33d', accentHover: '#f2b357', accentOn: '#22262c',
       danger: '#f08a7a',
+      title: '#2b3038', titleInk: '#eceef1',
     },
     dark: {
       bg: '#15171b', raise: '#1e2126', sunk: '#0e1013', desk: '#090a0c',
@@ -195,6 +220,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       ink: '#e7e9ec', inkSoft: '#a5abb4', inkMute: '#6e747d',
       accent: '#e8a33d', accentHover: '#f2b357', accentOn: '#15171b',
       danger: '#f87171',
+      title: '#131619', titleInk: '#eceef1',
     },
   },
 ];

@@ -37,3 +37,12 @@
   max-width: 40%;
 }
 .status__warn { color: var(--chrome-accent); }
+
+/* What just happened: an open, an export, a refusal. Quiet, and never a dialog. */
+.status__note {
+  color: var(--chrome-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40%;
+}

@@ -36,6 +36,14 @@ export interface Appearance {
   readonly setDocument: (id: string) => void;
   readonly setMode: (mode: Mode) => void;
   readonly setDensity: (id: string) => void;
+  /**
+   * Back to what the program starts with.
+   *
+   * Six instruments times seven pages times three densities times two modes is
+   * 252 combinations. Someone who has tried a dozen needs one way back that
+   * does not require remembering which of the four axes they moved.
+   */
+  readonly reset: () => void;
 }
 
 interface Stored { chrome?: string; document?: string; mode?: Mode; density?: string }
@@ -53,24 +61,32 @@ function read(): Stored {
 const known = (id: string | undefined, choices: readonly { id: string }[], fallback: string) =>
   id !== undefined && choices.some((c) => c.id === id) ? id : fallback;
 
+/**
+ * The appearance the program starts with, for a reader who has stored nothing.
+ *
+ * A function rather than a constant because two of the four answers depend on
+ * the moment: the mode follows the room's own light, and the density follows
+ * whichever instrument is default. It is also what `reset` goes back to, which
+ * is why it had to have a name.
+ */
+function defaults(stored: Stored = {}): Required<Stored> {
+  const chrome = known(stored.chrome, CHROME_CHOICES, DEFAULT_CHROME);
+  return {
+    chrome,
+    document: known(stored.document, DOCUMENT_CHOICES, DEFAULT_DOCUMENT),
+    // No stored mode means follow the room, not a hardcoded default. Dark as
+    // a permanent default is one of the tells of a design nobody chose.
+    mode: stored.mode ?? (typeof matchMedia === 'function'
+      && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+    // Until chosen, follow the chrome theme's own default: a dense palette
+    // wants a dense shell, and asking before anyone has an opinion is a
+    // setting nobody wants.
+    density: stored.density ?? CHROME_DENSITY[chrome] ?? 'regular',
+  };
+}
+
 export function useAppearance(): Appearance {
-  const [state, setState] = useState<Required<Stored>>(() => {
-    const s = read();
-    return {
-      chrome: known(s.chrome, CHROME_CHOICES, DEFAULT_CHROME),
-      document: known(s.document, DOCUMENT_CHOICES, DEFAULT_DOCUMENT),
-      // No stored mode means follow the room, not a hardcoded default. Dark as
-      // a permanent default is one of the tells of a design nobody chose.
-      mode: s.mode ?? (typeof matchMedia === 'function'
-        && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-      // Until chosen, follow the chrome theme's own default: a dense palette
-      // wants a dense shell, and asking before anyone has an opinion is a
-      // setting nobody wants.
-      density: s.density
-        ?? CHROME_DENSITY[known(s.chrome, CHROME_CHOICES, DEFAULT_CHROME)]
-        ?? 'regular',
-    };
-  });
+  const [state, setState] = useState<Required<Stored>>(() => defaults(read()));
 
   useEffect(() => {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* not fatal */ }
@@ -85,5 +101,6 @@ export function useAppearance(): Appearance {
     setChrome: (chrome) => setState((s) => ({ ...s, chrome })),
     setDocument: (document) => setState((s) => ({ ...s, document })),
     setMode: (mode) => setState((s) => ({ ...s, mode })),
+    reset: () => setState(() => defaults()),
   }), [state]);
 }

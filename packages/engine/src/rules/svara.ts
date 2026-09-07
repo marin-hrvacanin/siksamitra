@@ -15,7 +15,6 @@
  * See docs/MARKING-RULES.md §3 and specs/chant-editor/02A-MARKS.md Part D.
  */
 import type { ChantSvara } from '@siksamitra/format';
-import { isVowel, parseLetters } from '../alphabet.js';
 import type { MeterKey } from '../profile.js';
 import type { Elem } from '../lex.js';
 import type { RuleCtx } from './types.js';
@@ -49,13 +48,13 @@ export interface SvaraPlan {
 }
 
 /** The combining marks a plan string may use. */
-const PLAN_MARK: ReadonlyMap<string, ChantSvara> = new Map([
+export const PLAN_MARK: ReadonlyMap<string, ChantSvara> = new Map([
   ['̍', 'svarita'],
   ['̱', 'anudatta'],
   ['̎', 'dirgha-svarita'],
 ]);
 
-const MARK_CHAR: ReadonlyMap<ChantSvara, string> = new Map(
+export const MARK_CHAR: ReadonlyMap<ChantSvara, string> = new Map(
   [...PLAN_MARK.entries()].map(([c, m]) => [m, c]),
 );
 
@@ -293,95 +292,4 @@ export function applySvaraPlan(ctx: RuleCtx, plan: SvaraPlan, opts?: { allowUnve
     });
   }
   return true;
-}
-
-/**
- * Carry accents from an accented witness onto the verse's own word-split.
- *
- * Transcribing combining marks by hand is the one step in the pipeline with no
- * safety net, so this matches NUCLEUS FOR NUCLEUS, per line, and refuses a
- * line whose counts disagree rather than sliding the accents along it. A
- * silent off-by-one here moves every accent in a verse, and the result still
- * looks like a marked text.
- *
- * WHAT THIS DOES AND DOES NOT PROVE. It used to compute the marks and then
- * assign none — a declared feature that nothing implemented, so an attested
- * verse could not be regenerated at all and had to stay frozen. It now
- * assigns them. What that buys is REGENERABILITY: a verse whose witness is
- * stored can be re-derived and get its accents back, so it can be edited. It
- * does not verify the transcription against a printed edition; only a reader
- * with the edition can do that, and `ChantVerseSource.departures` is where
- * such a decision is recorded.
- */
-export function applyAttestedSvara(ctx: RuleCtx, accented: string[]): void {
-  /**
-   * Per line, one slot per nucleus in order; `null` where the witness leaves
-   * the vowel bare, which is udātta and a real outcome rather than an absence.
-   *
-   * A mark belongs to the vowel BEFORE it, so it is written into the slot that
-   * is already open. One before any vowel is a transcription error, not an
-   * accent on nothing, and is dropped here — the count check below is what
-   * then refuses the line.
-   */
-  const perLine: (ChantSvara | null)[][] = accented.map((line) => {
-    const slots: (ChantSvara | null)[] = [];
-    for (const letter of parseLetters(line)) {
-      const mark = PLAN_MARK.get(letter);
-      if (mark !== undefined) {
-        if (slots.length > 0) slots[slots.length - 1] = mark;
-        continue;
-      }
-      if (isVowel(letter)) slots.push(null);
-    }
-    return slots;
-  });
-
-  const nucleiByLine = new Map<number, number[]>();
-  ctx.elems.forEach((e, i) => {
-    if (e.kind !== 'letter' || !e.vowel) return;
-    nucleiByLine.set(e.line, [...(nucleiByLine.get(e.line) ?? []), i]);
-  });
-
-  for (const [line, nuclei] of nucleiByLine) {
-    const marks = perLine[line];
-    if (marks === undefined) continue;
-    if (marks.length !== nuclei.length) {
-      ctx.warn(
-        'svara.witness-mismatch',
-        `line ${line} of the witness has ${marks.length} nuclei but the text has `
-        + `${nuclei.length} — every difference must be a declared decision, so no `
-        + 'accent from this line is applied',
-        nuclei[0],
-      );
-      continue;
-    }
-    nuclei.forEach((elemIndex, k) => {
-      const mark = marks[k] ?? null;
-      const e = ctx.elems[elemIndex]!;
-      if (mark === null) {
-        delete e.svara;
-        return;
-      }
-      e.svara = mark;
-      ctx.trace(elemIndex, `${mark} from the accented witness`, 'svara.attested');
-    });
-  }
-}
-
-/**
- * The accented witness for a verse, from the marks it already carries.
- *
- * The inverse of the pass above, and the reason a shipped document can be
- * given a source layer at all: its accents exist only on its units, so they
- * have to be written back out as text before the text can be the source.
- *
- * One implementation, used by `sm attach-src` and by the round-trip gate.
- */
-export function witnessLine(letters: readonly { c: string; svara?: ChantSvara }[]): string {
-  let out = '';
-  for (const u of letters) {
-    out += u.c;
-    if (u.svara !== undefined) out += MARK_CHAR.get(u.svara) ?? '';
-  }
-  return out;
 }

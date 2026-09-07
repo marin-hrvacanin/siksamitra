@@ -66,6 +66,21 @@ export interface ScoreOptions {
    *  never been checked by the owner, so a disagreement there says nothing
    *  about the engine. */
   tamil?: boolean;
+  /**
+   * Apply the document's hand-placed overrides.
+   *
+   * OFF by default, and that default is the whole point. An override is a
+   * RECORD OF A DISAGREEMENT between the file and these rules — feeding them
+   * back in and then counting the result as "reproduced" measures nothing:
+   * 117 of 172 newly-matched syllables once came from override records written
+   * in the same commit that raised the baseline.
+   *
+   * So this gate asks "what do the RULES reproduce", with no corrections. The
+   * separate question — "does a verse that claims a source layer re-derive
+   * exactly, corrections included" — is `check:source`, and it is a test
+   * rather than a ratchet because the answer must be all of them.
+   */
+  overrides?: boolean;
 }
 
 const SCORED_MARKS = ['hold', 'hg', 'svara', 'change', 'sup', 'candra', 'sbhakti'] as const;
@@ -93,7 +108,22 @@ export function score(doc: ChantDoc, profile: Profile, opts?: ScoreOptions): Sco
   };
 
   for (const { s: section, v } of verses(doc)) {
-    const { lines } = invert(v);
+    /*
+     * THE STORED SOURCE, when the verse has one.
+     *
+     * It used to always re-invert the tokens, which meant the gate never
+     * tested the source layer at all — and once verses started carrying one it
+     * became actively wrong: the reconstructed lines were paired with the
+     * STORED accented witness, two strings built at different times, and the
+     * accents no longer lined up with the letters. 337 of them landed on
+     * letters that never had one, in one document.
+     *
+     * A verse with no source layer still gets the reconstruction: that is the
+     * only input there is for it, and measuring the engine against it is the
+     * whole point of this gate.
+     */
+    const stored = v.src?.lines;
+    const lines = stored !== undefined && stored.length > 0 ? [...stored] : invert(v).lines;
     if (lines.length === 0) continue;
     /*
      * THE DOCUMENT'S OWN PARAMETRIZATION, when it declares one.
@@ -124,7 +154,11 @@ export function score(doc: ChantDoc, profile: Profile, opts?: ScoreOptions): Sco
         ...(v.src?.accented === undefined ? {} : { accented: [...v.src.accented] }),
       },
       forVerse,
-      { verseId: v.id, trace: false, overrides: doc.overrides ?? [] },
+      {
+        verseId: v.id,
+        trace: false,
+        overrides: opts?.overrides === true ? doc.overrides ?? [] : [],
+      },
     );
     const want = v.tokens.filter((t) => t.t === 'syl') as unknown as Syl[];
     const got = d.tokens.filter((t) => t.t === 'syl') as unknown as Syl[];

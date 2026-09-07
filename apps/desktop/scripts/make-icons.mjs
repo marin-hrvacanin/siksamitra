@@ -23,6 +23,17 @@ mkdirSync(OUT, { recursive: true });
 const SOURCE = join(HERE, 'icon.svg');
 const svg = readFileSync(SOURCE);
 
+/*
+ * The DOCUMENT icon — a second source, on purpose.
+ *
+ * Once the program is installed it owns `.smdoc`, and a file manager shows
+ * this on every one of them. It has to read as a FILE at 16px, which the
+ * application's own mark does not: a folder of documents would otherwise look
+ * like a folder of copies of the program.
+ */
+const DOC_SOURCE = join(HERE, 'document-icon.svg');
+const docSvg = readFileSync(DOC_SOURCE);
+
 /** What each platform's bundler looks for. */
 const PNGS = [
   ['32x32.png', 32], ['128x128.png', 128], ['128x128@2x.png', 256],
@@ -49,5 +60,22 @@ writeFileSync(join(OUT, 'icon.ico'), await pngToIco(buffers));
 await sharp(svg, { density: 512 }).resize(1024, 1024).png()
   .toFile(join(OUT, 'icon-1024.png'));
 
+/*
+ * The document icon, in the sizes each platform's association wants:
+ *   Windows  a multi-resolution `.ico`, named in `bundle.fileAssociations`
+ *   Linux    PNGs, installed into the icon theme beside the `.desktop` entry
+ *   macOS    a `.icns`, produced on the Mac that builds the dmg
+ */
+const docIco = await Promise.all(icoSizes.map((s) =>
+  sharp(docSvg, { density: 384 }).resize(s, s).png().toBuffer()));
+writeFileSync(join(OUT, 'document.ico'), await pngToIco(docIco));
+for (const size of [32, 64, 128, 256, 512]) {
+  await sharp(docSvg, { density: 512 }).resize(size, size).png()
+    .toFile(join(OUT, 'document-' + size + '.png'));
+}
+await sharp(docSvg, { density: 512 }).resize(1024, 1024).png()
+  .toFile(join(OUT, 'document-1024.png'));
+
 console.log(`\n  ${PNGS.length} PNGs + icon.ico -> ${OUT}`);
+console.log('  document.ico + 6 document PNGs — the icon a .smdoc file shows');
 console.log('  icon.icns must be produced on macOS: iconutil -c icns icon.iconset\n');

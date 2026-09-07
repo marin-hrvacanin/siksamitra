@@ -61,15 +61,24 @@ export const VIEW_MODES: Readonly<Record<ViewKind, ViewMode>> = {
     // switch back, lose your place, and hunt for the line you just saw.
     editable: true,
   },
+  /**
+   * WEB — the document with no page at all.
+   *
+   * Not "a preview of vedaunion.org": that is an APPEARANCE (the `vu-web`
+   * document theme), and pinning it here meant switching view repainted the
+   * page in someone else's colours, which is not what a view is for. A view
+   * decides the SHAPE — here: no sheet, no margins, no page furniture, the
+   * text filling the window as HTML does — and the appearance stays whatever
+   * the author chose, including the site's own if they want it.
+   */
   web: {
     kind: 'web',
     label: 'Web',
-    purpose: 'As it will read on vedaunion.org.',
+    purpose: 'No page: the text as a web page, filling the window.',
     paginated: false,
-    pinnedTheme: 'vu-web',
-    // Read-only: it is a preview of somewhere else. Editing here would invite
-    // the author to tune the text to a presentation they do not control.
-    editable: false,
+    // Editable like the others. There is nothing about a continuous column
+    // that makes a correction less safe than in flow.
+    editable: true,
   },
 };
 
@@ -80,9 +89,11 @@ export function viewMode(kind: ViewKind): ViewMode {
 }
 
 /**
- * The theme to render in: the mode's pin, else the reader's choice.
+ * The theme to render in.
  *
- * One place, so no surface has to remember that `web` is special.
+ * A view may pin one — none does today. It used to: the web view forced the
+ * site's own theme, so choosing an appearance and then switching view threw
+ * the choice away. The appearance is the author's; the view is the shape.
  */
 export function themeFor(kind: ViewKind, preferred: string): string {
   return VIEW_MODES[kind].pinnedTheme ?? preferred;

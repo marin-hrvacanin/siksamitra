@@ -10,35 +10,49 @@
  * Every line it produces is canonical (`norm`), because the whole override
  * addressing scheme rests on that — see `rebase.ts`.
  *
- * IDENTITY. A verse id is what a recording, a word analysis and an audio
- * segment are keyed to, so a verse that survives an edit must keep its id.
- * Three rules, in order, and between them they cover every case:
+ * IDENTITY IS DECIDED BY THE EDIT'S RANGE, not by comparing text. A verse id
+ * is what a recording, a word analysis and an audio segment are keyed to, so
+ * getting this wrong re-points a recording at unrelated words. The rule is
+ * arithmetic, and it is exact:
  *
- *   1. verses whose text is untouched keep their ids, matched from BOTH ends —
- *      so deleting the first verse of a section does not slide every id up one
- *      and silently re-point four recordings;
- *   2. of the verses the edit actually reached, the FIRST keeps its id, and the
- *      last keeps its id when the edit left more than one verse there. That is
- *      what a person means by joining two verses (the first one survives and
- *      absorbs the second) and by splitting one (the top half is still it);
- *   3. anything left over is new, and anything unclaimed is REPORTED as gone,
- *      so nothing is orphaned quietly.
+ *   a verse the edit did not reach          keeps its id
+ *   a verse the edit reached but did not    keeps its id — the first such
+ *   consume entirely                        verse, and the last of them
+ *   a verse the edit consumed entirely      is gone, and REPORTED as removed
+ *   any block left over                     is a new verse
+ *
+ * "Consumed entirely" is what separates "typed into verse 2" from "deleted
+ * verse 1": both leave one block of text, and only the range says which.
+ *
+ * Text similarity was tried first and it over-claimed: selecting a whole
+ * section and typing three new verses kept all three ids, so three recordings
+ * and three translations silently attached themselves to text that had nothing
+ * to do with them, and `removed` was empty.
  *
  * AN EMPTY VERSE IS ALLOWED. Pressing Enter at the end of a verse has to leave
  * somewhere to type, so this function does not prune them; `pruneEmpty` does,
- * and belongs to the save path rather than to editing.
+ * and belongs to the save path rather than to editing. An empty LINE inside a
+ * verse is a different matter and is not representable — see `splitLine`.
  */
 import { norm } from '@siksamitra/engine';
 import { VERSE_GAP, flatten, type VerseSource } from './caret.js';
-import { alignArrays } from './diff.js';
 
 export interface RangeEdit {
   /** Half-open, in flat-source characters. */
   from: number;
   to: number;
   insert: string;
-  /** Ids for verses a paste creates, in order. Falls back to a derived id. */
+  /** Ids for verses a paste creates, in order. */
   newIds?: readonly string[];
+  /**
+   * Ids already in use ANYWHERE in the document.
+   *
+   * A section does not know the document's other verses, and a minted id that
+   * collides with one in another section is not a cosmetic problem: an
+   * override is addressed `{verse, line, letter}` and applied document-wide, so
+   * a new verse silently inherited another section's hand-placed holding.
+   */
+  taken?: readonly string[];
 }
 
 export interface RangeResult {
@@ -68,8 +82,6 @@ function split(text: string): string[][] {
   });
 }
 
-const textOf = (lines: readonly string[]): string => lines.join('\n');
-
 /** Verses with no text at all. Not an error while editing; not saved either. */
 export const isEmpty = (v: VerseSource): boolean => v.lines.every((l) => l === '');
 
@@ -77,59 +89,110 @@ export const isEmpty = (v: VerseSource): boolean => v.lines.every((l) => l === '
 export const pruneEmpty = (verses: readonly VerseSource[]): VerseSource[] =>
   verses.filter((v) => !isEmpty(v));
 
+/** Each verse's extent in the flat source, INCLUDING the gap that follows it. */
+export function verseExtents(
+  verses: readonly VerseSource[],
+): { id: string; start: number; end: number }[] {
+  const flat = flatten(verses);
+  return verses.map((verse) => {
+    const lines = flat.lineStarts.filter((l) => l.verseId === verse.id);
+    const first = lines[0];
+    const last = lines[lines.length - 1];
+    return {
+      id: verse.id,
+      start: first?.at ?? 0,
+      end: last === undefined ? 0 : last.at + last.length,
+    };
+  });
+}
+
 /**
  * Assign ids to the new blocks. See IDENTITY in the header.
  *
- * Returns the id per new block, plus which old ids nothing claimed.
+ * `from`/`to` are in the OLD flat coordinates, which is what makes this exact:
+ * the edit's range says which verses it reached, and nothing has to be guessed
+ * from the text.
  */
 function identify(
   verses: readonly VerseSource[],
   blocks: readonly string[][],
+  edit: { from: number; to: number },
   offered: readonly string[],
+  taken: readonly string[],
 ): { ids: string[]; removed: string[]; added: string[] } {
-  const matched = alignArrays(verses.map((v) => textOf(v.lines)), blocks.map(textOf));
+  const extents = verseExtents(verses);
+
+  const before = extents.filter((v) => v.end < edit.from);
+  const after = extents.filter((v) => v.start > edit.to);
+  const middle = extents.filter((v) => edit.from <= v.end && edit.to >= v.start);
 
   const ids: (string | undefined)[] = blocks.map(() => undefined);
-  const claimed = new Set<number>();
-  matched.forEach((target, i) => {
-    if (target === null) return;
-    ids[target] = verses[i]!.id;
-    claimed.add(i);
+  const claimed = new Set<string>();
+  const claim = (at: number, id: string): void => {
+    if (at < 0 || at >= ids.length || ids[at] !== undefined) return;
+    ids[at] = id;
+    claimed.add(id);
+  };
+
+  // Untouched verses keep their ids: they are the same text in the same order,
+  // so they are the first N blocks and the last M.
+  const head = Math.min(before.length, blocks.length);
+  before.slice(0, head).forEach((v, i) => claim(i, v.id));
+  const tail = Math.min(after.length, blocks.length - head);
+  after.slice(after.length - tail).forEach((v, i) => {
+    claim(blocks.length - tail + i, v.id);
   });
 
-  // Rule 2. The verses the edit reached, and the blocks that replaced them.
-  const middleOld = verses.map((_, i) => i).filter((i) => !claimed.has(i));
-  const middleNew = blocks.map((_, i) => i).filter((i) => ids[i] === undefined);
+  const free = blocks.map((_, i) => i).filter((i) => ids[i] === undefined);
+  const first = middle[0];
+  const last = middle[middle.length - 1];
 
-  if (middleOld.length > 0 && middleNew.length > 0) {
-    ids[middleNew[0]!] = verses[middleOld[0]!]!.id;
-    claimed.add(middleOld[0]!);
-    if (middleNew.length > 1 && middleOld.length > 1) {
-      const lastOld = middleOld[middleOld.length - 1]!;
-      ids[middleNew[middleNew.length - 1]!] = verses[lastOld]!.id;
-      claimed.add(lastOld);
+  /*
+   * A reached verse keeps its id only if the edit left part of it. A verse the
+   * edit consumed ENTIRELY is gone, and the block in its place belongs to
+   * whatever survived — that is the difference between "typed into verse 2"
+   * and "deleted verse 1", which look identical to a text comparison and gave
+   * the surviving verse its neighbour's id and its neighbour's recording.
+   */
+  if (first !== undefined && free.length > 0) {
+    const partly = edit.from > first.start || edit.to < first.end;
+    if (partly) claim(free[0]!, first.id);
+  }
+  if (last !== undefined && middle.length > 1 && free.length > 0) {
+    const partly = edit.to < last.end || edit.from > last.start;
+    if (partly && !claimed.has(last.id)) {
+      // The LAST free slot, unless the first verse already took it — then this
+      // one is the only surviving verse and the slot is its own.
+      const at = ids[free[free.length - 1]!] === undefined
+        ? free[free.length - 1]!
+        : -1;
+      claim(at, last.id);
     }
   }
 
-  // Rule 3. Fresh ids for what is left, and a report for what nothing claimed.
-  const taken = new Set([...verses.map((v) => v.id), ...ids.filter((x) => x !== undefined)]);
+  // Fresh ids for what is left, and a report for what nothing claimed.
+  const used = new Set<string>([
+    ...taken,
+    ...verses.map((v) => v.id),
+    ...ids.filter((x): x is string => x !== undefined),
+  ]);
   const queue = [...offered];
   const added: string[] = [];
   const final = ids.map((id, i) => {
     if (id !== undefined) return id;
     let next = queue.shift();
-    if (next === undefined || taken.has(next)) {
+    if (next === undefined || used.has(next)) {
       let n = i + 1;
-      do { next = `v-${n}`; n += 1; } while (taken.has(next));
+      do { next = `v-${n}`; n += 1; } while (used.has(next));
     }
-    taken.add(next);
+    used.add(next);
     added.push(next);
     return next;
   });
 
   return {
     ids: final,
-    removed: verses.filter((_, i) => !claimed.has(i)).map((v) => v.id),
+    removed: verses.filter((v) => !claimed.has(v.id)).map((v) => v.id),
     added,
   };
 }
@@ -157,7 +220,9 @@ export function replaceRange(
     split(head + edit.insert).map((lines, i) => ({ id: `p${i}`, lines })),
   ).text.length;
 
-  const { ids, removed, added } = identify(verses, blocks, edit.newIds ?? []);
+  const { ids, removed, added } = identify(
+    verses, blocks, { from, to }, edit.newIds ?? [], edit.taken ?? [],
+  );
   const out: VerseSource[] = blocks.map((lines, i) => ({ id: ids[i]!, lines }));
 
   return { verses: out, caret: Math.min(caret, flatten(out).text.length), removed, added };
@@ -182,6 +247,24 @@ export const splitVerse = (
   ...(newId === undefined ? {} : { newIds: [newId] }),
 });
 
-/** Insert a line break within a verse — a new breath, not a new verse. */
-export const splitLine = (verses: readonly VerseSource[], at: number): RangeResult =>
-  replaceRange(verses, { from: at, to: at, insert: '\n' });
+/**
+ * Insert a line break — a new breath.
+ *
+ * AT A LINE EDGE THIS BREAKS THE VERSE INSTEAD, and that is a consequence of
+ * the encoding rather than a choice: a blank line separates verses, so an
+ * empty line INSIDE a verse cannot be written down. It is also not a thing a
+ * recitation has — a line is a breath, and an empty breath is nothing.
+ *
+ * So Enter between two syllables divides the line, and Enter at either edge of
+ * a line starts a new verse. What it never does is nothing at all, which is
+ * what it did when the empty line it produced was pruned away.
+ */
+export function splitLine(verses: readonly VerseSource[], at: number): RangeResult {
+  const flat = flatten(verses);
+  const edge = flat.lineStarts.some((l) => at === l.at || at === l.at + l.length);
+  return replaceRange(verses, {
+    from: at,
+    to: at,
+    insert: edge ? VERSE_GAP : '\n',
+  });
+}

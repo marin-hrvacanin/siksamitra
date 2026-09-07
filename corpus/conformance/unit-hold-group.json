@@ -27,71 +27,6 @@
       },
       {
         "at": {
-          "letter": 33,
-          "line": 1,
-          "verse": "v-4"
-        },
-        "ch": "h",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 11,
-          "line": 3,
-          "verse": "v-4"
-        },
-        "ch": "ā",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "svara": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 12,
-          "line": 3,
-          "verse": "v-4"
-        },
-        "ch": "m",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "svara": "svarita"
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 22,
-          "line": 3,
-          "verse": "v-4"
-        },
-        "ch": "s",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": "long"
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 23,
-          "line": 3,
-          "verse": "v-4"
-        },
-        "ch": "y",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
           "letter": 18,
           "line": 1,
           "verse": "v-7"
@@ -126,32 +61,6 @@
         "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
         "set": {
           "hold": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 17,
-          "line": 0,
-          "verse": "v-9"
-        },
-        "ch": "i",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "svara": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 18,
-          "line": 0,
-          "verse": "v-9"
-        },
-        "ch": "ś",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "svara": "anudatta"
         },
         "why": "source-witness"
       }
@@ -375,13 +284,13 @@
                 "aśvā̍vatī̱r goma̍tīr na u̱ṣāso̍",
                 "vī̱rava̍tī̱ḥ sada̍mu-cchantu bha̱drāḥ |",
                 "ghṛ̱taṁ duhā̍nā vi̱śvata̱ḥ prapī̍nā",
-                "yū̱yaṁ pā̍ta sva̱stibhi̱ḥ sadā̍ naḥ || 7 ||"
+                "yū̱yaṁ pā̍ta sva̱stibhi̱ḥ sadā̍ naḥ ||7||"
               ],
               "lines": [
                 "aśvāvatīr gomatīr na uṣāso",
                 "vīravatīḥ sadamu-cchantu bhadrāḥ |",
                 "ghṛtaṁ duhānā viśvataḥ prapīnā",
-                "yūyaṁ pāta svastibhiḥ sadā naḥ || 7 ||"
+                "yūyaṁ pāta svastibhiḥ sadā naḥ ||7||"
               ]
             },
             "svaraRegister": "attested",
@@ -798,16 +707,13 @@
                 "t": "danda"
               },
               {
-                "t": "sp"
-              },
-              {
                 "t": "br"
               },
               {
                 "deva": "घृ",
                 "iast": "ghṛ",
                 "t": "syl",
-                "tam": "தந்",
+                "tam": "க்ரு",
                 "tel": "ఘృ",
                 "units": [
                   {
@@ -845,7 +751,7 @@
                 "deva": "दु",
                 "iast": "du",
                 "t": "syl",
-                "tam": "ஹா",
+                "tam": "து",
                 "tel": "దు",
                 "units": [
                   {
@@ -862,7 +768,7 @@
                 "deva": "हा",
                 "iast": "hā",
                 "t": "syl",
-                "tam": "நா",
+                "tam": "ஹா",
                 "tel": "హా",
                 "units": [
                   {
@@ -896,7 +802,7 @@
                 "deva": "वि",
                 "iast": "vi",
                 "t": "syl",
-                "tam": "ஶ்வ",
+                "tam": "வி",
                 "tel": "వి",
                 "units": [
                   {
@@ -912,7 +818,7 @@
                 "deva": "श्व",
                 "iast": "śva",
                 "t": "syl",
-                "tam": "தஃ",
+                "tam": "ஶ்வ",
                 "tel": "శ్వ",
                 "units": [
                   {
@@ -956,7 +862,7 @@
                 "deva": "प्र",
                 "iast": "pra",
                 "t": "syl",
-                "tam": "பீ",
+                "tam": "ப்ர",
                 "tel": "ప్ర",
                 "units": [
                   {
@@ -976,7 +882,7 @@
                 "deva": "पी",
                 "iast": "pī",
                 "t": "syl",
-                "tam": "நா",
+                "tam": "பீ",
                 "tel": "పీ",
                 "units": [
                   {
@@ -1010,7 +916,7 @@
                 "deva": "यू",
                 "iast": "yū",
                 "t": "syl",
-                "tam": "யம்",
+                "tam": "யூ",
                 "tel": "యూ",
                 "units": [
                   {
@@ -1048,7 +954,7 @@
                 "deva": "पा",
                 "iast": "pā",
                 "t": "syl",
-                "tam": "த",
+                "tam": "பா",
                 "tel": "పా",
                 "units": [
                   {
@@ -1084,7 +990,7 @@
                 "deva": "स्व",
                 "iast": "sva",
                 "t": "syl",
-                "tam": "ஸ்தி",
+                "tam": "ஸ்வ",
                 "tel": "స్వ",
                 "units": [
                   {
@@ -1105,7 +1011,7 @@
                 "deva": "स्ति",
                 "iast": "sti",
                 "t": "syl",
-                "tam": "பிஸ்",
+                "tam": "ஸ்தி",
                 "tel": "స్తి",
                 "units": [
                   {
@@ -1148,7 +1054,7 @@
                 "deva": "स",
                 "iast": "sa",
                 "t": "syl",
-                "tam": "தா",
+                "tam": "ஸ",
                 "tel": "స",
                 "units": [
                   {
@@ -1206,14 +1112,8 @@
                 "t": "danda"
               },
               {
-                "t": "sp"
-              },
-              {
                 "s": "7",
                 "t": "num"
-              },
-              {
-                "t": "sp"
               },
               {
                 "s": "॥",
@@ -1553,13 +1453,13 @@
                 "aśvā̍vatī̱r goma̍tīr na u̱ṣāso̍",
                 "vī̱rava̍tī̱ḥ sada̍mu-cchantu bha̱drāḥ |",
                 "ghṛ̱taṁ duhā̍nā vi̱śvata̱ḥ prapī̍nā",
-                "yū̱yaṁ pā̍ta sva̱stibhi̱ḥ sadā̍ naḥ || 7 ||"
+                "yū̱yaṁ pā̍ta sva̱stibhi̱ḥ sadā̍ naḥ ||7||"
               ],
               "lines": [
                 "aśvāvatīr gomatīr na uṣāso",
                 "vīravatīḥ sadamu-cchantu bhadrāḥ |",
                 "ghṛtaṁ duhānā viśvataḥ prapīnā",
-                "yūyaṁ pāta svastibhiḥ sadā naḥ || 7 ||"
+                "yūyaṁ pāta svastibhiḥ sadā naḥ ||7||"
               ]
             },
             "svaraRegister": "attested",
@@ -1975,16 +1875,13 @@
                 "t": "danda"
               },
               {
-                "t": "sp"
-              },
-              {
                 "t": "br"
               },
               {
                 "deva": "घृ",
                 "iast": "ghṛ",
                 "t": "syl",
-                "tam": "தந்",
+                "tam": "க்ரு",
                 "tel": "ఘృ",
                 "units": [
                   {
@@ -2022,7 +1919,7 @@
                 "deva": "दु",
                 "iast": "du",
                 "t": "syl",
-                "tam": "ஹா",
+                "tam": "து",
                 "tel": "దు",
                 "units": [
                   {
@@ -2039,7 +1936,7 @@
                 "deva": "हा",
                 "iast": "hā",
                 "t": "syl",
-                "tam": "நா",
+                "tam": "ஹா",
                 "tel": "హా",
                 "units": [
                   {
@@ -2073,7 +1970,7 @@
                 "deva": "वि",
                 "iast": "vi",
                 "t": "syl",
-                "tam": "ஶ்வ",
+                "tam": "வி",
                 "tel": "వి",
                 "units": [
                   {
@@ -2089,7 +1986,7 @@
                 "deva": "श्व",
                 "iast": "śva",
                 "t": "syl",
-                "tam": "தஃ",
+                "tam": "ஶ்வ",
                 "tel": "శ్వ",
                 "units": [
                   {
@@ -2133,7 +2030,7 @@
                 "deva": "प्र",
                 "iast": "pra",
                 "t": "syl",
-                "tam": "பீ",
+                "tam": "ப்ர",
                 "tel": "ప్ర",
                 "units": [
                   {
@@ -2153,7 +2050,7 @@
                 "deva": "पी",
                 "iast": "pī",
                 "t": "syl",
-                "tam": "நா",
+                "tam": "பீ",
                 "tel": "పీ",
                 "units": [
                   {
@@ -2187,7 +2084,7 @@
                 "deva": "यू",
                 "iast": "yū",
                 "t": "syl",
-                "tam": "யம்",
+                "tam": "யூ",
                 "tel": "యూ",
                 "units": [
                   {
@@ -2225,7 +2122,7 @@
                 "deva": "पा",
                 "iast": "pā",
                 "t": "syl",
-                "tam": "த",
+                "tam": "பா",
                 "tel": "పా",
                 "units": [
                   {
@@ -2261,7 +2158,7 @@
                 "deva": "स्व",
                 "iast": "sva",
                 "t": "syl",
-                "tam": "ஸ்தி",
+                "tam": "ஸ்வ",
                 "tel": "స్వ",
                 "units": [
                   {
@@ -2282,7 +2179,7 @@
                 "deva": "स्ति",
                 "iast": "sti",
                 "t": "syl",
-                "tam": "பிஸ்",
+                "tam": "ஸ்தி",
                 "tel": "స్తి",
                 "units": [
                   {
@@ -2325,7 +2222,7 @@
                 "deva": "स",
                 "iast": "sa",
                 "t": "syl",
-                "tam": "தா",
+                "tam": "ஸ",
                 "tel": "స",
                 "units": [
                   {
@@ -2383,14 +2280,8 @@
                 "t": "danda"
               },
               {
-                "t": "sp"
-              },
-              {
                 "s": "7",
                 "t": "num"
-              },
-              {
-                "t": "sp"
               },
               {
                 "s": "॥",
@@ -2735,10 +2626,10 @@
     "attested": false,
     "syllables": 43,
     "recitation": {
-      "iast": "aśvāvatīr gomatīr na | uṣāso\nvīravatīs sadamu-cchantu bhadrāḥ । \nghṛtan duhānā viśvataḥ prapīnā\nyūyam pāta svastibhis sadā naḥ ॥  ॥",
-      "deva": "अश्वावतीर् गोमतीर् न | उषासो\nवीरवतीस् सदमु-च्छन्तु भद्राः । \nघृतन् दुहाना विश्वतः प्रपीना\nयूयम् पात स्वस्तिभिस् सदा नः ॥  ॥",
-      "tel": "అశ్వావతీర్ గోమతీర్ న | ఉషాసో\nవీరవతీస్ సదము-చ్ఛన్తు భద్రాః । \nఘృతన్ దుహానా విశ్వతః ప్రపీనా\nయూయమ్ పాత స్వస్తిభిస్ సదా నః ॥  ॥",
-      "tam": "அஶ்வாவதீர் கோமதீர் ந | உஷாஸோ\nவீரவதீஸ் ஸதமு-ச்சந்து பத்ராஃ । \nதந்தந் ஹாநாநா ஶ்வதஃதஃ பீநாநா\nயம்யம் தத ஸ்திபிஸ்பிஸ் தாதா நஃ ॥  ॥"
+      "iast": "aśvāvatīr gomatīr na | uṣāso\nvīravatīs sadamu-cchantu bhadrāḥ ।\nghṛtan duhānā viśvataḥ prapīnā\nyūyam pāta svastibhis sadā naḥ ॥॥",
+      "deva": "अश्वावतीर् गोमतीर् न | उषासो\nवीरवतीस् सदमु-च्छन्तु भद्राः ।\nघृतन् दुहाना विश्वतः प्रपीना\nयूयम् पात स्वस्तिभिस् सदा नः ॥॥",
+      "tel": "అశ్వావతీర్ గోమతీర్ న | ఉషాసో\nవీరవతీస్ సదము-చ్ఛన్తు భద్రాః ।\nఘృతన్ దుహానా విశ్వతః ప్రపీనా\nయూయమ్ పాత స్వస్తిభిస్ సదా నః ॥॥",
+      "tam": "அஶ்வாவதீர் கோமதீர் ந | உஷாஸோ\nவீரவதீஸ் ஸதமு-ச்சந்து பத்ராஃ ।\nக்ருதந் துஹாநா விஶ்வதஃ ப்ரபீநா\nயூயம் பாத ஸ்வஸ்திபிஸ் ஸதா நஃ ॥॥"
     },
     "holdings": [
       {

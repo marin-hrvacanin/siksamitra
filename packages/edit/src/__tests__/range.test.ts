@@ -9,7 +9,7 @@
  *     silently.
  */
 import { describe, expect, it } from 'vitest';
-import { flatten, type VerseSource } from '../caret.js';
+import { VERSE_GAP, flatten, type VerseSource } from '../caret.js';
 import { isEmpty, pruneEmpty, replaceRange, splitLine, splitVerse } from '../range.js';
 
 const verses = (): VerseSource[] => [
@@ -79,15 +79,53 @@ describe('deleting', () => {
     expect(result.removed).toEqual(['v-1']);
   });
 
-  it('select-all and delete leaves one empty verse to type into', () => {
-    // Not zero verses: an editor with nowhere to put the caret is a document
-    // you cannot start again. The first verse survives and is emptied, which
-    // is also what keeps its recording attached if the author retypes it.
+  it('select-all and delete leaves one empty verse, and orphans all three', () => {
+    /*
+     * Not zero verses: an editor with nowhere to put the caret is a document
+     * you cannot start again. But the surviving verse is NEW, and all three old
+     * ids are reported gone — the edit consumed every one of them entirely, so
+     * three recordings really are orphaned, and keeping one id would attach
+     * that recording to whatever gets typed next.
+     */
     const vs = verses();
     const result = replaceRange(vs, { from: 0, to: flatten(vs).text.length, insert: '' });
-    expect(result.verses).toEqual([{ id: 'v-1', lines: [''] }]);
-    expect(result.removed).toEqual(['v-2', 'v-3']);
+    expect(result.verses).toHaveLength(1);
+    expect(result.verses[0]!.lines).toEqual(['']);
+    expect(['v-1', 'v-2', 'v-3']).not.toContain(result.verses[0]!.id);
+    expect(result.removed).toEqual(['v-1', 'v-2', 'v-3']);
     expect(result.caret).toBe(0);
+  });
+
+  it('deleting the middle of three identical verses orphans the MIDDLE one', () => {
+    /*
+     * The case a text comparison cannot get right, and got wrong: three verses
+     * all reading `same`, delete the second. Every survivor looks like every
+     * other, so only the edit's range says which id went — and the audio keyed
+     * to verse 2 is the one that has to be reported, not verse 3's.
+     */
+    const same: VerseSource[] = [
+      { id: 'v-1', lines: ['same'] },
+      { id: 'v-2', lines: ['same'] },
+      { id: 'v-3', lines: ['same'] },
+    ];
+    const start = at(same, 'v-2', 0, 0);
+    const result = replaceRange(same, { from: start - 2, to: start + 4, insert: '' });
+    expect(result.verses.map((v) => v.id)).toEqual(['v-1', 'v-3']);
+    expect(result.removed).toEqual(['v-2']);
+  });
+
+  it('replacing a whole section keeps no id, and reports all of them', () => {
+    // The over-claim text similarity produced: three new verses inheriting
+    // three recordings, with `removed` empty.
+    const vs = verses();
+    const result = replaceRange(vs, {
+      from: 0,
+      to: flatten(vs).text.length,
+      insert: ['alpha', 'beta', 'gamma'].join(VERSE_GAP),
+    });
+    expect(result.verses.map((v) => v.lines[0])).toEqual(['alpha', 'beta', 'gamma']);
+    expect(result.removed).toEqual(['v-1', 'v-2', 'v-3']);
+    expect(result.added).toHaveLength(3);
   });
 
   it('a selection across three verses collapses them into one', () => {

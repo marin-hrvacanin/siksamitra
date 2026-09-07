@@ -139,10 +139,38 @@ function parts(lines: string[]): { parts: Part[]; normalised: string[] } {
       if (piece !== '') out.push({ text: piece, line: li, start: at - piece.length });
       piece = '';
     };
+
+    /*
+     * STRUCTURE SPLITS A PART BY ITSELF, with no space needed.
+     *
+     * `||3||` used to lex as one word — the daṇḍa, the verse number and the
+     * closing daṇḍa all disappearing into letters. The reconstruction that
+     * gives a document its source layer therefore had to pad them with spaces,
+     * and those spaces then came back out as `sp` tokens the original document
+     * did not have: measured, 176 verses gained a visible space (`॥3॥` became
+     * `॥ 3 ॥`) and the whole comparison had to be loosened to tolerate it.
+     *
+     * Splitting here instead means the source can be written exactly as the
+     * document reads, and the comparison can stay strict.
+     */
+    const category = (ch: string): 'bar' | 'num' | 'pada' | 'letter' => {
+      if (ch === '|') return 'bar';
+      if (/[0-9०-९౦-౯௦-௯]/u.test(ch)) return 'num';
+      if (ch === '¦') return 'pada';
+      return 'letter';
+    };
+    let kind: ReturnType<typeof category> | null = null;
+
     for (let k = 0; k < line.length; k += 1) {
       const ch = line[k]!;
-      if (ch === ' ') { flush(k); continue; }
-      if (ch === '-') { flush(k); out.push({ text: '-', line: li, start: k }); continue; }
+      if (ch === ' ') { flush(k); kind = null; continue; }
+      if (ch === '-') { flush(k); out.push({ text: '-', line: li, start: k }); kind = null; continue; }
+      const here = category(ch);
+      // A dot continues a number (`1.1`) and is otherwise an ordinary letter,
+      // which is what `normalize` has already turned into a daṇḍa anyway.
+      const continues = kind === here || (kind === 'num' && ch === '.');
+      if (kind !== null && !continues) flush(k);
+      kind = here === 'letter' && kind === 'num' && ch === '.' ? 'num' : here;
       piece += ch;
     }
     flush(line.length);

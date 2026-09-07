@@ -71,16 +71,19 @@ export interface AttachReport {
   already: number;
   /** Verses left frozen, and the first reason each was. */
   refused: { verseId: string; why: string }[];
+  /**
+   * Verses attached only because the caller accepted the engine's Tamil over
+   * the file's, and how many syllables that changed. Counted, never silent.
+   */
+  tamilReplaced: { verses: number; syllables: number };
 }
 
 export interface AttachOptions {
   /**
-   * Compare the Tamil column. OFF by default: the corpus's Tamil has never
-   * been reviewed by the owner and carries marks this transliterator does not
-   * produce, so a Tamil-only difference would freeze a verse over a field
-   * nobody has checked. With it off the file's Tamil is KEPT as written — the
-   * derived tokens are taken for everything else and the Tamil column copied
-   * back across, so nothing is silently rewritten either way.
+   * Compare the Tamil column. ON by default, and there is no safe way to turn
+   * it off — see `DiffOptions.tamil`. A verse whose Tamil the engine would
+   * rewrite stays frozen, which costs some verses their source layer and
+   * costs no document its text.
    */
   tamil?: boolean;
   /**
@@ -95,17 +98,46 @@ export interface AttachOptions {
   fit?: boolean;
   /** Record mark differences as overrides (step 3). On by default. */
   overrides?: boolean;
+  /**
+   * Accept the engine's Tamil where it is the ONLY difference.
+   *
+   * OFF by default, and it is a real decision rather than a convenience.
+   * Tamil is the one column the contract calls carried rather than verified:
+   * neither the corpus's forms nor the transliterator's were ever reviewed by
+   * the owner. With this off, a verse whose Tamil the engine would rewrite
+   * stays frozen and keeps the forms the file has. With it on, the engine's
+   * forms replace them and the count is reported — which is the price of
+   * making the verse editable at all.
+   */
+  rewriteTamil?: boolean;
 }
 
 const empty = (): AttachReport => ({
-  attached: 0, withOverrides: 0, overrides: 0, withWitness: 0, already: 0, refused: [],
+  attached: 0, withOverrides: 0, overrides: 0, withWitness: 0, already: 0,
+  refused: [], tamilReplaced: { verses: 0, syllables: 0 },
 });
+
+/** How many syllables' Tamil the derivation would change. */
+function countTamil(
+  want: readonly import('@siksamitra/format').ChantToken[],
+  got: readonly import('@siksamitra/format').ChantToken[],
+): number {
+  const a = want.filter((t) => t.t === 'syl');
+  const b = got.filter((t) => t.t === 'syl');
+  let n = 0;
+  a.forEach((x, i) => {
+    const y = b[i];
+    if (x.t !== 'syl' || y === undefined || y.t !== 'syl') return;
+    if (x.tam !== undefined && x.tam !== y.tam) n += 1;
+  });
+  return n;
+}
 
 /** One pass with one profile. Pure: it neither searches nor prints. */
 function attachWith(
   doc: ChantDoc,
   profile: Profile,
-  opts: Required<Pick<AttachOptions, 'tamil' | 'overrides'>>,
+  opts: Required<Pick<AttachOptions, 'tamil' | 'overrides' | 'rewriteTamil'>>,
 ): { doc: ChantDoc; report: AttachReport } {
   const report = empty();
   const collected: ChantOverride[] = [...(doc.overrides ?? [])];
@@ -157,7 +189,18 @@ function attachWith(
             // reproduce it — either an unsettled rule or a defect — and
             // `source-witness` is the honest label for "the file says so".
             why: 'source-witness',
-            ch: d.ch,
+            /*
+             * THE WITNESS COMES FROM THE SOURCE, not from the token.
+             *
+             * `MarkDiff.ch` is the RECITED letter, and the rebase checks the
+             * SOURCE at that offset — and for a letter produced by anusvāra or
+             * visarga sandhi those are different letters. An override recorded
+             * `ś` at an offset holding `ḥ`, and the rebase then correctly
+             * refused to move a mark it could not verify. Reading it from the
+             * same string the offset indexes makes the two agree by
+             * construction.
+             */
+            ch: first.srcMap.lines[span.line]?.slice(span.start, span.end) ?? '',
             note: 'recorded by attach-src: the shipped document carries this mark '
               + 'and the rules do not place it',
           });
@@ -165,6 +208,19 @@ function attachWith(
         const second = run([...collected, ...added]);
         diff = diffVerse(verse.tokens, second.tokens, { tamil: opts.tamil });
         tokens = second.tokens;
+      }
+
+      /*
+       * A Tamil-only difference, when the caller has accepted it: the verse is
+       * attached and the syllables the engine rewrote are counted. Everything
+       * else is still refused.
+       */
+      let tamilOnly = 0;
+      if (diff.kind === 'text' && diff.tamilOnly && opts.rewriteTamil) {
+        tamilOnly = countTamil(verse.tokens, tokens);
+        report.tamilReplaced.verses += 1;
+        report.tamilReplaced.syllables += tamilOnly;
+        diff = { kind: 'same' };
       }
 
       if (diff.kind !== 'same') {
@@ -182,21 +238,15 @@ function attachWith(
       if (withWitness) report.withWitness += 1;
 
       /*
-       * The derived tokens are taken, except the Tamil column when Tamil was
-       * held out of the comparison: the file's Tamil was never reviewed and
-       * carries marks this transliterator does not produce, so it is kept as
-       * written rather than replaced by something nobody has checked.
+       * The DERIVED tokens, whole. There was a merge here that kept the file's
+       * unreviewed Tamil by copying it back by token index — and the index
+       * drifted, so 239 verses ended up with a neighbouring syllable's Tamil.
+       * Either a verse reproduces in every field or it stays frozen; there is
+       * no third option that does not risk this.
        */
-      const merged = opts.tamil ? tokens : tokens.map((t, i) => {
-        if (t.t !== 'syl') return t;
-        const was = verse.tokens[i];
-        if (was === undefined || was.t !== 'syl' || was.tam === undefined) return t;
-        return { ...t, tam: was.tam };
-      });
-
       return {
         ...verse,
-        tokens: merged,
+        tokens,
         src,
         ...(withWitness ? { svaraRegister: 'attested' as const } : {}),
       };
@@ -222,8 +272,9 @@ export function attachSource(
   options: AttachOptions = {},
 ): { doc: ChantDoc; report: AttachReport; profile: ChantProfileRef | null } {
   const opts = {
-    tamil: options.tamil === true,
+    tamil: options.tamil !== false,
     overrides: options.overrides !== false,
+    rewriteTamil: options.rewriteTamil === true,
   };
   if (options.fit === false) {
     return { ...attachWith(doc, base, opts), profile: null };

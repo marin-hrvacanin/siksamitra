@@ -1,139 +1,245 @@
-/* Part of the app shell's styles. See styles/README.md for what lives where.
-   Every value resolves to a token; `check:literals` fails the build on a
-   literal colour, face or size. */
+/**
+ * The ribbon: a tab strip over a body of labelled groups.
+ *
+ * Word's proportions, because that is the point — a reader arriving from Word
+ * should not have to learn where anything is. Measured off Word 365 at 100%:
+ * a 30px tab strip, an 88px body, group labels 11px and centred at the bottom
+ * of the group, hairline separators between groups, large buttons 40px wide
+ * with the glyph over the label, small buttons stacked three to a column.
+ *
+ * Ours differs in colour and in face — this is not a Word skin, it is a
+ * program with its own identity that respects a shape people already know.
+ *
+ * Every value is a token. `check:literals` scans this file, so a literal
+ * colour or size fails the build rather than starting the drift that ended v1
+ * with a 169 KB stylesheet nobody could reason about.
+ */
 
-/* ── the ribbon ───────────────────────────────────────────────────────────
-   One row at every window size. A group that stops fitting collapses into the
-   overflow button rather than wrapping or scrolling away, so nothing becomes
-   unreachable when the window narrows. */
-
-.rb {
-  display: flex;
-  align-items: stretch;
-  gap: var(--chrome-gap);
-  min-width: 0;
-  padding: 0 var(--space-4);
+.rbn {
   background: var(--chrome-raise);
   color: var(--chrome-ink);
   border-bottom: var(--border-hair) solid var(--chrome-line);
-}
-
-/*
- * The fixed part. It may SHRINK but never collapse: the brand and the document
- * name are how you know what you are looking at, and at 380px the alternative
- * was the whole window scrolling sideways.
- */
-.rb__lead {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  flex: 0 1 auto;
   min-width: 0;
 }
-.rb__lead .tb__sel {
-  min-width: var(--group-min);
-  flex: 0 1 auto;
-  text-overflow: ellipsis;
-}
-/* Below this the brand is the first thing to go: the document picker still
-   says what is open, and the icon is not what anyone is reading. */
-@media (max-width: 30rem) {  /* token-exempt: a media-query breakpoint — CSS custom properties are not allowed in a media condition */
-  .tb__brand { display: none; }
-}
 
-.rb__row {
-  /* The containing block for the out-of-flow measuring copies below. Without
-     it they position against the viewport, sit past its right edge, and widen
-     the document even though they are invisible. */
-  position: relative;
+/* ── the tab strip ───────────────────────────────────────────────────────── */
+.rbn__tabs {
   display: flex;
-  align-items: center;
-  gap: var(--chrome-gap);
-  flex: 1 1 auto;
-  min-width: 0;
-  /* No wrapping and no scrolling: the overflow button is the answer to a
-     narrow window, and either of those would make it unnecessary and the
-     ribbon two rows tall. */
-  overflow: hidden;
-}
-
-.rb__grp {
-  display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: var(--space-1);
-  flex: 0 0 auto;
-  padding-left: var(--space-4);
-  border-left: var(--border-hair) solid var(--chrome-line-soft);
+  height: var(--tabs-h);
+  padding-inline: var(--space-3);
+  background: var(--chrome-bg);
+  border-bottom: var(--border-hair) solid var(--chrome-line);
 }
-.rb__grp:first-child { padding-left: 0; border-left: 0; }
+.rbn__tabs-fill { flex: 1 1 auto; }
 
-/* A collapsed group stays in the DOM, out of flow, so its natural width is
-   still measurable — otherwise the ribbon could never discover that it fits
-   again once the window grows, and the collapse would be one-way. */
-.rb__grp.is-collapsed {
-  position: absolute;
-  left: 0;
-  top: 0;
-  visibility: hidden;
-  pointer-events: none;
-  /* It must contribute NO WIDTH. An absolutely positioned child still counts
-     towards its scroll container's `scrollWidth`, so a collapsed group — kept
-     in the DOM so it can still be measured — made the ribbon row scroll
-     sideways at 380px while showing nothing at all. Measured, not guessed:
-     `tools/responsive.mjs` reports the row's own overflow. */
-  width: 0;
-  overflow: hidden;
+.rbn__tab {
+  font: inherit;
+  font-size: var(--text-ui);
+  color: var(--chrome-ink-soft);
+  background: transparent;
+  border: 0;
+  border-top-left-radius: var(--chrome-radius);
+  border-top-right-radius: var(--chrome-radius);
+  padding-inline: var(--space-5);
+  cursor: pointer;
+  white-space: nowrap;
+  /* The active tab is JOINED to the body: same fill, and one pixel of it
+     overlapping the strip's own border. Without that overlap the tab reads as
+     a button that happens to be highlighted rather than as the front of a
+     folder, which is the whole metaphor. */
+  margin-bottom: calc(-1 * var(--border-hair));
+  border-bottom: var(--border-hair) solid transparent;
+}
+.rbn__tab:hover { color: var(--chrome-ink); background: var(--chrome-sunk); }
+.rbn__tab.is-on {
+  color: var(--chrome-ink);
+  background: var(--chrome-raise);
+  border-bottom-color: var(--chrome-raise);
+  font-weight: 600;
+}
+/* The accent sits ON the active tab, not under every tab: a coloured rule
+   under the strip would compete with the document's own rules. */
+.rbn__tab.is-on::before {
+  content: '';
+  display: block;
+  height: var(--border-thick);
+  margin: 0 calc(-1 * var(--space-5));
+  background: var(--chrome-accent);
+  border-top-left-radius: var(--chrome-radius);
+  border-top-right-radius: var(--chrome-radius);
 }
 
-/* The group label is the Word convention: a small caption under the controls
-   telling you what they are. It is what makes a collapsed group's name mean
-   something when it appears in the overflow. */
-.rb__label { display: none; }
-
-.rb__content { display: flex; align-items: center; gap: var(--space-1); }
-.tb__row { display: flex; align-items: center; gap: var(--space-1); }
-
-.rb__more { position: relative; display: flex; align-items: center; flex: 0 0 auto; }
-.rb__more-n {
-  margin-left: var(--space-1);
-  font-size: var(--text-ui-sm);
+.rbn__fold {
+  border: 0;
+  background: transparent;
   color: var(--chrome-ink-mute);
-  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  padding-inline: var(--space-3);
+  display: grid;
+  place-items: center;
 }
+.rbn__fold:hover { color: var(--chrome-ink); background: var(--chrome-sunk); }
+.rbn__caret { transform: rotate(90deg); transition: transform 0.12s; }
+.rbn__caret.is-up { transform: rotate(-90deg); }
 
-.rb__pop {
-  position: absolute;
-  top: calc(100% + var(--space-2));
-  right: 0;
-  z-index: 20;
+/* ── the body ────────────────────────────────────────────────────────────── */
+.rbn__body {
+  position: relative;   /* the containing block for the out-of-flow measuring copies */
+  display: flex;
+  align-items: stretch;
+  height: var(--ribbon-h);
+  padding-inline: var(--space-4);
+  /* No wrapping and no scrolling: a group that stops fitting collapses into a
+     single button (see `Ribbon.tsx`), which is what keeps the ribbon one row
+     tall at every width without ever hiding a control. */
+  overflow: hidden;
+  min-width: 0;
+}
+.rbn.is-folded .rbn__body { display: none; }
+
+/* ── a group ─────────────────────────────────────────────────────────────── */
+.grp {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  min-width: var(--panel-min);
-  padding: var(--space-5);
+  justify-content: space-between;
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  border-right: var(--border-hair) solid var(--chrome-line-soft);
+}
+.grp:last-of-type { border-right: 0; }
+
+.grp__body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+  position: relative;
+}
+
+/* The label is what makes a ribbon scannable. Quiet, centred, and never
+   competing with the controls above it. */
+.grp__label {
+  text-align: center;
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-mute);
+  padding-top: var(--space-1);
+  white-space: nowrap;
+}
+
+/* A collapsed group, kept measurable — see the note in `Ribbon.tsx`. */
+.grp.is-collapsed {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  left: 0;
+  top: 0;
+}
+.grp--folded,
+.grp--more { position: static; visibility: visible; pointer-events: auto; }
+.grp--more { margin-inline-start: auto; border-right: 0; }
+
+/* Anchored to the button's END when it is at the right edge of the ribbon,
+   or a popover of three groups opens off the side of the window. */
+.grp__pop--end { left: auto; right: 0; }
+.grp__pop {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  min-width: var(--menu-min);
   background: var(--chrome-raise);
   border: var(--border-hair) solid var(--chrome-line);
   border-radius: var(--chrome-radius);
   box-shadow: var(--chrome-shadow-lift);
 }
-.rb__pop-lbl {
-  margin: 0 0 var(--space-3);
-  font-size: var(--text-ui-sm);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--chrome-ink-mute);
-}
-.rb__pop-content { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 
-/* At a roomy density there is space for the Word-style group captions. */
-[data-density="roomy"] .rb__grp {
+/* ── the buttons ─────────────────────────────────────────────────────────── */
+.rbb {
+  font: inherit;
+  font-size: var(--text-ui);
+  color: var(--chrome-ink);
+  background: transparent;
+  border: var(--border-hair) solid transparent;
+  border-radius: var(--chrome-radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+.rbb:hover:not(:disabled) { background: var(--chrome-sunk); }
+.rbb:active:not(:disabled) { background: var(--chrome-sunk); border-color: var(--chrome-line); }
+.rbb:disabled { color: var(--chrome-ink-mute); cursor: default; }
+.rbb.is-on {
+  background: color-mix(in srgb, var(--chrome-accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--chrome-accent) 42%, transparent);
+  color: var(--chrome-ink);
+}
+
+/* LARGE: the glyph over the label, for what a group is about. */
+.rbb--lg {
   flex-direction: column;
   justify-content: center;
-  gap: 0;
+  gap: var(--space-1);
+  min-width: var(--rbb-lg-w);
+  max-width: calc(var(--rbb-lg-w) * 2);
+  height: 100%;
+  padding: var(--space-2) var(--space-3);
+  text-align: center;
 }
-[data-density="roomy"] .rb__label {
-  display: block;
-  font-size: var(--text-ui-sm);
-  color: var(--chrome-ink-mute);
-  line-height: 1.1;
+.rbb--lg .rbb__l { white-space: normal; line-height: 1.15; }
+
+/* SMALL: the glyph beside the label, three to a column. */
+.rbb--sm {
+  height: var(--control-h);
+  padding-inline: var(--space-3);
+  justify-content: flex-start;
 }
+.rbs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(3, auto);
+  gap: 0 var(--space-1);
+  align-content: center;
+  height: 100%;
+}
+/* Four controls, two by two — see `RibbonStack`. */
+.rbs--2 { grid-template-rows: repeat(2, auto); }
+
+.rbb__caret { margin-inline-start: var(--space-1); transform: rotate(90deg); }
+
+/* ── the icon, one size per role ─────────────────────────────────────────── */
+.ic { flex: 0 0 auto; fill: currentColor; }
+.ic--sm { width: 1em; height: 1em; }
+.ic--md { width: 1.34em; height: 1.34em; }
+.ic--lg { width: 1.9em; height: 1.9em; }
+
+/* ── a group's inner row, and a labelled field ───────────────────────────── */
+/*
+ * `.rbg` is what a group's content is made of: buttons and stacks in a row.
+ * It exists so a group's declaration can be one component without every one
+ * of them repeating the flex rules.
+ */
+.rbg {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-1);
+  height: 100%;
+}
+
+/* A control with a word beside it — a page size, a document. Word's ribbon
+   labels its fields this way rather than relying on a tooltip. */
+.rbf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  align-self: center;
+}
+.rbf__l { color: var(--chrome-ink-mute); }
+.tb__sel--wide { max-width: var(--panel-min); }

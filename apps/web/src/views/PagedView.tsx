@@ -17,14 +17,20 @@
  * width changes — never on zoom, which is what keeps breaks stable.
  */
 
-import { useMemo, useRef, type ReactNode } from 'react';
+import { useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
 import { contentBox, paginate, px, type PageGeometry } from '@siksamitra/layout';
-import { DocumentBlocks } from './DocumentBlocks.js';
+import { DocumentBlocks, KEEP_WITH_NEXT } from './DocumentBlocks.js';
 import { useMeasuredBlocks } from './useMeasure.js';
 
-/** Blocks that must not be left alone at the foot of a page. */
-const isHeading = (id: string): boolean => id.startsWith('h:');
+/**
+ * Blocks that must not be left alone at the foot of a page.
+ *
+ * The list is the renderer's, not this file's: it knew only `h:` while the
+ * renderer had grown part headings and instructions, so a part heading could
+ * be left at the foot of a page with its steps overleaf.
+ */
+const isHeading = (id: string): boolean => KEEP_WITH_NEXT.some((p) => id.startsWith(p));
 
 export function PagedView(
   { doc, script, showMarks, page, zoom, contentKey, addressable = false }: {
@@ -65,7 +71,15 @@ export function PagedView(
         at zoom 1, so the lines it measures are the lines the page will hold.
       */}
       <div
-        className="paged__probe"
+        /*
+         * `doc`, LIKE THE PAGE — and the omission was not cosmetic. The
+         * document's type is scoped to that class, so a probe without it was
+         * measured under the inherited stylesheet's 19.44 pt on 37.9 pt: every
+         * verse came back 1.6x too tall and a page that holds five held three.
+         * A probe styled differently from the page it stands in for measures a
+         * different document.
+         */
+        className="doc paged__probe"
         aria-hidden
         ref={probe}
         style={{ width: `${px(column, 1)}px` }}
@@ -92,7 +106,11 @@ export function PagedView(
               }}
               data-page={p.index + 1}
             >
-              <div className="page__content chant-marks" style={{ fontSize: `${zoom}rem` }}>
+              {/* Zoom as a multiplier, not a font-size — see `FlowView`. */}
+              <div
+                className="doc page__content"
+                style={{ ...({ '--doc-zoom': String(zoom) } as CSSProperties) }}
+              >
                 <DocumentBlocks
                   doc={doc}
                   script={script}
@@ -101,9 +119,27 @@ export function PagedView(
                   addressable={addressable}
                 />
               </div>
-              <footer className="page__folio" aria-hidden>
-                {p.index + 1} / {map.pages.length}
-              </footer>
+              {/*
+                THE RUNNING HEAD, where his own pages carry it: in the top
+                margin, the document's name centred and the folio at the right,
+                over a hairline. Measured off his PDF — the head sets at 12 pt
+                (the `Header` style) and its baseline is 33.8 pt from the trim,
+                which is inside the 25 mm margin rather than in the text
+                column. The folio used to sit alone in the bottom corner,
+                which is furniture no VU page has.
+              */}
+              <header
+                className="page__head"
+                aria-hidden
+                style={{
+                  top: `${px(page.margins.top / 2, zoom)}px`,
+                  left: `${px(page.margins.left, zoom)}px`,
+                  right: `${px(page.margins.right, zoom)}px`,
+                }}
+              >
+                <span className="page__head-name">{doc.title}</span>
+                <span className="page__folio">{p.index + 1}</span>
+              </header>
             </section>
           );
         })

@@ -175,11 +175,20 @@ export function emitWithSpans(elems: Elem[], opts?: EmitOptions): EmitResult {
     }
     if (e.kind === 'pause') {
       flushWord();
+      /*
+       * A SPACE BEFORE A DAṆḌA, NEVER AFTER, and only after a syllable.
+       *
+       * Measured against the eleven shipped documents rather than chosen: they
+       * set `… naḥ · sp · ।` and `… syāma · sp · ॥ · 3 · ॥` — one space before
+       * the first daṇḍa, and nothing between a daṇḍa, a verse number and the
+       * closing daṇḍa. Emitting a trailing space put one into 176 verses that
+       * did not have it (`॥3॥` became `॥ 3 ॥`), and the comparison that was
+       * supposed to catch that had been loosened to tolerate it instead.
+       */
       const last = tokens[tokens.length - 1];
-      if (last !== undefined && last.t !== 'sp') tokens.push({ t: 'sp' });
+      if (last !== undefined && last.t === 'syl') tokens.push({ t: 'sp' });
       const text = e.text ?? '|';
       tokens.push({ t: 'danda', s: text.length >= 2 ? '॥' : '।' });
-      tokens.push({ t: 'sp' });
       continue;
     }
     // A letter. A word boundary emits a space.

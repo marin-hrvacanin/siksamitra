@@ -130,8 +130,12 @@ export function expandJoins(words: readonly ChantWordGram[]): ChantWordGram[] {
   let lead: readonly ChantGram[] | null = null;
   for (const w of words) {
     const { join, ...rest } = w as ChantWordGram & { join?: 'prev' };
-    if (join === 'prev' && lead !== null) {
-      out.push({ ...rest, entries: lead.map((g) => ({ ...g })) });
+    // Bound to a const before the callback: narrowing `lead` and then reading
+    // it inside a closure is not something TypeScript keeps, and it errored
+    // under a partial build while passing under a full one.
+    const from = lead;
+    if (join === 'prev' && from !== null) {
+      out.push({ ...rest, entries: from.map((g) => ({ ...g })) });
       continue;
     }
     lead = w.entries;

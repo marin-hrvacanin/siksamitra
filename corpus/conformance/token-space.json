@@ -27,71 +27,6 @@
       },
       {
         "at": {
-          "letter": 33,
-          "line": 1,
-          "verse": "v-4"
-        },
-        "ch": "h",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 11,
-          "line": 3,
-          "verse": "v-4"
-        },
-        "ch": "ā",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "svara": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 12,
-          "line": 3,
-          "verse": "v-4"
-        },
-        "ch": "m",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "svara": "svarita"
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 22,
-          "line": 3,
-          "verse": "v-4"
-        },
-        "ch": "s",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": "long"
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 23,
-          "line": 3,
-          "verse": "v-4"
-        },
-        "ch": "y",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "hold": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
           "letter": 18,
           "line": 1,
           "verse": "v-7"
@@ -126,32 +61,6 @@
         "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
         "set": {
           "hold": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 17,
-          "line": 0,
-          "verse": "v-9"
-        },
-        "ch": "i",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "svara": null
-        },
-        "why": "source-witness"
-      },
-      {
-        "at": {
-          "letter": 18,
-          "line": 0,
-          "verse": "v-9"
-        },
-        "ch": "ś",
-        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
-        "set": {
-          "svara": "anudatta"
         },
         "why": "source-witness"
       }

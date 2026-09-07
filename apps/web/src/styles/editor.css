@@ -81,11 +81,44 @@
  * afterwards — and it is a hairline in the margin, not a warning colour,
  * because there is nothing wrong with it.
  */
-.canvas.is-editing .verse[data-attested] {
-  cursor: default;
-  border-inline-start: var(--border-thick) solid var(--doc-quiet);
-  padding-inline-start: var(--space-3);
-  margin-inline-start: calc(-1 * (var(--space-3) + var(--border-thick)));
+.canvas.is-editing .verse[data-attested] { cursor: default; }
+/*
+ * Drawn BESIDE the verse, not around it. As a border with a compensating
+ * negative margin it moved the text: every transcribed verse sat a few pixels
+ * left of the editable ones, which on a page with a measured 14.2 pt hanging
+ * indent is a visible lie about where the margin is — and the hairline itself
+ * landed outside the paper, where it could not be seen.
+ */
+/*
+ * A COPIED VERSE, marked ONCE — not with a rule down its side.
+ *
+ * Two earlier attempts were both wrong. A border with a compensating negative
+ * margin moved the text, so every copied verse sat a few pixels left of the
+ * editable ones. A full-height hairline then read as "these large gray lines
+ * on the left" — the longest mark on a page whose real subject is a 0.25 pt
+ * box, drawn for a fact that is not a warning.
+ *
+ * So: a small padlock in the margin beside the first line, on a real element
+ * that says what it means when you hover it or read it aloud.
+ */
+.canvas.is-editing .verse__locked {
+  position: absolute;
+  top: 0.42em;
+  inset-inline-start: calc(-1 * var(--space-6));
+  width: 0.62em;
+  height: 0.62em;
+  opacity: 0.5;
+  background: var(--doc-quiet);
+  -webkit-mask: var(--mask-lock) center / contain no-repeat;
+  mask: var(--mask-lock) center / contain no-repeat;
+  cursor: help;
+}
+.canvas:not(.is-editing) .verse__locked { display: none; }
+
+/* A caret where nothing will type: shown, grey, and still. */
+.caret--frozen {
+  background: var(--doc-quiet);
+  animation: none;
 }
 
 /* ── the status bar's editing half ─────────────────────────────────────── */

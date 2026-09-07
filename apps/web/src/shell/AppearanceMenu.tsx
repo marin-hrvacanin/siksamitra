@@ -10,8 +10,10 @@
  * choosing and guessing.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import type { Appearance } from '../state/useAppearance.js';
+import { RibbonButton } from './RibbonButton.js';
+import { Popover } from '../ui/Popover.js';
 
 function Group(
   { label, choices, value, onPick }: {
@@ -42,39 +44,27 @@ function Group(
 
 export function AppearanceMenu({ look }: { look: Appearance }): ReactNode {
   const [open, setOpen] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
-
-  // Close on outside click and on Escape. Both, because a popover that only
-  // closes one way is a popover people learn to distrust.
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent): void => {
-      if (box.current !== null && !box.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  const anchor = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="ap" ref={box}>
-      <button
-        type="button"
-        className={open ? 'tb__b is-on' : 'tb__b'}
-        aria-expanded={open}
-        aria-haspopup="dialog"
+    <div className="ap" ref={anchor}>
+      <RibbonButton
+        icon="appearance"
+        label="Appearance"
+        size="lg"
+        title="Appearance — the instrument, the page, and the mode"
+        pressed={open}
         onClick={() => setOpen((o) => !o)}
-        title="Appearance — chrome, page and mode"
-      >
-        Appearance
-      </button>
+      />
 
-      {open && (
-        <div className="ap__pop" role="dialog" aria-label="Appearance">
+      {/*
+        PORTALLED, because the ribbon clips. `.rbn__body` has `overflow:
+        hidden` so a group that does not fit cannot spill across the row — and
+        that clip applied to this menu too, leaving nine tenths of it below the
+        ribbon's edge and unreachable. See `ui/Popover.tsx`.
+      */}
+      <Popover anchor={anchor} open={open} onClose={() => setOpen(false)} label="Appearance">
+        <div className="ap__pop">
           <Group
             label="Instrument"
             choices={look.chromeChoices}
@@ -108,9 +98,25 @@ export function AppearanceMenu({ look }: { look: Appearance }): ReactNode {
                 </button>
               ))}
             </div>
+
+            {/*
+              BACK TO THE DEFAULTS. Six instruments, seven pages, three
+              densities and two modes is 252 combinations, and a person who
+              has tried a dozen of them needs a way back to the one the
+              program shipped with — without knowing which of the four axes
+              they changed.
+            */}
+            <button
+              type="button"
+              className="ap__reset"
+              onClick={look.reset}
+              title="Back to the appearance the program starts with"
+            >
+              Reset to defaults
+            </button>
           </div>
         </div>
-      )}
+      </Popover>
     </div>
   );
 }

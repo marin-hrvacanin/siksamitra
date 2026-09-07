@@ -20,14 +20,16 @@
  *   else.
  */
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { ChantDoc } from '@siksamitra/format';
+import type { ChantDoc, ChantProfileKey } from '@siksamitra/format';
 import type { SrcMap } from '@siksamitra/engine';
 import {
   apply, caretAt, emptyHistory, flatten, isCollapsed, lineEdge, moveChar, moveLine,
-  moveWord, newState, redo, select, selectionRange, sourcesOf, srcMapFor, undo,
+  moveWord, newState, redo, registerOf, select, selectionRange, sourcesOf, srcMapFor,
+  undo,
   type EditCommand, type EditState, type FlatSource, type History, type Selection,
 } from '@siksamitra/edit';
 import { selectedUnits, unitAddresses, unitAtCaret, type UnitRange } from './selection.js';
+import { useRegister } from './useRegister.js';
 
 /** How long a burst of typing stays one undo step. Word's feel, roughly. */
 const COALESCE_MS = 900;
@@ -51,6 +53,22 @@ export interface Session {
    *  what a mark command applies to, so they cannot disagree. */
   selected: UnitRange[];
   srcMapOf: (verseId: string) => SrcMap | null;
+  /** The same, for a verse in a named section — a click can land in any. */
+  srcMapIn: (sectionId: string, verseId: string) => SrcMap | null;
+  /** The flat source of any section, for turning a click into an offset. */
+  flatFor: (sectionId: string) => FlatSource;
+  /**
+   * Bumped by every command that changes the document.
+   *
+   * The paged view re-measures when its content key changes, and that key was
+   * built from the document's NAME and the view settings — so it never changed
+   * while typing, and the pages kept the heights measured before the edit. 480
+   * characters went in and the page count stayed at three.
+   */
+  revision: number;
+  /** True while an IME is composing. Escape must not leave edit mode then. */
+  composing: () => boolean;
+  setComposing: (on: boolean) => void;
 
   editing: boolean;
   setEditing: (on: boolean) => void;
@@ -65,6 +83,18 @@ export interface Session {
   mark: (patch: Record<string, unknown>, note?: string) => void;
   unmark: (fields: readonly MarkField[]) => void;
   autoHoldings: (mode: 'keep' | 'replace') => void;
+
+  /**
+   * WHICH REGISTER'S RULES GOVERN THE TEXT.
+   *
+   * `null` scope-wide means "name none here and follow what is above".
+   * Returns the sentence to show, because the caller is the only one that
+   * knows where a sentence goes and this command's whole point is that it
+   * says how much it moved.
+   */
+  register: ChantProfileKey | null;
+  sectionRegister: ChantProfileKey | null;
+  setRegister: (scope: 'document' | 'section', preset: ChantProfileKey | null) => string;
 
   undoEdit: () => void;
   redoEdit: () => void;
@@ -95,15 +125,34 @@ export function useSession(doc: ChantDoc): Session {
     state: newState(doc), history: emptyHistory(),
   }));
   const [sectionId, setSectionId] = useState<string>(() => doc.sections[0]?.id ?? '');
-  const [editing, setEditing] = useState(false);
+  /*
+   * OPEN READY TO WRITE.
+   *
+   * It opened read-only, and the cost was two complaints in one sitting: half
+   * the ribbon greyed out with no way to tell why, and "writing and editing
+   * text doesn't work at all" — because keystrokes went nowhere until you
+   * found the mode switch. A word processor opens ready to type.
+   *
+   * The safety that matters is not the mode: it is rule zero, which refuses an
+   * edit that reaches a transcribed verse, by name, whatever the mode says.
+   * `Read` is still there for proofing, one click away.
+   */
+  const [editing, setEditing] = useState(true);
+  const [revision, setRevision] = useState(0);
+  const composing = useRef(false);
 
   // A new document replaces everything, history included: an undo across two
   // documents would restore a section into the wrong one.
   const opened = useRef(doc);
   if (opened.current !== doc) {
-    opened.current = doc;
+    /*
+     * The state update FIRST, the ref second. React may discard a render, and
+     * the ref write would survive it while the state update would not — so the
+     * new document would silently never install.
+     */
     setLive({ state: newState(doc), history: emptyHistory() });
     setSectionId(doc.sections[0]?.id ?? '');
+    opened.current = doc;
   }
 
   const state = live_.state;
@@ -117,18 +166,39 @@ export function useSession(doc: ChantDoc): Session {
     [section],
   );
 
-  /** Source maps, cached by the verse's source text. */
+  /**
+   * The flat source of ANY section, not only the one the caret is in.
+   *
+   * A click in another section has to be turned into an offset in THAT section
+   * before the caret can move there — and without this it could not be, so the
+   * caret was trapped in the first section: 2 of Durgā Sūktam's 9 verses and
+   * 191 of Śrī Rudram's 198 were unreachable in edit mode, with no keyboard
+   * route either.
+   */
+  const flatFor = useCallback((id: string): FlatSource => {
+    const found = live.sections.find((s) => s.id === id);
+    return flatten(found === undefined ? [] : sourcesOf(found));
+  }, [live]);
+
+  /** Source maps, cached by section, verse and the verse's own source text. */
   const cache = useRef(new Map<string, { key: string; map: SrcMap | null }>());
-  const srcMapOf = useCallback((verseId: string): SrcMap | null => {
-    const verse = section?.verses.find((v) => v.id === verseId);
-    if (section === undefined || verse === undefined) return null;
+  const srcMapIn = useCallback((where: string, verseId: string): SrcMap | null => {
+    const found = live.sections.find((s) => s.id === where);
+    const verse = found?.verses.find((v) => v.id === verseId);
+    if (found === undefined || verse === undefined) return null;
     const key = (verse.src?.lines ?? []).join('\n');
-    const hit = cache.current.get(verseId);
+    const at = `${where}/${verseId}`;
+    const hit = cache.current.get(at);
     if (hit !== undefined && hit.key === key) return hit.map;
-    const map = srcMapFor(live, section.id, verseId);
-    cache.current.set(verseId, { key, map });
+    const map = srcMapFor(live, found.id, verseId);
+    cache.current.set(at, { key, map });
     return map;
-  }, [live, section]);
+  }, [live]);
+
+  const srcMapOf = useCallback(
+    (verseId: string): SrcMap | null => srcMapIn(sectionId, verseId),
+    [srcMapIn, sectionId],
+  );
 
   const selected = useMemo(
     () => (state.selection === null ? [] : selectedUnits(flat, state.selection, srcMapOf)),
@@ -137,6 +207,7 @@ export function useSession(doc: ChantDoc): Session {
 
   const run = useCallback((command: EditCommand) => {
     setLive((current) => apply(current.state, current.history, command));
+    setRevision((n) => n + 1);
   }, []);
 
   const setSelection = useCallback((selection: Selection | null, id?: string) => {
@@ -193,13 +264,17 @@ export function useSession(doc: ChantDoc): Session {
 
   const insert = useCallback((text: string) => {
     if (state.selection === null) return;
-    const { from, to } = selectionRange(flat, state.selection);
-    replace(from, to, text, text.includes('\n') ? undefined : 'type');
+    const range = selectionRange(flat, state.selection);
+    // A stale selection names no range. It used to name "everything up to the
+    // caret", and the next keystroke deleted all of it.
+    if (range === null) return;
+    replace(range.from, range.to, text, text.includes('\n') ? undefined : 'type');
   }, [flat, state.selection, replace]);
 
   const remove = useCallback((direction: 1 | -1) => {
     if (state.selection === null) return;
     const range = selectionRange(flat, state.selection);
+    if (range === null) return;
     if (!isCollapsed(state.selection)) {
       replace(range.from, range.to, '', 'delete');
       return;
@@ -214,8 +289,9 @@ export function useSession(doc: ChantDoc): Session {
 
   const newLine = useCallback((verse: boolean) => {
     if (state.selection === null) return;
-    const { from, to } = selectionRange(flat, state.selection);
-    replace(from, to, verse ? '\n\n' : '\n');
+    const range = selectionRange(flat, state.selection);
+    if (range === null) return;
+    replace(range.from, range.to, verse ? '\n\n' : '\n');
   }, [flat, state.selection, replace]);
 
   const targets = useCallback(() => {
@@ -254,11 +330,15 @@ export function useSession(doc: ChantDoc): Session {
 
   const undoEdit = useCallback(() => {
     setLive((current) => undo(current.state, current.history));
+    setRevision((n) => n + 1);
   }, []);
 
   const redoEdit = useCallback(() => {
     setLive((current) => redo(current.state, current.history));
+    setRevision((n) => n + 1);
   }, []);
+
+  const setRegister = useRegister(setLive, setRevision, sectionId);
 
   return {
     doc: live,
@@ -267,6 +347,11 @@ export function useSession(doc: ChantDoc): Session {
     flat,
     selected,
     srcMapOf,
+    srcMapIn,
+    flatFor,
+    revision,
+    composing: () => composing.current,
+    setComposing: (on: boolean) => { composing.current = on; },
     editing,
     setEditing,
     setSelection,
@@ -277,6 +362,9 @@ export function useSession(doc: ChantDoc): Session {
     mark,
     unmark,
     autoHoldings,
+    register: registerOf(live),
+    sectionRegister: section === undefined ? null : registerOf(live, section),
+    setRegister,
     undoEdit,
     redoEdit,
     canUndo: live_.history.past.length > 0,

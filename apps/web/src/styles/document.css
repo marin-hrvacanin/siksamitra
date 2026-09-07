@@ -1,0 +1,261 @@
+/**
+ * THE DOCUMENT — the page, not the tool.
+ *
+ * Everything here is the paper: its type, its indents, its hierarchy, its
+ * translations. Nothing here is chrome, and nothing in the chrome stylesheets
+ * touches these elements. That separation is deliberate and was asked for: the
+ * instrument and the document are two independent axes, and a ribbon that
+ * could change how a mantra is set would make "what you see is what prints"
+ * untrue.
+ *
+ * NOT A VALUE IN THIS FILE IS CHOSEN HERE. Every size, leading, indent, face,
+ * style and colour is a `--doc-*` token from `packages/tokens`, where the
+ * screen scale is designed and the Veda Union scale is measured out of his own
+ * `.docx`. That is the standing rule (all design values in tokens) and it is
+ * also the only way the fidelity gate can compare what renders against what
+ * his file says.
+ *
+ * WHAT THIS REPLACED. `chant.css` — inherited from the platform — set the
+ * mantra line to `clamp(1.06rem, 3.1cqi, 1.62rem)` on `line-height: 1.95` and
+ * the headings to the browser's bold `h2`. So the Word theme changed the
+ * colours and nothing else: measured in a browser, the tokens said 16 pt on
+ * 24 pt and the page drew 19.44 pt on 37.9 pt, with no hanging indent, no
+ * translations, and a verse number printed twice. These rules are more
+ * specific than that file's, so they win wherever a document is drawn.
+ */
+
+/* ── the surfaces ───────────────────────────────────────────────────────── */
+/*
+ * Two things about this rule carry the whole file.
+ *
+ * `container-type: inline-size` — the fluid mantra size is
+ * `clamp(floor, N cqi, size)`, and `cqi` without a container falls back to the
+ * viewport, which is not the column the line has to fit in. With the container,
+ * a narrow window shrinks the type instead of wrapping a pāda.
+ *
+ * `.doc` IS THE DOCUMENT, wherever it is drawn — the flow column, a page's
+ * content, and the off-screen probe the pagination measures. All three must be
+ * styled identically or the preview is of a different document than the one
+ * that prints; the probe was left out once, and every page held three verses
+ * where it should have held five.
+ *
+ * The column's `font-size` is the document's BODY size, and zoom is not in it:
+ * zoom is `--doc-zoom`, a multiplier inside every token (see the generator).
+ * Zoom as a column font-size scaled only what happened to be in `em`, so the
+ * paper grew while the mantra line stayed 19.44 pt; and a margin in `em`
+ * resolved against its own element, putting a 14.2 pt indent at 18.93 pt.
+ */
+.doc {
+  container-type: inline-size;
+  font-family: var(--doc-body-face);
+  font-size: var(--doc-body-size);
+  line-height: var(--doc-body-lead);
+}
+.flow__column,
+.page {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+}
+
+/* ── the hierarchy ──────────────────────────────────────────────────────── */
+/*
+ * OUR LEVELS AGAINST HIS, and they line up one step down — see
+ * `ROLE_OF_ELEMENT` in `document-type.ts`, which is where the mapping lives.
+ * Measured off his PDF: a chant's name is 18 pt at a 19.85 pt indent
+ * (Heading3) and a step inside it is 16 pt at 28.35 pt (Heading4), both grey.
+ *
+ *   `.doc__name`      the document's own name   → part     (Heading2, 22 pt)
+ *   `.doc__part`      a `section.part`          → section  (Heading3, 18 pt)
+ *   `.section__title` a section's own title     → step     (Heading4, 16 pt)
+ *
+ * So the heading our documents actually show — a section title — renders as
+ * his step heading, which is what it is.
+ */
+.doc__name,
+.doc__part,
+.section__title {
+  margin: 0;
+  text-wrap: pretty;
+  /* A heading is never the last thing on a page. */
+  break-after: avoid;
+}
+.doc__name {
+  font-family: var(--doc-part-face);
+  font-size: var(--doc-part-size);
+  line-height: var(--doc-part-lead);
+  font-style: var(--doc-part-style);
+  font-weight: var(--doc-part-weight);
+  color: var(--doc-part-color);
+  margin-left: var(--doc-part-indent);
+  margin-bottom: var(--doc-part-after);
+}
+.doc__part {
+  font-family: var(--doc-section-face);
+  font-size: var(--doc-section-size);
+  line-height: var(--doc-section-lead);
+  font-style: var(--doc-section-style);
+  font-weight: var(--doc-section-weight);
+  color: var(--doc-section-color);
+  margin-left: var(--doc-section-indent);
+  margin-bottom: var(--doc-section-after);
+}
+.doc .section__title {
+  font-family: var(--doc-step-face);
+  font-size: var(--doc-step-size);
+  line-height: var(--doc-step-lead);
+  font-style: var(--doc-step-style);
+  font-weight: var(--doc-step-weight);
+  color: var(--doc-step-color);
+  margin-left: var(--doc-step-indent);
+  margin-bottom: var(--doc-step-after);
+}
+
+/* ── the verse ──────────────────────────────────────────────────────────── */
+.doc .verse {
+  position: relative;
+  margin: 0 0 var(--doc-verse-after);
+  /*
+   * The gutter is RESERVED, not borrowed from the margin. Positioned into the
+   * page's margin the number was clipped by the column's own padding: every
+   * verse showed a sliver of a digit at the paper's edge. Zero under a theme
+   * whose document prints the number in the line, so his page is unaffected.
+   */
+  padding: 0 0 0 var(--doc-gutter);
+  border: 0;
+  break-inside: auto;
+}
+.doc .pada {
+  font-family: var(--doc-verse-face);
+  font-size: var(--doc-verse-size);
+  line-height: var(--doc-verse-lead);
+  font-style: var(--doc-verse-style);
+  font-weight: var(--doc-verse-weight);
+  color: var(--doc-verse-color);
+  /*
+   * THE HANGING INDENT, and it is measured, not styled: `Translit` carries
+   * `w:left="284" w:hanging="284"`, so the paragraph sits at 14.2 pt and its
+   * first line comes back out to the margin. Our markup is one element per
+   * recitation line rather than one wrapped paragraph, so "first line" is the
+   * verse's first line — addressed by `data-line`, not by `:first-child`,
+   * which the verse number would otherwise be.
+   */
+  margin-left: var(--doc-verse-indent);
+  margin-right: var(--doc-verse-right);
+  letter-spacing: normal;
+  word-spacing: normal;
+}
+.doc .pada[data-line='0'] {
+  margin-left: calc(var(--doc-verse-indent) - var(--doc-verse-hanging));
+}
+
+/*
+ * The verse number the PAGE draws, in the gutter.
+ *
+ * Hidden entirely under a theme whose document prints the number inside the
+ * line (`--doc-number-display: none`) — his does, between daṇḍas, so a gutter
+ * number there is the same number twice.
+ */
+.doc .verse__n {
+  /*
+   * ON the first line, in the gutter the verse reserved for it: an inline
+   * block pulled left by exactly the gutter's width. Inline, so its baseline
+   * IS the line's baseline — the one thing an absolutely positioned number
+   * cannot get right.
+   */
+  /* `inline-block`, NOT a float: a float is a block box and aligns to the top
+     of the line, which put the number a third of a line above the text it
+     numbers. An inline block sits on the line's own baseline. */
+  display: var(--doc-number-display);
+  width: var(--doc-gutter);
+  margin-left: calc(-1 * var(--doc-gutter));
+  padding-right: 0.7em;
+  box-sizing: border-box;
+  text-align: right;
+  font-family: var(--doc-comment-face);
+  font-size: var(--doc-comment-size);
+  color: var(--doc-quiet);
+  font-variant-numeric: lining-nums tabular-nums;
+  user-select: none;
+}
+
+/* ── translation, instruction, apparatus ────────────────────────────────── */
+.doc__translation {
+  font-family: var(--doc-translation-face);
+  font-size: var(--doc-translation-size);
+  line-height: var(--doc-translation-lead);
+  font-style: var(--doc-translation-style);
+  font-weight: var(--doc-translation-weight);
+  color: var(--doc-translation-color);
+  margin: 0 var(--doc-translation-right) var(--doc-translation-after)
+          var(--doc-translation-indent);
+  text-indent: calc(-1 * var(--doc-translation-hanging));
+  break-inside: avoid;
+}
+.doc__instruction {
+  font-family: var(--doc-body-face);
+  font-size: var(--doc-body-size);
+  line-height: var(--doc-body-lead);
+  font-style: var(--doc-body-style);
+  font-weight: var(--doc-body-weight);
+  color: var(--doc-body-color);
+  margin: 0 0 var(--doc-body-after) var(--doc-body-indent);
+}
+/* Where the words come from. Apparatus: present, never competing. */
+.doc__source {
+  font-family: var(--doc-comment-face);
+  font-size: var(--doc-comment-size);
+  line-height: var(--doc-comment-lead);
+  font-style: var(--doc-comment-style);
+  font-weight: var(--doc-comment-weight);
+  color: var(--doc-comment-color);
+  margin: 0 0 var(--doc-comment-after) var(--doc-comment-indent);
+}
+
+/* ── the page's own furniture ───────────────────────────────────────────── */
+/*
+ * The running head. Set in the `head` role — his `Header` style, 12 pt — and
+ * positioned by the view from the page's margins, because where it sits is
+ * page geometry rather than styling.
+ */
+.page__head {
+  position: absolute;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--doc-head-after);
+  font-family: var(--doc-head-face);
+  font-size: var(--doc-head-size);
+  line-height: var(--doc-head-lead);
+  color: var(--doc-head-color);
+  border-bottom: var(--border-hair) solid var(--doc-line);
+  padding-bottom: 0.35em;
+  user-select: none;
+}
+.page__head-name { flex: 1; text-align: center; }
+.page__folio {
+  color: var(--doc-quiet);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* ── the marks that are punctuation ─────────────────────────────────────── */
+/*
+ * A PAUSE IS ITS GLYPH — `|` short, `||` long — and a BAR is the `|` that ends
+ * a pāda. Both were drawn as empty spans: "a gap whose width comes from a
+ * token", so all 976 pauses in the corpus and 59 bars in Puruṣa Sūktam alone
+ * rendered as nothing at all, while the Word export wrote them as pipes and
+ * the PDF showed them in red. The glyph IS the mark.
+ *
+ * Here rather than in the inherited `chant.css` because this is OUR notation's
+ * presentation, and that file is one this program is shrinking, not growing.
+ */
+.doc .pause {
+  margin-inline: 0.18em;
+  letter-spacing: -0.08em;
+  font-weight: 600;
+}
+.doc .pause--short { color: var(--color-pause-short); }
+.doc .pause--long { color: var(--color-pause-long); }
+.doc .bar { margin-inline: 0.12em; color: var(--doc-quiet); }
+
+/* ── what the document axis colours ─────────────────────────────────────── */
+.fill, .plain { color: var(--doc-fill); }

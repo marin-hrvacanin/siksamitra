@@ -3,12 +3,12 @@ const b = await puppeteer.launch({ executablePath: process.env.CHROME, headless:
 const p = await b.newPage();
 await p.setViewport({ width: 1440, height: 900 });
 await p.goto('http://localhost:5273/', { waitUntil: 'networkidle0' });
-await p.waitForSelector('.seg__b');
+await p.waitForSelector('.rbb');
 console.log(await p.evaluate(() => {
   const out = {};
   const seg = document.querySelector('.seg');
   out.segWidth = Math.round(seg.getBoundingClientRect().width);
-  out.buttons = [...document.querySelectorAll('.seg__b')].map((b) => {
+  out.buttons = [...document.querySelectorAll('.rbb')].map((b) => {
     const c = getComputedStyle(b);
     return { text: b.textContent, cls: b.className, w: Math.round(b.getBoundingClientRect().width), bg: c.backgroundColor, color: c.color };
   });
@@ -21,7 +21,7 @@ console.log(await p.evaluate(() => {
   out.inkSoftOnApp = getComputedStyle(app).getPropertyValue('--color-ink-soft').trim();
   out.prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
   out.space9 = getComputedStyle(document.documentElement).getPropertyValue('--space-9');
-  out.toolbarChildren = [...document.querySelector('.tb').children].map((c) => c.className || c.tagName);
+  out.toolbarChildren = [...document.querySelector('.rbn').children].map((c) => c.className || c.tagName);
   return out;
 }));
 await b.close();

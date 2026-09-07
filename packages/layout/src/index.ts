@@ -16,7 +16,7 @@ export { paginate, pageOf } from './paginate.js';
 export type { LayoutBlock, Page, PageMap, PlacedBlock } from './paginate.js';
 
 export {
-  ZOOM_MAX, ZOOM_MIN, ZOOM_STEPS, clampZoom, flowColumnWidthPx, px,
+  ZOOM_MAX, ZOOM_MIN, ZOOM_STEPS, clampZoom, px,
   resolveZoom, stepZoom, zoomLabel,
 } from './zoom.js';
 export type { Viewport, ZoomMode } from './zoom.js';

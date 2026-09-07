@@ -9,7 +9,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import {
-  DEFAULT_PAGE, DEFAULT_VIEW, nextView, pageGeometry, resolveZoom, stepZoom,
+  DEFAULT_PAGE, DEFAULT_VIEW, PT_TO_PX, nextView, pageGeometry, resolveZoom, stepZoom,
   themeFor, viewMode,
   type PageGeometry, type ViewKind, type ViewMode, type Viewport, type ZoomMode,
 } from '@siksamitra/layout';
@@ -37,10 +37,31 @@ export function useViewState(
 ): ViewState {
   const [kind, setKind] = useState<ViewKind>(initial);
   const [pageId, setPageId] = useState<string>(DEFAULT_PAGE);
-  const [zoomMode, setZoomMode] = useState<ZoomMode>({ kind: 'fixed', value: 1 });
 
   const page = useMemo(() => pageGeometry(pageId), [pageId]);
   const view = viewMode(kind);
+
+  /*
+   * THE ZOOM FOLLOWS THE WINDOW UNTIL SOMEONE TAKES IT OVER.
+   *
+   * 100% while the page fits, fitted to the width when it does not — and the
+   * moment a person presses zoom-in, chooses a fit, or asks for actual size,
+   * their choice stands and the window stops interfering.
+   *
+   * Both halves matter. A fixed 100% on a 500px window shows two thirds of an
+   * A4 page and hides the rest behind a horizontal scrollbar, which is not a
+   * document anyone can read; and a program that overrode a chosen zoom every
+   * time the window moved would be worse. Decided once at startup was not
+   * enough either: the window that is open now is the one that matters, not
+   * the one it opened in.
+   */
+  const [chosen, setChosen] = useState<ZoomMode | null>(null);
+  const zoomMode: ZoomMode = chosen ?? (
+    viewport.width < (page.width * PT_TO_PX) + 48
+      ? { kind: 'fit-width' }
+      : { kind: 'fixed', value: 1 }
+  );
+  const setZoomMode = useCallback((m: ZoomMode) => setChosen(m), []);
 
   /**
    * `fit-*` is resolved against the CURRENT viewport, so it tracks a window
@@ -61,10 +82,9 @@ export function useViewState(
    * recomputes and lands on the same number — and the control appears broken.
    */
   const step = useCallback((direction: 1 | -1) => {
-    setZoomMode((prev) => ({
-      kind: 'fixed',
-      value: stepZoom(prev.kind === 'fixed' ? prev.value : zoom, direction),
-    }));
+    /* From the CURRENT zoom, whether that came from a choice or from the
+       window — so a step out of the automatic fit lands where the eye is. */
+    setChosen({ kind: 'fixed', value: stepZoom(zoom, direction) });
   }, [zoom]);
 
   return {

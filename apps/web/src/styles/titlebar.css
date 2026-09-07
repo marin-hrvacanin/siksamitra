@@ -1,0 +1,130 @@
+/**
+ * The window's title bar, and the window's buttons.
+ *
+ * Drawn by us, because a document tool's title bar is part of the tool — see
+ * `TitleBar.tsx` for what each platform gets and why. This file is only how it
+ * looks, and every value is a token.
+ *
+ * It is the one surface allowed to carry the program's colour. On a desk of
+ * grey windows, a deep bronze bar with the document's name on it is how you
+ * find this one — and the colour is per chrome theme (`--chrome-title`), so the
+ * choice belongs to the theme rather than to this file.
+ */
+
+.tbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--titlebar-h);
+  padding-inline: var(--space-3);
+  background: var(--chrome-title);
+  color: var(--chrome-title-ink);
+  /* The bar is the drag surface. `user-select: none` because dragging a window
+     must never start selecting the title as text. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tbar__lead,
+.tbar__trail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+}
+
+/*
+ * The name, centred and given the middle of the bar.
+ *
+ * `min-width: 0` so a long document name ellipsises instead of pushing the
+ * window buttons off the edge — the failure mode that makes a custom title bar
+ * worse than the OS one.
+ */
+.tbar__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-3);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.tbar__title {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tbar__sub {
+  color: color-mix(in srgb, var(--chrome-title-ink) 62%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Below this the subtitle goes before the title does: which document you are in
+   matters more than what kind of thing it is. */
+@media (max-width: 46rem) {  /* token-exempt: a media-query breakpoint — CSS custom properties are not allowed in a media condition */
+  .tbar__sub { display: none; }
+}
+
+/* The application mark. Not an image: one letter of the program's own name in
+   its own accent, which needs no asset and scales with the bar. */
+.tbar__mark {
+  display: grid;
+  place-items: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  border-radius: var(--chrome-radius);
+  background: color-mix(in srgb, var(--chrome-title-ink) 16%, transparent);
+  color: var(--chrome-title-ink);
+  font-weight: 700;
+  font-size: var(--text-ui-lg);
+  flex: 0 0 auto;
+}
+
+/* A quick-access button on the title bar: save, undo, redo — as Word has. */
+.tbar__b {
+  display: grid;
+  place-items: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  border: 0;
+  border-radius: var(--chrome-radius);
+  background: transparent;
+  color: var(--chrome-title-ink);
+  cursor: pointer;
+  opacity: 0.86;
+}
+.tbar__b:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--chrome-title-ink) 18%, transparent);
+  opacity: 1;
+}
+.tbar__b:disabled { opacity: 0.34; cursor: default; }
+
+/* ── the window's buttons ───────────────────────────────────────────────────
+   Windows and Linux only; on macOS the system draws its own and we leave room.
+   The geometry is the platform's: a 46px-wide hit area, the full height of the
+   bar, no radius, and close going red — so the window behaves like every other
+   window on that desktop rather than like a web page with buttons. */
+.wctl {
+  display: flex;
+  align-self: stretch;
+  flex: 0 0 auto;
+  /* Cancels the bar's own inline padding so the buttons reach the corner, which
+     is where the pointer goes and where Fitts' law says they belong. */
+  margin-inline-end: calc(-1 * var(--space-3));
+}
+.wctl__b {
+  width: 2.875rem;  /* token-exempt: 46px is the width Windows gives a caption button; a window whose buttons differ in size from every other window's is wrong in a way no token can express */
+  border: 0;
+  background: transparent;
+  color: var(--chrome-title-ink);
+  display: grid;
+  place-items: center;
+  cursor: default;
+}
+.wctl__b:hover { background: color-mix(in srgb, var(--chrome-title-ink) 16%, transparent); }
+.wctl__b:active { background: color-mix(in srgb, var(--chrome-title-ink) 26%, transparent); }
+.wctl__b--close:hover { background: #c42b1c; color: #ffffff; }  /* token-exempt: the platform's own close-button red, identical on every Windows window */
+.wctl__b--close:active { background: #b0281a; color: #ffffff; }  /* token-exempt: as above, its pressed state */
+.wctl .ic { opacity: 0.92; }

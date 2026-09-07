@@ -1,0 +1,31 @@
+import puppeteer from 'puppeteer-core';
+import { setMode, setView } from './_ui.mjs';
+const b = await puppeteer.launch({ executablePath: process.env.CHROME, headless: 'shell', args: ['--no-sandbox'] });
+const p = await b.newPage();
+await p.setViewport({ width: 1400, height: 900 });
+await p.goto('http://localhost:5273/', { waitUntil: 'networkidle0' });
+await p.waitForSelector('[data-block-id]');
+await setMode(p, 'write');
+await p.waitForSelector('[data-u]');
+await setView(p, 'Pages');
+await p.waitForSelector('.page');
+await new Promise(r=>setTimeout(r,1200));
+const t = await p.evaluate(() => {
+  const el = document.querySelectorAll('[data-verse]:not([data-attested]) [data-u]')[20];
+  const box = el.getBoundingClientRect();
+  return { x: box.left + box.width*0.25, y: box.top + box.height/2, left: Math.round(box.left), top: Math.round(box.top), text: el.textContent, inProbe: el.closest('.paged__probe') !== null };
+});
+await p.mouse.click(t.x, t.y);
+await new Promise(r=>setTimeout(r,350));
+const c = await p.evaluate(() => {
+  const el = document.querySelector('.caret');
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { left: Math.round(r.left), top: Math.round(r.top), h: Math.round(r.height), visible: r.left > 0 };
+});
+console.log('letter', JSON.stringify(t));
+console.log('caret ', JSON.stringify(c));
+await p.keyboard.down('Shift'); for (let i=0;i<5;i++) await p.keyboard.press('ArrowRight'); await p.keyboard.up('Shift');
+await new Promise(r=>setTimeout(r,300));
+console.log('selected painted:', await p.evaluate(() => document.querySelectorAll('.is-selected').length));
+await b.close();

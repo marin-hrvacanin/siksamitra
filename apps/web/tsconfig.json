@@ -29,6 +29,9 @@
       ],
       "@siksamitra/edit": [
         "../../packages/edit/src/index.ts"
+      ],
+      "@siksamitra/tokens/word": [
+        "../../packages/tokens/src/word.ts"
       ]
     },
     "types": [

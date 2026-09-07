@@ -22,7 +22,7 @@
  * out and rasterises at the real size, and geometry stays honest.
  */
 
-import { PT_TO_PX, contentBox, type PageGeometry } from './geometry.js';
+import {PT_TO_PX, type PageGeometry} from './geometry.js';
 
 export const ZOOM_MIN = 0.25;
 export const ZOOM_MAX = 4;
@@ -74,17 +74,6 @@ export function resolveZoom(
   const usableHeight = Math.max(1, viewport.height - gutter * 2);
   const byHeight = usableHeight / (page.height * PT_TO_PX);
   return clampZoom(Math.min(byWidth, byHeight));
-}
-
-/**
- * In FLOW view there is no page, so fit-width means the measure column.
- *
- * The column is the page's content box, not its trim: reading width should be
- * the same in flow and paged view, or switching modes reflows every line and
- * loses the reader's place for no reason.
- */
-export function flowColumnWidthPx(page: PageGeometry, zoom: number): number {
-  return contentBox(page).width * PT_TO_PX * zoom;
 }
 
 /** Points to CSS pixels at this zoom. The only conversion the views use. */

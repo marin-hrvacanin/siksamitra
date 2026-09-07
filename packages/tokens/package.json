@@ -8,14 +8,22 @@
     ".": "./generated/tokens.ts",
     "./source": "./src/source.ts",
     "./tokens.css": "./generated/tokens.css",
-    "./tokens.json": "./generated/tokens.json"
+    "./tokens.json": "./generated/tokens.json",
+    "./word": "./src/word.ts",
+    "./document-themes": "./src/document-themes.ts",
+    "./document-type": "./src/document-type.ts"
   },
-  "files": ["generated", "src"],
+  "files": [
+    "generated",
+    "src"
+  ],
   "scripts": {
     "gen": "node gen.mjs",
     "check": "node gen.mjs --check",
     "build": "tsc -b",
     "typecheck": "tsc -b --noEmit"
   },
-  "devDependencies": { "typescript": "^5.6.3" }
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
 }

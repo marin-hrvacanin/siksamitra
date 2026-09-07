@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer-core';
+import { setView } from './_ui.mjs';
 const exe = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const b = await puppeteer.launch({ executablePath: exe, headless: 'shell', args: ['--no-sandbox'] });
 const p = await b.newPage();
@@ -14,12 +15,12 @@ const flow = await p.evaluate(() => ({
   syllables: document.querySelectorAll('.syl').length,
   holds: document.querySelectorAll('.hold').length,
   title: document.querySelector('.status')?.textContent?.slice(0, 40),
-  view: document.querySelector('.seg__b.is-on')?.textContent,
+  view: document.querySelector('.rbb.is-on')?.textContent,
 }));
 console.log('FLOW  ', JSON.stringify(flow));
 
 // Switch to Pages and wait for the page map to materialise.
-await p.evaluate(() => [...document.querySelectorAll('.seg__b')].find((b) => b.textContent === 'Pages')?.click());
+await setView(p, 'Pages');
 await p.waitForSelector('.page', { timeout: 20000 });
 await new Promise((r) => setTimeout(r, 600));
 const paged = await p.evaluate(() => {
@@ -34,7 +35,7 @@ const paged = await p.evaluate(() => {
 });
 console.log('PAGED ', JSON.stringify(paged));
 
-await p.evaluate(() => [...document.querySelectorAll('.seg__b')].find((b) => b.textContent === 'Web')?.click());
+await setView(p, 'Web');
 await new Promise((r) => setTimeout(r, 400));
 const web = await p.evaluate(() => ({
   theme: document.querySelector('.app')?.getAttribute('data-theme'),

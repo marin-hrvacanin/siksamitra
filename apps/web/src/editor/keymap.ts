@@ -13,6 +13,7 @@
  * key codes is how an editor ends up unable to type `ā`.
  */
 import type { Session } from './useSession.js';
+import type { IconName } from '../ui/Icon.js';
 
 export interface Binding {
   /** `KeyboardEvent.key`, matched case-insensitively for letters. Empty for an
@@ -20,11 +21,38 @@ export interface Binding {
   key: string;
   ctrl?: boolean;
   shift?: boolean;
+  /**
+   * Alt. NEVER set, and matched anyway — see `handleEditKey`.
+   *
+   * On Windows AltGr *is* Ctrl+Alt, so a table that ignored `altKey` swallowed
+   * every AltGr chord: on a Croatian, German or Polish layout the character it
+   * produces was eaten and an edit command ran instead. Alt+Left, the
+   * browser's Back, went the same way.
+   */
+  alt?: boolean;
   /** Shown in a menu or a tooltip. */
   label: string;
   /** Which ribbon group shows this as a button. Absent ⇒ keyboard only, which
    *  is right for the caret keys: nobody wants an "arrow left" button. */
   ribbon?: 'history' | 'marks' | 'auto';
+  /**
+   * The glyph on that button. Required in practice for a ribbon action: a
+   * ribbon of words is a menu, and this one has to be usable at a glance by
+   * someone coming from Word. The holding icons are our own notation — the box
+   * in its two stroke weights — for the reason given in the icon manifest.
+   */
+  icon?: IconName;
+  /**
+   * How big its button is — and the reason this is DATA rather than "the first
+   * one is large".
+   *
+   * That rule made Undo a large button with its label underneath and Redo a
+   * small one with its label beside it: a pair of opposites that did not look
+   * like a pair. Two things that answer each other — the two holding weights,
+   * undo and redo — have to be the same size, and only the table knows which
+   * those are.
+   */
+  size?: 'lg' | 'sm';
   /** One line, for the tooltip. Says what it is FOR. */
   hint?: string;
   enabled?: (session: Session) => boolean;
@@ -65,6 +93,8 @@ export const EDIT_KEYS: readonly Binding[] = [
     ctrl: true,
     label: 'Short',
     ribbon: 'marks',
+    icon: 'hold-short',
+    size: 'lg',
     hint: 'A thin box — a short vowel before',
     run: (s) => s.mark({ hold: 'short' }),
   },
@@ -74,6 +104,8 @@ export const EDIT_KEYS: readonly Binding[] = [
     shift: true,
     label: 'Long',
     ribbon: 'marks',
+    icon: 'hold-long',
+    size: 'lg',
     hint: 'A thick box — a long vowel before',
     run: (s) => s.mark({ hold: 'long' }),
   },
@@ -82,6 +114,7 @@ export const EDIT_KEYS: readonly Binding[] = [
     ctrl: true,
     label: 'None',
     ribbon: 'marks',
+    icon: 'hold-none',
     hint: 'There is NO holding here — overrules the rules',
     run: (s) => s.mark({ hold: null }),
   },
@@ -90,6 +123,7 @@ export const EDIT_KEYS: readonly Binding[] = [
     ctrl: true,
     label: 'Clear',
     ribbon: 'marks',
+    icon: 'marks-clear',
     hint: 'Withdraw your decision and let the rules decide again',
     run: (s) => s.unmark(['hold', 'hg']),
   },
@@ -100,6 +134,8 @@ export const EDIT_KEYS: readonly Binding[] = [
     ctrl: true,
     label: 'Undo',
     ribbon: 'history',
+    icon: 'undo',
+    size: 'lg',
     enabled: (s) => s.canUndo,
     run: (s) => s.undoEdit(),
   },
@@ -109,6 +145,8 @@ export const EDIT_KEYS: readonly Binding[] = [
     shift: true,
     label: 'Redo',
     ribbon: 'history',
+    icon: 'redo',
+    size: 'lg',
     enabled: (s) => s.canRedo,
     run: (s) => s.redoEdit(),
   },
@@ -122,6 +160,7 @@ export const EDIT_KEYS: readonly Binding[] = [
     key: '',
     label: 'Auto holdings',
     ribbon: 'auto',
+    icon: 'auto-keep',
     hint: 'Re-run the holding rules, keeping the boxes you placed by hand',
     run: (s) => s.autoHoldings('keep'),
   },
@@ -129,6 +168,7 @@ export const EDIT_KEYS: readonly Binding[] = [
     key: '',
     label: 'Auto, mine out',
     ribbon: 'auto',
+    icon: 'auto-replace',
     hint: 'Re-run the holding rules and DROP the boxes you placed by hand',
     run: (s) => s.autoHoldings('replace'),
   },
@@ -165,6 +205,9 @@ export function handleEditKey(
     b.key !== ''
     && b.key.toLowerCase() === e.key.toLowerCase()
     && (b.ctrl ?? false) === ctrl
+    // Alt is matched, not ignored: no binding declares it, so any chord
+    // holding it belongs to the keyboard layout rather than to this table.
+    && (b.alt ?? false) === e.altKey
     && (b.shift === undefined || b.shift === e.shiftKey)
   ));
   if (candidates.length === 0) return null;

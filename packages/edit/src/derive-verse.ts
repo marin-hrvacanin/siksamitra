@@ -20,7 +20,9 @@ import type { Derivation } from '@siksamitra/engine';
 import type {
   ChantOverride, ChantProfileRef, ChantSection, ChantVerse,
 } from '@siksamitra/format';
-import { normaliseHoldings, holdingProblems, type HoldingProblem } from './holdings.js';
+import {
+  assertHoldings, normaliseHoldings, holdingProblems, type HoldingProblem,
+} from './holdings.js';
 
 export interface VerseReport {
   verseId: string;
@@ -115,6 +117,17 @@ export function deriveVerse(
    * repair can happen once and cover every path into the document.
    */
   const { tokens, changed } = normaliseHoldings(derivation.tokens);
+
+  /*
+   * ASSERTED, not merely reported.
+   *
+   * `holdingProblems` was called and its result put in a report nobody read,
+   * while `assertHoldings` — documented as "used by the session after every
+   * command" — had no caller anywhere in the program. A malformed box that
+   * reaches the document is a defect the author has to find by eye in a PDF,
+   * so a derivation that produces one fails here instead.
+   */
+  assertHoldings(tokens, `verse "${verse.id}"`);
 
   const next: ChantVerse = {
     ...verse,

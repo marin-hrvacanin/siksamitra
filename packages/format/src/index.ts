@@ -13,7 +13,8 @@
  */
 
 // ── the profile reference a document carries ────────────────────────────────
-export type { ChantProfileKey, ChantProfileRef } from './profile-ref.js';
+export type { ChantProfileKey, ChantProfileRef, ChantProfileNote } from './profile-ref.js';
+export { CHANT_PROFILE_NOTES, CHANT_PROFILE_KEYS } from './profile-ref.js';
 
 // ── what a document SAYS: the conformance surface ───────────────────────────
 export {

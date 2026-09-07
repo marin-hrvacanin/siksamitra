@@ -33,7 +33,7 @@
 import type { ChantSvara, ChantToken, ChantUnit } from '@siksamitra/format';
 import { ANU, VIS } from './alphabet.js';
 import { norm } from './normalize.js';
-import { witnessLine } from './rules/svara.js';
+import { witnessLine } from './rules/witness.js';
 
 /** Which trigger a substituted letter came from. */
 const NASALS: ReadonlySet<string> = new Set(['ṅ', 'ñ', 'ṇ', 'n', 'm']);
@@ -103,16 +103,15 @@ export function invertVerse(tokens: readonly ChantToken[]): InvertedSource {
       witness = [];
     }
     /*
-     * PADDED WITH SPACES, all three, and this is not cosmetic: `lex` splits the
-     * line on whitespace, so `||1||` is one part and is read as a WORD — the
-     * daṇḍa, the verse number and the closing daṇḍa all vanished into letters,
-     * and 204 numbered verses could not be reproduced. `norm` collapses the
-     * spaces this adds, and `emit` places its own around a daṇḍa, so the extra
-     * `sp` tokens are not compared (see `shape` in verse-diff).
+     * NOT PADDED. `lex` splits a part at a structure boundary by itself, so
+     * `||3||` lexes as daṇḍa · number · daṇḍa with no help — and the source
+     * then reads exactly as the document does. Padding it was what put 176
+     * verses' worth of spaces into the derived stream that the original never
+     * had.
      */
-    else if (t.t === 'danda') put(` ${t.s === '॥' ? '||' : '|'} `);
-    else if (t.t === 'bar') put(' ¦ ');
-    else if (t.t === 'num') put(` ${t.s} `);
+    else if (t.t === 'danda') put(t.s === '॥' ? '||' : '|');
+    else if (t.t === 'bar') put('¦');
+    else if (t.t === 'num') put(t.s);
   }
   flush();
 
