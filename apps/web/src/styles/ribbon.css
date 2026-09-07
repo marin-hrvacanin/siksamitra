@@ -212,6 +212,27 @@
 /* Four controls, two by two — see `RibbonStack`. */
 .rbs--2 { grid-template-rows: repeat(2, auto); }
 
+/*
+ * A FACT, not a control.
+ *
+ * A ribbon full of greyed-out buttons is a ribbon that looks broken — the
+ * owner said so — and half of them were never buttons: they were the program
+ * telling you something about the document. This is that, shaped like the
+ * small buttons beside it so the row stays even, and unmistakably not
+ * clickable.
+ */
+.rbn__read {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  height: var(--control-h);
+  padding-inline: var(--space-3);
+  font-size: var(--text-ui);
+  color: var(--chrome-ink-mute);
+  white-space: nowrap;
+}
+
 .rbb__caret { margin-inline-start: var(--space-1); transform: rotate(90deg); }
 
 /* ── the icon, one size per role ─────────────────────────────────────────── */

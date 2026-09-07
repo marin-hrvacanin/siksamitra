@@ -17,7 +17,7 @@ import { anchorAt, scrollTopFor, type BlockOffset, type ViewKind } from '@siksam
 import { FlowView } from './views/FlowView.js';
 import { PagedView } from './views/PagedView.js';
 import { StatusBar } from './shell/StatusBar.js';
-import { TitleBar } from './shell/TitleBar.js';
+import { AppTitleBar } from './shell/AppTitleBar.js';
 import { NavPanel } from './shell/NavPanel.js';
 import { Backstage } from './shell/Backstage.js';
 import { useRecents } from './shell/useRecents.js';
@@ -27,6 +27,9 @@ import { Icon } from './ui/Icon.js';
 import { handleKey, type CommandContext } from './shell/commands.js';
 import { EditorSurface } from './editor/EditorSurface.js';
 import { useSession } from './editor/useSession.js';
+import { useRecording } from './audio/useRecording.js';
+import { mapRecording } from './audio/map-in-browser.js';
+import { AudioBar } from './shell/AudioGroup.js';
 import { useViewState } from './state/useViewState.js';
 import { useViewport } from './state/useViewport.js';
 import { useElementWidth } from './state/useElementWidth.js';
@@ -90,6 +93,22 @@ export function App() {
    * the kind of small betrayal that stops a panel being used.
    */
   const [tab, setTab] = useState('home');
+  /*
+   * THE RECITATION, if there is one.
+   *
+   * The player is here rather than inside the Audio tab because the tab
+   * unmounts when another tab is front, and a recording that stopped every
+   * time somebody looked at the Marking tab would be useless. The document is
+   * the session's, so the highlight follows an edit.
+   */
+  const audio = useRecording(doc);
+  const mapAudio = useCallback((chosen: File) => {
+    if (doc === null) return;
+    setNote(`Listening to ${chosen.name}…`);
+    void mapRecording(doc, chosen)
+      .then((result) => { session.setRecording(result.doc); setNote(result.note); })
+      .catch((e: unknown) => setNote(`Could not map ${chosen.name}: ${String(e)}`));
+  }, [doc, session]);
   const [folded, setFolded] = useState(false);
   const [navOpen, setNavOpen] = useState(true);
   /* Which outline rows are expanded. HERE rather than in the panel, because
@@ -243,35 +262,11 @@ export function App() {
       data-mode={look.mode}
       data-density={look.density}
     >
-      <TitleBar
-        title={doc === null ? 'śikṣāmitra' : doc.title}
-        subtitle={file === null ? 'śikṣāmitra' : file.name}
-        leading={<span className="tbar__mark" aria-hidden>śi</span>}
-        trailing={(
-          <>
-            <button
-              type="button"
-              className="tbar__b"
-              title="Undo (Ctrl+Z)"
-              disabled={!session.canUndo}
-              onClick={() => session.undoEdit()}
-            >
-              <Icon name="undo" size="md" />
-            </button>
-            <button
-              type="button"
-              className="tbar__b"
-              title="Redo (Ctrl+Shift+Z)"
-              disabled={!session.canRedo}
-              onClick={() => session.redoEdit()}
-            >
-              <Icon name="redo" size="md" />
-            </button>
-          </>
-        )}
-      />
+      <AppTitleBar doc={doc} file={file} session={session} />
 
       <Toolbar
+        audio={audio}
+        onMapAudio={mapAudio}
         ctx={ctx}
         onSwitchView={switchView}
         look={look}
@@ -337,6 +332,24 @@ export function App() {
         className={`canvas canvas--${state.view.kind}${session.editing ? ' is-editing' : ''}`}
         ref={scroller}
         /*
+         * A PĀDA PLAYS WHEN YOU CLICK IT — in Read mode, where a click has
+         * nothing else to do.
+         *
+         * This is how anyone actually uses a recording against a text: point
+         * at the line you cannot get right and hear it. In Write mode the same
+         * click places the caret, which must win — a text editor whose click
+         * plays a sound instead of putting the caret where you pointed is
+         * unusable, and that is the whole reason this is conditional.
+         */
+        onClick={session.editing ? undefined : (e) => {
+          const pada = (e.target as HTMLElement).closest?.('.pada');
+          const verse = pada?.closest?.('[data-verse]');
+          const line = pada?.getAttribute('data-line');
+          const verseId = verse?.getAttribute('data-verse');
+          if (verseId == null || line == null) return;
+          audio.playPada(verseId, Number(line));
+        }}
+        /*
          * The APPEARANCE the author chose, in every view. The web view used to
          * force the site's own theme, so switching to it repainted the page in
          * someone else's colours and threw away the choice; the site's look is
@@ -370,6 +383,9 @@ export function App() {
         {doc !== null && <EditorSurface session={session} scroller={scroller} />}
       </div>
       </div>
+
+      {/* The transport, only once there is something to transport. */}
+      {audio.name !== null && <AudioBar audio={audio} />}
 
       <StatusBar doc={doc} state={state} script={script} session={session} note={note} />
     </div>

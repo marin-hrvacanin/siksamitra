@@ -221,9 +221,9 @@
    window by and no close button — it could only be left through the keyboard.
    Word's backstage covers the ribbon and everything under it and never the
    caption, which is also the only arrangement where the window stays a window.
-   Rows 2 to 4 are ribbon, work and status; row 1 is the title bar. */
+   Rows 2 to 5 are ribbon, work, transport and status; row 1 is the title. */
 .bs {
-  grid-row: 2 / 5;
+  grid-row: 2 / 6;
   grid-column: 1;
   z-index: 50;
   display: flex;

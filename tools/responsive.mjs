@@ -22,7 +22,7 @@ import puppeteer from 'puppeteer-core';
 import { openTab } from './_ui.mjs';
 
 const WIDTHS = [1920, 1600, 1400, 1200, 1024, 900, 880, 800, 700, 620, 560, 500, 440, 400, 380];
-const TABS = ['home', 'marking', 'view'];
+const TABS = ['home', 'marking', 'audio', 'view'];
 /** Below this the navigation panel hides itself — see `App.tsx`. */
 const NAV_MIN = 880;
 

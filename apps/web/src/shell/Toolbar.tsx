@@ -30,6 +30,8 @@ import { RibbonButton, RibbonStack } from './RibbonButton.js';
 import { FileGroup } from './FileGroup.js';
 import { ScriptGroup } from './ScriptGroup.js';
 import { RegisterGroup } from './RegisterGroup.js';
+import { MappingGroup, SpeedGroup, TransportGroup } from './AudioGroup.js';
+import type { Recording } from '../audio/useRecording.js';
 import { ViewSwitcher } from './ViewSwitcher.js';
 import { AppearanceMenu } from './AppearanceMenu.js';
 import type { Appearance } from '../state/useAppearance.js';
@@ -80,7 +82,7 @@ function CommandButtons(
 export function Toolbar(
   {
     ctx, onSwitchView, look, session,
-    onOpenFile, onNote, tab, onTab, folded, onFolded, onFile,
+    onOpenFile, onNote, tab, onTab, folded, onFolded, onFile, audio, onMapAudio,
   }: {
     ctx: CommandContext;
     onSwitchView: (k: ViewKind) => void;
@@ -94,6 +96,8 @@ export function Toolbar(
     onFolded: (folded: boolean) => void;
     /** Opens the backstage — see `Backstage.tsx`. */
     onFile: () => void;
+    audio: Recording;
+    onMapAudio: (file: File) => void;
   },
 ): ReactNode {
   /*
@@ -209,9 +213,39 @@ export function Toolbar(
     },
   ];
 
+  /*
+   * AUDIO IS ITS OWN TAB, not a group on View.
+   *
+   * Listening and marking are different sittings — one is done with the ears
+   * and a loop, the other with the eyes and a selection — and a group that
+   * only fits when the window is wide is a group most people never find.
+   */
+  const audioTab: RibbonGroup[] = [
+    {
+      id: 'transport', label: 'Play', icon: 'play', priority: 0,
+      content: (
+        <TransportGroup
+          audio={audio}
+          verseId={session.selection?.head.verseId ?? null}
+        />
+      ),
+    },
+    {
+      id: 'speed', label: 'Speed', icon: 'loop', priority: 2,
+      content: <SpeedGroup audio={audio} />,
+    },
+    {
+      id: 'mapping', label: 'The recording', icon: 'waveform', priority: 1,
+      content: (
+        <MappingGroup doc={session.doc} audio={audio} onMap={onMapAudio} onNote={onNote} />
+      ),
+    },
+  ];
+
   const tabs: readonly RibbonTab[] = [
     { id: 'home', label: 'Home', groups: home },
     { id: 'marking', label: 'Marking', groups: marking },
+    { id: 'audio', label: 'Audio', groups: audioTab },
     { id: 'view', label: 'View', groups: view },
   ];
 

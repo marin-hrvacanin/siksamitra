@@ -1,0 +1,106 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+/* ── the pāda being sung ────────────────────────────────────────────────── */
+
+/*
+ * THE LINE, not the letters.
+ *
+ * A recitation's unit is the breath, which is the pāda — so the highlight is
+ * the whole line, lit as one. Painting the syllables individually (the way the
+ * selection is painted) would be right for a tool acting on letters and wrong
+ * here: nobody sings a letter.
+ *
+ * Behind the text rather than over it, and mixed from the accent so it follows
+ * the theme. It has to be weak: this sits under marked text where a holding is
+ * a thin box and an accent is a hairline above the line, and a strong wash
+ * takes both of them with it.
+ */
+.pada.is-sung {
+  background: color-mix(in srgb, var(--chrome-accent) 14%, transparent);
+  border-radius: var(--chrome-radius);
+  /* The line box is tight around the text; without this the wash stops at the
+     ascenders and the marks above them sit outside it. */
+  box-shadow: 0 0 0 var(--space-1) color-mix(in srgb, var(--chrome-accent) 14%, transparent);
+}
+
+/* Someone who has asked for less motion still gets the highlight — it is
+   information, not decoration — but it does not slide from line to line. */
+.pada { transition: background var(--motion-quick) linear; }
+@media (prefers-reduced-motion: reduce) {
+  .pada { transition: none; }
+}
+
+/* ── the transport ─────────────────────────────────────────────────────── */
+
+/*
+ * A BAR UNDER THE DOCUMENT, above the status line.
+ *
+ * Not a floating player: it is a part of the window with a row of its own, so
+ * it never covers the last line of the page — which is exactly the line
+ * somebody is looking at when they are listening to the end of a verse.
+ */
+.abar {
+  grid-row: 4;
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-5);
+  height: var(--control-h);
+  min-height: var(--control-h);
+  border-top: var(--border-hair) solid var(--chrome-line);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  font-size: var(--text-ui-sm);
+}
+.abar__b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  border: 0;
+  border-radius: var(--chrome-radius);
+  background: transparent;
+  color: var(--chrome-ink);
+  cursor: pointer;
+}
+.abar__b:hover { background: var(--chrome-sunk); }
+/* Tabular figures, or the clock jiggles a pixel per second while it counts. */
+.abar__t { font-variant-numeric: tabular-nums; color: var(--chrome-ink-mute); }
+.abar__seek { flex: 1 1 auto; min-width: 0; accent-color: var(--chrome-accent); }
+.abar__now {
+  flex: 0 0 auto;
+  max-width: var(--panel-min);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--chrome-ink-mute);
+}
+
+/* ── two utilities that had no home ────────────────────────────────────── */
+
+/*
+ * `u-only-read` is for a screen reader alone: the padlock beside a transcribed
+ * verse is a picture, and a picture needs words. Clipped rather than
+ * `display: none`, which removes it from the accessibility tree as well and
+ * makes the whole thing pointless.
+ *
+ * `u-offscreen` is for a control that must exist and must not be seen — the
+ * file input behind "Open take". The browser gives no other way to read a file
+ * off the disk, and its own button cannot be styled.
+ */
+.u-only-read,
+.u-offscreen {
+  position: absolute;
+  width: var(--border-hair);
+  height: var(--border-hair);
+  padding: 0;
+  margin: calc(var(--border-hair) * -1);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

@@ -23,5 +23,6 @@
    selection are drawn ON the document. */
 @import './styles/document.css';
 @import './styles/editor.css';
+@import './styles/audio.css';
 @import './styles/status.css';
 @import './styles/diagnostics.css';

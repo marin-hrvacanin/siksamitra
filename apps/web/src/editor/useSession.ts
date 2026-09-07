@@ -30,6 +30,7 @@ import {
 } from '@siksamitra/edit';
 import { selectedUnits, unitAddresses, unitAtCaret, type UnitRange } from './selection.js';
 import { useRegister } from './useRegister.js';
+import { useSetRecording } from './useSetRecording.js';
 
 /** How long a burst of typing stays one undo step. Word's feel, roughly. */
 const COALESCE_MS = 900;
@@ -95,6 +96,15 @@ export interface Session {
   register: ChantProfileKey | null;
   sectionRegister: ChantProfileKey | null;
   setRegister: (scope: 'document' | 'section', preset: ChantProfileKey | null) => string;
+
+  /**
+   * Put a mapping of the recitation into the document, as one undoable step.
+   *
+   * Takes a whole document rather than the mapping alone because that is what
+   * `writeMapping` returns, and re-deriving the difference here would be a
+   * second implementation of something already done correctly once.
+   */
+  setRecording: (next: ChantDoc) => void;
 
   undoEdit: () => void;
   redoEdit: () => void;
@@ -339,6 +349,7 @@ export function useSession(doc: ChantDoc): Session {
   }, []);
 
   const setRegister = useRegister(setLive, setRevision, sectionId);
+  const setRecording = useSetRecording(setLive, setRevision);
 
   return {
     doc: live,
@@ -365,6 +376,7 @@ export function useSession(doc: ChantDoc): Session {
     register: registerOf(live),
     sectionRegister: section === undefined ? null : registerOf(live, section),
     setRegister,
+    setRecording,
     undoEdit,
     redoEdit,
     canUndo: live_.history.past.length > 0,

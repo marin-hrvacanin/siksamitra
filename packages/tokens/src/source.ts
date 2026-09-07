@@ -162,6 +162,12 @@ export const BASE = {
      values and all of them scale with the root. Literal spacing is how a
      stylesheet ends up with 0.45rem next to 0.5rem next to 7px, each chosen by
      a different person on a different day. */
+  /* ── how long a change takes ──────────────────────────────────────────────
+     One value, because there is one kind of motion in this program: a state
+     changed and the eye should be told where. Anything slower than this reads
+     as the program thinking; anything faster is not seen at all. */
+  "motion-quick": "120ms",
+
   "space-0": "0",
   "space-1": "0.125rem",
   "space-2": "0.25rem",

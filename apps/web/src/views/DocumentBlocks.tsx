@@ -249,9 +249,20 @@ function DocumentBlocksInner(
                 <div
                   className="verse"
                   data-block-id={id}
+                  /*
+                   * `data-verse` IS NOT AN EDITING ATTRIBUTE.
+                   *
+                   * It used to be written only in edit mode, along with the
+                   * caret's other addressing. But a recording is played
+                   * against the text in READ mode — that is what reading with
+                   * a recitation is — and the highlight and the click both
+                   * need to know which verse a line belongs to. So the
+                   * identity is always there; only what edit mode adds to it
+                   * is conditional.
+                   */
+                  data-verse={item.id}
                   {...(addressable
                     ? {
-                      'data-verse': item.id,
                       'data-section': section.id,
                       ...(item.src === undefined ? { 'data-attested': '1' } : {}),
                     }

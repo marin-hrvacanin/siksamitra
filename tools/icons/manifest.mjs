@@ -77,6 +77,15 @@ export const SYMBOL = {
   'zoom-fit-width': 'fit_page_width',
   'zoom-fit-page': 'fit_screen',
 
+  /* audio */
+  play: 'play_arrow',
+  pause: 'pause',
+  stop: 'stop',
+  'play-verse': 'play_circle',
+  loop: 'repeat',
+  waveform: 'graphic_eq',
+  microphone: 'mic',
+
   /* the shell */
   appearance: 'palette',
   light: 'light_mode',

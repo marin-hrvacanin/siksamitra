@@ -85,6 +85,27 @@ a derivation reproduces the marks exactly) if you mean to make it derivable.
 whose accents came off a scan loses them. The command reports the cost and
 exits 3 without writing; `--accept-loss` is how you say you meant it.
 
+## The recitation
+
+A document can say which second of a recording is which pāda, and the reader
+plays from that — a verse, a single line, the line lit as it is sung. Nothing
+could ever produce that mapping, so most recordings never had one.
+
+```bash
+sm audio map durga.json --file take.wav --write   # listen, and work it out
+sm audio check durga.json                         # is a hand-edited one usable?
+sm audio show durga.json                          # what it currently claims
+```
+
+It finds the breaths in the recording, works out what share of the time each
+pāda's **syllables** are owed, and matches the two. A boundary that lands on a
+breath is heard; one with no breath near it is the arithmetic's guess and is
+marked `?` in the output and in `--report`. Fix those two or three by hand
+rather than distrusting the whole mapping.
+
+WAV is read directly. Anything compressed goes through `ffmpeg` if the machine
+has one — the editor needs neither, because the browser decodes everything.
+
 ## The register — which rules apply
 
 The rules are not one set. Five registers, and the document says which:
@@ -137,6 +158,7 @@ state.doc;        // the result
 | `@siksamitra/engine` | the marking rules — text in, marks out, nothing stateful |
 | `@siksamitra/edit` | editing: the caret, the commands, undo, rule zero |
 | `@siksamitra/layout` | pages, zoom and how a document becomes a page |
+| `@siksamitra/audio` | where the voice stops, and which second is which pāda |
 | `@siksamitra/interop` | Word, PDF, `.smdoc`, `.vuchant` |
 | `@siksamitra/render` | drawing a marked text |
 | `@siksamitra/tokens` | every design value, so none is buried in a stylesheet |

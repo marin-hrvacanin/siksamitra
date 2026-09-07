@@ -17,7 +17,7 @@
  * before ⇒ extend that step".
  */
 import type {
-  ChantDoc, ChantOverride, ChantProfileRef, ChantSection,
+  ChantDoc, ChantOverride, ChantProfileRef, ChantRecording, ChantSection,
 } from '@siksamitra/format';
 import type { Selection } from './caret.js';
 
@@ -37,6 +37,15 @@ export interface Snapshot {
    * names no register), so it is always written and always restored.
    */
   profile: ChantProfileRef | undefined;
+  /**
+   * THE RECORDING'S MAPPING, for the same reason as the profile above.
+   *
+   * Mapping a take is one action that rewrites every verse's offsets at once.
+   * Without it here, Ctrl+Z after a mapping put the text back and left the new
+   * offsets in place — and a mapping is precisely the thing somebody tries,
+   * listens to, and wants to take back.
+   */
+  recording: ChantRecording | undefined;
 }
 
 export interface Step {
@@ -61,6 +70,7 @@ export const snapshot = (
   overrides: [...(doc.overrides ?? [])],
   selection,
   profile: doc.profile,
+  recording: doc.recording,
 });
 
 /**
@@ -92,6 +102,8 @@ export function restore(doc: ChantDoc, snap: Snapshot): ChantDoc {
      reason the overrides do — see above. */
   if (snap.profile !== undefined) out.profile = snap.profile;
   else delete out.profile;
+  if (snap.recording !== undefined) out.recording = snap.recording;
+  else delete out.recording;
   return out;
 }
 
