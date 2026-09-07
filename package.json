@@ -13,6 +13,7 @@
     "packages/format",
     "packages/engine",
     "packages/layout",
+    "packages/audio",
     "packages/edit",
     "packages/render",
     "packages/interop",
@@ -22,7 +23,7 @@
     "apps/desktop"
   ],
   "scripts": {
-    "build": "npm-run-all --serial build:format build:engine build:interop build:layout build:edit build:storage build:render build:cli",
+    "build": "npm-run-all --serial build:format build:engine build:interop build:layout build:edit build:audio build:storage build:render build:cli",
     "build:format": "npm run -w @siksamitra/format build",
     "build:engine": "npm run -w @siksamitra/engine build",
     "build:interop": "npm run -w @siksamitra/interop build",
@@ -71,7 +72,8 @@
     "check:responsive": "node tools/responsive.mjs",
     "check:themes": "tsx tools/theme-matrix.mjs",
     "check:authoring": "node tools/check-authoring.mjs",
-    "sync:authoring": "node tools/check-authoring.mjs --sync"
+    "sync:authoring": "node tools/check-authoring.mjs --sync",
+    "build:audio": "npm run -w @siksamitra/audio build"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

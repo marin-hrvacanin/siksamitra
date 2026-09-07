@@ -27,6 +27,7 @@ import { attachSource } from './attach-src.js';
 import {
   EDIT_HELP, EDIT_VERBS, runEditVerb, type EditVerb,
 } from './edit-commands.js';
+import { AUDIO_HELP, runAudioVerb } from './audio-commands.js';
 import { divergenceRows, score, verses } from './score.js';
 import {
   canonicalJson, normalizeChantDoc,
@@ -148,7 +149,9 @@ Options
 
 Exit codes: 0 ok · 1 validation error · 2 bad input · 3 engine refusal
 
-${EDIT_HELP}`;
+${EDIT_HELP}
+
+${AUDIO_HELP}`;
 
 /*
  * THE EDITING VERBS FIRST.
@@ -158,13 +161,20 @@ ${EDIT_HELP}`;
  * file at all. Everything a person can change from the window is here, and it
  * is the same `apply` underneath.
  */
-if ((EDIT_VERBS as readonly string[]).includes(cmd)) {
-  const path = positional(0);
-  if (path === undefined) die(2, `${cmd} needs a document: ${cmd} <doc.json> ...`);
+if ((EDIT_VERBS as readonly string[]).includes(cmd) || cmd === 'audio') {
+  /* `audio map <doc>` — the verb is the first positional, the document the
+     second, which is how every other tool of this shape reads a subcommand. */
+  const verb = cmd === 'audio' ? positional(0) : null;
+  const path = positional(cmd === 'audio' ? 1 : 0);
+  if (cmd === 'audio' && verb === undefined) die(2, 'audio needs a command: map, check or show');
+  if (path === undefined) {
+    die(2, `${cmd}${verb === null ? '' : ` ${verb}`} needs a document: `
+      + `sm ${cmd}${verb === null ? '' : ` ${verb}`} <doc.json> ...`);
+  }
   say(`
-  ${cmd}  ${path}
+  ${cmd}${verb === null ? '' : ` ${verb}`}  ${path}
 `);
-  runEditVerb(cmd as EditVerb, {
+  const ctx = {
     flag,
     has: (name: string) => argv.includes(`--${name}`),
     say,
@@ -172,7 +182,9 @@ if ((EDIT_VERBS as readonly string[]).includes(cmd)) {
     die,
     readDoc,
     path,
-  });
+  };
+  if (cmd === 'audio') runAudioVerb(verb as string, ctx);
+  else runEditVerb(cmd as EditVerb, ctx);
   process.exit(0);
 }
 
