@@ -18,6 +18,17 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as React from 'react';
 import { OPTIONS, tokensFor } from './options.mjs';
+import { REFERENCE, VARIANTS } from './variants.mjs';
+
+/*
+ * `--round2` shows the blends around Śānta instead of the first five. Same
+ * generator, same real renderer, same stylesheet — a second page written
+ * separately would be free to drift from the first, and then the comparison
+ * between rounds would mean nothing.
+ */
+const ROUND2 = process.argv.includes('--round2');
+const SHOWN = ROUND2 ? [...VARIANTS, ...REFERENCE] : OPTIONS;
+const OUT_FILE = ROUND2 ? 'design-round2.html' : 'design-preview.html';
 
 // `tsx` compiles TSX with the CLASSIC runtime, which expects a global `React`.
 // Setting it before a dynamic import is the least invasive fix: the alternative
@@ -193,9 +204,9 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px}
 </head>
 <body>
 <div class="dp-wrap">
-  <h1>śikṣāmitra — its own look</h1>
+  <h1>śikṣāmitra — ${ROUND2 ? 'round two: blends around Śānta' : 'its own look'}</h1>
   <p class="dp-lead">
-    ${OPTIONS.length} designs, each in light and dark — differing in typeface,
+    ${SHOWN.length} designs, each in light and dark — differing in typeface,
     density, radius and palette, not only in hue. The marked text is rendered by the
     <b>real renderer</b> against the <b>real stylesheet</b>, from a real corpus
     document — so the holding boxes, svara strokes and the anusvāra change you
@@ -205,7 +216,7 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px}
 
   <div class="dp-bar">
     <button data-filter="all" class="on">All</button>
-    ${OPTIONS.map((o) => `<button data-filter="${o.id}">${esc(o.name)}</button>`).join('')}
+    ${SHOWN.map((o) => `<button data-filter="${o.id}">${esc(o.name)}</button>`).join('')}
     <span style="width:14px"></span>
     <button data-mode="all" class="on">Both modes</button>
     <button data-mode="light">Light only</button>
@@ -213,7 +224,7 @@ h1{font-size:20px;font-weight:600;margin:0 0 4px}
   </div>
 
   <div class="dp-grid">
-    ${OPTIONS.flatMap((o) => ['light', 'dark'].map((m) => panel(o, m))).join('')}
+    ${SHOWN.flatMap((o) => ['light', 'dark'].map((m) => panel(o, m))).join('')}
   </div>
 </div>
 

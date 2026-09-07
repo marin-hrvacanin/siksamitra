@@ -22,6 +22,7 @@ import { handleKey, type CommandContext } from './shell/commands.js';
 import { useViewState } from './state/useViewState.js';
 import { useViewport } from './state/useViewport.js';
 import { useDocument } from './state/useDocument.js';
+import { useAppearance } from './state/useAppearance.js';
 
 const DOCUMENTS = [
   { slug: 'durga-suktam', title: 'Durgā Sūktam' },
@@ -32,8 +33,8 @@ const DOCUMENTS = [
 
 export function App() {
   const viewport = useViewport();
-  const [theme, setTheme] = useState('light');
-  const state = useViewState(viewport, theme);
+  const look = useAppearance();
+  const state = useViewState(viewport, look.mode);
   const [slug, setSlug] = useState(DOCUMENTS[0]!.slug);
   const { doc, error } = useDocument(slug);
   const [script, setScript] = useState<ChantScriptKey>('iast');
@@ -80,13 +81,15 @@ export function App() {
     resetZoom: state.resetZoom,
     setZoomMode: state.setZoom,
     paginated: state.view.paginated,
+    pageSize: state.page.id,
+    setPageSize: state.setPageSize,
     script,
     setScript,
     showMarks,
     setShowMarks,
-    theme,
-    setTheme,
-  }), [state, switchView, script, showMarks, theme]);
+    theme: look.mode,
+    setTheme: (m: string) => look.setMode(m === 'dark' ? 'dark' : 'light'),
+  }), [state, switchView, script, showMarks, look]);
 
   /** One keyboard handler, reading the registry. No shortcut lives elsewhere. */
   useEffect(() => {
@@ -109,16 +112,33 @@ export function App() {
   const contentKey = useMemo(() => `${slug}|${script}|${showMarks}`, [slug, script, showMarks]);
 
   return (
-    <div className="app" data-theme={state.theme}>
+    /*
+     * Two independent axes, two attributes. The MODE sits on the root so a
+     * media query and an explicit choice resolve in one place; the chrome and
+     * the document each carry their own, so any shell can be worn with any
+     * page — and the `web` view can pin the document theme without touching
+     * the shell the author is working in.
+     */
+    <div
+      className="app"
+      data-chrome={look.chrome}
+      data-mode={look.mode}
+      data-density={look.density}
+    >
       <Toolbar
         ctx={ctx}
         documents={DOCUMENTS}
         slug={slug}
         onSlug={setSlug}
         onSwitchView={switchView}
+        look={look}
       />
 
-      <div className={`canvas canvas--${state.view.kind}`} ref={scroller}>
+      <div
+        className={`canvas canvas--${state.view.kind}`}
+        ref={scroller}
+        data-doc={state.view.kind === 'web' ? 'warm' : look.document}
+      >
         {error !== null && <p className="canvas__msg">Could not open: {error}</p>}
         {error === null && doc === null && <p className="canvas__msg">Opening…</p>}
         {doc !== null && (state.view.paginated ? (
@@ -141,7 +161,7 @@ export function App() {
         ))}
       </div>
 
-      <StatusBar doc={doc} state={state} script={script} />
+      <StatusBar doc={doc} state={state} script={script} look={look} />
     </div>
   );
 }

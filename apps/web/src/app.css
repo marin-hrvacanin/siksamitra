@@ -18,81 +18,77 @@
 
 html, body, #root { height: 100%; margin: 0; }
 
+/*
+ * `body` is OUTSIDE `.app`, so it resolves the DEFAULT theme's tokens, not the
+ * chosen one. Colouring text here and letting it inherit inward put the default
+ * theme's ink on the chosen theme's background: on Nirṇaya that was near-black
+ * text on charcoal, a contrast of 1.5, and the theme matrix caught it across
+ * eleven combinations.
+ *
+ * So body carries only what cannot vary, and every themed surface states its
+ * own ink.
+ */
 body {
-  background: var(--color-vellum-dim);
-  color: var(--color-ink);
+  margin: 0;
   font-family: var(--font-ui);
   font-size: var(--text-ui);
   -webkit-font-smoothing: antialiased;
 }
 
+/* Nothing may scroll the window sideways. A tool that does has lost a control
+   off the edge, and the person cannot know what. */
+html, body { overflow-x: hidden; }
+
 .app {
   display: grid;
-  grid-template-rows: var(--toolbar-h) 1fr var(--status-h);
+  grid-template-rows: minmax(var(--toolbar-h), auto) 1fr var(--status-h);
   height: 100%;
   overflow: hidden;
+  /* The themed root. Everything inside inherits from here. */
+  background: var(--chrome-bg);
+  color: var(--chrome-ink);
 }
 
 /* ── toolbar ───────────────────────────────────────────────────────────── */
 
-.tb {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: 0 var(--space-4);
-  background: var(--color-vellum);
-  border-bottom: var(--border-hair) solid var(--color-rule);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.tb::-webkit-scrollbar { display: none; }
 
 .tb__brand {
   font-family: var(--font-display);
   font-size: var(--text-brand);
-  color: var(--color-violet);
+  color: var(--chrome-accent);
   padding-right: var(--space-2);
   white-space: nowrap;
 }
 
-.tb__gap { flex: 1; }
 
-.tb__grp {
-  display: flex;
-  align-items: center;
-  gap: var(--border-hair);
-  padding-left: var(--space-4);
-  margin-left: var(--space-2);
-  border-left: var(--border-hair) solid var(--color-rule);
-}
 
 .tb__b, .seg__b, .zoom__b, .zoom__v, .zoom__f {
   font: inherit;
-  color: var(--color-ink-soft);
+  color: var(--chrome-ink-soft);
   background: transparent;
   border: var(--border-hair) solid transparent;
-  border-radius: var(--radius-xs);
+  border-radius: var(--chrome-radius);
   padding: var(--space-2) var(--space-3);
   cursor: pointer;
   white-space: nowrap;
 }
 .tb__b:hover:not(:disabled), .seg__b:hover, .zoom__b:hover, .zoom__v:hover, .zoom__f:hover {
-  background: var(--color-vellum-warm);
-  color: var(--color-ink);
+  background: var(--chrome-sunk);
+  color: var(--chrome-ink);
 }
 .tb__b:disabled { opacity: 0.4; cursor: default; }
 .tb__b.is-on, .zoom__f.is-on {
-  background: var(--color-vellum-warm);
-  border-color: var(--color-rule-strong);
-  color: var(--color-violet);
+  background: var(--chrome-sunk);
+  border-color: var(--chrome-line);
+  color: var(--chrome-accent);
 }
 
 .tb__sel {
   font: inherit;
-  color: var(--color-ink);
-  background: var(--color-vellum-dim);
-  border: var(--border-hair) solid var(--color-rule);
-  border-radius: var(--radius-xs);
+  color: var(--chrome-ink);
+  background: var(--chrome-bg);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
   padding: var(--space-1) var(--space-2);
   max-width: var(--space-9);
 }
@@ -100,13 +96,13 @@ body {
 /* A segmented control: three states, one click each, current one readable. */
 .seg {
   display: inline-flex;
-  border: var(--border-hair) solid var(--color-rule);
-  border-radius: var(--radius-xs);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
   overflow: hidden;
 }
-.seg__b { border-radius: 0; border: 0; border-right: var(--border-hair) solid var(--color-rule); }
+.seg__b { border-radius: 0; border: 0; border-right: var(--border-hair) solid var(--chrome-line); }
 .seg__b:last-child { border-right: 0; }
-.seg__b.is-on { background: var(--color-violet); color: var(--color-vellum); }
+.seg__b.is-on { background: var(--chrome-accent); color: var(--chrome-raise); }
 
 .zoom { display: inline-flex; align-items: center; }
 .zoom__v { min-width: var(--space-9); text-align: center; font-variant-numeric: tabular-nums; }
@@ -115,14 +111,14 @@ body {
 
 .canvas {
   overflow: auto;
-  background: var(--color-vellum-dim);
+  background: var(--chrome-desk);
   /* Anchoring is done by us on a view change; the browser's own anchoring
      fights it and produces a double correction. */
   overflow-anchor: none;
 }
 
 .canvas__msg {
-  color: var(--color-ink-mute);
+  color: var(--chrome-ink-mute);
   padding: var(--gutter);
   font-style: italic;
 }
@@ -133,32 +129,12 @@ body {
 .flow__column {
   background: var(--doc-bg);
   color: var(--doc-ink);
-  border: var(--border-hair) solid var(--color-rule);
-  border-radius: var(--radius-sm);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
   padding: var(--doc-pad);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--chrome-shadow);
 }
 
-/* The document register: set by tokens, so the `web` theme changes how a
-   document READS without touching a component or the chrome around it. */
-.flow__column, .page__content {
-  font-family: var(--font-body);
-  font-size: var(--doc-size);
-  line-height: var(--doc-leading);
-}
-.verse { margin-block: var(--doc-verse-gap); }
-.section__title {
-  font-family: var(--doc-title-face);
-  font-size: var(--doc-title-size);
-  color: var(--color-violet-deep);
-  margin-block: var(--space-7) var(--space-5);
-}
-.verse__n {
-  color: var(--color-ink-light);
-  font-family: var(--font-ui);
-  font-size: var(--text-ui);
-  margin-right: var(--space-4);
-}
 
 /* Paged: pages on a desk. The grey around them is what tells the eye these are
    sheets and not a scrolling column. */
@@ -174,8 +150,8 @@ body {
   position: relative;
   background: var(--doc-bg);
   color: var(--doc-ink);
-  box-shadow: var(--shadow-md);
-  border-radius: var(--radius-xs);
+  box-shadow: var(--chrome-shadow-lift);
+  border-radius: var(--chrome-radius);
   overflow: hidden;
   flex: 0 0 auto;
 }
@@ -185,7 +161,7 @@ body {
   right: var(--space-5);
   bottom: var(--space-3);
   font-size: var(--text-ui);
-  color: var(--color-ink-light);
+  color: var(--chrome-ink-mute);
   font-variant-numeric: tabular-nums;
 }
 
@@ -199,7 +175,7 @@ body {
   left: -99999px; /* token-exempt: off-canvas parking, not a layout distance */
   top: 0;
 }
-.paged__measuring { color: var(--color-ink-mute); font-style: italic; padding: var(--gutter); }
+.paged__measuring { color: var(--chrome-ink-mute); font-style: italic; padding: var(--gutter); }
 
 /* ── status bar ────────────────────────────────────────────────────────── */
 
@@ -208,17 +184,238 @@ body {
   align-items: center;
   gap: var(--space-3);
   padding: 0 var(--space-5);
-  background: var(--color-vellum);
-  border-top: var(--border-hair) solid var(--color-rule);
-  color: var(--color-ink-mute);
+  background: var(--chrome-raise);
+  border-top: var(--border-hair) solid var(--chrome-line);
+  color: var(--chrome-ink-mute);
   font-variant-numeric: tabular-nums;
   overflow: hidden;
   white-space: nowrap;
 }
-.status__sep { color: var(--color-ink-light); }
+.status__sep { color: var(--chrome-ink-mute); }
+
+/*
+ * The status bar sheds detail rather than overflowing. What survives longest is
+ * what a person cannot get elsewhere: the document, then the view and zoom.
+ * Section and syllable counts are the first to go — they are reassurance, not
+ * information you act on.
+ */
+@media (max-width: 62rem) {
+  .status__opt { display: none; }
+}
+@media (max-width: 44rem) {
+  .status__opt2 { display: none; }
+}
 .status__gap { flex: 1; }
-.status__warn { color: var(--color-gold-deep); }
+.status__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+.status__warn { color: var(--chrome-accent); }
 
 /* A token type with no renderer: visible, not silent. The failure mode a
    switch statement hides. */
-.token--unknown { color: var(--color-danger); }
+.token--unknown { color: var(--chrome-danger); }
+
+/* ── appearance popover ───────────────────────────────────────────────────
+   A popover, not a settings page: this is a thing people try repeatedly and
+   compare, and a full-page trip loses the document they were judging against. */
+
+.ap { position: relative; }
+
+.ap__pop {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 20;
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-5);
+  background: var(--chrome-raise);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  box-shadow: var(--chrome-shadow-lift);
+  /* Hairline + a shadow only where one is genuinely needed: a floating layer
+     has to be separable from what is behind it. Nothing else here is raised. */
+}
+
+.ap__grp { min-width: 11rem; }
+.ap__lbl {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-ui-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chrome-ink-mute);
+}
+
+.ap__opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--chrome-ink-soft);
+  background: transparent;
+  border: var(--border-hair) solid transparent;
+  border-radius: var(--chrome-radius);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-1);
+  cursor: pointer;
+}
+.ap__opt:hover { background: var(--chrome-sunk); color: var(--chrome-ink); }
+.ap__opt.is-on {
+  border-color: var(--chrome-accent);
+  background: var(--chrome-sunk);
+  color: var(--chrome-ink);
+}
+
+.ap__name { display: block; }
+.ap__note {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-ui-sm);
+  line-height: 1.45;
+  color: var(--chrome-ink-mute);
+}
+
+/* The document surfaces read the DOCUMENT axis. */
+.flow__column, .page {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+}
+.flow__column, .page__content {
+  font-family: var(--font-body);
+  font-size: var(--doc-size);
+  line-height: var(--doc-leading);
+}
+.section__title { color: var(--doc-heading); }
+.verse__n, .page__folio { color: var(--doc-quiet); }
+.fill, .plain { color: var(--doc-fill); }
+
+/* ── the ribbon ───────────────────────────────────────────────────────────
+   One row at every window size. A group that stops fitting collapses into the
+   overflow button rather than wrapping or scrolling away, so nothing becomes
+   unreachable when the window narrows. */
+
+.rb {
+  display: flex;
+  align-items: stretch;
+  gap: var(--chrome-gap);
+  min-width: 0;
+  padding: 0 var(--space-4);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  border-bottom: var(--border-hair) solid var(--chrome-line);
+}
+
+/*
+ * The fixed part. It may SHRINK but never collapse: the brand and the document
+ * name are how you know what you are looking at, and at 380px the alternative
+ * was the whole window scrolling sideways.
+ */
+.rb__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.rb__lead .tb__sel {
+  min-width: 4rem;
+  flex: 0 1 auto;
+  text-overflow: ellipsis;
+}
+/* Below this the brand is the first thing to go: the document picker still
+   says what is open, and the icon is not what anyone is reading. */
+@media (max-width: 30rem) {
+  .tb__brand { display: none; }
+}
+
+.rb__row {
+  /* The containing block for the out-of-flow measuring copies below. Without
+     it they position against the viewport, sit past its right edge, and widen
+     the document even though they are invisible. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--chrome-gap);
+  flex: 1 1 auto;
+  min-width: 0;
+  /* No wrapping and no scrolling: the overflow button is the answer to a
+     narrow window, and either of those would make it unnecessary and the
+     ribbon two rows tall. */
+  overflow: hidden;
+}
+
+.rb__grp {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+  padding-left: var(--space-4);
+  border-left: var(--border-hair) solid var(--chrome-line-soft);
+}
+.rb__grp:first-child { padding-left: 0; border-left: 0; }
+
+/* A collapsed group stays in the DOM, out of flow, so its natural width is
+   still measurable — otherwise the ribbon could never discover that it fits
+   again once the window grows, and the collapse would be one-way. */
+.rb__grp.is-collapsed {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The group label is the Word convention: a small caption under the controls
+   telling you what they are. It is what makes a collapsed group's name mean
+   something when it appears in the overflow. */
+.rb__label { display: none; }
+
+.rb__content { display: flex; align-items: center; gap: var(--space-1); }
+.tb__row { display: flex; align-items: center; gap: var(--space-1); }
+
+.rb__more { position: relative; display: flex; align-items: center; flex: 0 0 auto; }
+.rb__more-n {
+  margin-left: var(--space-1);
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.rb__pop {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 13rem;
+  padding: var(--space-5);
+  background: var(--chrome-raise);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  box-shadow: var(--chrome-shadow-lift);
+}
+.rb__pop-lbl {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-ui-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chrome-ink-mute);
+}
+.rb__pop-content { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+/* At a roomy density there is space for the Word-style group captions. */
+[data-density="roomy"] .rb__grp {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+}
+[data-density="roomy"] .rb__label {
+  display: block;
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-mute);
+  line-height: 1.1;
+}

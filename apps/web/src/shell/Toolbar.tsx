@@ -1,25 +1,35 @@
 /**
- * The toolbar.
+ * The toolbar, as a DECLARATION of ribbon groups.
  *
- * It renders the command registry — it does not know what any command does. So
- * adding an action never touches this file, and a button can never disagree
- * with its own keyboard shortcut because both read one entry.
+ * It says what the groups are and what is in them. It does not know how they
+ * collapse, how the overflow popover works, or how wide anything is — that is
+ * `Ribbon` and `useOverflow`. Adding a group is one entry in the array below,
+ * and it inherits the responsive behaviour for free.
+ *
+ * Same discipline as the command registry, for the same reason: in v1 the
+ * ribbon, the dialogs and the key handler were three copies of the same
+ * actions, and they drifted.
  */
 
 import type { ReactNode } from 'react';
 import type { ChantScriptKey } from '@siksamitra/format';
 import { PAGE_SIZES, type ViewKind } from '@siksamitra/layout';
-import { commandsIn, type CommandContext } from './commands.js';
+import { commandsIn, type CommandContext, type CommandGroup } from './commands.js';
+import { Ribbon, type RibbonGroup } from './Ribbon.js';
 import { ViewSwitcher } from './ViewSwitcher.js';
+import { AppearanceMenu } from './AppearanceMenu.js';
+import type { Appearance } from '../state/useAppearance.js';
 
-const SCRIPTS: readonly { k: ChantScriptKey; label: string }[] = [
+const SCRIPTS: readonly { k: ChantScriptKey; label: string; title?: string }[] = [
   { k: 'iast', label: 'IAST' },
   { k: 'deva', label: 'देव' },
   { k: 'tel', label: 'తెలు' },
-  { k: 'tam', label: 'தமி' },
+  { k: 'tam', label: 'தமி', title: 'Tamil — these forms are unreviewed' },
 ];
 
-function CommandButtons({ group, ctx }: { group: Parameters<typeof commandsIn>[0]; ctx: CommandContext }): ReactNode {
+function CommandButtons(
+  { group, ctx }: { group: CommandGroup; ctx: CommandContext },
+): ReactNode {
   return (
     <>
       {commandsIn(group).map((c) => {
@@ -44,56 +54,106 @@ function CommandButtons({ group, ctx }: { group: Parameters<typeof commandsIn>[0
 }
 
 export function Toolbar(
-  { ctx, documents, slug, onSlug, onSwitchView }: {
+  { ctx, documents, slug, onSlug, onSwitchView, look }: {
     ctx: CommandContext;
     documents: readonly { slug: string; title: string }[];
     slug: string;
     onSlug: (s: string) => void;
     onSwitchView: (k: ViewKind) => void;
+    look: Appearance;
   },
 ): ReactNode {
-  return (
-    <header className="tb">
-      <span className="tb__brand">śikṣāmitra</span>
-
-      <select className="tb__sel" value={slug} onChange={(e) => onSlug(e.target.value)} aria-label="Document">
-        {documents.map((d) => <option key={d.slug} value={d.slug}>{d.title}</option>)}
-      </select>
-
-      <span className="tb__gap" />
-
-      <ViewSwitcher value={ctx.view} onChange={onSwitchView} />
-
-      {ctx.paginated && (
-        <select
-          className="tb__sel"
-          value={Object.keys(PAGE_SIZES).find((id) => PAGE_SIZES[id]!.label !== undefined && id === 'a4') ?? 'a4'}
-          onChange={() => undefined}
-          aria-label="Page size"
-        >
-          {Object.values(PAGE_SIZES).map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-        </select>
-      )}
-
-      <div className="tb__grp"><CommandButtons group="zoom" ctx={ctx} /></div>
-
-      <div className="tb__grp" role="group" aria-label="Script">
-        {SCRIPTS.map((s) => (
-          <button
-            type="button"
-            key={s.k}
-            className={ctx.script === s.k ? 'tb__b is-on' : 'tb__b'}
-            aria-pressed={ctx.script === s.k}
-            onClick={() => ctx.setScript(s.k)}
-            title={s.k === 'tam' ? 'Tamil — forms unreviewed' : undefined}
+  /*
+   * Priority decides what survives a narrow window: lower numbers go first and
+   * collapse last. View leads because losing sight of the page you are proofing
+   * is worse than losing the zoom buttons, which have keyboard equivalents.
+   */
+  const groups: RibbonGroup[] = [
+    {
+      id: 'view',
+      label: 'View',
+      priority: 1,
+      content: <ViewSwitcher value={ctx.view} onChange={onSwitchView} />,
+    },
+    {
+      id: 'script',
+      label: 'Script',
+      priority: 2,
+      content: (
+        <div className="tb__row" role="group" aria-label="Script">
+          {SCRIPTS.map((s) => (
+            <button
+              type="button"
+              key={s.k}
+              className={ctx.script === s.k ? 'tb__b is-on' : 'tb__b'}
+              aria-pressed={ctx.script === s.k}
+              onClick={() => ctx.setScript(s.k)}
+              {...(s.title === undefined ? {} : { title: s.title })}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: 'text',
+      label: 'Text',
+      priority: 3,
+      content: <div className="tb__row"><CommandButtons group="text" ctx={ctx} /></div>,
+    },
+    {
+      id: 'zoom',
+      label: 'Zoom',
+      priority: 4,
+      content: <div className="tb__row"><CommandButtons group="zoom" ctx={ctx} /></div>,
+    },
+    // The page-size control only means anything where there are pages.
+    ...(ctx.paginated
+      ? [{
+        id: 'page',
+        label: 'Page',
+        priority: 5,
+        content: (
+          <select
+            className="tb__sel"
+            value={ctx.pageSize}
+            onChange={(e) => ctx.setPageSize(e.target.value)}
+            aria-label="Page size"
           >
-            {s.label}
-          </button>
-        ))}
-      </div>
+            {Object.values(PAGE_SIZES).map((p) => (
+              <option key={p.id} value={p.id}>{p.label}</option>
+            ))}
+          </select>
+        ),
+      }]
+      : []),
+    {
+      id: 'appearance',
+      label: 'Appearance',
+      priority: 6,
+      content: <AppearanceMenu look={look} />,
+    },
+  ];
 
-      <div className="tb__grp"><CommandButtons group="text" ctx={ctx} /></div>
-      <div className="tb__grp"><CommandButtons group="appearance" ctx={ctx} /></div>
-    </header>
+  return (
+    <Ribbon
+      groups={groups}
+      leading={(
+        <>
+          <span className="tb__brand">śikṣāmitra</span>
+          <select
+            className="tb__sel"
+            value={slug}
+            onChange={(e) => onSlug(e.target.value)}
+            aria-label="Document"
+          >
+            {documents.map((d) => (
+              <option key={d.slug} value={d.slug}>{d.title}</option>
+            ))}
+          </select>
+        </>
+      )}
+    />
   );
 }

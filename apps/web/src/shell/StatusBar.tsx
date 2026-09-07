@@ -11,13 +11,16 @@ import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
 import { syllableCount } from '@siksamitra/format';
 import { zoomLabel } from '@siksamitra/layout';
 import type { ViewState } from '../state/useViewState.js';
+import type { Appearance } from '../state/useAppearance.js';
 
 const UNVERIFIED: Partial<Record<ChantScriptKey, string>> = {
   tam: 'Tamil forms are unreviewed',
 };
 
 export function StatusBar(
-  { doc, state, script }: { doc: ChantDoc | null; state: ViewState; script: ChantScriptKey },
+  { doc, state, script, look }: {
+    doc: ChantDoc | null; state: ViewState; script: ChantScriptKey; look: Appearance;
+  },
 ): ReactNode {
   const verses = doc?.sections.reduce((n, s) => n + s.verses.length, 0) ?? 0;
   const syllables = doc?.sections.reduce(
@@ -27,19 +30,26 @@ export function StatusBar(
 
   return (
     <footer className="status">
-      <span>{doc?.title ?? '—'}</span>
-      <span className="status__sep" aria-hidden>·</span>
-      <span>{doc?.sections.length ?? 0} sections</span>
-      <span className="status__sep" aria-hidden>·</span>
-      <span>{verses} verses</span>
-      <span className="status__sep" aria-hidden>·</span>
-      <span>{syllables} syllables</span>
+      <span className="status__title">{doc?.title ?? '—'}</span>
+      <span className="status__sep status__opt" aria-hidden>·</span>
+      <span className="status__opt">{doc?.sections.length ?? 0} sections</span>
+      <span className="status__sep status__opt2" aria-hidden>·</span>
+      <span className="status__opt2">{verses} verses</span>
+      <span className="status__sep status__opt" aria-hidden>·</span>
+      <span className="status__opt">{syllables} syllables</span>
       <span className="status__gap" />
       {caveat !== undefined && <span className="status__warn">{caveat}</span>}
       <span>{state.view.label}</span>
       <span className="status__sep" aria-hidden>·</span>
       {state.view.paginated && <><span>{state.page.label}</span><span className="status__sep" aria-hidden>·</span></>}
       <span>{zoomLabel(state.zoom)}</span>
+      <span className="status__sep status__opt" aria-hidden>·</span>
+      {/* Which appearance is in force, so a surprising look has an explanation. */}
+      <span className="status__opt">
+        {look.chromeChoices.find((c) => c.id === look.chrome)?.name ?? look.chrome}
+        {' / '}
+        {look.documentChoices.find((c) => c.id === look.document)?.name ?? look.document}
+      </span>
     </footer>
   );
 }

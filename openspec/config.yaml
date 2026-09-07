@@ -45,9 +45,19 @@ context: |
 rules:
   ui:
     - Perfect UI and UX. Zero AI slop, zero drift (owner, 2026-09-06, binding).
-    - Slop is the generic default that no one chose - centred hero, three equal cards,
-      emoji as iconography, gradient headings, lorem-shaped copy, a control for every
-      option. If it could belong to any product, it belongs to none.
+    - Slop is the generic default that no one chose. The 2026 tells, specifically,
+      and none of them may appear here: purple-to-cyan or violet gradients;
+      glassmorphism; neon glows and glowing borders; floating gradient orbs or 3D
+      blobs behind anything; a row of identical cards each with an icon, a heading
+      and two lines; one huge rounded centred icon above a heading; bouncy hover
+      animations; dark mode as the permanent default; emoji as iconography.
+    - The cause is worth knowing: absent direction a model reaches for the most
+      statistically common pattern in its training data, and that pattern is the
+      gradient-and-glass aesthetic. So state the direction. If a surface could
+      belong to any product, it belongs to none.
+    - Positive form: hairlines not shadows, flat not glassy, a real typeface with a
+      reason, one accent used on the active thing only, light default, density over
+      decoration. Nothing animates unless it communicates state.
     - Drift is a surface that stops matching the ones already shipped. The design
       language is v1's, kept deliberately - reuse it rather than inventing per screen.
     - Tool chrome, not a landing page. Dense controls, hairlines, one UI face, a real

@@ -27,6 +27,8 @@ export interface CommandContext {
   readonly resetZoom: () => void;
   readonly setZoomMode: (m: ZoomMode) => void;
   readonly paginated: boolean;
+  readonly pageSize: string;
+  readonly setPageSize: (id: string) => void;
   readonly script: ChantScriptKey;
   readonly setScript: (s: ChantScriptKey) => void;
   readonly showMarks: boolean;
