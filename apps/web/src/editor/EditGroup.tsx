@@ -15,6 +15,7 @@
 import type { ReactNode } from 'react';
 import { RibbonButton, RibbonStack } from '../shell/RibbonButton.js';
 import { accelOf, ribbonActions, type Binding } from './keymap.js';
+import { focusDocument } from './focus.js';
 import type { Session } from './useSession.js';
 
 /** Named for a screen reader: a bare `role="group"` announces nothing. */
@@ -47,7 +48,20 @@ function Buttons(
       disabled={!(b.enabled?.(session) ?? true)}
       onClick={() => {
         if (!session.editing) session.setEditing(true);
-        b.run(session, false);
+        /* Only a binding with something to run gets a button; the ribbon shows
+           none of the browser's own keys, and never did. */
+        b.run?.(session, false);
+        /*
+         * AND THE KEYBOARD GOES BACK TO THE DOCUMENT.
+         *
+         * Clicking this button moved the focus onto it, and a
+         * `contenteditable` that does not hold the focus receives nothing —
+         * so without this, applying a mark from the ribbon left the page
+         * looking editable and taking no keys at all. That is the exact
+         * report the previous surface's focus helper existed for, and it was
+         * lost in the rewrite.
+         */
+        focusDocument();
       }}
     />
   );

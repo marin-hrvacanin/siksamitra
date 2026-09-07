@@ -20,27 +20,27 @@
  *   else.
  */
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { ChantDoc, ChantProfileKey } from '@siksamitra/format';
+import type { ChantDoc, ChantProfileKey, ChantSection } from '@siksamitra/format';
 import type { SrcMap } from '@siksamitra/engine';
 import {
-  apply, caretAt, emptyHistory, flatten, isCollapsed, lineEdge, moveChar, moveLine,
-  moveWord, newState, redo, registerOf, select, selectionRange, sourcesOf, srcMapFor,
-  undo,
+  apply, emptyHistory, flatten, newState, redo, registerOf, select, sourcesOf, srcMapFor, undo,
   type EditCommand, type EditState, type FlatSource, type History, type Selection,
 } from '@siksamitra/edit';
-import { selectedUnits, unitAddresses, unitAtCaret, type UnitRange } from './selection.js';
+import { selectedUnits, type UnitRange } from './selection.js';
+import { useMarks, type MarkField } from './useMarks.js';
+import { useText } from './useText.js';
 import { useRegister } from './useRegister.js';
 import { useSetRecording } from './useSetRecording.js';
 
 /** How long a burst of typing stays one undo step. Word's feel, roughly. */
 const COALESCE_MS = 900;
 
-export type Move = 'char' | 'word' | 'line' | 'lineEdge';
 
 /** The mark fields a hand edit may set or withdraw. Mirrors the engine's
  *  `OverrideField`, named here so the toolbar can type its buttons. */
-export type MarkField =
-  | 'hold' | 'hg' | 'svara' | 'change' | 'sup' | 'candra' | 'sbhakti' | 'dirgha';
+/* The list itself lives with the commands that use it. Re-exported because
+   the keymap and the ribbon both name it. */
+export type { MarkField } from './useMarks.js';
 
 export interface Session {
   doc: ChantDoc;
@@ -75,10 +75,26 @@ export interface Session {
   setEditing: (on: boolean) => void;
 
   setSelection: (selection: Selection | null, sectionId?: string) => void;
-  moveCaret: (move: Move, direction: 1 | -1, extend: boolean) => void;
 
   insert: (text: string) => void;
   remove: (direction: 1 | -1) => void;
+  /**
+   * Replace an exact range of the section's source.
+   *
+   * The surface needs this because the BROWSER decides what a word-wise delete
+   * covers — it knows the font and where the lines wrapped — and hands us the
+   * range in `beforeinput`. Re-deriving that range here would be a second,
+   * worse implementation of the browser's own text segmentation.
+   */
+  replaceRange: (
+    from: number,
+    to: number,
+    text: string,
+    /* What kind of burst this belongs to, so consecutive ones become one undo
+       step. `drag` is shared by the delete and the drop of a move, which is
+       one act however many events the browser sends for it. */
+    kind?: 'type' | 'delete' | 'drag',
+  ) => void;
   newLine: (verse: boolean) => void;
 
   mark: (patch: Record<string, unknown>, note?: string) => void;
@@ -105,6 +121,23 @@ export interface Session {
    * second implementation of something already done correctly once.
    */
   setRecording: (next: ChantDoc) => void;
+
+  /**
+   * Bumped to make React BUILD THE DOCUMENT AGAIN rather than patch it.
+   *
+   * Needed exactly once, and the reason is worth stating because it looks like
+   * a hack and is not. While an IME composes, the browser writes its own text
+   * into the page — that is what an inline candidate is — and React knows
+   * nothing about it. Re-rendering then PATCHES a tree it has a stale picture
+   * of, and the browser's characters survive beside the model's: composing
+   * "na" and committing it left "nana" on the page.
+   *
+   * A remount throws the browser's work away and rebuilds from the document,
+   * which is the only source of truth there is. It is expensive and it happens
+   * once per composition, at human speed.
+   */
+  remount: number;
+  rebuild: () => void;
 
   undoEdit: () => void;
   redoEdit: () => void;
@@ -148,6 +181,7 @@ export function useSession(doc: ChantDoc): Session {
    * `Read` is still there for proofing, one click away.
    */
   const [editing, setEditing] = useState(true);
+  const [remount, setRemount] = useState(0);
   const [revision, setRevision] = useState(0);
   const composing = useRef(false);
 
@@ -185,9 +219,27 @@ export function useSession(doc: ChantDoc): Session {
    * 191 of Śrī Rudram's 198 were unreachable in edit mode, with no keyboard
    * route either.
    */
+  /*
+   * CACHED BY SECTION.
+   *
+   * It re-flattened the whole section on every call, and it is called from the
+   * mapping that runs on every `selectionchange` — so a drag across Śrī
+   * Rudram re-flattened 198 verses of source per event. Nothing about the
+   * source changes while a mouse is moving.
+   *
+   * Keyed on the SECTION OBJECT, not its id: an edit gives the section a new
+   * identity, so the entry falls out of date exactly when the text does and
+   * never a moment later.
+   */
+  const flats = useRef(new Map<string, { of: ChantSection; flat: FlatSource }>());
   const flatFor = useCallback((id: string): FlatSource => {
     const found = live.sections.find((s) => s.id === id);
-    return flatten(found === undefined ? [] : sourcesOf(found));
+    if (found === undefined) return flatten([]);
+    const hit = flats.current.get(id);
+    if (hit !== undefined && hit.of === found) return hit.flat;
+    const flat = flatten(sourcesOf(found));
+    flats.current.set(id, { of: found, flat });
+    return flat;
   }, [live]);
 
   /** Source maps, cached by section, verse and the verse's own source text. */
@@ -225,28 +277,17 @@ export function useSession(doc: ChantDoc): Session {
     setLive((current) => ({ ...current, state: select(current.state, selection) }));
   }, [sectionId]);
 
-  const moveCaret = useCallback((move: Move, direction: 1 | -1, extend: boolean) => {
-    setLive(({ state: current, history }) => {
-      if (current.selection === null) return { state: current, history };
-      const head = current.selection.head;
-      const next = move === 'char' ? moveChar(flat, head, direction)
-        : move === 'word' ? moveWord(flat, head, direction)
-          : move === 'line' ? moveLine(flat, head, direction, goal.current ?? head.column)
-            : lineEdge(flat, head, direction === 1 ? 'end' : 'start');
-      // The goal column is remembered ACROSS vertical moves only: moving
-      // sideways sets it, moving down keeps it. Word's behaviour, and the
-      // reason arrow-down through a one-syllable pāda comes back out again.
-      goal.current = move === 'line' ? (goal.current ?? head.column) : next.column;
-      return {
-        history,
-        state: select(
-          current,
-          extend ? { anchor: current.selection.anchor, head: next } : caretAt(next),
-        ),
-      };
-    });
-  }, [flat]);
-  const goal = useRef<number | null>(null);
+  /*
+   * MOTION IS THE BROWSER'S NOW, so there is none here.
+   *
+   * There was a `moveCaret` — arrows, word motion, line ends, with a
+   * remembered goal column for moving down through a short pāda. It was
+   * correct and it is gone, because the page is `contenteditable` and the
+   * browser already knows where a line wrapped and what a word is in this
+   * font. Keeping ours as well meant both ran: the model advanced and the
+   * visible caret did not, and the next letter typed appeared somewhere the
+   * caret had never been.
+   */
 
   /** The coalesce key, and the clock that decides it. */
   const burst = useRef({ key: '', at: 0 });
@@ -260,83 +301,19 @@ export function useSession(doc: ChantDoc): Session {
     return burst.current.key;
   }, []);
 
-  const replace = useCallback((from: number, to: number, insert: string, kind?: string) => {
-    if (section === undefined) return;
-    run({
-      k: 'replace',
-      sectionId: section.id,
-      from,
-      to,
-      insert,
-      ...(kind === undefined ? {} : { coalesce: coalesceKey(kind) }),
-    });
-  }, [run, section, coalesceKey]);
+  /* Changing the text — see `useText`. Four commands that all reduce to one
+     range replacement, kept together because the coalescing rule that makes a
+     burst of typing one undo step has to be the same for all of them. */
+  const { replace, insert, remove, newLine } = useText({
+    run, section, flat, selection: state.selection, coalesceKey,
+  });
 
-  const insert = useCallback((text: string) => {
-    if (state.selection === null) return;
-    const range = selectionRange(flat, state.selection);
-    // A stale selection names no range. It used to name "everything up to the
-    // caret", and the next keystroke deleted all of it.
-    if (range === null) return;
-    replace(range.from, range.to, text, text.includes('\n') ? undefined : 'type');
-  }, [flat, state.selection, replace]);
-
-  const remove = useCallback((direction: 1 | -1) => {
-    if (state.selection === null) return;
-    const range = selectionRange(flat, state.selection);
-    if (range === null) return;
-    if (!isCollapsed(state.selection)) {
-      replace(range.from, range.to, '', 'delete');
-      return;
-    }
-    // A collapsed caret deletes the character beside it. `from === to === 0`
-    // with Backspace deletes nothing rather than wrapping to the end.
-    const from = direction === -1 ? Math.max(0, range.from - 1) : range.from;
-    const to = direction === -1 ? range.from : Math.min(flat.text.length, range.to + 1);
-    if (from === to) return;
-    replace(from, to, '', 'delete');
-  }, [flat, state.selection, replace]);
-
-  const newLine = useCallback((verse: boolean) => {
-    if (state.selection === null) return;
-    const range = selectionRange(flat, state.selection);
-    if (range === null) return;
-    replace(range.from, range.to, verse ? '\n\n' : '\n');
-  }, [flat, state.selection, replace]);
-
-  const targets = useCallback(() => {
-    if (state.selection === null || section === undefined) return [];
-    if (selected.length > 0) return unitAddresses(selected);
-    const one = unitAtCaret(state.selection, srcMapOf(state.selection.head.verseId));
-    return one === null ? [] : [one];
-  }, [state.selection, section, selected, flat, srcMapOf]);
-
-  const mark = useCallback((patch: Record<string, unknown>, note?: string) => {
-    const where = targets();
-    if (where.length === 0 || section === undefined) return;
-    run({
-      k: 'mark',
-      sectionId: section.id,
-      targets: where,
-      patch,
-      why: 'owner-hand',
-      ...(note === undefined ? {} : { note }),
-    });
-  }, [run, section, targets]);
-
-  const unmark = useCallback((fields: readonly MarkField[]) => {
-    const where = targets();
-    if (where.length === 0 || section === undefined) return;
-    run({ k: 'unmark', sectionId: section.id, targets: where, fields });
-  }, [run, section, targets]);
-
-  const autoHoldings = useCallback((mode: 'keep' | 'replace') => {
-    if (section === undefined) return;
-    const verseIds = selected.length > 0
-      ? [...new Set(selected.map((r) => r.verseId))]
-      : section.verses.filter((v) => v.src !== undefined).map((v) => v.id);
-    run({ k: 'auto-holdings', sectionId: section.id, verseIds, mode });
-  }, [run, section, selected]);
+  /* Placing marks by hand is its own small module — see `useMarks`. It is the
+     one part of this hook that is about the MARKING rather than about the
+     text, and it is the part a reader comes looking for. */
+  const { mark, unmark, autoHoldings } = useMarks({
+    run, section, selected, selection: state.selection, srcMapOf,
+  });
 
   const undoEdit = useCallback(() => {
     setLive((current) => undo(current.state, current.history));
@@ -366,9 +343,9 @@ export function useSession(doc: ChantDoc): Session {
     editing,
     setEditing,
     setSelection,
-    moveCaret,
     insert,
     remove,
+    replaceRange: (from, to, text, kind) => replace(from, to, text, kind),
     newLine,
     mark,
     unmark,
@@ -377,6 +354,8 @@ export function useSession(doc: ChantDoc): Session {
     sectionRegister: section === undefined ? null : registerOf(live, section),
     setRegister,
     setRecording,
+    remount,
+    rebuild: () => setRemount((n) => n + 1),
     undoEdit,
     redoEdit,
     canUndo: live_.history.past.length > 0,

@@ -28,7 +28,7 @@
     "security": {
       "csp": {
         "default-src": "'self'",
-        "connect-src": "'self' ipc: http://ipc.localhost",
+        "connect-src": "'self' ipc: http://ipc.localhost https://vedaunion.org",
         "img-src": "'self' data: blob:",
         "media-src": "'self' blob:",
         "font-src": "'self' data:",

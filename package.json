@@ -65,7 +65,7 @@
     "desktop:icons": "npm run -w @siksamitra/desktop icons",
     "build:edit": "npm run -w @siksamitra/edit build",
     "check:web": "npm run -w @siksamitra/web typecheck",
-    "check:edit": "node tools/edit-smoke.mjs",
+    "check:edit": "npm-run-all --serial check:edit:gestures check:edit:views",
     "check:source": "tsx packages/cli/src/gates/source.ts",
     "check:document": "tsx tools/doc-fidelity.mjs",
     "icons": "node tools/icons/gen.mjs",
@@ -75,7 +75,10 @@
     "check:authoring": "node tools/check-authoring.mjs",
     "sync:authoring": "node tools/check-authoring.mjs --sync",
     "build:audio": "npm run -w @siksamitra/audio build",
-    "build:account": "npm run -w @siksamitra/account build"
+    "build:account": "npm run -w @siksamitra/account build",
+    "perf:selection": "node tools/perf-selection.mjs",
+    "check:edit:gestures": "node tools/interaction.mjs",
+    "check:edit:views": "node tools/interaction-views.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

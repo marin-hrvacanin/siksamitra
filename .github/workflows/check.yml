@@ -73,7 +73,7 @@ jobs:
           CHROME: /usr/bin/google-chrome
           URL: http://localhost:5273/
 
-      - name: Editing survives the chrome
+      - name: The editor behaves like an editor
         run: npm run check:edit
         env:
           CHROME: /usr/bin/google-chrome

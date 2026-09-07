@@ -163,6 +163,11 @@ state.doc;        // the result
 | `@siksamitra/render` | drawing a marked text |
 | `@siksamitra/tokens` | every design value, so none is buried in a stylesheet |
 
+## The editing surface
+
+`docs/EDITING.md` — how the window edits, why the browser owns the caret, what
+is checked, and what is known to be wrong and not yet fixed.
+
 ## Before you commit a change to a document
 
 ```

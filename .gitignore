@@ -36,9 +36,19 @@ logo_old.png
 debug.log
 *.log
 documents/
-tests/
-specs/
 śikṣāmitra/
+/specs/
+
+# `tests/` USED TO BE IGNORED HERE, and it was version 1's test output. In
+# version 2 it is the source of three of the five test tiers — integration,
+# component and security — and the rule quietly kept every one of them out of
+# the repository. On a fresh clone those tiers matched no files at all, so CI
+# ran a fraction of what the README claimed and every regression test written
+# for the editor stayed on one laptop.
+#
+# `/specs/` keeps its leading slash for the same class of reason: it means
+# version 1's leftover directory at the root, not any `specs` folder that a
+# package might grow.
 
 # Fonts are vendored in assets/fonts and COPIED into the app at build
 # time. One source of truth; the copy is build output.
@@ -71,3 +81,4 @@ Desktop.ini
 src/**/*.d.ts
 src/**/*.d.ts.map
 dist-types/
+.work/

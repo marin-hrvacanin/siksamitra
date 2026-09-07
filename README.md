@@ -79,11 +79,19 @@ check:engine             15 678 / 15 980 syllables = 98.11 %, 11 documents
 With a Chromium and `npm run dev` running:
 
 ```
-tools/edit-smoke.mjs     17 / 17 — a click lands on the letter, typing reaches
-                         the document, Ctrl+Z is exact, a transcribed verse
-                         refuses and says which
-tools/responsive.mjs     12 widths, no wrap and no sideways scroll at any
-tools/theme-matrix.mjs   60 chrome × document × mode combinations, all legible
+tools/interaction.mjs    21 checks — driven with real mouse moves and real
+                         key presses, asserted against the BROWSER's own
+                         selection and the document's own text, never against
+                         our own geometry: typing before anything is clicked,
+                         the caret and the model moving together, drag-select,
+                         one undo per burst, cut and paste through the model,
+                         and a composed character landing once
+tools/interaction-views  6 checks — rule zero in the verse actually clicked,
+                         and every page of the paged view editable while the
+                         off-screen measuring copy is not
+tools/responsive.mjs     15 widths x 4 tabs, nothing unreachable, no sideways
+                         scroll at any of them
+tools/theme-matrix.mjs   84 chrome × document × mode combinations, all legible
 tools/smoke.mjs          flow, pages and web views, no console errors
 ```
 

@@ -33,7 +33,7 @@ import { useMeasuredBlocks } from './useMeasure.js';
 const isHeading = (id: string): boolean => KEEP_WITH_NEXT.some((p) => id.startsWith(p));
 
 export function PagedView(
-  { doc, script, showMarks, page, zoom, contentKey, addressable = false }: {
+  { doc, script, showMarks, page, zoom, contentKey, addressable = false, rebuild = 0 }: {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
@@ -43,6 +43,9 @@ export function PagedView(
     contentKey: string;
     /** The editor is drawing: letters carry `data-u` so a click finds them. */
     addressable?: boolean;
+    /** Forces a rebuild rather than a patch — see `Session.rebuild`. The key
+     *  goes on each page's content, never on the measuring probe. */
+    rebuild?: number;
   },
 ): ReactNode {
   const probe = useRef<HTMLDivElement>(null);
@@ -108,6 +111,11 @@ export function PagedView(
             >
               {/* Zoom as a multiplier, not a font-size — see `FlowView`. */}
               <div
+                key={rebuild}
+                contentEditable={addressable}
+                suppressContentEditableWarning
+                spellCheck={false}
+                {...(addressable ? { role: 'textbox', 'aria-multiline': true, 'aria-label': 'The document' } : {})}
                 className="doc page__content"
                 style={{ ...({ '--doc-zoom': String(zoom) } as CSSProperties) }}
               >

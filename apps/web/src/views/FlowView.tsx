@@ -16,7 +16,7 @@ import { px, type PageGeometry } from '@siksamitra/layout';
 import { DocumentBlocks } from './DocumentBlocks.js';
 
 export function FlowView(
-  { doc, script, showMarks, page, zoom, addressable = false, web = false }: {
+  { doc, script, showMarks, page, zoom, addressable = false, web = false, rebuild = 0 }: {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
@@ -24,6 +24,16 @@ export function FlowView(
     zoom: number;
     /** The editor is drawing: letters carry `data-u` so a click finds them. */
     addressable?: boolean;
+    /**
+     * A COUNTER THAT FORCES A REBUILD, used as the `key` on the page.
+     *
+     * Changing a React key throws the old DOM away instead of patching it,
+     * which is the only way to be rid of text an IME wrote into the page
+     * behind React's back — see `Session.rebuild`. It changes once per
+     * composition and never during ordinary typing.
+     */
+    rebuild?: number;
+
     /**
      * NO PAGE — the web shape.
      *
@@ -38,6 +48,11 @@ export function FlowView(
     return (
       <div className="flow flow--web">
         <div
+          key={rebuild}
+          contentEditable={addressable}
+          suppressContentEditableWarning
+          spellCheck={false}
+          {...(addressable ? { role: 'textbox', 'aria-multiline': true, 'aria-label': 'The document' } : {})}
           className="doc web__column"
           style={{ ...({ '--doc-zoom': String(zoom) } as CSSProperties) }}
         >
@@ -55,6 +70,11 @@ export function FlowView(
   return (
     <div className="flow">
       <div
+        key={rebuild}
+        contentEditable={addressable}
+        suppressContentEditableWarning
+        spellCheck={false}
+        {...(addressable ? { role: 'textbox', 'aria-multiline': true, 'aria-label': 'The document' } : {})}
         className="doc flow__column"
         /*
          * Zoom is a MULTIPLIER the document tokens read (`--doc-zoom`), not a

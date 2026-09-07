@@ -72,7 +72,7 @@
       — `packages/edit`, and `data-u` written by the one renderer
 - [x] 8.2 Replace modal per-verse editing with a continuous caret bounded by
       the section — `caret.ts`; a click lands on the letter under the pointer,
-      measured in a browser by `tools/edit-smoke.mjs`
+      measured in a browser by `tools/interaction.mjs`
 - [x] 8.3 Selection across verses, select-all scoped to the section,
       multi-verse paste — `range.ts`, and a verse that survives keeps its id
 - [x] 8.4 One gesture is one undo step, and undo is byte-exact — a REVERSE

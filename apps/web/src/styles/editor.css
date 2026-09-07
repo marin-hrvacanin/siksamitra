@@ -2,72 +2,53 @@
    Every value resolves to a token; `check:literals` fails the build on a
    literal colour, face or size. */
 
-/* The caret is an absolutely positioned child of the scrolling canvas, so it
-   must have a positioned ancestor — otherwise it is placed against the
-   viewport and sits still while the text scrolls past it. */
-.canvas { position: relative; }
-
-/* ── the caret ─────────────────────────────────────────────────────────── */
-
-/* Ink, not an accent: a caret marks where a letter will go, so it is the
-   colour a letter would be. It also means the caret is legible on every
-   document theme without a second decision. */
-.caret {
-  position: absolute;
-  width: var(--border-thick);
-  background: var(--doc-ink);
-  pointer-events: none;
-  animation: caret-blink 1.06s steps(1) infinite;
-  z-index: 2;
-}
-
-@keyframes caret-blink {
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
-
-/* A blinking caret is motion, and motion is a setting. Someone who has asked
-   their system to stop animating things has asked for this too. */
-@media (prefers-reduced-motion: reduce) {
-  .caret { animation: none; }
-}
-
-/* ── the field the browser types into ──────────────────────────────────── */
-
-/*
- * Positioned AT the caret and effectively invisible — not `display: none`.
- * An IME's candidate window appears where the field is, so a hidden field puts
- * the candidate list in the corner of the screen and makes composing Indic
- * text through an IME unusable.
- */
-.editor__field {
-  position: absolute;
-  width: var(--space-1);
-  height: var(--space-1);
-  padding: 0;
-  border: 0;
-  margin: 0;
-  opacity: 0;
-  resize: none;
-  overflow: hidden;
-  white-space: pre;
-  z-index: 1;
-}
-
-/* ── the selection ─────────────────────────────────────────────────────── */
-
-/*
- * Painted onto the letters themselves rather than drawn as a rectangle behind
- * them. A marked syllable is several inline boxes with marks outside the line
- * box, so a rectangle either clips a holding or covers it.
+/* ── the caret and the selection are the browser's ─────────────────────────
  *
- * The accent rather than the ink, so the selection reads as the tool acting on
- * the document and not as part of the text. Mixed from the token, so it
- * follows the theme instead of being a value chosen once.
+ * There was a `.caret` here — an absolutely positioned rectangle this program
+ * measured and blinked itself — and an `.is-selected` class painted onto every
+ * selected letter, and a hidden `<textarea>` for the keyboard. All three are
+ * gone: the page is `contenteditable` now (see `EditorSurface.tsx`, which
+ * refuses every edit and applies it to the document instead), so the browser
+ * draws the caret and the selection, and brings the pointer, drag-select,
+ * word motion and an IME with them.
+ *
+ * What is left here is the one thing a native selection cannot know: which
+ * colour it should be.
  */
-.is-selected {
+
+/*
+ * THE CARET IN A VERSE THAT REFUSES IT.
+ *
+ * A verse copied from a marked source cannot be edited, and the caret can
+ * still be put in it — to read, to select, to copy. The old surface drew its
+ * own caret and could grey it out; a native one takes a colour and nothing
+ * else, so it is dimmed rather than restyled, and the status bar says why.
+ * Better a caret that looks inert than one that looks ready and is not.
+ */
+.canvas.is-frozen .doc[contenteditable] { caret-color: var(--doc-quiet); }
+
+.doc[contenteditable] {
+  /* The browser's own focus ring belongs on a control. This is a page. */
+  outline: none;
+  /* A caret the colour a letter would be, not an accent: it marks where a
+     letter will go. It is also legible on every document theme without a
+     second decision. */
+  caret-color: var(--doc-ink);
+}
+
+/*
+ * THE SELECTION IS DRAWN BEHIND THE MARKS, and the alpha is what makes that
+ * true. A marked syllable carries a holding box drawn as an inset shadow and
+ * an accent above the line; an opaque selection would cover the first and an
+ * accent-coloured one would compete with the second. The accent at 22% reads
+ * as the tool acting on the document rather than as part of it — the same
+ * value the painted selection used, kept because it was right.
+ */
+.doc ::selection {
   background: color-mix(in srgb, var(--chrome-accent) 22%, transparent);
-  border-radius: var(--chrome-radius);
+  /* Unset, so the letter keeps its own colour: a svara is coloured by what it
+     IS, and a selection that repaints it grey hides the mark being selected. */
+  color: inherit;
 }
 
 /* ── what is editable, and what is not ─────────────────────────────────── */
@@ -115,11 +96,7 @@
 }
 .canvas:not(.is-editing) .verse__locked { display: none; }
 
-/* A caret where nothing will type: shown, grey, and still. */
-.caret--frozen {
-  background: var(--doc-quiet);
-  animation: none;
-}
+
 
 /* ── the status bar's editing half ─────────────────────────────────────── */
 

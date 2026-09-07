@@ -1,87 +1,352 @@
 /**
- * The editing surface — a caret over drawn text.
+ * The editing surface — the browser's caret, our document.
  *
- * NOTHING HERE IS CONTENTEDITABLE, and that is the design. v1 put a Quill
- * `contenteditable` around the marked text, which made the document *be* the
- * DOM: a holding was a `<span class="ql-hold-short">`, "is this mark right?"
- * was a question about an HTML blob, and the browser was free to rewrite the
- * text at any moment. Composing Devanāgarī inside such a tree meant fighting
- * the browser's own idea of what a character is.
+ * WHAT THIS REPLACED, AND WHY.
  *
- * Instead, three separate things:
+ * The first version drew everything itself: a caret rectangle it measured and
+ * blinked, a selection it painted class by class onto each letter, drag
+ * handling on mousemove, and a hidden `<textarea>` to catch keystrokes. It was
+ * built that way to keep the document out of the DOM, which was right — but
+ * the DOCUMENT being ours does not mean the INTERACTION has to be, and that
+ * second step did not follow.
  *
- *   1. the text is DRAWN by the one renderer, read-only, every letter carrying
- *      `data-u`;
- *   2. the caret is a rectangle this component positions;
- *   3. keystrokes arrive through a hidden field, so dead keys, an on-screen
- *      keyboard, an IME and a paste all work without special handling — the
- *      browser composes the text, and we read what it composed.
+ * It went as such things go. Selection had to be reimplemented, then drag, then
+ * word motion, then a fallback for keystrokes that arrived while a menu had
+ * taken the focus — each fix correct, the pile of them wrong. What the browser
+ * gives away for nothing, and what was being rebuilt here: the I-beam pointer,
+ * drag-select, double-click for a word, triple-click for a line, shift-click to
+ * extend, arrows that know where a line wrapped, word motion that knows the
+ * font, Home and End, an accessible cursor, and an IME.
  *
- * TWO THINGS THAT LOOK LIKE DETAIL AND ARE NOT:
+ * The measurement, and why it is not the reason, is written down once in
+ * `dom-selection.ts` rather than twice here with two different numbers.
  *
- * THE LISTENERS ARE REGISTERED ONCE. `session` is a new object on every
- * render, so effects keyed on it re-subscribed four times per keystroke — and
- * a `let` inside such an effect is reset each time, which is why drag-select
- * never worked: mousedown set `dragging = true`, the re-render replaced the
- * closure, and every mousemove after it was a no-op. The session is read
- * through a ref and the effects do not depend on it.
+ * SO: THE BROWSER SELECTS AND WE EDIT.
  *
- * FOCUS IS THE CARET'S TRUTH. A ribbon button takes focus when clicked, and
- * this used to keep drawing a blinking caret while typing went nowhere — with
- * Backspace still working, because that path is a window listener. The caret
- * is drawn only while the field has focus, and focus is returned after every
- * command.
+ *   THE PAGE IS `contenteditable`, which is where all of the above comes from.
+ *
+ *   NOTHING IS EVER TYPED INTO IT. Every `beforeinput` is refused and turned
+ *   into a command against the model, which re-derives and re-renders. The DOM
+ *   is a projection at all times; the browser may select in it and may not
+ *   change it. That is the invariant this whole file exists to hold, and it is
+ *   what keeps "is this holding correct?" a question about data rather than a
+ *   question about an HTML blob.
+ *
+ *   THE SELECTION IS READ, NOT DRAWN. `selectionchange` maps the browser's
+ *   position through the letter map into an address in the source.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { ReactNode, RefObject } from 'react';
-import { addressAt, caretAt, offsetOf, selectionRange } from '@siksamitra/edit';
+import { selectionRange } from '@siksamitra/edit';
 import { handleEditKey } from './keymap.js';
-import {
-  caretBox, hitAt, offsetOfHit, paintSelection, unitOfAddress, type CaretBox,
-} from './unit-map.js';
+import { useDomCaret } from './useDomCaret.js';
+import { applyInput } from './apply-input.js';
+import { focusDocument } from './focus.js';
 import type { Session } from './useSession.js';
 
 export function EditorSurface(
   { session, scroller }: { session: Session; scroller: RefObject<HTMLElement | null> },
 ): ReactNode {
-  const field = useRef<HTMLTextAreaElement>(null);
-  const [box, setBox] = useState<CaretBox | null>(null);
-  const [focused, setFocused] = useState(false);
-
   /** The live session, for listeners that are registered once. */
   const live = useRef(session);
   live.current = session;
 
-  /* ── the caret's position, measured after every layout ─────────────────── */
-  useLayoutEffect(() => {
+  /*
+   * TRUE WHILE WE ARE MOVING THE BROWSER'S CARET OURSELVES.
+   *
+   * It is a cheap guard against reading our own write straight back, and it is
+   * NOT what prevents a loop — a claim this comment used to make and which is
+   * false. `selectionchange` is dispatched from a queued task, so it fires
+   * long after the `finally` below has cleared the flag; by the time it
+   * matters, it is already false.
+   *
+   * What actually prevents the loop: `setSelection` does not bump `revision`,
+   * and the effect that puts the caret back keys on `revision` alone. Reading
+   * a selection can therefore never cause one to be written. The flag stays
+   * because it saves a wasted round trip when the timing does line up, but
+   * nothing depends on it.
+   */
+  const placing = useRef(false);
+
+  /*
+   * THE PAGE IS MADE EDITABLE BY THE VIEWS, not from here.
+   *
+   * This used to walk the scroller and set `contenteditable` on every `.doc`
+   * it found. It could only run when one of its dependencies changed, and
+   * switching from the flowing column to Pages changes neither the document
+   * nor the mode — so the new page elements never got the attribute and the
+   * paged view was silently uneditable: the caret moved, and nothing typed
+   * into it arrived.
+   *
+   * React renders those elements and React is the only thing that knows when
+   * it has replaced them, so the attribute belongs in the same place as the
+   * class name. It also keeps it off the measuring probe by construction,
+   * which the imperative version had to remember to do.
+   */
+
+  /* ── the keyboard has to be somewhere, and it has to be here ───────────── */
+  /*
+   * THREE WAYS TYPING DIED SILENTLY, all of them the same omission.
+   *
+   * A `contenteditable` only receives keys while it holds the focus, and
+   * nothing was giving it any. So: the program opened with the page editable
+   * and nothing focused, and the first keystroke went nowhere. Pressing a
+   * ribbon button moved the focus to that button and the next keystroke went
+   * nowhere. Finishing an IME composition rebuilt the page — deliberately, to
+   * discard what the browser had written — and destroyed the very node the
+   * focus was in.
+   *
+   * The old surface had all three covered, around a hidden field, and the
+   * rewrite dropped every one. `focusDocument` puts it back, and the effect
+   * below re-asserts it whenever the page is rebuilt.
+   *
+   * `preventScroll`, because focusing an element the browser thinks is
+   * off-screen otherwise jumps the page to the top of the document.
+   */
+
+  /*
+   * On entering the writing mode, and after every rebuild — but NOT before
+   * there is a caret to focus onto.
+   *
+   * Focusing an editable that holds no selection makes the browser invent one
+   * at the very top of the document, and the next `selectionchange` reads that
+   * back into the model. The program opened with its caret in the first verse
+   * whichever verse that was — in Durgā Sūktam a transcribed one, which
+   * refuses every keystroke. Waiting for the caret means focus lands on a
+   * selection that is already in the right place.
+   */
+  const hasCaret = session.selection !== null;
+  useEffect(() => {
+    if (!session.editing || !hasCaret) return;
+    focusDocument();
+  }, [session.editing, session.remount, hasCaret]);
+
+  /*
+   * AND A CARET IN A VERSE THAT CAN ACTUALLY TAKE ONE.
+   *
+   * Not simply the first verse: five of Durgā Sūktam's nine are transcribed,
+   * and a caret parked in one refuses every keystroke. The refusal is right;
+   * it should not be the first thing that happens.
+   */
+  useEffect(() => {
+    if (!session.editing || session.selection !== null) return;
+    const section = session.doc.sections.find((sec) => sec.id === session.sectionId);
+    const editable = new Set(
+      (section?.verses ?? []).filter((v) => v.src !== undefined).map((v) => v.id),
+    );
+    const first = session.flat.lineStarts.find((l) => editable.has(l.verseId))
+      ?? session.flat.lineStarts[0];
+    if (first === undefined) return;
+    const at = { verseId: first.verseId, line: first.line, column: 0 };
+    session.setSelection({ anchor: at, head: at });
+  }, [session.editing, session.selection, session.doc, session.sectionId, session.flat, session]);
+
+  /* Keeping the browser's selection and the model in step, both ways — see
+     `useDomCaret`. It is the seam of the whole design, so it is its own file. */
+  useDomCaret(session, scroller, placing);
+
+  /* ── every change is refused, and applied to the document instead ──────── */
+  useEffect(() => {
     const el = scroller.current;
-    if (el === null || !session.editing || session.selection === null) {
-      setBox(null);
-      return;
-    }
-    const head = session.selection.head;
-    const srcMap = session.srcMapOf(head.verseId);
-    const place = srcMap === null ? null : unitOfAddress(srcMap, head);
-    const next = caretBox(el, session.sectionId, head.verseId, place);
-    // Compared before it is set: a fresh object here caused a SECOND render
-    // for every caret move, on top of the one that moved it.
-    setBox((was) => (
-      was?.left === next?.left && was?.top === next?.top && was?.height === next?.height
-        ? was
-        : next
-    ));
-  }, [
-    scroller, session.editing, session.selection, session.sectionId,
-    session.srcMapOf, session.revision,
-  ]);
+    if (el === null) return;
+
+    const onBeforeInput = (e: InputEvent): void => {
+      const now = live.current;
+      if (!now.editing) return;
+      /*
+       * WHILE AN IME IS COMPOSING, EVERY INPUT IS THE IME's.
+       *
+       * A composing IME needs the text it is working on to be in the document
+       * while its candidate window is open, so those events are let through
+       * and the DOM runs briefly ahead of the model. `compositionend` then
+       * reconciles, and the re-render replaces whatever the browser wrote.
+       *
+       * IT IS THE WHOLE COMPOSITION THAT IS LET THROUGH, not just the events
+       * whose `inputType` says `insertCompositionText`. Committing a
+       * composition can arrive as a plain `insertText` — measured: composing
+       * "na" and committing it put "nana" in the document, because the commit
+       * was applied here AND again at `compositionend`. Ignoring everything
+       * until the composition is over leaves exactly one path in.
+       */
+      if (now.composing() || e.inputType.startsWith('insertCompositionText')) return;
+      e.preventDefault();
+      applyInput(e, now);
+    };
+
+    /*
+     * WHERE THE COMPOSITION STARTED, remembered at the start.
+     *
+     * By the time it ends, the browser has written its own text into the DOM
+     * and the model's caret still points at where it began. The composed text
+     * therefore REPLACES that range rather than being inserted at wherever the
+     * caret has apparently drifted to — which is what makes the result the
+     * same whether the IME committed one character or replaced five.
+     */
+    /*
+     * `null` UNTIL A COMPOSITION ACTUALLY STARTS, never `{0, 0}`.
+     *
+     * Zero is a real offset — the very start of the section — so a default of
+     * `{0, 0}` is not "unknown", it is "insert at the top of the document".
+     * A `compositionend` without a matching start (some Android keyboards, and
+     * anything that ends a composition the page never saw begin) would have
+     * dropped the composed text there, several screens from the caret.
+     */
+    let began: { from: number; to: number } | null = null;
+    /*
+     * A COMPOSITION THAT NEVER ENDS WOULD WEDGE THE EDITOR SHUT.
+     *
+     * While `composing` is true every input is let through untouched and every
+     * binding is ignored — which is right while an IME is working and a
+     * disaster if it is stuck. `compositionend` may never arrive if the node
+     * being composed into is torn down first, which `rebuild()` does on
+     * purpose and re-pagination does by accident. So the latch is also
+     * released when the page loses the keyboard, which is the one thing that
+     * is certainly true once a composition is over.
+     */
+    const onBlur = (): void => live.current.setComposing(false);
+
+    const onCompositionStart = (): void => {
+      const now = live.current;
+      now.setComposing(true);
+      const at = now.selection === null ? null : selectionRange(now.flat, now.selection);
+      began = at === null ? null : { from: at.from, to: at.to };
+    };
+    const onCompositionEnd = (e: CompositionEvent): void => {
+      const now = live.current;
+      now.setComposing(false);
+      if (!now.editing) return;
+      /* An empty composition is one the person abandoned — the DOM is back to
+         where it started, and so is the model. Nothing to do. */
+      if (e.data === '') return;
+      /* No recorded start: fall back to an ordinary insert at the caret, which
+         is where the person is looking. */
+      if (began === null) now.insert(e.data);
+      else now.replaceRange(began.from, began.to, e.data, 'type');
+      began = null;
+      /* And throw away what the browser wrote while it was composing — see
+         `Session.rebuild`. */
+      now.rebuild();
+    };
+
+    /* Cut and copy read from the MODEL, not from the DOM: the DOM holds the
+       projection, and copying `gṁ` out of a document whose source says `ṁ`
+       would paste something the author never wrote. */
+    /*
+     * WHAT LEAVES THIS PROGRAM IS THE SOURCE, NOT THE PROJECTION.
+     *
+     * The page shows `gṁ` where the document says `ṁ`, and boxes where the
+     * document says a holding. Letting the browser copy its own DOM would put
+     * a spelling the author never wrote onto the clipboard, so the text comes
+     * out of the model.
+     *
+     * `preventDefault` IS UNCONDITIONAL, and that matters more than it looks.
+     * Returning early on an unmapped selection — one spanning two sections,
+     * say — let the browser fall back to copying the DOM, which is the exact
+     * leak this handler exists to stop. With nothing to copy, nothing is
+     * copied.
+     */
+    const copyFromModel = (e: ClipboardEvent): string | null => {
+      const now = live.current;
+      /*
+       * NOT GATED ON THE WRITING MODE. Read is the PROOFING mode — the one
+       * text is most often copied out of — and leaving it to the browser
+       * there put `gṁ`, the verse numbers and the boxes on the clipboard,
+       * which is the whole leak this exists to stop.
+       */
+      e.preventDefault();
+      if (now.selection === null) return null;
+      const at = selectionRange(now.flat, now.selection);
+      if (at === null || at.from === at.to) {
+        /*
+         * The model has no range but the eye sees one — a selection inside a
+         * verse copied from a marked source, whose position is only known to
+         * the line. Its tokens ARE its record, so the drawn text is the best
+         * answer there is, and silence would be the worst.
+         */
+        const shown = document.getSelection()?.toString() ?? '';
+        if (shown === '') return null;
+        e.clipboardData?.setData('text/plain', shown);
+        return null;
+      }
+      const text = now.flat.text.slice(at.from, at.to);
+      /*
+       * WRITTEN AND CHECKED, because `onCut` deletes on the strength of it.
+       * `clipboardData` is null in some contexts and the write can be refused;
+       * returning the text anyway meant a cut that destroyed the text and put
+       * nothing on the clipboard.
+       */
+      const board = e.clipboardData;
+      if (board === null) return null;
+      board.setData('text/plain', text);
+      return board.getData('text/plain') === text ? text : null;
+    };
+
+    const onCopy = (e: ClipboardEvent): void => { copyFromModel(e); };
+
+    /*
+     * CUT IS COPY AND DELETE.
+     *
+     * It was bound straight to the copy handler, which calls
+     * `preventDefault()` — so the browser cancelled the cut and never sent the
+     * `deleteByCut` that would have removed anything. Ctrl+X was a copy, and
+     * the `deleteByCut` branch in `apply-input.ts` was unreachable code that
+     * made the file look as though it worked.
+     *
+     * This is the second time that bug has been fixed here; the first fix's
+     * own comment said "Cut is copy AND delete. It used to be copy alone."
+     */
+    const onCut = (e: ClipboardEvent): void => {
+      const now = live.current;
+      /* Only if the text is verifiably ON the clipboard, and only in the
+         writing mode: a cut in Read mode is a copy. */
+      if (!now.editing || copyFromModel(e) === null || now.selection === null) return;
+      const at = selectionRange(now.flat, now.selection);
+      if (at === null || at.from === at.to) return;
+      now.replaceRange(at.from, at.to, '');
+    };
+
+    el.addEventListener('beforeinput', onBeforeInput as EventListener);
+    el.addEventListener('compositionstart', onCompositionStart);
+    el.addEventListener('focusout', onBlur);
+    el.addEventListener('compositionend', onCompositionEnd as EventListener);
+    el.addEventListener('copy', onCopy as EventListener);
+    el.addEventListener('cut', onCut as EventListener);
+    return () => {
+      el.removeEventListener('beforeinput', onBeforeInput as EventListener);
+      el.removeEventListener('compositionstart', onCompositionStart);
+      el.removeEventListener('focusout', onBlur);
+      el.removeEventListener('compositionend', onCompositionEnd as EventListener);
+      el.removeEventListener('copy', onCopy as EventListener);
+      el.removeEventListener('cut', onCut as EventListener);
+    };
+  }, [scroller]);
+
+  /* ── our own keys, and only ours ───────────────────────────────────────── */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const now = live.current;
+      if (!now.editing || now.composing()) return;
+      /*
+       * MOTION AND DELETION ARE NOT HERE ANY MORE.
+       *
+       * Arrows, Home, End, word motion, Backspace and Delete are the
+       * browser's: it knows where the lines wrapped and what a word is in this
+       * font, and it arrives as `beforeinput` with the exact range. What is
+       * left is what the browser has no idea about — the marks, and an undo
+       * that must not be the browser's own.
+       */
+      if (handleEditKey(e, now) !== null) e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   /**
    * Whether the caret sits in a verse that cannot be edited.
    *
    * From the DOCUMENT, not from the DOM: a verse with no `src` layer carries
-   * marks that were read off a hand-marked source and exist nowhere else, and
-   * that fact belongs to the data. Written out rather than as `?.src ===
-   * undefined`, which would also be true for a verse that is not there.
+   * marks read off a hand-marked source that exist nowhere else, and that fact
+   * belongs to the data.
    */
   const frozen = useMemo(() => {
     const head = session.selection?.head;
@@ -91,280 +356,24 @@ export function EditorSurface(
     return verse !== undefined && verse.src === undefined;
   }, [session.doc, session.sectionId, session.selection]);
 
-  /* ── the selection highlight, painted rather than re-rendered ──────────── */
+  /*
+   * A CARET IN A VERSE THAT WILL NOT TAKE ONE, said out loud.
+   *
+   * The old surface drew a grey, non-blinking caret there — "present, and
+   * visibly not an insertion point". A native caret cannot be restyled per
+   * position, so the fact is stated instead: the class dims the caret through
+   * `caret-color` (see `editor.css`), and the status bar carries the words.
+   *
+   * This was briefly a class that no stylesheet defined, set by an effect
+   * whose comment said it was "announced rather than drawn" while it was in
+   * fact neither.
+   */
   useEffect(() => {
     const el = scroller.current;
     if (el === null) return;
-    paintSelection(el, session.sectionId, session.editing ? session.selected : []);
-  }, [scroller, session.sectionId, session.selected, session.editing, session.revision]);
+    el.classList.toggle('is-frozen', frozen && session.editing);
+  }, [scroller, frozen, session.editing]);
 
-  /** Put the keyboard back where it belongs. Called after every command. */
-  const focus = useCallback(() => {
-    field.current?.focus({ preventScroll: true });
-  }, []);
-
-  /* ── clicking places the caret, in ANY section ─────────────────────────── */
-  useEffect(() => {
-    const el = scroller.current;
-    if (el === null) return;
-
-    let dragging = false;
-
-    const place = (e: MouseEvent, extend: boolean): void => {
-      const now = live.current;
-      if (!now.editing) return;
-      const hit = hitAt(e.target, e.clientX);
-      if (hit === null) return;
-
-      /*
-       * The clicked SECTION's own flat source and source map. Using the
-       * current section's was what trapped the caret in the first one: the
-       * lookup missed, this function returned early, and the section switch it
-       * was about to make never happened.
-       */
-      const flat = now.flatFor(hit.sectionId);
-      const map = now.srcMapIn(hit.sectionId, hit.verseId);
-      const offset = offsetOfHit(flat, map, hit);
-      if (offset === null) return;
-      const at = addressAt(flat, offset);
-      if (at === null) return;
-
-      const sameSection = hit.sectionId === now.sectionId;
-      const anchor = extend && sameSection && now.selection !== null
-        ? now.selection.anchor
-        : at;
-      now.setSelection({ anchor, head: at }, hit.sectionId);
-      focus();
-    };
-
-    const onDown = (e: MouseEvent): void => {
-      if (e.button !== 0 || !live.current.editing) return;
-      /*
-       * The default action of a mousedown moves focus — to the clicked
-       * element, or to nothing if it is not focusable. Either way it takes
-       * focus AWAY from the hidden field, and then nothing typed reaches the
-       * document: measured, the caret moved correctly and every keystroke went
-       * nowhere. Preventing it also stops the browser starting its own text
-       * selection over text whose selection we draw ourselves.
-       */
-      e.preventDefault();
-      dragging = true;
-      place(e, e.shiftKey);
-    };
-    const onMove = (e: MouseEvent): void => { if (dragging) place(e, true); };
-    const onUp = (): void => { dragging = false; };
-
-    el.addEventListener('mousedown', onDown);
-    el.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      el.removeEventListener('mousedown', onDown);
-      el.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, [scroller, focus]);
-
-  /* ── the keyboard ─────────────────────────────────────────────────────── */
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      const now = live.current;
-      if (!now.editing) return;
-      // While an IME is composing, the keyboard belongs to the IME. Stealing
-      // arrow keys mid-composition is how a candidate list becomes unusable.
-      if (now.composing()) return;
-
-      // Select-all, bounded by the section on purpose.
-      if (e.key.toLowerCase() === 'a' && (e.ctrlKey || e.metaKey) && !e.altKey) {
-        e.preventDefault();
-        const first = addressAt(now.flat, 0);
-        const last = addressAt(now.flat, now.flat.text.length);
-        if (first !== null && last !== null) now.setSelection({ anchor: first, head: last });
-        return;
-      }
-      if (handleEditKey(e, now) !== null) {
-        e.preventDefault();
-        focus();
-        return;
-      }
-
-      /*
-       * A PRINTABLE KEY WHEN THE FIELD IS NOT LISTENING.
-       *
-       * Text normally arrives through the hidden field, which only works while
-       * that field has focus — and anything that takes focus loses it: a menu,
-       * a select, Escape closing a popover. From then on the page still looked
-       * editable and every keystroke went nowhere. Menus now hand focus back
-       * (see `ui/Popover.tsx`), and this is the second line of defence: a
-       * single character with no Ctrl/Alt, typed while nothing else is
-       * listening, is inserted here and the field is taken back.
-       *
-       * The guards matter. A key aimed at a real control — a text box, a
-       * button being activated with Space — must reach it, so anything inside
-       * a form control is left alone, and so is our own field, which has its
-       * own path and must not receive the character twice.
-       */
-      const target = e.target as HTMLElement | null;
-      const insideControl = target?.closest?.(
-        'input, textarea, select, [contenteditable=""], [contenteditable="true"]',
-      ) != null;
-      const printable = [...e.key].length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
-      if (printable && !insideControl && now.selection !== null) {
-        e.preventDefault();
-        now.insert(e.key);
-        focus();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [focus]);
-
-  /* ── keep the caret on screen, without fighting the user's scrolling ───── */
-  useEffect(() => {
-    const el = scroller.current;
-    if (el === null || box === null || !session.editing) return;
-    const top = box.top - el.scrollTop;
-    const bottom = top + box.height;
-    if (top >= 0 && bottom <= el.clientHeight) return;
-    el.scrollTop = box.top - el.clientHeight / 2;
-  }, [scroller, box, session.editing]);
-
-  /* ── entering the mode puts the caret somewhere and takes the keyboard ── */
-  useEffect(() => {
-    if (!session.editing) return;
-    startCaret(live.current);
-    focus();
-  }, [session.editing, focus]);
-
-  const onInput = useCallback((e: React.FormEvent<HTMLTextAreaElement>) => {
-    const now = live.current;
-    if (now.composing()) return;
-    const text = e.currentTarget.value;
-    e.currentTarget.value = '';
-    if (text !== '') now.insert(text);
-  }, []);
-
-  const onPaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    // Taken directly rather than through the field, so a multi-line paste
-    // arrives as the newlines the author copied — which is what distributes it
-    // across verses.
-    const text = e.clipboardData.getData('text/plain');
-    if (text === '') return;
-    e.preventDefault();
-    live.current.insert(text);
-  }, []);
-
-  const copySelection = useCallback(
-    (e: React.ClipboardEvent<HTMLTextAreaElement>): boolean => {
-      const now = live.current;
-      if (now.selection === null) return false;
-      const range = selectionRange(now.flat, now.selection);
-      if (range === null || range.from === range.to) return false;
-      e.preventDefault();
-      e.clipboardData.setData('text/plain', now.flat.text.slice(range.from, range.to));
-      return true;
-    },
-    [],
-  );
-
-  const onCopy = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    copySelection(e);
-  }, [copySelection]);
-
-  /** Cut is copy AND delete. It used to be copy alone. */
-  const onCut = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    if (copySelection(e)) live.current.insert('');
-  }, [copySelection]);
-
-  if (!session.editing) return null;
-
-  return (
-    <>
-      {box !== null && focused && (
-        <div
-          /*
-           * A caret in a transcribed verse is drawn, and drawn DIFFERENTLY.
-           * Hiding it would lose the one thing it is for — where the click
-           * landed, and where a selection anchors — but blinking it invites
-           * typing that the session is going to refuse. So it is grey and
-           * still: present, and visibly not an insertion point.
-           */
-          className={frozen ? 'caret caret--frozen' : 'caret'}
-          style={{ left: `${box.left}px`, top: `${box.top}px`, height: `${box.height}px` }}
-          aria-hidden
-        />
-      )}
-      {/*
-        * The field the browser types into. Positioned AT the caret, tiny and
-        * transparent — not `display: none`, because an IME's candidate window
-        * appears where the field is, and a hidden field puts it in the corner
-        * of the screen.
-        *
-        * It is also the surface's ACCESSIBLE handle: a screen reader has no
-        * model of our caret, so the field points at the status line, which is
-        * a live region carrying the caret's position and the last refusal.
-        */}
-      <textarea
-        ref={field}
-        className="editor__field"
-        style={box === null ? undefined : { left: `${box.left}px`, top: `${box.top}px` }}
-        onInput={onInput}
-        onPaste={onPaste}
-        onCopy={onCopy}
-        onCut={onCut}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        onCompositionStart={() => live.current.setComposing(true)}
-        onCompositionEnd={(e) => {
-          const now = live.current;
-          now.setComposing(false);
-          const text = e.currentTarget.value;
-          e.currentTarget.value = '';
-          if (text !== '') now.insert(text);
-        }}
-        autoFocus
-        spellCheck={false}
-        autoCorrect="off"
-        autoCapitalize="off"
-        aria-label="Chant text"
-        aria-describedby="editor-status"
-      />
-    </>
-  );
+  return null;
 }
 
-/**
- * Put the caret at the start of the first EDITABLE verse of the section.
- *
- * Not simply the first verse. A document may open on a transcribed one — five
- * of Durgā Sūktam's nine are — and a caret parked in a verse that refuses
- * every keystroke is an editor that appears broken. The refusal is right; it
- * just should not be the first thing that happens.
- */
-export function startCaret(session: Session): void {
-  if (session.selection !== null) return;
-  const section = session.doc.sections.find((s) => s.id === session.sectionId);
-  const editable = new Set(
-    (section?.verses ?? []).filter((v) => v.src !== undefined).map((v) => v.id),
-  );
-  const first = session.flat.lineStarts.find((l) => editable.has(l.verseId))
-    ?? session.flat.lineStarts[0];
-  if (first === undefined) return;
-  session.setSelection(caretAt({ verseId: first.verseId, line: first.line, column: 0 }));
-}
-
-/** Where the caret is, as a status-bar string. Reads the source, not the DOM. */
-export function caretLabel(session: Session): string {
-  if (session.selection === null) return 'no caret';
-  const range = selectionRange(session.flat, session.selection);
-  const head = session.selection.head;
-  const place = `${head.verseId} · line ${head.line + 1} · col ${head.column + 1}`;
-  if (range === null || range.from === range.to) return place;
-  const letters = session.selected.reduce((n, r) => n + (r.to - r.from + 1), 0);
-  return `${place} · ${range.to - range.from} chars, ${letters} letters selected`;
-}
-
-/** The offset the caret sits at. Exported for the tests, which assert on the
- *  source rather than on pixels — a caret test that reads a rectangle is
- *  testing the browser. */
-export const caretOffset = (session: Session): number | null =>
-  session.selection === null ? null : offsetOf(session.flat, session.selection.head);

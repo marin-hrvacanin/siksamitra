@@ -1,24 +1,28 @@
 /**
- * Between the screen and the source: where a letter is, and where a caret goes.
+ * A UNIT, AND WHERE IT IS IN THE SOURCE.
  *
- * The editor is a PROJECTION of the source, not a rich-text tree. Nothing is
- * editable in the DOM; the marked text is drawn, and a click is translated
- * into a position in the source through the map `emit` produced. That is the
- * whole architectural difference from v1, whose document *was* the DOM and
- * which therefore had no answer to "is this holding correct?".
+ * The page is a PROJECTION of the source: `ṁ` may be drawn `gṁ`, a holding is
+ * a box around a syllable, and an akṣara can stand for three units at once. So
+ * a position on screen is not a position in the file, and this is the pair of
+ * functions that convert between them — exact inverses, or the caret drifts a
+ * letter at a time.
  *
- * Two translations, and they must be exact inverses or the caret drifts from
- * the text:
+ *   `addressOfUnit`   a unit, and which side of it, as a line and a column
+ *   `unitOfAddress`   the same, backwards
  *
- *   screen → source   a `data-u` element, plus which half of it was clicked
- *   source → screen   a rectangle to draw the caret in
+ * `data-u` is the unit index within the verse, written by the one renderer
+ * (see `MarkRenderOptions.unitOffset`); `SrcMap.units[n]` is that unit's span
+ * in the source line. Both come from `emit`, so neither can drift from what a
+ * unit is.
  *
- * `data-u` is a unit index within the verse, written by the one renderer (see
- * `MarkRenderOptions.unitOffset`). `SrcMap.units[n]` is that unit's span in the
- * source line. Both come from `emit`, so neither can drift from what a unit is.
+ * WHAT USED TO BE HERE AND IS NOT. A hit test from an x-coordinate, a caret
+ * rectangle to draw, and a selection painter that added a class to every
+ * selected letter. The page is `contenteditable` now, so the browser does all
+ * three — see `dom-selection.ts`, which turns the browser's own position into
+ * a unit and hands it to the functions below.
  */
 import type { SrcMap } from '@siksamitra/engine';
-import { offsetOf, type CaretAddress, type FlatSource } from '@siksamitra/edit';
+import type { CaretAddress } from '@siksamitra/edit';
 
 export interface UnitHit {
   verseId: string;
@@ -32,63 +36,6 @@ export interface UnitHit {
   after: boolean;
   /** The verse is transcribed: editable nowhere, selectable everywhere. */
   attested: boolean;
-}
-
-/** What was clicked, if it was a letter. */
-export function hitAt(target: EventTarget | null, x: number): UnitHit | null {
-  if (!(target instanceof Element)) return null;
-  const el = target.closest<HTMLElement>('[data-u]');
-  const verse = (el ?? target).closest<HTMLElement>('[data-verse]');
-  if (verse === null) return null;
-
-  const verseId = verse.dataset['verse'] ?? '';
-  const sectionId = verse.dataset['section'] ?? '';
-  const attested = verse.dataset['attested'] === '1';
-  if (el === null) {
-    /*
-     * A click inside a verse but not on a letter: past the end of a line, in
-     * the gutter, or on the verse number. The LINE it landed in decides where
-     * the caret goes — it used to go to the start of the verse, which on a
-     * four-line verse moved the caret three lines away from the click.
-     */
-    const pada = (target as Element).closest<HTMLElement>('.pada');
-    const letters = [...(pada ?? verse).querySelectorAll<HTMLElement>('[data-u]')];
-    const last = letters[letters.length - 1];
-    if (last === undefined) {
-      return { verseId, sectionId, unit: 0, span: 1, after: false, attested };
-    }
-    // Past the end of the line it hit, unless the click was left of its text.
-    const box = last.getBoundingClientRect();
-    const first = letters[0]!.getBoundingClientRect();
-    if (x < first.left) {
-      return {
-        verseId,
-        sectionId,
-        unit: Number(letters[0]!.dataset['u'] ?? '0'),
-        span: 1,
-        after: false,
-        attested,
-      };
-    }
-    return {
-      verseId,
-      sectionId,
-      unit: Number(last.dataset['u'] ?? '0'),
-      span: Number(last.dataset['un'] ?? '1'),
-      after: x >= box.left,
-      attested,
-    };
-  }
-
-  const box = el.getBoundingClientRect();
-  return {
-    verseId,
-    sectionId,
-    unit: Number(el.dataset['u'] ?? '0'),
-    span: Number(el.dataset['un'] ?? '1'),
-    after: x > box.left + box.width / 2,
-    attested,
-  };
 }
 
 /**
@@ -109,22 +56,6 @@ export function addressOfUnit(
   const span = srcMap.units[hit.after ? last : hit.unit];
   if (span === undefined) return null;
   return { verseId, line: span.line, column: hit.after ? span.end : span.start };
-}
-
-/** A click, as a flat offset in the section — what a command needs. */
-export function offsetOfHit(
-  flat: FlatSource,
-  srcMap: SrcMap | null,
-  hit: UnitHit,
-): number | null {
-  if (srcMap === null) {
-    // A transcribed verse has no source map because it has no source. The
-    // caret still goes somewhere sensible: the start of the verse.
-    const line = flat.lineStarts.find((l) => l.verseId === hit.verseId);
-    return line?.at ?? null;
-  }
-  const at = addressOfUnit(hit.verseId, srcMap, hit);
-  return at === null ? null : offsetOf(flat, at);
 }
 
 /**
@@ -156,105 +87,4 @@ export function unitOfAddress(
     previous = { unit, after: true };
   }
   return previous;
-}
-
-/** The rectangle to draw a caret in, relative to a scrolling container. */
-export interface CaretBox {
-  left: number;
-  top: number;
-  height: number;
-}
-
-/**
- * The element for one verse, scoped and addressable.
- *
- * TWO THINGS THIS GUARDS. The paged view renders the document TWICE — once
- * off-screen at `left: -99999px` to measure block heights, and once into the
- * pages — and the probe comes first in document order, so an unscoped
- * `querySelector` always found it: the caret was drawn at x = −99985 and the
- * selection highlight never appeared at all. And a verse id is only unique
- * within a section, so the section is part of the address.
- */
-function verseElement(
-  scroller: HTMLElement,
-  sectionId: string,
-  verseId: string,
-): HTMLElement | null {
-  const scope = sectionId === '' ? '' : `[data-section="${cssEscape(sectionId)}"]`;
-  const all = scroller.querySelectorAll<HTMLElement>(
-    `${scope}[data-verse="${cssEscape(verseId)}"]`,
-  );
-  for (const el of all) {
-    // Never the measuring probe. It is laid out (it has to be, or every height
-    // comes back zero) and it comes first in document order.
-    if (el.closest('.paged__probe') === null) return el;
-  }
-  return null;
-}
-
-export function caretBox(
-  scroller: HTMLElement,
-  sectionId: string,
-  verseId: string,
-  place: { unit: number; after: boolean } | null,
-): CaretBox | null {
-  const verse = verseElement(scroller, sectionId, verseId);
-  if (verse === null) return null;
-
-  const el = place === null
-    ? null
-    : verse.querySelector<HTMLElement>(`[data-u="${place.unit}"]`);
-  const anchor = el ?? verse.querySelector<HTMLElement>('.pada') ?? verse;
-  const box = anchor.getBoundingClientRect();
-
-  /*
-   * Relative to the SCROLLED CONTENT, not the viewport: the caret is an
-   * absolutely positioned child of the scroll container, so it must be placed
-   * in the same coordinates the content is in — otherwise it sits still while
-   * the text scrolls past it.
-   */
-  const base = scroller.getBoundingClientRect();
-  return {
-    left: box.left - base.left + scroller.scrollLeft + (place?.after === true ? box.width : 0),
-    top: box.top - base.top + scroller.scrollTop,
-    height: box.height,
-  };
-}
-
-/**
- * Escape a value for a CSS attribute selector.
- *
- * `CSS.escape` is not available in every environment this runs in (jsdom in
- * the component tests, older WebViews), and a verse id containing a quote
- * would otherwise build a selector that throws.
- */
-function cssEscape(value: string): string {
-  const escape = (globalThis as { CSS?: { escape?: (s: string) => string } }).CSS?.escape;
-  return escape === undefined ? value.replace(/["\\]/g, '\\$&') : escape(value);
-}
-
-/** Paint a selection over the letters inside it, without re-rendering them.
- *
- *  IMPERATIVE ON PURPOSE. Passing the selection into the document components
- *  would re-render every verse on every caret move; in a 700-verse text that is
- *  the difference between an editor and a slideshow. The DOM already knows
- *  where the letters are, so the highlight is a class toggle over the letters
- *  actually in range — bounded by the selection, not by the document. */
-export function paintSelection(
-  scroller: HTMLElement,
-  sectionId: string,
-  ranges: readonly { verseId: string; from: number; to: number }[],
-): void {
-  for (const el of scroller.querySelectorAll<HTMLElement>('.is-selected')) {
-    el.classList.remove('is-selected');
-  }
-  for (const range of ranges) {
-    const verse = verseElement(scroller, sectionId, range.verseId);
-    if (verse === null) continue;
-    for (const el of verse.querySelectorAll<HTMLElement>('[data-u]')) {
-      const unit = Number(el.dataset['u'] ?? '-1');
-      const span = Number(el.dataset['un'] ?? '1');
-      if (unit + span - 1 >= range.from && unit <= range.to) el.classList.add('is-selected');
-    }
-  }
 }

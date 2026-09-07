@@ -62,6 +62,27 @@ are proofing is not the text they have. It is also what makes "1:1 with the
 exported PDF" true: pagination measures glyphs, so the glyphs must be the same
 on every machine.
 
+## What the shell is allowed to reach
+
+The window runs under a content-security policy that names every destination
+rather than trusting the page:
+
+```
+connect-src  'self'  ipc:  http://ipc.localhost  https://vedaunion.org
+```
+
+`https://vedaunion.org` is there for the account, and for nothing else. It was
+missing at first, and the symptom was worth recording: signing in failed with
+a bare **"Failed to fetch"** — the browser refuses a blocked request the same
+way it refuses an unreachable host, so a policy problem looks exactly like a
+network problem. A build that points at a different server needs that origin
+added here; a wildcard would defeat the whole file.
+
+The server side already expected us: `tauri://localhost` and
+`http://tauri.localhost` are on the platform's CORS allowlist, and the app
+authenticates with a Bearer token rather than a cookie, which is why it is
+exempt from the CSRF check without widening it.
+
 ## Signing, which is not done
 
 Neither certificate can be produced from a repository, and both need the owner:

@@ -30,6 +30,23 @@ export interface Binding {
    * browser's Back, went the same way.
    */
   alt?: boolean;
+  /**
+   * THE BROWSER DOES THIS ONE, and we must not.
+   *
+   * The page is `contenteditable`, so the caret, the selection and every
+   * motion key belong to the browser: it knows where a line wrapped and what a
+   * word is in this font, and `selectionchange` brings the result back into
+   * the model. Handling them here as well meant `preventDefault` stopped the
+   * browser moving its caret while our model moved anyway — measured, four
+   * presses of ArrowRight advanced the model by four columns and left the
+   * visible caret exactly where it was, so the next letter typed appeared
+   * somewhere the caret had never been.
+   *
+   * They stay in this table because it is also what the keyboard help reads
+   * from, and "the arrow keys move the caret" is still true and still worth
+   * saying. `handleEditKey` skips them.
+   */
+  native?: boolean;
   /** Shown in a menu or a tooltip. */
   label: string;
   /** Which ribbon group shows this as a button. Absent ⇒ keyboard only, which
@@ -56,7 +73,14 @@ export interface Binding {
   /** One line, for the tooltip. Says what it is FOR. */
   hint?: string;
   enabled?: (session: Session) => boolean;
-  run: (session: Session, shift: boolean) => void;
+  /**
+   * What it does — absent for a `native` key, which this program does not do.
+   *
+   * Optional rather than a no-op function: a `run` that exists and is never
+   * called is the shape of code that gets called again by accident, and this
+   * whole entry exists precisely so that nobody calls it.
+   */
+  run?: (session: Session, shift: boolean) => void;
 }
 
 /** Ctrl on Windows and Linux, ⌘ on a Mac. Read once, not per keystroke. */
@@ -66,25 +90,22 @@ export const modifierOf = (e: KeyboardEvent | { ctrlKey: boolean; metaKey: boole
 
 export const EDIT_KEYS: readonly Binding[] = [
   // ── moving ────────────────────────────────────────────────────────────────
-  { key: 'ArrowLeft', label: 'left', run: (s, shift) => s.moveCaret('char', -1, shift) },
-  { key: 'ArrowRight', label: 'right', run: (s, shift) => s.moveCaret('char', 1, shift) },
-  { key: 'ArrowUp', label: 'up a line', run: (s, shift) => s.moveCaret('line', -1, shift) },
-  { key: 'ArrowDown', label: 'down a line', run: (s, shift) => s.moveCaret('line', 1, shift) },
-  { key: 'ArrowLeft', ctrl: true, label: 'back a pada', run: (s, shift) => s.moveCaret('word', -1, shift) },
-  { key: 'ArrowRight', ctrl: true, label: 'on a pada', run: (s, shift) => s.moveCaret('word', 1, shift) },
-  { key: 'Home', label: 'start of line', run: (s, shift) => s.moveCaret('lineEdge', -1, shift) },
-  { key: 'End', label: 'end of line', run: (s, shift) => s.moveCaret('lineEdge', 1, shift) },
+  { key: 'ArrowLeft', native: true, label: 'left' },
+  { key: 'ArrowRight', native: true, label: 'right' },
+  { key: 'ArrowUp', native: true, label: 'up a line' },
+  { key: 'ArrowDown', native: true, label: 'down a line' },
+  { key: 'ArrowLeft', ctrl: true, native: true, label: 'back a pada' },
+  { key: 'ArrowRight', ctrl: true, native: true, label: 'on a pada' },
+  { key: 'Home', native: true, label: 'start of line' },
+  { key: 'End', native: true, label: 'end of line' },
 
   // ── changing ──────────────────────────────────────────────────────────────
-  { key: 'Backspace', label: 'delete back', run: (s) => s.remove(-1) },
-  { key: 'Delete', label: 'delete forward', run: (s) => s.remove(1) },
-  {
-    key: 'Enter',
-    label: 'new line',
-    // Enter is a breath; Ctrl+Enter is a new verse. The commoner gesture gets
-    // the plainer key, and a verse boundary is a real decision.
-    run: (s) => s.newLine(false),
-  },
+  { key: 'Backspace', native: true, label: 'delete back' },
+  { key: 'Delete', native: true, label: 'delete forward' },
+  /* The browser sends `insertParagraph`, which `apply-input.ts` turns into a
+     new line inside the verse. Ctrl+Enter is ours: a verse boundary is a
+     decision no browser knows how to make. */
+  { key: 'Enter', native: true, label: 'a new line' },
   { key: 'Enter', ctrl: true, label: 'new verse', run: (s) => s.newLine(true) },
 
   // ── marking ───────────────────────────────────────────────────────────────
@@ -203,6 +224,8 @@ export function handleEditKey(
   const ctrl = modifierOf(e);
   const candidates = EDIT_KEYS.filter((b) => (
     b.key !== ''
+    /* The browser's, not ours — see `Binding.native`. */
+    && b.native !== true
     && b.key.toLowerCase() === e.key.toLowerCase()
     && (b.ctrl ?? false) === ctrl
     // Alt is matched, not ignored: no binding declares it, so any chord
@@ -216,6 +239,10 @@ export function handleEditKey(
     (b.shift === undefined ? 0 : 1) > (best.shift === undefined ? 0 : 1) ? b : best
   ));
   if (chosen.enabled?.(session) === false) return null;
+  /* A binding with no `run` is one the browser performs — filtered out above,
+     so this cannot happen; typed rather than asserted because a future entry
+     could reintroduce it. */
+  if (chosen.run === undefined) return null;
   chosen.run(session, e.shiftKey);
   return chosen;
 }

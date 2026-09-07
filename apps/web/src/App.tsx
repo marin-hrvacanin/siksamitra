@@ -358,6 +358,7 @@ export function App() {
             zoom={state.zoom}
             contentKey={contentKey}
             addressable={session.editing}
+            rebuild={session.remount}
           />
         ) : (
           <FlowView
@@ -367,6 +368,7 @@ export function App() {
             page={state.page}
             zoom={state.zoom}
             addressable={session.editing}
+            rebuild={session.remount}
             web={state.view.kind === 'web'}
           />
         ))}

@@ -2,7 +2,7 @@
 /**
  * A walk through the application, with screenshots.
  *
- * Not a test — `tools/edit-smoke.mjs` asserts. This DRIVES the program the way
+ * Not a test — `tools/interaction.mjs` asserts. This DRIVES the program the way
  * a person would and photographs each step, so the result can be LOOKED at:
  * hierarchy, marks, the caret, a selection, the three views, the document
  * themes, and the window at four widths.
@@ -49,8 +49,11 @@ async function shot(name, what) {
     holdShort: document.querySelectorAll('.hold-short').length,
     holdLong: document.querySelectorAll('.hold-long').length,
     svaras: document.querySelectorAll('[class*="sv-"]').length,
-    caret: document.querySelector('.caret') !== null,
-    selected: document.querySelectorAll('.is-selected').length,
+    /* The browser owns the caret and the selection now — there is no `.caret`
+       element and no `.is-selected` class to count. Both are read from the
+       browser, which is where they live. */
+    caret: document.activeElement?.closest?.('.doc[contenteditable="true"]') != null,
+    selected: (document.getSelection()?.toString() ?? '').length,
     doc: document.querySelector('.canvas')?.getAttribute('data-doc'),
     chrome: document.querySelector('.app')?.getAttribute('data-chrome'),
     tab: document.querySelector('.rbn__tab.is-on')?.textContent,
@@ -185,7 +188,7 @@ await page.keyboard.down('Shift');
 for (let i = 0; i < 8; i += 1) await page.keyboard.press('ArrowRight');
 await page.keyboard.up('Shift');
 await wait(350);
-await shot('09-selected', 'shift+arrow selection painted on the letters');
+await shot('09-selected', "shift+arrow — the browser's own selection, over marked text");
 
 await mark(page, 'Long');
 await wait(450);
