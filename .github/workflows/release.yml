@@ -1,0 +1,164 @@
+# The installers, built on the three machines that can build them.
+#
+# CROSS-COMPILATION IS NOT ATTEMPTED, and that is not laziness: a macOS bundle
+# must be built on macOS, and a Linux AppImage links against the libraries
+# present at build time, so one built elsewhere fails on the one machine that
+# matters. Three runners, three installers.
+#
+# THE ASSET NAMES ARE FIXED, and this is the whole point of the file.
+#
+# Tauri names its output after the product and the version —
+# `siksamitra_2.0.0-alpha.0_x64-setup.exe` — which changes with every release
+# and cannot be linked to from a web page. GitHub's
+# `releases/latest/download/<name>` redirects to whatever the newest release
+# calls that name, so a STABLE name is a permanent download URL. Everything is
+# therefore renamed before it is uploaded, and the landing page links to those
+# names. When this branch becomes `main`, the page and the downloads are
+# already correct: nothing has to be swapped in the right order.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish to (default: latest)'
+        required: false
+        default: latest
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    strategy:
+      # NOT fail-fast. A macOS runner that dies should not take a finished
+      # Windows installer with it — a release with two of the three is worth
+      # far more than a release with none.
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+          - os: macos-14
+            label: macOS (Apple silicon)
+            target: aarch64-apple-darwin
+          - os: macos-13
+            label: macOS (Intel)
+            target: x86_64-apple-darwin
+          - os: ubuntu-22.04
+            label: Linux
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.label }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target || '' }}
+
+      # The Rust build is the slow half by a wide margin, and it is almost
+      # entirely cacheable: only our own crate changes between runs.
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      # Ubuntu 22.04 ships webkit2gtk 4.0; Tauri v2 wants 4.1. Naming both is
+      # what keeps this working across a runner-image bump.
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+            libgtk-3-dev
+
+      - run: npm ci
+
+      - name: Icons
+        run: npm run desktop:icons
+
+      - name: Build
+        # The checks ran on their own workflow against this commit; running
+        # them again on four runners buys nothing and costs twenty minutes.
+        run: npm run package -- --all --skip-checks
+
+      - name: Collect, with names that will not change
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          BUNDLE=apps/desktop/src-tauri/target/release/bundle
+          take() {   # take <glob> <fixed name>
+            local found
+            found=$(ls -1 $1 2>/dev/null | head -1 || true)
+            if [ -z "$found" ]; then echo "  (none) $1"; return; fi
+            cp "$found" "out/$2"
+            echo "  $2  <-  $(basename "$found")"
+          }
+          case "${{ runner.os }}" in
+            Windows)
+              take "$BUNDLE/nsis/*-setup.exe" siksamitra-windows-setup.exe
+              take "$BUNDLE/msi/*.msi"        siksamitra-windows.msi
+              ;;
+            macOS)
+              if [ "${{ matrix.target }}" = "aarch64-apple-darwin" ]; then
+                take "$BUNDLE/dmg/*.dmg" siksamitra-macos-apple-silicon.dmg
+              else
+                take "$BUNDLE/dmg/*.dmg" siksamitra-macos-intel.dmg
+              fi
+              ;;
+            Linux)
+              take "$BUNDLE/appimage/*.AppImage" siksamitra-linux.AppImage
+              take "$BUNDLE/deb/*.deb"           siksamitra-linux.deb
+              ;;
+          esac
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.label }}
+          path: out/*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    # `always()` so a release still happens when one platform failed; the
+    # matrix is not fail-fast for the same reason.
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+      - name: Gather
+        run: |
+          mkdir -p out
+          find incoming -type f -exec cp {} out/ \;
+          ls -la out
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ env.TAG }}"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --title "śikṣāmitra $TAG" \
+              --notes "Built from ${{ github.sha }}." \
+              ${{ env.TAG == 'latest' && '--prerelease' || '' }}
+          fi
+          # `--clobber`, because `latest` is a ROLLING tag: the page links to
+          # `releases/latest/download/<name>` and that has to keep meaning the
+          # newest build of that name.
+          gh release upload "$TAG" out/* --clobber

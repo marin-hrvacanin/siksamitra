@@ -1,0 +1,46 @@
+# The landing page.
+#
+# It is `site/`, not `docs/`. Version 1 served its page out of `docs/`, which
+# then could not also hold documentation — and this branch's `docs/` is the
+# developer's: the marking guides, the command-line reference, the interchange
+# format. Two audiences, two directories, and neither has to tiptoe around the
+# other.
+#
+# IT DEPLOYS FROM `main` ONLY, and that is the point rather than an oversight.
+#
+# Until version 2 becomes `main`, the live site is version 1's and people are
+# downloading version 1 from it — so a workflow that published on every push
+# to `v2` would replace a working page with one whose download links point at
+# binaries nobody has built yet. The page is prepared here, links to the
+# release assets by their fixed names, and goes live the moment the branch is
+# swapped. `workflow_dispatch` is for looking at it before then.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['site/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

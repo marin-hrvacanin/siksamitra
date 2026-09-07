@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>śikṣāmitra — an editor for marked Vedic recitation text</title>
+<meta name="description" content="A desktop editor for Sanskrit recitation text: holdings, accents and pauses placed by rule, a page that is 1:1 with the Word document and the PDF, and a recitation mapped onto the line being sung.">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<meta property="og:title" content="śikṣāmitra">
+<meta property="og:description" content="An editor for marked Vedic recitation text.">
+<meta property="og:image" content="shots/editor-light.png">
+<meta property="og:type" content="website">
+
+<!--
+  SELF-HOSTED FONTS, and no third party at all.
+
+  This page's whole subject is diacritics — ṛ ṣ ṭ ḍ ṇ ḷ ḥ ṁ ś — and a face
+  requested from a system that does not have it substitutes silently, so the
+  one sentence of Sanskrit on the page renders in something that cannot draw
+  half of it. The two families are the ones the program itself uses, under the
+  SIL OFL, served from this repository: 372 KB, no tracking, and nothing that
+  can be blocked or go down.
+-->
+<style>
+@font-face{font-family:Garamond2;src:url(fonts/eb-garamond-latin-ext-400-normal.woff2)format('woff2');font-weight:400;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1EFF,U+2020,U+20A0-20AB}
+@font-face{font-family:Garamond2;src:url(fonts/eb-garamond-latin-400-normal.woff2)format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:Garamond2;src:url(fonts/eb-garamond-latin-ext-600-normal.woff2)format('woff2');font-weight:600;font-display:swap;unicode-range:U+0100-02BA,U+1E00-1EFF}
+@font-face{font-family:Garamond2;src:url(fonts/eb-garamond-latin-600-normal.woff2)format('woff2');font-weight:600;font-display:swap}
+@font-face{font-family:Garamond2;src:url(fonts/eb-garamond-latin-ext-400-italic.woff2)format('woff2');font-weight:400;font-style:italic;font-display:swap;unicode-range:U+0100-02BA,U+1E00-1EFF}
+@font-face{font-family:Garamond2;src:url(fonts/eb-garamond-latin-400-italic.woff2)format('woff2');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:Inter2;src:url(fonts/inter-latin-ext-400-normal.woff2)format('woff2');font-weight:400;font-display:swap;unicode-range:U+0100-02BA,U+1E00-1EFF}
+@font-face{font-family:Inter2;src:url(fonts/inter-latin-400-normal.woff2)format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:Inter2;src:url(fonts/inter-latin-ext-600-normal.woff2)format('woff2');font-weight:600;font-display:swap;unicode-range:U+0100-02BA,U+1E00-1EFF}
+@font-face{font-family:Inter2;src:url(fonts/inter-latin-600-normal.woff2)format('woff2');font-weight:600;font-display:swap}
+
+/*
+  THE SAME PALETTE THE PROGRAM USES.
+
+  Neutral surfaces, saffron as an ACCENT only — never a background, never a
+  title bar. A page that paints itself orange to look devotional is a page
+  that will not be trusted with a text.
+*/
+:root{
+  --ink:#1b1b1f; --ink-2:#5c5c66; --ink-3:#8b8b96;
+  --bg:#f4f4f6; --paper:#fff; --line:#dedee4; --sunk:#eaeaef;
+  --accent:#a9741f; --accent-soft:#f3e7d2;
+  --hold:#538135; --svara:#c0504d;
+  --measure:38rem;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ink:#e8e8ec; --ink-2:#a5a5b0; --ink-3:#75757f;
+    --bg:#141416; --paper:#1c1c1f; --line:#2e2e34; --sunk:#232328;
+    --accent:#d8a54a; --accent-soft:#33291a;
+    --hold:#7fae5c; --svara:#e0817e;
+  }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  font-family:Garamond2,Georgia,'Times New Roman',serif;
+  font-size:18px; line-height:1.7;
+  background:var(--bg); color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.5rem}
+.wide{max-width:64rem;margin:0 auto;padding:0 1.5rem}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+a:hover{border-bottom-color:currentColor}
+h1,h2,h3{font-weight:400;line-height:1.25;letter-spacing:-0.01em}
+section{padding:4.5rem 0}
+section+section{border-top:1px solid var(--line)}
+.eyebrow{
+  font-family:Inter2,system-ui,sans-serif;font-size:.72rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  margin-bottom:1rem;
+}
+p+p{margin-top:1rem}
+.lead{font-size:1.15rem;color:var(--ink-2)}
+
+/* ── the head ─────────────────────────────────────────────────────────── */
+.hero{padding:5rem 0 3.5rem;text-align:center}
+.hero img.mark{width:56px;height:56px;border-radius:12px;margin-bottom:1.25rem}
+.hero h1{font-size:clamp(2.6rem,7vw,3.6rem)}
+.hero .sub{
+  font-family:Inter2,system-ui,sans-serif;font-size:.8rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+  margin-top:.35rem;
+}
+.hero .desc{margin:1.5rem auto 2.25rem;max-width:30rem;color:var(--ink-2)}
+
+/* The one line of Sanskrit, marked the way the program marks it. Real
+   elements rather than a picture, so it is selectable and scales. */
+.sample{
+  font-size:clamp(1.3rem,4.4vw,1.85rem);line-height:2.1;
+  margin:2.25rem auto 0;white-space:nowrap;overflow-x:auto;
+  padding-bottom:.5rem;
+}
+.sample .h{
+  box-shadow:inset 0 0 0 1px var(--hold);border-radius:2px;
+  padding:0 .06em;
+}
+.sample .h2{box-shadow:inset 0 0 0 2px var(--hold)}
+.sample .a{position:relative}
+.sample .a::after{
+  content:'';position:absolute;left:50%;top:-.62em;
+  width:.09em;height:.34em;background:var(--svara);border-radius:1px;
+}
+.sample .u{text-decoration:underline;text-decoration-color:var(--svara);text-underline-offset:.16em}
+.caption{
+  font-family:Inter2,system-ui,sans-serif;font-size:.78rem;color:var(--ink-3);
+  margin-top:.75rem;
+}
+
+/* ── buttons ──────────────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-family:Inter2,system-ui,sans-serif;font-size:.9rem;font-weight:600;
+  padding:.7rem 1.4rem;border-radius:8px;border:1px solid var(--accent);
+  background:var(--accent);color:var(--paper);
+}
+.btn:hover{border-bottom-color:var(--accent);filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft);filter:none}
+.buttons{display:flex;gap:.65rem;justify-content:center;flex-wrap:wrap}
+.hint{
+  font-family:Inter2,system-ui,sans-serif;font-size:.78rem;color:var(--ink-3);
+  margin-top:.9rem;
+}
+
+/* ── screenshots ──────────────────────────────────────────────────────── */
+figure{margin:0}
+.shot{
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  background:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.05),0 8px 28px rgba(0,0,0,.07);
+}
+.shot img{display:block;width:100%;height:auto}
+figcaption{
+  font-family:Inter2,system-ui,sans-serif;font-size:.8rem;color:var(--ink-3);
+  margin-top:.7rem;text-align:center;
+}
+.shots{display:grid;gap:2.5rem;margin-top:2.5rem}
+@media (min-width:52rem){.shots.two{grid-template-columns:1fr 1fr}}
+
+/* ── the feature list ─────────────────────────────────────────────────── */
+.things{display:grid;gap:2rem;margin-top:2.5rem}
+@media (min-width:44rem){.things{grid-template-columns:1fr 1fr}}
+.thing h3{font-size:1.15rem;margin-bottom:.4rem}
+.thing p{font-size:.95rem;color:var(--ink-2);line-height:1.65}
+
+/* ── downloads ────────────────────────────────────────────────────────── */
+.dl{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:2rem}
+.dl-row{
+  display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
+  background:var(--paper);padding:1.1rem 1.25rem;
+}
+.dl-row .os{font-weight:600;min-width:7rem}
+.dl-row .what{font-family:Inter2,system-ui,sans-serif;font-size:.82rem;color:var(--ink-3);flex:1 1 12rem}
+.dl-row a{font-family:Inter2,system-ui,sans-serif;font-size:.85rem;font-weight:600}
+.dl-row a+a{margin-left:1rem}
+
+.note{
+  background:var(--sunk);border-left:3px solid var(--accent);
+  padding:1rem 1.25rem;border-radius:0 6px 6px 0;margin-top:2rem;
+  font-size:.95rem;color:var(--ink-2);
+}
+.note strong{color:var(--ink);font-weight:600}
+
+pre{
+  background:var(--paper);border:1px solid var(--line);border-radius:8px;
+  padding:1rem 1.15rem;overflow-x:auto;margin-top:1.25rem;
+  font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  font-size:.82rem;line-height:1.65;color:var(--ink-2);
+}
+pre b{color:var(--ink);font-weight:600}
+
+footer{
+  padding:3rem 0 4rem;text-align:center;
+  font-family:Inter2,system-ui,sans-serif;font-size:.82rem;color:var(--ink-3);
+  border-top:1px solid var(--line);
+}
+footer a{color:var(--ink-2)}
+footer p+p{margin-top:.5rem}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <img class="mark" src="logo.png" alt="" width="56" height="56">
+    <h1>śikṣāmitra</h1>
+    <p class="sub">version 2</p>
+    <p class="desc lead">
+      An editor for marked Vedic recitation text — the holdings, the accents
+      and the pauses that say how a mantra is said aloud.
+    </p>
+
+    <!--
+      THE SAMPLE IS THE PITCH. Anybody who needs this program recognises what
+      these marks are in a second, and nobody else will read three paragraphs
+      to find out. So the first thing on the page is the thing it makes.
+    -->
+    <p class="sample" lang="sa-Latn">
+      <span class="a">tā</span>ma-<span class="h">g</span>ni
+      va<span class="u">r</span><span class="h">ṇ</span><span class="a">ā</span>n
+      <span class="h">t</span>apa<span class="u">s</span>ā
+      <span class="h2">j</span>vala<span class="u">n</span><span class="h">t</span>īṁ
+    </p>
+    <p class="caption">
+      A holding, a long holding, an anudātta and a svarita — placed by rule,
+      overruled by hand where the rule is wrong.
+    </p>
+
+    <p class="buttons" style="margin-top:2.5rem">
+      <a class="btn" id="download" href="#downloads">Download</a>
+      <a class="btn ghost" href="https://github.com/marin-hrvacanin/siksamitra">Source</a>
+    </p>
+    <p class="hint" id="platform">Free and open. Windows, macOS and Linux.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wide">
+    <p class="eyebrow" style="text-align:center">What it looks like</p>
+    <div class="shots">
+      <figure>
+        <div class="shot"><img src="shots/editor-light.png" alt="The editor, showing Durgā Sūktam with holdings and accents, a navigation panel and a ribbon" loading="lazy" width="2720" height="1720"></div>
+        <figcaption>The window: a ribbon, a navigation panel, and the marked text.</figcaption>
+      </figure>
+      <div class="shots two">
+        <figure>
+          <div class="shot"><img src="shots/word-page.png" alt="The same text laid out as an A4 page with a running head" loading="lazy" width="2720" height="1720"></div>
+          <figcaption>The page, measured against the Word file: Arimo 16 pt on 24, a 14.2 pt hanging indent, A4 with 25 mm margins.</figcaption>
+        </figure>
+        <figure>
+          <div class="shot"><img src="shots/editor-dark.png" alt="The editor in dark mode" loading="lazy" width="2720" height="1720"></div>
+          <figcaption>Dark, and every other appearance — the page's look is the author's choice, not the window's.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow">What it does</p>
+    <h2 style="font-size:1.7rem">The marks are the point.</h2>
+    <p class="lead" style="margin-top:1rem">
+      Type the text and the rules place the marks: which syllable is held and
+      for how long, where an accent falls, where a pause belongs, what an
+      anusvāra becomes before a sibilant. Where a rule is wrong for a
+      particular word, you overrule it — and your decision survives every
+      later edit, because it is attached to the letter and not to the picture.
+    </p>
+
+    <div class="things">
+      <div class="thing">
+        <h3>Different texts, different rules</h3>
+        <p>
+          A Ṛgvedic sūkta and a purāṇic stotra are not marked the same way.
+          Five registers — Taittirīya, Ṛgveda, Śukla Yajurveda, smārta and
+          prose — and the document says which it follows, per document or per
+          section.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>One to one with the Word file</h3>
+        <p>
+          The page on screen is the page that prints. Sizes, leading, indents
+          and margins are taken from the documents themselves, and a browser
+          test measures them on every build so they cannot drift.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>Three ways to look at it</h3>
+        <p>
+          A flowing column for writing, real pages for checking what the PDF
+          will be, and a full-width web view. Same document, same marks, no
+          re-flow surprises between them.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>A recitation against the text</h3>
+        <p>
+          Open a recording and the program works out which second is which
+          pāda — by listening for the breaths and by counting syllables. Then
+          the line lights up as it is sung, and clicking a line plays it.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>What was copied stays copied</h3>
+        <p>
+          A verse transcribed from a hand-marked page is evidence: its marks
+          exist nowhere else, so the program will not re-derive it and says so
+          plainly rather than quietly rebuilding it.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>Devanāgarī, Telugu and Tamil</h3>
+        <p>
+          The same marked text in four writing systems, derived rather than
+          typed twice — so a correction is made once.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="downloads">
+  <div class="wrap">
+    <p class="eyebrow">Download</p>
+    <h2 style="font-size:1.7rem">One file. Double-click it.</h2>
+    <p style="margin-top:1rem;color:var(--ink-2)">
+      Everything is inside: the program, eleven font families, and the sample
+      documents. No Node, no Python, nothing to install first.
+    </p>
+
+    <div class="dl">
+      <div class="dl-row" data-os="win">
+        <span class="os">Windows</span>
+        <span class="what">10 and 11 · installer or portable</span>
+        <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/siksamitra-windows-setup.exe">Installer</a>
+        <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/siksamitra-windows.msi">MSI</a>
+      </div>
+      <div class="dl-row" data-os="mac">
+        <span class="os">macOS</span>
+        <span class="what">Apple silicon and Intel</span>
+        <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/siksamitra-macos-apple-silicon.dmg">Apple silicon</a>
+        <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/siksamitra-macos-intel.dmg">Intel</a>
+      </div>
+      <div class="dl-row" data-os="linux">
+        <span class="os">Linux</span>
+        <span class="what">AppImage runs anywhere · .deb for Debian and Ubuntu</span>
+        <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/siksamitra-linux.AppImage">AppImage</a>
+        <a href="https://github.com/marin-hrvacanin/siksamitra/releases/latest/download/siksamitra-linux.deb">.deb</a>
+      </div>
+    </div>
+
+    <!--
+      SAID BEFORE IT HAPPENS, not after.
+
+      The first thing a Windows user meets is a blue SmartScreen panel and the
+      first thing a Mac user meets is a refusal. Both are because the binaries
+      are unsigned, both are survivable, and neither is survivable if the
+      person was not told — they close the panel and conclude the program is
+      malware. This paragraph costs nothing and is the difference.
+    -->
+    <div class="note">
+      <p><strong>The binaries are not signed yet.</strong>
+      On Windows, SmartScreen will show a blue panel: <em>More info →
+      Run anyway</em>. On macOS, Gatekeeper refuses an unsigned app outright —
+      right-click the app and choose <em>Open</em>, or run
+      <code>xattr -dr com.apple.quarantine /Applications/śikṣāmitra.app</code>.
+      Certificates are the plan; until then this page would rather warn you
+      than have you meet a panel unprepared.</p>
+    </div>
+
+    <p style="margin-top:2rem;color:var(--ink-2);font-size:.95rem">
+      Or build it yourself — <code>npm install &amp;&amp; npm run package</code>
+      produces the installer for whichever machine you are on.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Its own files</p>
+    <h2 style="font-size:1.7rem">.smdoc, and it stays readable.</h2>
+    <p style="margin-top:1rem;color:var(--ink-2)">
+      Once installed, śikṣāmitra owns <code>.smdoc</code> files and gives them
+      their own icon. Version 2 opens every version 1 document; a document
+      saved today will open in whatever version 5 turns out to be, because the
+      format's rule is that a reader may not be broken by a writer it has never
+      met.
+    </p>
+    <p style="margin-top:1rem;color:var(--ink-2)">
+      Word in and Word out, PDF, and <code>.vuchant</code> packages that carry
+      a document with its recordings and figures.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow">For agents and scripts</p>
+    <h2 style="font-size:1.7rem">Everything the window can do, a command can do.</h2>
+    <p style="margin-top:1rem;color:var(--ink-2)">
+      Not a convenience — the design. Both call the same code, so a power one
+      of them has cannot rot in the other. Nothing is written without
+      <code>--write</code>.
+    </p>
+<pre><b>sm</b> import durga.docx --out durga.json      <i># a marked Word file, read</i>
+<b>sm</b> set-register durga.json --preset rigveda --write
+<b>sm</b> hold durga.json --verse v-2 --units 0-4 --value long --write
+<b>sm</b> audio map durga.json --file take.wav --write
+<b>sm</b> export durga.json --out durga-out.docx</pre>
+    <p style="margin-top:1.25rem;font-size:.95rem">
+      <a href="https://github.com/marin-hrvacanin/siksamitra/blob/main/docs/AGENTS.md">The whole command line →</a>
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>
+      <a href="https://github.com/marin-hrvacanin/siksamitra">GitHub</a> ·
+      <a href="https://github.com/marin-hrvacanin/siksamitra/blob/main/docs/AGENTS.md">Docs</a> ·
+      <a href="https://vedaunion.org">Veda Union</a>
+    </p>
+    <p>Fonts under the SIL Open Font License. Icons from Material Symbols, Apache 2.0.</p>
+    <p>śikṣāmitra — <span lang="sa-Latn">śikṣā</span>, the science of pronunciation; <span lang="sa-Latn">mitra</span>, a friend.</p>
+  </div>
+</footer>
+
+<script>
+/*
+  NAME THE PLATFORM, do not choose for it.
+
+  The button jumps to the table rather than downloading straight away, and the
+  line under it says which row is probably yours. Guessing wrong and handing
+  somebody an AppImage on Windows is worse than one extra click, and the guess
+  IS wrong often enough — an ARM Mac and an Intel Mac are the same string until
+  you look at the GPU.
+*/
+(function () {
+  var ua = navigator.userAgent;
+  var os = /Windows/.test(ua) ? 'win'
+    : /Mac OS X|Macintosh/.test(ua) ? 'mac'
+    : /Linux|X11|CrOS/.test(ua) ? 'linux' : null;
+  var said = {
+    win: 'Looks like Windows — the installer is the first row.',
+    mac: 'Looks like macOS — pick Apple silicon unless your Mac is from before 2020.',
+    linux: 'Looks like Linux — the AppImage runs anywhere.'
+  };
+  if (os === null) return;
+  var row = document.querySelector('.dl-row[data-os="' + os + '"]');
+  if (row !== null) row.style.background = 'var(--accent-soft)';
+  document.getElementById('platform').textContent = said[os];
+})();
+</script>
+</body>
+</html>

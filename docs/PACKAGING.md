@@ -90,6 +90,33 @@ mark.
 `icon.icns` is the exception: `iconutil` is macOS-only, so the generator writes
 a 1024px PNG and the real `.icns` is produced on the Mac that builds the dmg.
 
+## Continuous builds, and why the file names are fixed
+
+`.github/workflows/release.yml` builds on `windows-latest`, `macos-14`,
+`macos-13` and `ubuntu-22.04` — four runners because cross-compilation is not
+attempted, and two Macs because Apple silicon and Intel are different binaries.
+
+Every installer is **renamed before it is uploaded**:
+
+| fixed name | from |
+| --- | --- |
+| `siksamitra-windows-setup.exe` | `nsis/*-setup.exe` |
+| `siksamitra-windows.msi` | `msi/*.msi` |
+| `siksamitra-macos-apple-silicon.dmg` | `dmg/*.dmg` on `macos-14` |
+| `siksamitra-macos-intel.dmg` | `dmg/*.dmg` on `macos-13` |
+| `siksamitra-linux.AppImage` | `appimage/*.AppImage` |
+| `siksamitra-linux.deb` | `deb/*.deb` |
+
+Tauri names its output after the product and the version, which changes with
+every release and so cannot be linked to. GitHub's
+`releases/latest/download/<name>` redirects to whatever the newest release
+calls that name — so a fixed name is a permanent download URL, and the landing
+page in `site/` never has to know a version number.
+
+The matrix is deliberately **not** fail-fast, and the publishing job runs with
+`always()`: a macOS runner that dies should not take a finished Windows
+installer with it.
+
 ## What has actually been built
 
 Honestly, so nobody is surprised:

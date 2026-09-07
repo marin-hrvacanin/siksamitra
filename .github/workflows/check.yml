@@ -1,0 +1,80 @@
+# Every gate this repository has, on every push.
+#
+# `npm run check` is the whole thing — the type check, 611 tests across five
+# tiers, the marking conformance suite against the corpus, the lossless round
+# trip, the token and module rules, and the authoring-guide copies. It is one
+# command on purpose: a contributor should not have to know which of eleven
+# scripts matters, and a gate that is not in `check` is a gate that stops
+# running.
+#
+# THE BROWSER GATES ARE SEPARATE, and this is deliberate. They need a real
+# engine and a dev server, they measure typography in points, and they are the
+# only way the "1:1 with the Word document" claim is actually checked. Running
+# them in their own job means a font that fails to load fails visibly rather
+# than as a timeout inside a hundred other tests.
+name: Check
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      # The gates drive a real browser through puppeteer-core, which brings no
+      # binary of its own — the runner already has Chrome, so it is pointed at
+      # that rather than downloading a second copy of it.
+      - name: Serve the app
+        run: |
+          npm run build:web
+          npx --yes serve -l 5273 apps/web/dist &
+          npx --yes wait-on http://localhost:5273 -t 60000
+
+      - name: The document is 1:1 with the Word file
+        run: npm run check:document
+        env:
+          CHROME: /usr/bin/google-chrome
+          URL: http://localhost:5273/
+
+      - name: Nothing is unreachable at any width
+        run: npm run check:responsive
+        env:
+          CHROME: /usr/bin/google-chrome
+          URL: http://localhost:5273/
+
+      - name: Every theme in every mode
+        run: npm run check:themes
+        env:
+          CHROME: /usr/bin/google-chrome
+          URL: http://localhost:5273/
+
+      - name: Editing survives the chrome
+        run: npm run check:edit
+        env:
+          CHROME: /usr/bin/google-chrome
+          URL: http://localhost:5273/
