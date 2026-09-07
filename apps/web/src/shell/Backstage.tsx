@@ -18,10 +18,12 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
 import { Icon } from '../ui/Icon.js';
+import { AccountPanel } from './AccountPanel.js';
+import type { AccountApi } from '../account/useAccount.js';
 import type { RecentDocument } from './useRecents.js';
 
 export function Backstage(
-  { doc, documents, slug, recents, onSlug, onClose, actions, onAbout }: {
+  { doc, documents, slug, recents, onSlug, onClose, actions, onAbout, account }: {
     doc: ChantDoc | null;
     documents: readonly { slug: string; title: string }[];
     slug: string;
@@ -32,6 +34,8 @@ export function Backstage(
     actions: ReactNode;
     /** The About page. A placeholder until there is something to say. */
     onAbout: () => void;
+    /** Signing in to Veda Union — see `AccountPanel`. */
+    account: AccountApi;
   },
 ): ReactNode {
   const back = useRef<HTMLButtonElement>(null);
@@ -79,6 +83,14 @@ export function Backstage(
         <section className="bs__col">
           <h2 className="bs__lbl">Do</h2>
           <div className="bs__actions">{actions}</div>
+
+          {/*
+            ACCOUNT ABOVE INFO. It is about the person rather than about the
+            document, and it is the thing somebody comes to this view looking
+            for when they came looking for anything but a file.
+          */}
+          <h2 className="bs__lbl bs__lbl--second">Account</h2>
+          <AccountPanel account={account} />
 
           <h2 className="bs__lbl bs__lbl--second">Info</h2>
           {/*

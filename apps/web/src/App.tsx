@@ -19,9 +19,9 @@ import { PagedView } from './views/PagedView.js';
 import { StatusBar } from './shell/StatusBar.js';
 import { AppTitleBar } from './shell/AppTitleBar.js';
 import { NavPanel } from './shell/NavPanel.js';
-import { Backstage } from './shell/Backstage.js';
+import { DOCUMENTS, FileView } from './shell/FileView.js';
 import { useRecents } from './shell/useRecents.js';
-import { FileGroup } from './shell/FileGroup.js';
+import { useAccount } from './account/useAccount.js';
 import { Toolbar } from './shell/Toolbar.js';
 import { Icon } from './ui/Icon.js';
 import { handleKey, type CommandContext } from './shell/commands.js';
@@ -38,13 +38,6 @@ import { useAppearance } from './state/useAppearance.js';
 
 /** A document-shaped nothing, so the session hook is never conditional. */
 const EMPTY_DOC = { title: '', titleForms: {}, sections: [] };
-
-const DOCUMENTS = [
-  { slug: 'durga-suktam', title: 'Durgā Sūktam' },
-  { slug: 'bhagya-suktam', title: 'Bhāgya Sūktam' },
-  { slug: 'purusha-suktam', title: 'Puruṣa Sūktam' },
-  { slug: 'sri-rudram', title: 'Śrī Rudram' },
-];
 
 export function App() {
   const viewport = useViewport();
@@ -118,6 +111,15 @@ export function App() {
   const [fileOpen, setFileOpen] = useState(false);
 
   const recents = useRecents(slug, doc?.title ?? null);
+  /*
+   * THE ACCOUNT LIVES HERE, not inside the File view.
+   *
+   * The File view unmounts when it closes, and a sign-in takes as long as it
+   * takes somebody to find their browser — a person who closed the panel to
+   * look at their document would come back to a sign-in that had been thrown
+   * away mid-conversation.
+   */
+  const account = useAccount();
   /*
    * THE PANEL GETS OUT OF THE WAY, rather than being closed for good. Below
    * this width the navigator and an A4 column cannot both have room — at
@@ -281,28 +283,16 @@ export function App() {
       />
 
       {fileOpen && (
-        <Backstage
+        <FileView
           doc={doc}
-          documents={DOCUMENTS}
+          session={session}
           slug={slug}
           recents={recents}
+          account={account}
           onSlug={(next) => { setFile(null); setNote(null); setSlug(next); }}
+          onOpened={(d, name) => { setFile({ doc: d, name }); setNote(`Opened ${name}`); }}
           onClose={() => setFileOpen(false)}
-          onAbout={() => setNote(
-            'śikṣāmitra 2.0.0-alpha — a workbench for marked Sanskrit recitation text. '
-            + 'Fonts under the SIL OFL; icons from Material Symbols, Apache-2.0.',
-          )}
-          actions={(
-            <FileGroup
-              doc={session.doc}
-              onOpen={(d, name) => {
-                setFile({ doc: d, name });
-                setNote(`Opened ${name}`);
-                setFileOpen(false);
-              }}
-              onNote={setNote}
-            />
-          )}
+          onNote={setNote}
         />
       )}
 

@@ -1,0 +1,216 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+/*
+ * THE FILE VIEW — Word's backstage, and the account inside it.
+ *
+ * Separate from `popover.css` because it is not a popover: it is a PLACE, the
+ * whole window over the editor, and the two were only together because the
+ * File view began as one menu in the ribbon. See `shell/Backstage.tsx` for why
+ * it covers the editor and why it stops at the title bar.
+ */
+
+/* ── the File view ──────────────────────────────────────────────────────────
+   Word's backstage: a whole-window place for what is about the FILE rather
+   than about the text. It covers the editor completely, on purpose — opening a
+   document is not something you do while writing, and a half-covered page
+   invites the question of which one the next keystroke belongs to. */
+
+/* IT STOPS AT THE TITLE BAR. `inset: 0` over the app covered the window's own
+   chrome too, so while the File view was open there was nothing to drag the
+   window by and no close button — it could only be left through the keyboard.
+   Word's backstage covers the ribbon and everything under it and never the
+   caption, which is also the only arrangement where the window stays a window.
+   Rows 2 to 5 are ribbon, work, transport and status; row 1 is the title. */
+.bs {
+  grid-row: 2 / 6;
+  grid-column: 1;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--chrome-bg);
+  color: var(--chrome-ink);
+  overflow: auto;
+}
+.bs__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-7);
+  border-bottom: var(--border-hair) solid var(--chrome-line);
+}
+.bs__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-5);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.bs__back:hover { background: var(--chrome-sunk); }
+.bs__back-arrow { transform: rotate(180deg); }
+.bs__title { margin: 0; font-size: var(--text-ui-lg); font-weight: 600; }
+
+.bs__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-9);
+  padding: var(--space-7);
+  align-content: start;
+}
+.bs__col { min-width: 0; }
+.bs__lbl {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-ui-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--chrome-ink-mute);
+}
+.bs__lbl--second { margin-top: var(--space-8); }
+.bs__note, .bs__empty {
+  margin: 0 0 var(--space-4);
+  color: var(--chrome-ink-mute);
+  max-width: var(--panel-min);
+}
+.bs__actions { display: flex; }
+
+.bs__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-hair) solid transparent;
+  border-radius: var(--chrome-radius);
+  background: transparent;
+  color: var(--chrome-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.bs__item:hover { background: var(--chrome-sunk); }
+.bs__item.is-on {
+  background: color-mix(in srgb, var(--chrome-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--chrome-accent) 38%, transparent);
+}
+.bs__item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bs__item-when { color: var(--chrome-ink-mute); }
+
+.bs__info { display: flex; flex-direction: column; align-items: flex-start; }
+.bs__about {
+  padding: var(--space-2) var(--space-5);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.bs__about:hover { background: var(--chrome-sunk); }
+
+/*
+ * THE FILE BUTTON IS A TAB, and looks like one.
+ *
+ * It was a solid saffron block beside four flat grey tabs — an accent with no
+ * argument behind it, which is exactly what an unconsidered interface looks
+ * like. Word colours its File tab because Word's ribbon is coloured
+ * throughout; ours is not, so one coloured rectangle in a grey strip reads as
+ * a mistake rather than as a signal.
+ *
+ * So it takes the tab's own shape and typography, and says what it is by
+ * WEIGHT and by a saffron underline — the accent used as a mark on something,
+ * which is the only way an accent earns its place. It is still first and still
+ * set apart, by the rule after it rather than by a fill.
+ */
+.rbn__file {
+  font: inherit;
+  font-size: var(--text-ui);
+  font-weight: 600;
+  color: var(--chrome-ink);
+  background: transparent;
+  border: 0;
+  border-top-left-radius: var(--chrome-radius);
+  border-top-right-radius: var(--chrome-radius);
+  padding-inline: var(--space-5);
+  margin-bottom: calc(-1 * var(--border-hair));
+  margin-inline-end: var(--space-3);
+  /* The separation the fill used to do: a hairline, not a colour. */
+  border-inline-end: var(--border-hair) solid var(--chrome-line);
+  border-bottom: var(--border-hair) solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+}
+/* The saffron, as a mark under the word rather than a field behind it. */
+.rbn__file::after {
+  content: '';
+  position: absolute;
+  left: var(--space-5);
+  right: calc(var(--space-5) + var(--border-hair));
+  bottom: var(--space-2);
+  height: var(--rule-mark);
+  border-radius: var(--rule-mark);
+  background: var(--chrome-accent);
+}
+.rbn__file:hover { background: var(--chrome-sunk); }
+
+/* ── the account, in the File view ─────────────────────────────────────── */
+
+.acct { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-4); }
+.acct .bs__note { margin: 0; }
+
+.acct__who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: 0;
+  font-size: var(--text-ui-lg);
+}
+.acct__who span { display: flex; flex-direction: column; }
+.acct__role {
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-mute);
+}
+
+/*
+ * THE CODE IS THE BIGGEST THING ON THE PANEL, and that is the security.
+ *
+ * Comparing it with the one on the web page is what stops somebody being
+ * talked into approving a sign-in that is not theirs — the one attack this
+ * flow actually has. A code set in small grey text does not get compared.
+ * Monospaced and widely tracked because it is read aloud, character by
+ * character, off one screen and onto another.
+ */
+.acct__code {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-brand);
+  letter-spacing: 0.18em;
+  color: var(--chrome-ink);
+}
+.acct__url {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--chrome-accent);
+}
+.acct__problem { margin: 0; color: var(--chrome-danger); }
+.acct__fine { font-size: var(--text-ui-sm); }
+
+/* What this account may do here. A tick and a padlock, not two greys: the
+   difference has to survive being glanced at. */
+.acct__may { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }
+.acct__may li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-mute);
+}
+.acct__may li.is-on { color: var(--chrome-ink); }

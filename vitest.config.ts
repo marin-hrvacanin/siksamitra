@@ -22,6 +22,7 @@ const alias = {
   '@siksamitra/layout': pkg('layout'),
   '@siksamitra/edit': pkg('edit'),
   '@siksamitra/audio': pkg('audio'),
+  '@siksamitra/account': pkg('account'),
   '@siksamitra/tokens/word': pkg('tokens', 'src/word.ts'),
   '@siksamitra/tokens/document-themes': pkg('tokens', 'src/document-themes.ts'),
   '@siksamitra/tokens/document-type': pkg('tokens', 'src/document-type.ts'),

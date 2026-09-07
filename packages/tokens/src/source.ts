@@ -220,6 +220,10 @@ export const BASE = {
      with the text it becomes a visible rule at large sizes and vanishes at
      small ones, and its job is to be the thinnest line the screen can draw. */
   "border-hair": "1px",
+  /* A mark UNDER something — the saffron rule beneath the File tab, and
+     anything else that says "this one" without a field of colour behind it.
+     Two pixels: one is a hairline and reads as a border, three is a bar. */
+  "rule-mark": "2px",
   "border-thick": "0.125rem",
 
   /* ── the document's own presentation ─────────────────────────────────────

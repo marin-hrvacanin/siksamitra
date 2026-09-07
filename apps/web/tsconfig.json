@@ -9,6 +9,9 @@
     ],
     "noEmit": true,
     "paths": {
+      "@siksamitra/account": [
+        "../../packages/account/src/index.ts"
+      ],
       "@siksamitra/audio": [
         "../../packages/audio/src/index.ts"
       ],

@@ -40,7 +40,7 @@ export const CHROME_CHOICES = [
   {
     "id": "palladio",
     "name": "Palladio",
-    "note": "The greys and bronze śikṣāmitra already had. Dense, a lot on screen."
+    "note": "Neutral greys with a clean saffron. Dense, a lot on screen."
   },
   {
     "id": "shanta-cool",
@@ -161,8 +161,8 @@ export const CHROME_TOKENS = {
       "chrome-ink": "#1b1b1f",
       "chrome-ink-soft": "#5c5c66",
       "chrome-ink-mute": "#9898a0",
-      "chrome-accent": "#b8813d",
-      "chrome-accent-hover": "#9a6b2f",
+      "chrome-accent": "#bb7f2e",
+      "chrome-accent-hover": "#a06a24",
       "chrome-accent-on": "#ffffff",
       "chrome-danger": "#c0392b",
       "chrome-title": "#e6e6ea",
@@ -183,8 +183,8 @@ export const CHROME_TOKENS = {
       "chrome-ink": "#e8e8ec",
       "chrome-ink-soft": "#a0a0a8",
       "chrome-ink-mute": "#666670",
-      "chrome-accent": "#d4a574",
-      "chrome-accent-hover": "#e6b886",
+      "chrome-accent": "#dcab63",
+      "chrome-accent-hover": "#e9bd7e",
       "chrome-accent-on": "#1b1b1f",
       "chrome-danger": "#f87171",
       "chrome-title": "#161618",

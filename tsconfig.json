@@ -17,6 +17,9 @@
       "path": "packages/audio"
     },
     {
+      "path": "packages/account"
+    },
+    {
       "path": "packages/edit"
     },
     {
