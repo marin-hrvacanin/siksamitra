@@ -82,9 +82,20 @@ export function attestedInRange(
      * destroy a transcribed verse, and how another discarded a whole verse's
      * words.
      */
+    /*
+     * STRICT OVERLAP, not touching.
+     *
+     * `<=` refused a range that merely ENDED where the barrier began — and
+     * selecting a verse exactly, from its first letter to its last, is such a
+     * range. Replacing a derived verse whose neighbours happen to be
+     * transcribed was therefore refused outright, which is the one edit this
+     * guard has no business stopping: it removes none of the separator and
+     * merges nothing. A range must go INTO the gap to be refused, and the
+     * three Backspaces that used to destroy a transcription all do.
+     */
     const reaches = from === to
       ? from >= extent.start && from <= extent.end
-      : from <= extent.end + gap && to >= extent.start - gap;
+      : from < extent.end + gap && to > extent.start - gap;
     if (reaches) names.add(extent.id);
   }
   return [...names];

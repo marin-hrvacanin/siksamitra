@@ -24,6 +24,9 @@ import {
 } from '@siksamitra/engine';
 import { exportDocx, importDocx, pack, readManifest, unpack } from '@siksamitra/interop';
 import { attachSource } from './attach-src.js';
+import {
+  EDIT_HELP, EDIT_VERBS, runEditVerb, type EditVerb,
+} from './edit-commands.js';
 import { divergenceRows, score, verses } from './score.js';
 import {
   canonicalJson, normalizeChantDoc,
@@ -143,7 +146,35 @@ Options
   --include-tam              compare the Tamil column too (it is unverified)
   --json                     machine-readable output on stdout
 
-Exit codes: 0 ok · 1 validation error · 2 bad input · 3 engine refusal`;
+Exit codes: 0 ok · 1 validation error · 2 bad input · 3 engine refusal
+
+${EDIT_HELP}`;
+
+/*
+ * THE EDITING VERBS FIRST.
+ *
+ * They share one context object rather than each reaching for the module's
+ * argv helpers, so `edit-commands.ts` can be read — and tested — without this
+ * file at all. Everything a person can change from the window is here, and it
+ * is the same `apply` underneath.
+ */
+if ((EDIT_VERBS as readonly string[]).includes(cmd)) {
+  const path = positional(0);
+  if (path === undefined) die(2, `${cmd} needs a document: ${cmd} <doc.json> ...`);
+  say(`
+  ${cmd}  ${path}
+`);
+  runEditVerb(cmd as EditVerb, {
+    flag,
+    has: (name: string) => argv.includes(`--${name}`),
+    say,
+    emit,
+    die,
+    readDoc,
+    path,
+  });
+  process.exit(0);
+}
 
 switch (cmd) {
   /* ── mark one fragment ─────────────────────────────────────────────────── */

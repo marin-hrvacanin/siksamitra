@@ -170,30 +170,51 @@ function identify(
     }
   }
 
-  // Fresh ids for what is left, and a report for what nothing claimed.
-  const used = new Set<string>([
+  /*
+   * AN ID THIS EDIT CONSUMED IS FREE AGAIN — but only to whoever ASKS for it.
+   *
+   * Two different needs met the same set. Minting a fresh id must avoid every
+   * id the document has ever had in play, or deleting `v-1` and typing
+   * something else hands the new words the old verse's name, its recording and
+   * its translation. But an id passed in `newIds` is a caller saying "this is
+   * still that verse", which is exactly what replacing a verse's whole text
+   * means — and refusing it there orphaned the verse and re-minted it as
+   * `v-10`.
+   *
+   * So: `reserved` governs minting and holds everything; an offered id is
+   * accepted unless a verse that SURVIVED this edit is still using it.
+   */
+  const surviving = new Set(verses.filter((v) => claimed.has(v.id)).map((v) => v.id));
+  const reserved = new Set<string>([
     ...taken,
     ...verses.map((v) => v.id),
     ...ids.filter((x): x is string => x !== undefined),
   ]);
   const queue = [...offered];
-  const added: string[] = [];
   const final = ids.map((id, i) => {
     if (id !== undefined) return id;
-    let next = queue.shift();
-    if (next === undefined || used.has(next)) {
-      let n = i + 1;
-      do { next = `v-${n}`; n += 1; } while (used.has(next));
+    const asked = queue.shift();
+    if (asked !== undefined && !surviving.has(asked)) {
+      surviving.add(asked);
+      reserved.add(asked);
+      return asked;
     }
-    used.add(next);
-    added.push(next);
+    let next: string;
+    let n = i + 1;
+    do { next = `v-${n}`; n += 1; } while (reserved.has(next));
+    reserved.add(next);
+    surviving.add(next);
     return next;
   });
 
+  /* Reported from the RESULT, not from what was claimed along the way: an id
+     that came back through `offered` was neither removed nor added. */
+  const kept = new Set(final);
+  const was = new Set(verses.map((v) => v.id));
   return {
     ids: final,
-    removed: verses.filter((v) => !claimed.has(v.id)).map((v) => v.id),
-    added,
+    removed: verses.filter((v) => !kept.has(v.id)).map((v) => v.id),
+    added: final.filter((id) => !was.has(id)),
   };
 }
 

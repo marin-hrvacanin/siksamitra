@@ -35,7 +35,7 @@
     "test": "vitest run",
     "test:watch": "vitest --project unit --project component",
     "sm": "tsx packages/cli/src/main.ts",
-    "check": "npm-run-all --serial typecheck check:web test check:icons check:modules check:tokens check:literals check:fixtures check:conformance check:source check:transliteration check:lossless check:engine",
+    "check": "npm-run-all --serial typecheck check:web test check:icons check:authoring check:modules check:tokens check:literals check:fixtures check:conformance check:source check:transliteration check:lossless check:engine",
     "check:transliteration": "tsx packages/cli/src/gates/transliteration.ts",
     "check:engine": "tsx packages/cli/src/gates/corpus.ts",
     "spec": "openspec",
@@ -69,7 +69,9 @@
     "icons": "node tools/icons/gen.mjs",
     "check:icons": "node tools/icons/gen.mjs --check",
     "check:responsive": "node tools/responsive.mjs",
-    "check:themes": "tsx tools/theme-matrix.mjs"
+    "check:themes": "tsx tools/theme-matrix.mjs",
+    "check:authoring": "node tools/check-authoring.mjs",
+    "sync:authoring": "node tools/check-authoring.mjs --sync"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",
