@@ -187,6 +187,13 @@ export const BASE = {
   "status-h": "1.5rem",
   "gutter": "3rem",
   "measure-pad": "2rem",
+  /* Minimum widths. A ribbon group narrower than `group-min` has collapsed to
+     nothing useful, and a menu narrower than `menu-min` wraps its own labels —
+     both are design decisions about how small a thing may get, which is why
+     they are here and not in the three stylesheets that used to hold them. */
+  "group-min": "4rem",
+  "menu-min": "11rem",
+  "panel-min": "13rem",
 
   /* ── borders ──────────────────────────────────────────────────────────────
      A hairline is ONE DEVICE PIXEL and is deliberately not relative: scaled

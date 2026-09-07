@@ -2,7 +2,7 @@
   "name": "siksamitra",
   "version": "2.0.0-alpha.0",
   "private": true,
-  "description": "\u015bik\u1e63\u0101mitra \u2014 the editor for Vedic and classical Sanskrit recitation text. v2.",
+  "description": "śikṣāmitra — the editor for Vedic and classical Sanskrit recitation text. v2.",
   "type": "module",
   "license": "UNLICENSED",
   "engines": {
@@ -13,6 +13,7 @@
     "packages/format",
     "packages/engine",
     "packages/layout",
+    "packages/edit",
     "packages/render",
     "packages/interop",
     "packages/storage",
@@ -21,7 +22,7 @@
     "apps/desktop"
   ],
   "scripts": {
-    "build": "npm-run-all --serial build:format build:engine build:interop build:layout build:storage build:render build:cli",
+    "build": "npm-run-all --serial build:format build:engine build:interop build:layout build:edit build:storage build:render build:cli",
     "build:format": "npm run -w @siksamitra/format build",
     "build:engine": "npm run -w @siksamitra/engine build",
     "build:interop": "npm run -w @siksamitra/interop build",
@@ -34,7 +35,7 @@
     "test": "vitest run",
     "test:watch": "vitest --project unit --project component",
     "sm": "tsx packages/cli/src/main.ts",
-    "check": "npm-run-all --serial typecheck test check:modules check:tokens check:literals check:fixtures check:conformance check:transliteration check:lossless check:engine",
+    "check": "npm-run-all --serial typecheck check:web test check:modules check:tokens check:literals check:fixtures check:conformance check:transliteration check:lossless check:engine",
     "check:transliteration": "tsx packages/cli/src/gates/transliteration.ts",
     "check:engine": "tsx packages/cli/src/gates/corpus.ts",
     "spec": "openspec",
@@ -59,7 +60,10 @@
     "check:fonts": "node tools/fonts/verify.mjs",
     "package": "node scripts/package.mjs",
     "copy:fonts": "node scripts/copy-fonts.mjs",
-    "desktop:icons": "npm run -w @siksamitra/desktop icons"
+    "desktop:icons": "npm run -w @siksamitra/desktop icons",
+    "build:edit": "npm run -w @siksamitra/edit build",
+    "check:web": "npm run -w @siksamitra/web typecheck",
+    "check:edit": "node tools/edit-smoke.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

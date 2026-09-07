@@ -400,3 +400,68 @@ Not everything in this contract is evidence:
 
 A fixture asserting a Tamil form is pinning two implementations to the same
 output. It is not a claim that the output is right.
+
+### 9.9 The source layer's own spelling
+
+`src.lines` is canonical IAST — `norm()` is idempotent on it, which is what
+makes an override's `letter` offset mean one thing. Four glyphs in it are
+structure rather than letters:
+
+| in `src.lines` | becomes | note |
+| --- | --- | --- |
+| `\|` / `\|\|` | `danda` `।` / `॥` | one bar or two |
+| `/` (any run) | `br` | a line break inside the verse |
+| `¦` (U+00A6) | `bar` | a pāda rule. Drawn, never recited |
+| a run of digits, optionally with an interior dot | `num` | `1`, `1.1` — Śrī Rudram numbers by anuvāka |
+
+`¦` and the digit run were added when the eleven shipped documents were given
+source layers: 59 `bar` tokens and 204 `num` tokens had **no spelling at all**,
+so a third of the corpus could not be reproduced from any source. The dot
+matters for the same reason — `||1.1||` read as one word swallowed the number
+and both daṇḍas.
+
+`src.accented` is the same letters carrying the accents as combining marks
+(U+030D svarita, U+030E dīrgha-svarita, U+0331 anudātta), one string per line,
+**one slot per nucleus**. A line whose nucleus count disagrees with the text's
+is refused whole rather than slid along — a silent off-by-one there moves every
+accent in the verse and the result still looks marked.
+
+### 9.10 Overrides, and how they survive an edit
+
+```
+ChantOverride = { at: {verse, line, letter}, set: {...}, why, ch?, note?, provenance? }
+```
+
+`at.letter` is the **character offset** of the letter's start in the canonical
+source line — not an ordinal. A digraph (`ai`, `kh`) is one letter spanning two
+characters, and the gum run spans several, so counting letters and counting
+characters give different answers and only one of them is recoverable from the
+stored text.
+
+`set` maps a mark field to a value, or to **`null`, which means "there is no
+mark here"** — an instruction, and a different one from omitting the field. A
+reader that treats `null` as falsy-and-skip gets it exactly backwards.
+
+`ch` is the letter the override was placed on, in IAST: a **witness, not an
+address**. An offset survives a rule change but not an edit to the text before
+it, and arithmetic cannot tell a correct rebase from one that moved a box a
+letter to the left — both produce a valid offset. With `ch` recorded, a rebase
+is checkable, and one that fails its check is reported rather than silently
+misplacing a hand-drawn mark. Optional: a document written before the field
+existed rebases unverified.
+
+Overrides are applied **after every rule, including svara**, because an
+override exists to overrule them: a transcribed accent that a positional plan
+disagrees with is evidence, and the engine does not get to win that argument.
+
+### 9.11 `items` and `verses` are the same verses, twice
+
+A composed section stores its verses in `items` — interleaved with instructions
+and figures — **and** in `verses`. `normalizeChantDoc` treats `items` as
+authoritative and rebuilds `verses` from it.
+
+So a writer that updates only `verses` has its work discarded on the next load.
+Measured: a pass that attached a source layer to all 573 verses of the corpus
+lost every one of them this way, and ten of the eleven documents are composed.
+`@siksamitra/format` exports `withVerses(section, verses)` as the one function
+allowed to know this, and every writer must go through it.

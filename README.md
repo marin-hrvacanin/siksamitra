@@ -63,16 +63,28 @@ switch statements — see *Extension points* in [`CLAUDE.md`](CLAUDE.md).
 Everything here is measured by running it. `npm run check`:
 
 ```
-typecheck                five packages + two apps, 0 errors
-tests                    185, across four tiers
-check:modules            no file over 400 lines except 7 inherited, ratcheted
+typecheck                six packages + two apps, 0 errors
+check:web                the app itself, which the typecheck used to skip
+tests                    328, across four tiers
+check:modules            no file over 400 lines except 6 inherited, ratcheted
 check:tokens             3 theme axes generated, in step
-check:literals           495 literals, ratcheted, none new
+check:literals           430 literals, ratcheted; ZERO in the app
 check:fixtures           19 interchange fixtures current
 check:conformance        152 DERIVED assertions
 check:transliteration    31 762 / 31 762  (Devanāgarī + Telugu)
 check:lossless           5 of 5 scripts round-trip exactly
-check:engine             15 506 / 16 021 syllables = 96.79 %, 11 documents
+check:engine             15 678 / 15 980 syllables = 98.11 %, 11 documents
+```
+
+With a Chromium and `npm run dev` running:
+
+```
+tools/edit-smoke.mjs     17 / 17 — a click lands on the letter, typing reaches
+                         the document, Ctrl+Z is exact, a transcribed verse
+                         refuses and says which
+tools/responsive.mjs     12 widths, no wrap and no sideways scroll at any
+tools/theme-matrix.mjs   60 chrome × document × mode combinations, all legible
+tools/smoke.mjs          flow, pages and web views, no console errors
 ```
 
 Read the transliteration figure precisely: 15 881 syllables in **two** verified
@@ -82,11 +94,22 @@ confirmed those forms were never checked. ITRANS is registered read-only.
 **Built:** the format, the engine, the renderer, the layout engine (pagination,
 zoom, anchoring), the three-axis design system, Word and `.vuchant` interop, the
 CLI and all the gates, the storage interface, the web application with three
-view modes and a responsive ribbon, vendored fonts, and the packaging script.
+view modes and a responsive ribbon, vendored fonts, the packaging script — and
+the editing surface: one continuous caret over a section, marks placed by hand
+as overrides the rules cannot overwrite, undo that is byte-exact, and rule zero
+enforced where an edit is attempted rather than apologised for afterwards.
 
-**Not built yet:** the editing surface itself (a continuous caret over the token
-stream), the `.smdoc` importer, online mode, and no installer has yet been
-produced from this repository. [`openspec/changes/bootstrap-v2/tasks.md`](openspec/changes/bootstrap-v2/tasks.md)
+**The corpus can now be edited.** It could not before, and the reason is worth
+stating: all 573 shipped verses were marked tokens with no record of the letters
+they came from, so by the format's own rule they were transcriptions and the
+editor was right to refuse them. `sm attach-src` reconstructs the source,
+re-derives, and attaches the source layer **only where the derivation reproduces
+the verse exactly** — 466 of 573 verses. The other 107 stay frozen, each with a
+named reason, and those reasons are engine questions the owner has not settled
+rather than architecture.
+
+**Not built yet:** the `.smdoc` importer, online mode, and no installer has yet
+been produced from this repository. [`openspec/changes/bootstrap-v2/tasks.md`](openspec/changes/bootstrap-v2/tasks.md)
 is accurate about all of it, deliberately.
 
 ---
@@ -111,6 +134,7 @@ packages/format    the document model, and the reader obligations
 packages/engine    derivation, the rules, the script registry. Never leaves.
 packages/render    the one renderer: tokens -> screen and paper
 packages/layout    pure: pagination, zoom, anchoring, view modes
+packages/edit      what an edit IS — caret, source surgery, marks, undo
 packages/tokens    every design value, three theme axes
 packages/interop   Word, PDF, .vuchant
 packages/storage   the ChantStore interface + local files

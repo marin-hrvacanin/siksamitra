@@ -12,14 +12,20 @@ import { syllableCount } from '@siksamitra/format';
 import { zoomLabel } from '@siksamitra/layout';
 import type { ViewState } from '../state/useViewState.js';
 import type { Appearance } from '../state/useAppearance.js';
+import { EditStatus } from '../editor/EditStatus.js';
+import type { Session } from '../editor/useSession.js';
 
 const UNVERIFIED: Partial<Record<ChantScriptKey, string>> = {
   tam: 'Tamil forms are unreviewed',
 };
 
 export function StatusBar(
-  { doc, state, script, look }: {
-    doc: ChantDoc | null; state: ViewState; script: ChantScriptKey; look: Appearance;
+  { doc, state, script, look, session }: {
+    doc: ChantDoc | null;
+    state: ViewState;
+    script: ChantScriptKey;
+    look: Appearance;
+    session: Session;
   },
 ): ReactNode {
   const verses = doc?.sections.reduce((n, s) => n + s.verses.length, 0) ?? 0;
@@ -38,6 +44,7 @@ export function StatusBar(
       <span className="status__sep status__opt" aria-hidden>·</span>
       <span className="status__opt">{syllables} syllables</span>
       <span className="status__gap" />
+      <EditStatus session={session} />
       {caveat !== undefined && <span className="status__warn">{caveat}</span>}
       <span>{state.view.label}</span>
       <span className="status__sep" aria-hidden>·</span>

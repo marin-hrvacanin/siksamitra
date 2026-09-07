@@ -4,15 +4,33 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": { "siksamitra": "./dist/main.js", "sm": "./dist/main.js" },
-  "exports": { ".": { "development": "./src/index.ts", "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -b", "typecheck": "tsc -b --noEmit" },
+  "bin": {
+    "siksamitra": "./dist/main.js",
+    "sm": "./dist/main.js"
+  },
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit"
+  },
   "dependencies": {
-    "@siksamitra/format": "2.0.0-alpha.0",
+    "@siksamitra/edit": "2.0.0-alpha.0",
     "@siksamitra/engine": "2.0.0-alpha.0",
+    "@siksamitra/format": "2.0.0-alpha.0",
     "@siksamitra/interop": "2.0.0-alpha.0",
     "fflate": "^0.8.3"
   },
-  "devDependencies": { "@types/node": "^22.10.2", "typescript": "^5.6.3" }
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.6.3"
+  }
 }

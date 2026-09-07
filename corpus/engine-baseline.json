@@ -1,16 +1,16 @@
 {
   "bhagya-suktam": {
-    "matched": 332,
+    "matched": 338,
     "syllables": 349,
     "note": "holdings: word-initial sibilant hosts, unresolved (00 §5.6)"
   },
   "durga-suktam": {
-    "matched": 318,
+    "matched": 320,
     "syllables": 337,
     "note": "the transcription sets 10 avagrahas apart as their own syllable; the corpus joins them 131 times to 10, so the engine follows the majority"
   },
   "ganapati-atharvashirsham": {
-    "matched": 1213,
+    "matched": 1216,
     "syllables": 1266,
     "note": "holdings: word-initial sibilant hosts, unresolved (00 §5.6)"
   },
@@ -19,8 +19,8 @@
     "syllables": 146
   },
   "lakshmi-ashtottara": {
-    "matched": 950,
-    "syllables": 966,
+    "matched": 956,
+    "syllables": 960,
     "note": "praṇava written `om` in the file, `oṁ` by the engine"
   },
   "mantra-pushpam": {
@@ -29,12 +29,12 @@
     "note": "praṇava written `om` in the file, `oṁ` by the engine"
   },
   "puja-vidhi": {
-    "matched": 2374,
-    "syllables": 2475,
+    "matched": 2423,
+    "syllables": 2440,
     "note": "praṇava written `om` in the file, `oṁ` by the engine; scored under taittiriya, where its own profile is `prose` (99.34%)"
   },
   "purusha-suktam": {
-    "matched": 897,
+    "matched": 925,
     "syllables": 995,
     "note": "holdings: word-initial sibilant hosts, unresolved (00 §5.6); scored under taittiriya, where its own profile drops the bīja pause"
   },
@@ -43,7 +43,7 @@
     "syllables": 1693
   },
   "sri-rudram": {
-    "matched": 6198,
+    "matched": 6276,
     "syllables": 6400,
     "note": "holdings: word-initial sibilant hosts, unresolved (00 §5.6); scored under taittiriya, where its own profile drops the bīja pause"
   },

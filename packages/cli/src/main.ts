@@ -23,9 +23,11 @@ import {
   type Profile, type ProfileKey,
 } from '@siksamitra/engine';
 import { exportDocx, importDocx, pack, readManifest, unpack } from '@siksamitra/interop';
+import { attachSource } from './attach-src.js';
+import { divergenceRows, score, verses } from './score.js';
 import {
   canonicalJson, normalizeChantDoc,
-  type ChantDoc, type ChantSection, type ChantVerse,
+  type ChantDoc, type ChantVerse,
 } from '@siksamitra/format';
 
 /** Stamped into every package so a reader can tell which engine produced it.
@@ -85,205 +87,6 @@ function profileFor(): Profile {
   return resolveProfile([{ preset, ...(patch === undefined ? {} : { patch }) }]);
 }
 
-/** Every verse of a document, with where it lives. */
-function verses(doc: ChantDoc): { s: ChantSection; v: ChantVerse }[] {
-  return doc.sections.flatMap((s) => s.verses.map((v) => ({ s, v })));
-}
-
-/**
- * The PRE-sandhi letters of a verse, reconstructed from its marked tokens.
- *
- * The file stores what is *recited*; the engine's holdings run BEFORE the
- * anusvāra/visarga substitutions (MARKING-RULES §7), so feeding the stored
- * letters back in measures a different input than the one that produced them.
- * Two things therefore have to be undone, and only these two:
- *
- *   - a `change` letter goes back to its trigger (`ṁ` or `ḥ`);
- *   - a `pause` token is DROPPED — the bīja pause and the vowel-hiatus pause
- *     are placed by the engine, so re-emitting one as `|` would put a saṁyukta
- *     barrier into the source that the author never wrote.
- *
- * Everything else on a unit — `sup`, `sbhakti`, `candra`, `svara` — is either
- * derived or attested, and neither belongs in the letters.
- */
-function invert(v: ChantVerse): { lines: string[]; held: string[] } {
-  const lines: string[] = [];
-  const held: string[] = [];
-  let line = '';
-  for (const t of v.tokens) {
-    if (t.t === 'syl') {
-      for (const u of t.units) {
-        let c = u.c;
-        if (u.change === true) {
-          if (['ṅ', 'ñ', 'ṇ', 'n', 'm'].includes(c)) c = 'ṁ';
-          else if (['ś', 'ṣ', 's', 'r'].includes(c)) c = 'ḥ';
-        }
-        line += c;
-        if (u.hold !== undefined) held.push(`${u.c}:${u.hold}`);
-      }
-    } else if (t.t === 'sp') line += ' ';
-    else if (t.t === 'br') { lines.push(line.trim()); line = ''; }
-    else if (t.t === 'danda') line += ` ${t.s === '॥' ? '||' : '|'} `;
-  }
-  if (line.trim() !== '') lines.push(line.trim());
-  return { lines, held };
-}
-
-/**
- * THE measurement: re-derive every verse and compare the result with what the
- * document already says, letter by letter.
- *
- * One function, three views. `diff` reads the holdings out of it, `profile`
- * ranks candidate profiles by it, `roundtrip` prints all of it. They cannot
- * disagree about what "reproduced" means, because there is only one answer to
- * compare against.
- */
-interface Score {
-  /** Syllables compared, including those only one side has. */
-  syllables: number;
-  /** Syllables identical in every compared field and mark. */
-  matched: number;
-  /** Holdings alone — the coarse metric, kept because it is comparable to the
-   *  Python generator's own self-test. */
-  holdings: { agree: number; theirs: number; mine: number };
-  /** Divergence kind → up to six examples, in document order. */
-  divergences: Map<string, { count: number; examples: string[] }>;
-  /** Svaras skipped because the verse is transcribed and they are attested. */
-  attested: number;
-}
-
-interface ScoreOptions {
-  /** Compare the Tamil column too. Off by default: the corpus's Tamil has
-   *  never been checked by the owner, so a disagreement there says nothing
-   *  about the engine. */
-  tamil?: boolean;
-}
-
-const SCORED_MARKS = ['hold', 'hg', 'svara', 'change', 'sup', 'candra', 'sbhakti'] as const;
-
-function score(doc: ChantDoc, profile: Profile, opts?: ScoreOptions): Score {
-  const fields = opts?.tamil === true
-    ? (['iast', 'deva', 'tel', 'tam'] as const)
-    : (['iast', 'deva', 'tel'] as const);
-  const divergences = new Map<string, { count: number; examples: string[] }>();
-  const note = (key: string, example: string): void => {
-    const row = divergences.get(key) ?? { count: 0, examples: [] };
-    row.count += 1;
-    if (row.examples.length < 6) row.examples.push(example);
-    divergences.set(key, row);
-  };
-  const out: Score = {
-    syllables: 0, matched: 0,
-    holdings: { agree: 0, theirs: 0, mine: 0 },
-    divergences, attested: 0,
-  };
-
-  type Syl = {
-    iast: string; deva: string; tel?: string; tam?: string;
-    units: Record<string, unknown>[];
-  };
-
-  for (const { v } of verses(doc)) {
-    const { lines } = invert(v);
-    if (lines.length === 0) continue;
-    // A verse with no source layer is TRANSCRIBED: its svaras came off an
-    // accented witness and exist nowhere in its letters. Comparing them
-    // against a derivation measures rule zero, not the engine.
-    const derivable = v.src?.lines !== undefined && v.src.lines.length > 0;
-    const d = derive({ lines }, profile, { verseId: v.id, trace: false });
-    const want = v.tokens.filter((t) => t.t === 'syl') as unknown as Syl[];
-    const got = d.tokens.filter((t) => t.t === 'syl') as unknown as Syl[];
-
-    for (const [a, b] of align(want, got, (x) => x.iast)) {
-      out.syllables += 1;
-      for (const u of a?.units ?? []) if (u['hold'] !== undefined) out.holdings.theirs += 1;
-      for (const u of b?.units ?? []) if (u['hold'] !== undefined) out.holdings.mine += 1;
-      if (a === null) { note('the engine adds a syllable', `${v.id}: "${b!.iast}"`); continue; }
-      if (b === null) { note('the engine drops a syllable', `${v.id}: "${a.iast}"`); continue; }
-
-      let clean = true;
-      for (const f of fields) {
-        const x = a[f];
-        const y = b[f];
-        // A column the file does not carry is not a divergence: the older
-        // fragment tables shipped without `tel` and `tam`.
-        if (x === undefined || y === undefined) continue;
-        if (x !== y) { note(f, `${v.id} "${a.iast}": file "${x}" ≠ derived "${y}"`); clean = false; }
-      }
-      if (a.units.length !== b.units.length) {
-        note('letters per syllable',
-          `${v.id} "${a.iast}": ${a.units.length} letters in the file, ${b.units.length} derived`);
-        clean = false;
-      } else {
-        for (let u = 0; u < a.units.length; u += 1) {
-          const ua = a.units[u]!;
-          const ub = b.units[u]!;
-          const c = String(ua['c']);
-          if (ua['c'] !== ub['c']) {
-            note('letter', `${v.id} "${a.iast}": "${c}" ≠ "${String(ub['c'])}"`);
-            clean = false;
-          }
-          for (const m of SCORED_MARKS) {
-            // `hg` is a group id: what matters is whether the letter is in a
-            // group, not which number the renumberer handed it.
-            const x = m === 'hg' ? (ua['hg'] === undefined ? undefined : true) : ua[m];
-            const y = m === 'hg' ? (ub['hg'] === undefined ? undefined : true) : ub[m];
-            if (x === y) {
-              if (m === 'hold' && x !== undefined) out.holdings.agree += 1;
-              continue;
-            }
-            if (m === 'svara' && !derivable) { out.attested += 1; continue; }
-            note(m, `${v.id} "${a.iast}" letter "${c}":`
-              + ` file ${JSON.stringify(x)} ≠ derived ${JSON.stringify(y)}`);
-            clean = false;
-          }
-        }
-      }
-      if (clean) out.matched += 1;
-    }
-  }
-  return out;
-}
-
-/** Flatten a score's divergences for `--json` and for printing. */
-function divergenceRows(s: Score): [string, { count: number; examples: string[] }][] {
-  return [...s.divergences].sort((a, b) => b[1].count - a[1].count);
-}
-
-/**
- * Align two syllable sequences by their IAST, longest-common-subsequence.
- *
- * Index-by-index comparison is worthless here: one extra syllable near the
- * start of a verse — an avagraha the PDF transcription set apart, say — shifts
- * everything after it and reports forty divergences for one. Aligning first
- * means an insertion is reported as an insertion, and the letters on either
- * side of it are still compared.
- */
-function align<T>(a: readonly T[], b: readonly T[], key: (x: T) => string):
-  [T | null, T | null][] {
-  const n = a.length;
-  const m = b.length;
-  // lcs[i][j] = length of the LCS of a[i..] and b[j..]
-  const lcs: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
-  for (let i = n - 1; i >= 0; i -= 1) {
-    for (let j = m - 1; j >= 0; j -= 1) {
-      lcs[i]![j] = key(a[i]!) === key(b[j]!)
-        ? lcs[i + 1]![j + 1]! + 1
-        : Math.max(lcs[i + 1]![j]!, lcs[i]![j + 1]!);
-    }
-  }
-  const out: [T | null, T | null][] = [];
-  let i = 0;
-  let j = 0;
-  while (i < n && j < m) {
-    if (key(a[i]!) === key(b[j]!)) { out.push([a[i]!, b[j]!]); i += 1; j += 1; }
-    else if (lcs[i + 1]![j]! >= lcs[i]![j + 1]!) { out.push([a[i]!, null]); i += 1; }
-    else { out.push([null, b[j]!]); j += 1; }
-  }
-  while (i < n) { out.push([a[i]!, null]); i += 1; }
-  while (j < m) { out.push([null, b[j]!]); j += 1; }
-  return out;
-}
 
 /** A verse's own source lines, or its text reconstructed from tokens. */
 function sourceOf(v: ChantVerse): string[] {
@@ -311,6 +114,8 @@ const HELP = `vu-chant — the marking engine, headless
   diff <doc.json>            the engine's marks against the document's own
   profile <doc.json>         which profile reproduces this document
   roundtrip <doc.json>       re-derive and compare EVERY letter, mark and script
+  attach-src <doc.json>      give a shipped document its source layer back, where
+                             a derivation reproduces it exactly (--write to save)
   validate <doc.json>        the document invariants
   words <doc.json>           every distinct word surface, with counts
   normalize "<text>"         fold any input to canonical IAST, reporting changes
@@ -484,6 +289,62 @@ switch (cmd) {
      `diff` scores holdings alone. This scores the syllable text in every
      verified script and every mark on every letter — the only measurement that
      says whether `derive` may be trusted with a document.                     */
+  /* ── the source layer, recovered ───────────────────────────────────────────
+     Without one, a document is transcribed by the format's own rule and the
+     editor refuses to touch it. This attaches one wherever the pipeline
+     reproduces the verse exactly, and leaves the rest frozen.                 */
+  case 'attach-src': {
+    const path = positional(0);
+    if (path === undefined) die(2, 'which document?');
+    const doc = readDoc(path!);
+    const { doc: next, report, profile: fitted } = attachSource(doc, profileFor(), {
+      tamil: argv.includes('--include-tam'),
+      fit: !argv.includes('--no-fit'),
+      overrides: !argv.includes('--no-overrides'),
+    });
+    const total = report.attached + report.refused.length + report.already;
+
+    say(`\n  ${doc.title}`);
+    say(`  ${report.attached} of ${total} verses can be re-derived exactly and now `
+      + 'carry a source layer');
+    if (report.withWitness > 0) {
+      say(`  ${report.withWitness} of those carry an accented witness for their svaras`);
+    }
+    if (report.already > 0) say(`  ${report.already} already had one`);
+    if (fitted !== null) {
+      say(`  parametrization: ${fitted.preset ?? 'default'}`
+        + `${JSON.stringify(fitted.patch) === '{}' ? '' : ` ${JSON.stringify(fitted.patch)}`}`);
+    }
+    if (report.overrides > 0) {
+      say(`  ${report.overrides} marks recorded as overrides across `
+        + `${report.withOverrides} verses — the file carries them and the rules do not`);
+    }
+    if (report.refused.length > 0) {
+      say(`  ${report.refused.length} stay frozen — a derivation does NOT reproduce them:`);
+      for (const r of report.refused.slice(0, 8)) say(`      ${r.verseId}: ${r.why}`);
+      if (report.refused.length > 8) say(`      … and ${report.refused.length - 8} more`);
+    }
+
+    if (argv.includes('--write')) {
+      writeFileSync(path!, `${canonicalJson(next)}\n`, 'utf8');
+      say(`\n  written: ${path!}`);
+    } else {
+      say('\n  nothing written — pass --write');
+    }
+    emit({
+      title: doc.title,
+      attached: report.attached,
+      frozen: report.refused.length,
+      already: report.already,
+      withWitness: report.withWitness,
+      overrides: report.overrides,
+      versesWithOverrides: report.withOverrides,
+      profile: fitted,
+      refused: report.refused,
+    });
+    break;
+  }
+
   case 'roundtrip': {
     const path = positional(0);
     if (path === undefined) die(2, 'which document?');

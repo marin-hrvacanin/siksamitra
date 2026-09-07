@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { corpus } from './vite-corpus.js';
 import { resolve } from 'node:path';
 
 /**
@@ -13,7 +14,7 @@ const pkg = (name: string, entry = 'src/index.ts') =>
   resolve(import.meta.dirname, '../../packages', name, entry);
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), corpus()],
   resolve: {
     // ORDER MATTERS. Vite matches aliases as an ordered list, so the CSS
     // subpaths must come before the bare package names — otherwise
@@ -29,12 +30,14 @@ export default defineConfig({
       '@siksamitra/interop': pkg('interop'),
       '@siksamitra/storage': pkg('storage'),
       '@siksamitra/layout': pkg('layout'),
+      '@siksamitra/edit': pkg('edit'),
       '@siksamitra/tokens': pkg('tokens', 'generated/tokens.ts'),
       '@siksamitra/render/theme': pkg('render', 'src/theme/marks.ts'),
       '@siksamitra/render': pkg('render'),
     },
   },
   server: { port: 5273, strictPort: false },
-  // The corpus is served as-is so the app can open a real document in dev.
+  // The fonts and the icon live here. The CORPUS does not — it is served from
+  // `corpus/chants` by the plugin above, because a copy of it drifted.
   publicDir: resolve(import.meta.dirname, 'public'),
 });

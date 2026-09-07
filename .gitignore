@@ -63,3 +63,10 @@ Thumbs.db
 Desktop.ini
 .vscode/
 *.code-workspace
+
+# Declaration output that lands next to a source file. It should never be
+# there — it means a project emitted with the wrong rootDir — but ignoring it
+# stops one bad invocation committing 40 generated files, which happened.
+src/**/*.d.ts
+src/**/*.d.ts.map
+dist-types/

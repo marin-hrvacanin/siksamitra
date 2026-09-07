@@ -31,13 +31,13 @@
   min-width: 0;
 }
 .rb__lead .tb__sel {
-  min-width: 4rem;
+  min-width: var(--group-min);
   flex: 0 1 auto;
   text-overflow: ellipsis;
 }
 /* Below this the brand is the first thing to go: the document picker still
    says what is open, and the icon is not what anyone is reading. */
-@media (max-width: 30rem) {
+@media (max-width: 30rem) {  /* token-exempt: a media-query breakpoint — CSS custom properties are not allowed in a media condition */
   .tb__brand { display: none; }
 }
 
@@ -76,6 +76,13 @@
   top: 0;
   visibility: hidden;
   pointer-events: none;
+  /* It must contribute NO WIDTH. An absolutely positioned child still counts
+     towards its scroll container's `scrollWidth`, so a collapsed group — kept
+     in the DOM so it can still be measured — made the ribbon row scroll
+     sideways at 380px while showing nothing at all. Measured, not guessed:
+     `tools/responsive.mjs` reports the row's own overflow. */
+  width: 0;
+  overflow: hidden;
 }
 
 /* The group label is the Word convention: a small caption under the controls
@@ -102,7 +109,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  min-width: 13rem;
+  min-width: var(--panel-min);
   padding: var(--space-5);
   background: var(--chrome-raise);
   border: var(--border-hair) solid var(--chrome-line);

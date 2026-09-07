@@ -13,7 +13,7 @@
  * be able to take the application down.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CHROME_CHOICES, CHROME_DENSITY, DEFAULT_CHROME, DEFAULT_DOCUMENT,
   DENSITY_CHOICES, DOCUMENT_CHOICES,

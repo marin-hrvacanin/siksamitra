@@ -1,0 +1,178 @@
+/**
+ * The editing keyboard — a table, not a switch.
+ *
+ * Same reason as `shell/commands.ts`: a shortcut that lives inside a `switch`
+ * in a component cannot be listed, cannot be shown in a menu, and cannot be
+ * checked for a clash. Here, every binding is a row, and the row is the only
+ * place it exists.
+ *
+ * WHAT IS NOT HERE: typing. A printable character does not come through
+ * `keydown` at all — it arrives as an `input` event on the hidden field, which
+ * is what makes dead keys, an on-screen keyboard, an IME and a paste all work
+ * without one line of special handling each. Trying to reconstruct text from
+ * key codes is how an editor ends up unable to type `ā`.
+ */
+import type { Session } from './useSession.js';
+
+export interface Binding {
+  /** `KeyboardEvent.key`, matched case-insensitively for letters. Empty for an
+   *  action that has a button but no accelerator. */
+  key: string;
+  ctrl?: boolean;
+  shift?: boolean;
+  /** Shown in a menu or a tooltip. */
+  label: string;
+  /** Which ribbon group shows this as a button. Absent ⇒ keyboard only, which
+   *  is right for the caret keys: nobody wants an "arrow left" button. */
+  ribbon?: 'history' | 'marks' | 'auto';
+  /** One line, for the tooltip. Says what it is FOR. */
+  hint?: string;
+  enabled?: (session: Session) => boolean;
+  run: (session: Session, shift: boolean) => void;
+}
+
+/** Ctrl on Windows and Linux, ⌘ on a Mac. Read once, not per keystroke. */
+const APPLE = typeof navigator !== 'undefined' && /Mac|iP(hone|ad)/.test(navigator.platform);
+export const modifierOf = (e: KeyboardEvent | { ctrlKey: boolean; metaKey: boolean }): boolean =>
+  (APPLE ? e.metaKey : e.ctrlKey);
+
+export const EDIT_KEYS: readonly Binding[] = [
+  // ── moving ────────────────────────────────────────────────────────────────
+  { key: 'ArrowLeft', label: 'left', run: (s, shift) => s.moveCaret('char', -1, shift) },
+  { key: 'ArrowRight', label: 'right', run: (s, shift) => s.moveCaret('char', 1, shift) },
+  { key: 'ArrowUp', label: 'up a line', run: (s, shift) => s.moveCaret('line', -1, shift) },
+  { key: 'ArrowDown', label: 'down a line', run: (s, shift) => s.moveCaret('line', 1, shift) },
+  { key: 'ArrowLeft', ctrl: true, label: 'back a pada', run: (s, shift) => s.moveCaret('word', -1, shift) },
+  { key: 'ArrowRight', ctrl: true, label: 'on a pada', run: (s, shift) => s.moveCaret('word', 1, shift) },
+  { key: 'Home', label: 'start of line', run: (s, shift) => s.moveCaret('lineEdge', -1, shift) },
+  { key: 'End', label: 'end of line', run: (s, shift) => s.moveCaret('lineEdge', 1, shift) },
+
+  // ── changing ──────────────────────────────────────────────────────────────
+  { key: 'Backspace', label: 'delete back', run: (s) => s.remove(-1) },
+  { key: 'Delete', label: 'delete forward', run: (s) => s.remove(1) },
+  {
+    key: 'Enter',
+    label: 'new line',
+    // Enter is a breath; Ctrl+Enter is a new verse. The commoner gesture gets
+    // the plainer key, and a verse boundary is a real decision.
+    run: (s) => s.newLine(false),
+  },
+  { key: 'Enter', ctrl: true, label: 'new verse', run: (s) => s.newLine(true) },
+
+  // ── marking ───────────────────────────────────────────────────────────────
+  {
+    key: 'h',
+    ctrl: true,
+    label: 'Short',
+    ribbon: 'marks',
+    hint: 'A thin box — a short vowel before',
+    run: (s) => s.mark({ hold: 'short' }),
+  },
+  {
+    key: 'h',
+    ctrl: true,
+    shift: true,
+    label: 'Long',
+    ribbon: 'marks',
+    hint: 'A thick box — a long vowel before',
+    run: (s) => s.mark({ hold: 'long' }),
+  },
+  {
+    key: 'j',
+    ctrl: true,
+    label: 'None',
+    ribbon: 'marks',
+    hint: 'There is NO holding here — overrules the rules',
+    run: (s) => s.mark({ hold: null }),
+  },
+  {
+    key: 'k',
+    ctrl: true,
+    label: 'Clear',
+    ribbon: 'marks',
+    hint: 'Withdraw your decision and let the rules decide again',
+    run: (s) => s.unmark(['hold', 'hg']),
+  },
+
+  // ── history ───────────────────────────────────────────────────────────────
+  {
+    key: 'z',
+    ctrl: true,
+    label: 'Undo',
+    ribbon: 'history',
+    enabled: (s) => s.canUndo,
+    run: (s) => s.undoEdit(),
+  },
+  {
+    key: 'z',
+    ctrl: true,
+    shift: true,
+    label: 'Redo',
+    ribbon: 'history',
+    enabled: (s) => s.canRedo,
+    run: (s) => s.redoEdit(),
+  },
+  // The other redo. Two accelerators, ONE action — which is the whole reason
+  // the bindings are a table: in v1 the second one called a different
+  // function, and they drifted.
+  { key: 'y', ctrl: true, label: 'Redo', run: (s) => s.redoEdit() },
+
+  // ── the holdings, back to the rules ───────────────────────────────────────
+  {
+    key: '',
+    label: 'Auto holdings',
+    ribbon: 'auto',
+    hint: 'Re-run the holding rules, keeping the boxes you placed by hand',
+    run: (s) => s.autoHoldings('keep'),
+  },
+  {
+    key: '',
+    label: 'Auto, mine out',
+    ribbon: 'auto',
+    hint: 'Re-run the holding rules and DROP the boxes you placed by hand',
+    run: (s) => s.autoHoldings('replace'),
+  },
+];
+
+/** The accelerator, written the way the rest of the UI writes them. */
+export function accelOf(b: Binding): string | undefined {
+  if (b.key === '') return undefined;
+  const parts: string[] = [];
+  if (b.ctrl === true) parts.push(APPLE ? '⌘' : 'Ctrl');
+  if (b.shift === true) parts.push('Shift');
+  parts.push(b.key.length === 1 ? b.key.toUpperCase() : b.key);
+  return parts.join('+');
+}
+
+/** The bindings that appear as buttons, in one ribbon group. */
+export const ribbonActions = (group: NonNullable<Binding['ribbon']>): readonly Binding[] =>
+  EDIT_KEYS.filter((b) => b.ribbon === group);
+
+/**
+ * Run the binding for this event, if there is one.
+ *
+ * Longest match wins: a binding that names `shift` beats one that does not, so
+ * Ctrl+Shift+Z is redo rather than undo-with-a-shift-held. Without that rule
+ * the table's ORDER would decide, which is the kind of dependency nobody
+ * remembers when adding a row.
+ */
+export function handleEditKey(
+  e: KeyboardEvent,
+  session: Session,
+): Binding | null {
+  const ctrl = modifierOf(e);
+  const candidates = EDIT_KEYS.filter((b) => (
+    b.key !== ''
+    && b.key.toLowerCase() === e.key.toLowerCase()
+    && (b.ctrl ?? false) === ctrl
+    && (b.shift === undefined || b.shift === e.shiftKey)
+  ));
+  if (candidates.length === 0) return null;
+
+  const chosen = candidates.reduce((best, b) => (
+    (b.shift === undefined ? 0 : 1) > (best.shift === undefined ? 0 : 1) ? b : best
+  ));
+  if (chosen.enabled?.(session) === false) return null;
+  chosen.run(session, e.shiftKey);
+  return chosen;
+}

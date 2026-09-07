@@ -24,10 +24,10 @@
  * Section and syllable counts are the first to go — they are reassurance, not
  * information you act on.
  */
-@media (max-width: 62rem) {
+@media (max-width: 62rem) {  /* token-exempt: a media-query breakpoint — CSS custom properties are not allowed in a media condition */
   .status__opt { display: none; }
 }
-@media (max-width: 44rem) {
+@media (max-width: 44rem) {  /* token-exempt: a media-query breakpoint — CSS custom properties are not allowed in a media condition */
   .status__opt2 { display: none; }
 }
 .status__gap { flex: 1; }

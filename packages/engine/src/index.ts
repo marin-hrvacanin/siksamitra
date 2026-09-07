@@ -18,6 +18,14 @@
 export { derive, mark } from './pipeline.js';
 export type { Derivation, DeriveSource, DeriveOptions, SrcMap } from './pipeline.js';
 
+// ── recovering a source from the marks ─────────────────────────────────────
+export { invertVerse } from './invert.js';
+export type { InvertedSource } from './invert.js';
+
+// ── the author's hand, over the rules ───────────────────────────────────────
+export { applyOverrides, isOverrideField } from './overrides.js';
+export type { OverrideField, OverrideResult } from './overrides.js';
+
 // ── parametrization ─────────────────────────────────────────────────────────
 export { PROFILES, DEFAULT_PROFILE, resolveProfile } from './profile.js';
 export type {
@@ -27,7 +35,7 @@ export type {
 // ── the rules, as data ──────────────────────────────────────────────────────
 export { RULES, STAGE_ORDER, isEnabled } from './rules/index.js';
 export type { Rule, Stage, RuleCtx, Trace, Warning } from './rules/types.js';
-export { SVARA_PLANS, parsePlan, formatPlan } from './rules/svara.js';
+export { SVARA_PLANS, parsePlan, formatPlan, witnessLine } from './rules/svara.js';
 export type { SvaraPlan, SvaraPosition } from './rules/svara.js';
 
 // ── text ────────────────────────────────────────────────────────────────────

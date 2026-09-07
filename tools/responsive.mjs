@@ -49,6 +49,9 @@ for (const w of WIDTHS) {
   const problems = [];
   if (m.rows > 1) problems.push('ribbon wrapped to multiple rows');
   if (m.docScroll) problems.push('document scrolls horizontally');
+  // The ribbon's own row, too. It was measured and printed and NOT checked,
+  // which is a gate reporting a fault it does not fail on.
+  if (m.rowScroll) problems.push('the ribbon row scrolls horizontally');
   if (m.collapsed > 0 && !m.overflow) problems.push('groups collapsed with no overflow button');
   if (m.collapsed === 0 && m.visible === 0) problems.push('no groups at all');
   if (problems.length > 0) bad += 1;

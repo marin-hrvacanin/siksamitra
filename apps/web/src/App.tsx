@@ -12,17 +12,22 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
+import type { ChantScriptKey } from '@siksamitra/format';
 import { anchorAt, scrollTopFor, type BlockOffset, type ViewKind } from '@siksamitra/layout';
 import { FlowView } from './views/FlowView.js';
 import { PagedView } from './views/PagedView.js';
 import { StatusBar } from './shell/StatusBar.js';
 import { Toolbar } from './shell/Toolbar.js';
 import { handleKey, type CommandContext } from './shell/commands.js';
+import { EditorSurface, startCaret } from './editor/EditorSurface.js';
+import { useSession } from './editor/useSession.js';
 import { useViewState } from './state/useViewState.js';
 import { useViewport } from './state/useViewport.js';
 import { useDocument } from './state/useDocument.js';
 import { useAppearance } from './state/useAppearance.js';
+
+/** A document-shaped nothing, so the session hook is never conditional. */
+const EMPTY_DOC = { title: '', titleForms: {}, sections: [] };
 
 const DOCUMENTS = [
   { slug: 'durga-suktam', title: 'Durgā Sūktam' },
@@ -36,7 +41,14 @@ export function App() {
   const look = useAppearance();
   const state = useViewState(viewport, look.mode);
   const [slug, setSlug] = useState(DOCUMENTS[0]!.slug);
-  const { doc, error } = useDocument(slug);
+  const { doc: opened, error } = useDocument(slug);
+  /*
+   * The session owns the document from here on: what is on screen is the
+   * EDITED document, not the one that was fetched. One source of truth, so a
+   * view cannot show text the editor does not have.
+   */
+  const session = useSession(opened ?? EMPTY_DOC);
+  const doc = opened === null ? null : session.doc;
   const [script, setScript] = useState<ChantScriptKey>('iast');
   const [showMarks, setShowMarks] = useState(true);
   const scroller = useRef<HTMLDivElement>(null);
@@ -109,7 +121,28 @@ export function App() {
     };
   }, [ctx]);
 
-  const contentKey = useMemo(() => `${slug}|${script}|${showMarks}`, [slug, script, showMarks]);
+  /*
+   * Entering edit mode puts the caret somewhere; Escape leaves. A mode with no
+   * way out is a trap, and a mode you enter with no caret does nothing when
+   * you type — both were on the list of what made the platform's editor feel
+   * like a form.
+   */
+  useEffect(() => {
+    if (session.editing) startCaret(session);
+  }, [session]);
+
+  useEffect(() => {
+    const onEscape = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && session.editing) session.setEditing(false);
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [session]);
+
+  const contentKey = useMemo(
+    () => `${slug}|${script}|${showMarks}|${session.editing}`,
+    [slug, script, showMarks, session.editing],
+  );
 
   return (
     /*
@@ -132,10 +165,11 @@ export function App() {
         onSlug={setSlug}
         onSwitchView={switchView}
         look={look}
+        session={session}
       />
 
       <div
-        className={`canvas canvas--${state.view.kind}`}
+        className={`canvas canvas--${state.view.kind}${session.editing ? ' is-editing' : ''}`}
         ref={scroller}
         data-doc={state.view.kind === 'web' ? 'warm' : look.document}
       >
@@ -149,6 +183,7 @@ export function App() {
             page={state.page}
             zoom={state.zoom}
             contentKey={contentKey}
+            addressable={session.editing}
           />
         ) : (
           <FlowView
@@ -157,11 +192,13 @@ export function App() {
             showMarks={showMarks}
             page={state.page}
             zoom={state.zoom}
+            addressable={session.editing}
           />
         ))}
+        {doc !== null && <EditorSurface session={session} scroller={scroller} />}
       </div>
 
-      <StatusBar doc={doc} state={state} script={script} look={look} />
+      <StatusBar doc={doc} state={state} script={script} look={look} session={session} />
     </div>
   );
 }

@@ -143,6 +143,18 @@ export function emitWithSpans(elems: Elem[], opts?: EmitOptions): EmitResult {
       tokens.push({ t: 'br' });
       continue;
     }
+    if (e.kind === 'bar') {
+      // A hairline between pādas. No space of its own: it is drawn INSIDE the
+      // gap the words already leave, which is how the corpus sets all 59.
+      flushWord();
+      tokens.push({ t: 'bar' });
+      continue;
+    }
+    if (e.kind === 'num') {
+      flushWord();
+      tokens.push({ t: 'num', s: e.text ?? '' });
+      continue;
+    }
     if (e.kind === 'hyphen') {
       // A CODA, not a token: `chaṁyorā-vṛṇīmahe` is `chaṁ · yo · rā- · vṛ · …`,
       // which is how all 469 hyphens in the shipped corpus are stored. It joins

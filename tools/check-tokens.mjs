@@ -32,7 +32,12 @@ const BASELINE = 'tools/token-baseline.json';
 /** Where design values are ALLOWED to be literal, because this is their home. */
 const HOME = ['packages/tokens/'];
 /** Generated output is the token source's own work; scanning it is circular. */
-const GENERATED = ['/generated/', '.generated.', 'node_modules', '/dist/'];
+const GENERATED = [
+  '/generated/', '.generated.', 'node_modules', '/dist/',
+  // Vendored font stylesheets: 642 machine-written @font-face rules whose
+  // literals are the font pipeline's business, not a design decision.
+  '/public/fonts/', '/assets/fonts/',
+];
 
 const NAMED_COLOURS = [
   'white', 'black', 'red', 'green', 'blue', 'yellow', 'orange', 'purple',
@@ -43,12 +48,44 @@ const NAMED_COLOURS = [
 const RULES = [
   { id: 'hex-colour', re: /#[0-9a-fA-F]{3,8}\b/g,
     why: 'a literal colour' },
-  { id: 'colour-fn', re: /\b(?:rgba?|hsla?|oklch|color-mix)\s*\(/g,
-    why: 'a computed literal colour' },
-  { id: 'named-colour', re: new RegExp(`(?<![\\w-])(?:${NAMED_COLOURS.join('|')})(?![\\w-])`, 'g'),
-    why: 'a named CSS colour' },
-  { id: 'font-family', re: /font-family\s*:\s*(?!var\()/g,
-    why: 'a font family that is not a role token' },
+  {
+    id: 'colour-fn',
+    re: /\b(?:rgba?|hsla?|oklch|color-mix)\s*\(/g,
+    why: 'a computed literal colour',
+    /*
+     * A colour function whose arguments are all tokens is not a literal: it is
+     * DERIVED from the theme and follows it when the theme changes.
+     * `color-mix(in srgb, var(--chrome-accent) 22%, transparent)` is the
+     * selection wash; `rgba(0, 0, 0, .2)` is a decision made once in a
+     * stylesheet. The test is whether a channel is written down here.
+     */
+    unless: (line) => line.includes('var(--')
+      && !/#[0-9a-fA-F]{3,8}|\d{1,3}\s*,\s*\d{1,3}/.test(line),
+  },
+  {
+    id: 'named-colour',
+    re: new RegExp(`(?<![\\w-])(?:${NAMED_COLOURS.join('|')})(?![\\w-])`, 'g'),
+    why: 'a named CSS colour',
+    /*
+     * CSS only. In a .ts file a bare `tan` is far likelier to be Sanskrit than
+     * a colour — `tan no rudra` is a real line of the Taittirīya, and it was
+     * flagged. Every genuine colour literal in code is still caught by the hex
+     * and colour-function rules.
+     */
+    cssOnly: true,
+  },
+  {
+    id: 'font-family',
+    /*
+     * The value must contain a `var()`. Written as a lookahead over the whole
+     * declaration, because `\s*(?!var\()` BACKTRACKS: `\s*` matches nothing,
+     * the lookahead then sees a space rather than `var(`, and it reports a
+     * false positive — which it did, twice, in files that were doing the right
+     * thing, and both were sitting inside the baseline as if they were debts.
+     */
+    re: /font-family\s*:(?![^;{}]*var\()/g,
+    why: 'a font family that is not a role token',
+  },
   { id: 'px', re: /(?<![\w.-])\d*\.?\d+px\b/g,
     why: 'a pixel size' },
   { id: 'rem', re: /(?<![\w.-])\d*\.?\d+rem\b/g,
@@ -87,6 +124,8 @@ function scan(file) {
     if (EXEMPT.test(line)) continue;
     const code = line.replace(/\/\/.*$/, '').replace(/\/\*.*?\*\//g, '');
     for (const rule of RULES) {
+      if (rule.cssOnly === true && !rel.endsWith('.css')) continue;
+      if (rule.unless?.(code) === true) continue;
       rule.re.lastIndex = 0;
       for (const m of code.matchAll(rule.re)) {
         hits.push({ line: i + 1, rule: rule.id, why: rule.why, text: m[0], src: trimmed.slice(0, 100) });
@@ -96,7 +135,13 @@ function scan(file) {
   return { file: rel, hits };
 }
 
-const files = walk(join(ROOT, 'packages'))
+/*
+ * THE APP IS SCANNED TOO. It was not, for a while, and that was the gate's
+ * blind spot: nearly every stylesheet in the program lives in `apps/web/src`,
+ * so a gate that only walked `packages/` was checking the wrong tree for
+ * exactly the rule the owner asked to be enforced.
+ */
+const files = ['packages', 'apps'].flatMap((d) => walk(join(ROOT, d)))
   .map(scan)
   .filter((r) => r !== null && r.hits.length > 0)
   .sort((a, b) => b.hits.length - a.hits.length);

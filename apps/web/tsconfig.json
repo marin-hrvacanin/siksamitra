@@ -1,20 +1,44 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist-types",
     "jsx": "react-jsx",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "noEmit": false,
-    "emitDeclarationOnly": true,
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "noEmit": true,
     "paths": {
-      "@siksamitra/format": ["../../packages/format/src/index.ts"],
-      "@siksamitra/engine": ["../../packages/engine/src/index.ts"],
-      "@siksamitra/layout": ["../../packages/layout/src/index.ts"],
-      "@siksamitra/render": ["../../packages/render/src/index.ts"],
-      "@siksamitra/storage": ["../../packages/storage/src/index.ts"],
-      "@siksamitra/tokens": ["../../packages/tokens/generated/tokens.ts"]
-    }
+      "@siksamitra/format": [
+        "../../packages/format/src/index.ts"
+      ],
+      "@siksamitra/engine": [
+        "../../packages/engine/src/index.ts"
+      ],
+      "@siksamitra/layout": [
+        "../../packages/layout/src/index.ts"
+      ],
+      "@siksamitra/render": [
+        "../../packages/render/src/index.ts"
+      ],
+      "@siksamitra/storage": [
+        "../../packages/storage/src/index.ts"
+      ],
+      "@siksamitra/tokens": [
+        "../../packages/tokens/generated/tokens.ts"
+      ],
+      "@siksamitra/edit": [
+        "../../packages/edit/src/index.ts"
+      ]
+    },
+    "types": [
+      "vite/client"
+    ],
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }

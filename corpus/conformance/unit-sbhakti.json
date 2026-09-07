@@ -8,37 +8,376 @@
     "verse": "v-8"
   },
   "document": {
+    "audioBase": "/tests/bhagya-suktam/audio/",
     "format": "vedaunion.chant",
-    "version": 2,
     "id": "bhagya-suktam",
-    "title": "bhāgya sūktam",
-    "subtitle": "Hymn for fortune and the awakening of dawn",
-    "source": "kṛṣṇayajurveda · Taittirīya Brāhmaṇa 2.8.9",
+    "overrides": [
+      {
+        "at": {
+          "letter": 29,
+          "line": 1,
+          "verse": "v-3"
+        },
+        "ch": "n",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "hold": "short"
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 33,
+          "line": 1,
+          "verse": "v-4"
+        },
+        "ch": "h",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "hold": null
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 11,
+          "line": 3,
+          "verse": "v-4"
+        },
+        "ch": "ā",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "svara": null
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 12,
+          "line": 3,
+          "verse": "v-4"
+        },
+        "ch": "m",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "svara": "svarita"
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 22,
+          "line": 3,
+          "verse": "v-4"
+        },
+        "ch": "s",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "hold": "long"
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 23,
+          "line": 3,
+          "verse": "v-4"
+        },
+        "ch": "y",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "hold": null
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 18,
+          "line": 1,
+          "verse": "v-7"
+        },
+        "ch": "ch",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "hold": "short"
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 11,
+          "line": 3,
+          "verse": "v-7"
+        },
+        "ch": "s",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "hold": "short"
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 12,
+          "line": 3,
+          "verse": "v-7"
+        },
+        "ch": "v",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "hold": null
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 17,
+          "line": 0,
+          "verse": "v-9"
+        },
+        "ch": "i",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "svara": null
+        },
+        "why": "source-witness"
+      },
+      {
+        "at": {
+          "letter": 18,
+          "line": 0,
+          "verse": "v-9"
+        },
+        "ch": "ś",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "svara": "anudatta"
+        },
+        "why": "source-witness"
+      }
+    ],
     "primaryScript": "iast",
+    "profile": {
+      "patch": {
+        "pauses": {
+          "bija": false,
+          "hiatus": true
+        }
+      },
+      "preset": "taittiriya"
+    },
+    "recording": {
+      "byVerse": {
+        "v-1": {
+          "duration": 21.736,
+          "file": "bhagya-suktam-1.mp3",
+          "label": "Verse 1",
+          "lines": [
+            {
+              "end": 6.952,
+              "start": 0
+            },
+            {
+              "end": 13.08,
+              "start": 6.952
+            },
+            {
+              "end": 17.064,
+              "start": 13.08
+            },
+            {
+              "end": 21.736,
+              "start": 17.064
+            }
+          ]
+        },
+        "v-2": {
+          "duration": 17.432,
+          "file": "bhagya-suktam-2.mp3",
+          "label": "Verse 2",
+          "lines": [
+            {
+              "end": 3.528,
+              "start": 0
+            },
+            {
+              "end": 8.184,
+              "start": 3.528
+            },
+            {
+              "end": 12.368,
+              "start": 8.184
+            },
+            {
+              "end": 17.432,
+              "start": 12.368
+            }
+          ]
+        },
+        "v-3": {
+          "duration": 15.504,
+          "file": "bhagya-suktam-3.mp3",
+          "label": "Verse 3",
+          "lines": [
+            {
+              "end": 3.472,
+              "start": 0
+            },
+            {
+              "end": 7.864,
+              "start": 3.472
+            },
+            {
+              "end": 11.4,
+              "start": 7.864
+            },
+            {
+              "end": 15.504,
+              "start": 11.4
+            }
+          ]
+        },
+        "v-4": {
+          "duration": 17.664,
+          "file": "bhagya-suktam-4.mp3",
+          "label": "Verse 4",
+          "lines": [
+            {
+              "end": 3.648,
+              "start": 0
+            },
+            {
+              "end": 9.256,
+              "start": 3.648
+            },
+            {
+              "end": 12.704,
+              "start": 9.256
+            },
+            {
+              "end": 17.664,
+              "start": 12.704
+            }
+          ]
+        },
+        "v-5": {
+          "duration": 15.808,
+          "file": "bhagya-suktam-5.mp3",
+          "label": "Verse 5",
+          "lines": [
+            {
+              "end": 4.056,
+              "start": 0
+            },
+            {
+              "end": 8.16,
+              "start": 4.056
+            },
+            {
+              "end": 11.632,
+              "start": 8.16
+            },
+            {
+              "end": 15.808,
+              "start": 11.632
+            }
+          ]
+        },
+        "v-6": {
+          "duration": 16.152,
+          "file": "bhagya-suktam-6.mp3",
+          "label": "Verse 6",
+          "lines": [
+            {
+              "end": 3.136,
+              "start": 0
+            },
+            {
+              "end": 7.696,
+              "start": 3.136
+            },
+            {
+              "end": 11.256,
+              "start": 7.696
+            },
+            {
+              "end": 16.152,
+              "start": 11.256
+            }
+          ]
+        },
+        "v-7": {
+          "duration": 17.728,
+          "file": "bhagya-suktam-7.mp3",
+          "label": "Verse 7",
+          "lines": [
+            {
+              "end": 4.16,
+              "start": 0
+            },
+            {
+              "end": 9.304,
+              "start": 4.16
+            },
+            {
+              "end": 12.976,
+              "start": 9.304
+            },
+            {
+              "end": 17.728,
+              "start": 12.976
+            }
+          ]
+        },
+        "v-8": {
+          "duration": 14.2,
+          "file": "bhagya-suktam-8.mp3",
+          "label": "Verse 8",
+          "lines": [
+            {
+              "end": 7.784,
+              "start": 0
+            },
+            {
+              "end": 14.2,
+              "start": 7.784
+            }
+          ]
+        },
+        "v-9": {
+          "duration": 4.093,
+          "file": "bhagya-suktam-9.mp3",
+          "label": "Verse 9",
+          "lines": [
+            {
+              "end": 4.093,
+              "start": 0
+            }
+          ]
+        }
+      }
+    },
     "scripts": [
       "iast",
       "devanagari",
       "telugu",
       "tamil"
     ],
-    "titleForms": {
-      "iast": "bhāgya sūktam",
-      "devanagari": "भाग्य सूक्तम्",
-      "telugu": "భాగ్య సూక్తమ్",
-      "tamil": "பாக்ய ஸூக்தம்"
-    },
     "sections": [
       {
         "id": "sec-1",
-        "label": "Bhāgya Sūktam",
-        "source": "kṛṣṇayajurveda · Taittirīya Brāhmaṇa 2.8.9 · Ṛgveda 7.41",
-        "verses": [
+        "items": [
           {
             "id": "v-8",
             "n": "8",
+            "t": "verse",
             "tokens": [
               {
+                "deva": "यो",
+                "iast": "yo",
                 "t": "syl",
+                "tam": "யோ",
+                "tel": "యో",
                 "units": [
                   {
                     "c": "y"
@@ -46,17 +385,17 @@
                   {
                     "c": "o"
                   }
-                ],
-                "iast": "yo",
-                "deva": "यो",
-                "tel": "యో",
-                "tam": "யோ"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "मा",
+                "iast": "mā",
                 "t": "syl",
+                "tam": "மா",
+                "tel": "మా",
                 "units": [
                   {
                     "c": "m"
@@ -65,31 +404,31 @@
                     "c": "ā",
                     "svara": "dirgha-svarita"
                   }
-                ],
-                "iast": "mā",
-                "deva": "मा",
-                "tel": "మా",
-                "tam": "மா"
+                ]
               },
               {
+                "deva": "ऽ",
+                "iast": "'",
                 "t": "syl",
+                "tam": "ऽ",
+                "tel": "ఽ",
                 "units": [
                   {
                     "c": "'"
                   }
-                ],
-                "iast": "'",
-                "deva": "ऽ",
-                "tel": "ఽ",
-                "tam": "ऽ"
+                ]
               },
               {
+                "deva": "ग्ने",
+                "iast": "gne",
                 "t": "syl",
+                "tam": "க்நே",
+                "tel": "గ్నే",
                 "units": [
                   {
                     "c": "g",
-                    "hold": "long",
-                    "hg": 1
+                    "hg": 1,
+                    "hold": "long"
                   },
                   {
                     "c": "n"
@@ -97,17 +436,17 @@
                   {
                     "c": "e"
                   }
-                ],
-                "iast": "gne",
-                "deva": "ग्ने",
-                "tel": "గ్నే",
-                "tam": "க்நே"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "भा",
+                "iast": "bhā",
                 "t": "syl",
+                "tam": "பா",
+                "tel": "భా",
                 "units": [
                   {
                     "c": "bh"
@@ -116,14 +455,14 @@
                     "c": "ā",
                     "svara": "anudatta"
                   }
-                ],
-                "iast": "bhā",
-                "deva": "भा",
-                "tel": "భా",
-                "tam": "பா"
+                ]
               },
               {
+                "deva": "गि",
+                "iast": "gi",
                 "t": "syl",
+                "tam": "கி",
+                "tel": "గి",
                 "units": [
                   {
                     "c": "g"
@@ -131,14 +470,14 @@
                   {
                     "c": "i"
                   }
-                ],
-                "iast": "gi",
-                "deva": "गि",
-                "tel": "గి",
-                "tam": "கி"
+                ]
               },
               {
+                "deva": "नम्",
+                "iast": "nam",
                 "t": "syl",
+                "tam": "நம்",
+                "tel": "నమ్",
                 "units": [
                   {
                     "c": "n"
@@ -148,60 +487,60 @@
                   },
                   {
                     "c": "m",
+                    "candra": true,
                     "change": true,
-                    "svara": "svarita",
                     "sup": "gṁ",
-                    "candra": true
+                    "svara": "svarita"
                   }
-                ],
-                "iast": "nam",
-                "deva": "नम्",
-                "tel": "నమ్",
-                "tam": "நம்"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "स",
+                "iast": "sa",
                 "t": "syl",
+                "tam": "ஸ",
+                "tel": "స",
                 "units": [
                   {
                     "c": "s",
-                    "hold": "short",
-                    "hg": 2
+                    "hg": 2,
+                    "hold": "short"
                   },
                   {
                     "c": "a",
                     "svara": "anudatta"
                   }
-                ],
-                "iast": "sa",
-                "deva": "स",
-                "tel": "స",
-                "tam": "ஸ"
+                ]
               },
               {
+                "deva": "न्त",
+                "iast": "nta",
                 "t": "syl",
+                "tam": "ந்த",
+                "tel": "న్త",
                 "units": [
                   {
                     "c": "n"
                   },
                   {
                     "c": "t",
-                    "hold": "short",
-                    "hg": 3
+                    "hg": 3,
+                    "hold": "short"
                   },
                   {
                     "c": "a"
                   }
-                ],
-                "iast": "nta",
-                "deva": "न्त",
-                "tel": "న్త",
-                "tam": "ந்த"
+                ]
               },
               {
+                "deva": "म-",
+                "iast": "ma-",
                 "t": "syl",
+                "tam": "ம-",
+                "tel": "మ-",
                 "units": [
                   {
                     "c": "m"
@@ -212,14 +551,14 @@
                   {
                     "c": "-"
                   }
-                ],
-                "iast": "ma-",
-                "deva": "म-",
-                "tel": "మ-",
-                "tam": "ம-"
+                ]
               },
               {
+                "deva": "था-",
+                "iast": "thā-",
                 "t": "syl",
+                "tam": "தா-",
+                "tel": "థా-",
                 "units": [
                   {
                     "c": "th"
@@ -231,14 +570,14 @@
                   {
                     "c": "-"
                   }
-                ],
-                "iast": "thā-",
-                "deva": "था-",
-                "tel": "థా-",
-                "tam": "தா-"
+                ]
               },
               {
+                "deva": "भा",
+                "iast": "bhā",
                 "t": "syl",
+                "tam": "பா",
+                "tel": "భా",
                 "units": [
                   {
                     "c": "bh"
@@ -247,14 +586,14 @@
                     "c": "ā",
                     "svara": "anudatta"
                   }
-                ],
-                "iast": "bhā",
-                "deva": "भा",
-                "tel": "భా",
-                "tam": "பா"
+                ]
               },
               {
+                "deva": "गञ्",
+                "iast": "gañ",
                 "t": "syl",
+                "tam": "கஞ்",
+                "tel": "గఞ్",
                 "units": [
                   {
                     "c": "g"
@@ -266,34 +605,34 @@
                     "c": "ñ",
                     "change": true
                   }
-                ],
-                "iast": "gañ",
-                "deva": "गञ्",
-                "tel": "గఞ్",
-                "tam": "கஞ்"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "चि",
+                "iast": "ci",
                 "t": "syl",
+                "tam": "சி",
+                "tel": "చి",
                 "units": [
                   {
                     "c": "c",
-                    "hold": "short",
-                    "hg": 4
+                    "hg": 4,
+                    "hold": "short"
                   },
                   {
                     "c": "i"
                   }
-                ],
-                "iast": "ci",
-                "deva": "चि",
-                "tel": "చి",
-                "tam": "சி"
+                ]
               },
               {
+                "deva": "की",
+                "iast": "kī",
                 "t": "syl",
+                "tam": "கீ",
+                "tel": "కీ",
                 "units": [
                   {
                     "c": "k"
@@ -302,35 +641,35 @@
                     "c": "ī",
                     "svara": "svarita"
                   }
-                ],
-                "iast": "kī",
-                "deva": "की",
-                "tel": "కీ",
-                "tam": "கீ"
+                ]
               },
               {
+                "deva": "र्ष",
+                "iast": "rṣa",
                 "t": "syl",
+                "tam": "ர்ஷ",
+                "tel": "ర్ష",
                 "units": [
                   {
                     "c": "r"
                   },
                   {
                     "c": "ṣ",
-                    "hold": "long",
                     "hg": 5,
+                    "hold": "long",
                     "sbhakti": true
                   },
                   {
                     "c": "a"
                   }
-                ],
-                "iast": "rṣa",
-                "deva": "र्ष",
-                "tel": "ర్ష",
-                "tam": "ர்ஷ"
+                ]
               },
               {
+                "deva": "ति",
+                "iast": "ti",
                 "t": "syl",
+                "tam": "தி",
+                "tel": "తి",
                 "units": [
                   {
                     "c": "t"
@@ -338,18 +677,14 @@
                   {
                     "c": "i"
                   }
-                ],
-                "iast": "ti",
-                "deva": "ति",
-                "tel": "తి",
-                "tam": "தி"
+                ]
               },
               {
                 "t": "sp"
               },
               {
-                "t": "danda",
-                "s": "।"
+                "s": "।",
+                "t": "danda"
               },
               {
                 "t": "sp"
@@ -358,19 +693,23 @@
                 "t": "br"
               },
               {
+                "deva": "अ",
+                "iast": "a",
                 "t": "syl",
+                "tam": "அ",
+                "tel": "అ",
                 "units": [
                   {
                     "c": "a"
                   }
-                ],
-                "iast": "a",
-                "deva": "अ",
-                "tel": "అ",
-                "tam": "அ"
+                ]
               },
               {
+                "deva": "भा",
+                "iast": "bhā",
                 "t": "syl",
+                "tam": "பா",
+                "tel": "భా",
                 "units": [
                   {
                     "c": "bh"
@@ -379,14 +718,14 @@
                     "c": "ā",
                     "svara": "anudatta"
                   }
-                ],
-                "iast": "bhā",
-                "deva": "भा",
-                "tel": "భా",
-                "tam": "பா"
+                ]
               },
               {
+                "deva": "ग",
+                "iast": "ga",
                 "t": "syl",
+                "tam": "க",
+                "tel": "గ",
                 "units": [
                   {
                     "c": "g"
@@ -394,14 +733,14 @@
                   {
                     "c": "a"
                   }
-                ],
-                "iast": "ga",
-                "deva": "ग",
-                "tel": "గ",
-                "tam": "க"
+                ]
               },
               {
+                "deva": "म-",
+                "iast": "ma-",
                 "t": "syl",
+                "tam": "ம-",
+                "tel": "మ-",
                 "units": [
                   {
                     "c": "m"
@@ -413,19 +752,19 @@
                   {
                     "c": "-"
                   }
-                ],
-                "iast": "ma-",
-                "deva": "म-",
-                "tel": "మ-",
-                "tam": "ம-"
+                ]
               },
               {
+                "deva": "ग्ने",
+                "iast": "gne",
                 "t": "syl",
+                "tam": "க்நே",
+                "tel": "గ్నే",
                 "units": [
                   {
                     "c": "g",
-                    "hold": "short",
-                    "hg": 1
+                    "hg": 1,
+                    "hold": "short"
                   },
                   {
                     "c": "n"
@@ -434,17 +773,17 @@
                     "c": "e",
                     "svara": "anudatta"
                   }
-                ],
-                "iast": "gne",
-                "deva": "ग्ने",
-                "tel": "గ్నే",
-                "tam": "க்நே"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "तङ्",
+                "iast": "taṅ",
                 "t": "syl",
+                "tam": "தங்",
+                "tel": "తఙ్",
                 "units": [
                   {
                     "c": "t"
@@ -456,35 +795,35 @@
                     "c": "ṅ",
                     "change": true
                   }
-                ],
-                "iast": "taṅ",
-                "deva": "तङ्",
-                "tel": "తఙ్",
-                "tam": "தங்"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "कु",
+                "iast": "ku",
                 "t": "syl",
+                "tam": "கு",
+                "tel": "కు",
                 "units": [
                   {
                     "c": "k",
-                    "hold": "short",
-                    "hg": 2
+                    "hg": 2,
+                    "hold": "short"
                   },
                   {
                     "c": "u",
                     "svara": "svarita"
                   }
-                ],
-                "iast": "ku",
-                "deva": "कु",
-                "tel": "కు",
-                "tam": "கு"
+                ]
               },
               {
+                "deva": "रु",
+                "iast": "ru",
                 "t": "syl",
+                "tam": "ரு",
+                "tel": "రు",
                 "units": [
                   {
                     "c": "r"
@@ -493,17 +832,17 @@
                     "c": "u",
                     "svara": "anudatta"
                   }
-                ],
-                "iast": "ru",
-                "deva": "रु",
-                "tel": "రు",
-                "tam": "ரு"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "मा",
+                "iast": "mā",
                 "t": "syl",
+                "tam": "மா",
+                "tel": "మా",
                 "units": [
                   {
                     "c": "m"
@@ -511,14 +850,14 @@
                   {
                     "c": "ā"
                   }
-                ],
-                "iast": "mā",
-                "deva": "मा",
-                "tel": "మా",
-                "tam": "மா"
+                ]
               },
               {
+                "deva": "म-",
+                "iast": "ma-",
                 "t": "syl",
+                "tam": "ம-",
+                "tel": "మ-",
                 "units": [
                   {
                     "c": "m"
@@ -530,19 +869,19 @@
                   {
                     "c": "-"
                   }
-                ],
-                "iast": "ma-",
-                "deva": "म-",
-                "tel": "మ-",
-                "tam": "ம-"
+                ]
               },
               {
+                "deva": "ग्ने",
+                "iast": "gne",
                 "t": "syl",
+                "tam": "க்நே",
+                "tel": "గ్నే",
                 "units": [
                   {
                     "c": "g",
-                    "hold": "short",
-                    "hg": 3
+                    "hg": 3,
+                    "hold": "short"
                   },
                   {
                     "c": "n"
@@ -550,17 +889,17 @@
                   {
                     "c": "e"
                   }
-                ],
-                "iast": "gne",
-                "deva": "ग्ने",
-                "tel": "గ్నే",
-                "tam": "க்நே"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "भा",
+                "iast": "bhā",
                 "t": "syl",
+                "tam": "பா",
+                "tel": "భా",
                 "units": [
                   {
                     "c": "bh"
@@ -569,14 +908,14 @@
                     "c": "ā",
                     "svara": "anudatta"
                   }
-                ],
-                "iast": "bhā",
-                "deva": "भा",
-                "tel": "భా",
-                "tam": "பா"
+                ]
               },
               {
+                "deva": "गि",
+                "iast": "gi",
                 "t": "syl",
+                "tam": "கி",
+                "tel": "గి",
                 "units": [
                   {
                     "c": "g"
@@ -584,14 +923,14 @@
                   {
                     "c": "i"
                   }
-                ],
-                "iast": "gi",
-                "deva": "गि",
-                "tel": "గి",
-                "tam": "கி"
+                ]
               },
               {
+                "deva": "नङ्",
+                "iast": "naṅ",
                 "t": "syl",
+                "tam": "நங்",
+                "tel": "నఙ్",
                 "units": [
                   {
                     "c": "n"
@@ -604,34 +943,34 @@
                     "c": "ṅ",
                     "change": true
                   }
-                ],
-                "iast": "naṅ",
-                "deva": "नङ्",
-                "tel": "నఙ్",
-                "tam": "நங்"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "कु",
+                "iast": "ku",
                 "t": "syl",
+                "tam": "கு",
+                "tel": "కు",
                 "units": [
                   {
                     "c": "k",
-                    "hold": "short",
-                    "hg": 4
+                    "hg": 4,
+                    "hold": "short"
                   },
                   {
                     "c": "u"
                   }
-                ],
-                "iast": "ku",
-                "deva": "कु",
-                "tel": "కు",
-                "tam": "கு"
+                ]
               },
               {
+                "deva": "रु",
+                "iast": "ru",
                 "t": "syl",
+                "tam": "ரு",
+                "tel": "రు",
                 "units": [
                   {
                     "c": "r"
@@ -639,26 +978,22 @@
                   {
                     "c": "u"
                   }
-                ],
-                "iast": "ru",
-                "deva": "रु",
-                "tel": "రు",
-                "tam": "ரு"
+                ]
               },
               {
                 "t": "sp"
               },
               {
-                "t": "danda",
-                "s": "॥"
+                "s": "॥",
+                "t": "danda"
               },
               {
-                "t": "num",
-                "s": "8"
+                "s": "8",
+                "t": "num"
               },
               {
-                "t": "danda",
-                "s": "॥"
+                "s": "॥",
+                "t": "danda"
               }
             ],
             "translation": {
@@ -666,481 +1001,1217 @@
             },
             "words": [
               {
-                "surface": "yo",
                 "entries": [
                   {
-                    "lemma": "yad",
-                    "type": "sarvanāma",
-                    "meaning": "who (rel.)",
-                    "gender": "m",
-                    "vibhakti": 1,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "यद्",
-                      "tel": "యద్",
-                      "tam": "யத்"
+                      "tam": "யத்",
+                      "tel": "యద్"
                     },
+                    "gender": "m",
+                    "lemma": "yad",
+                    "meaning": "who (rel.)",
+                    "note": "'yo'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/yad",
-                    "note": "'yo'"
+                    "type": "sarvanāma",
+                    "vacana": "eka",
+                    "vibhakti": 1
                   }
-                ]
+                ],
+                "surface": "yo"
               },
               {
-                "surface": "mā'gne",
                 "entries": [
                   {
-                    "lemma": "asmad",
-                    "type": "sarvanāma",
-                    "meaning": "me",
-                    "gender": "-",
-                    "vibhakti": 2,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "अस्मद्",
-                      "tel": "అస్మద్",
-                      "tam": "அஸ்மத்"
+                      "tam": "அஸ்மத்",
+                      "tel": "అస్మద్"
                     },
+                    "gender": "-",
+                    "lemma": "asmad",
+                    "meaning": "me",
+                    "note": "'mā'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/asmad",
-                    "note": "'mā'"
+                    "type": "sarvanāma",
+                    "vacana": "eka",
+                    "vibhakti": 2
                   },
                   {
-                    "lemma": "agni",
-                    "type": "subanta",
-                    "meaning": "O Agni",
-                    "gender": "m",
-                    "vibhakti": 8,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "अग्नि",
-                      "tel": "అగ్ని",
-                      "tam": "அக்நி"
+                      "tam": "அக்நி",
+                      "tel": "అగ్ని"
                     },
+                    "gender": "m",
+                    "lemma": "agni",
+                    "meaning": "O Agni",
+                    "note": "'agne'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/agni",
-                    "note": "'agne'"
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 8
                   }
-                ]
+                ],
+                "surface": "mā'gne"
               },
               {
-                "surface": "bhāginam",
                 "entries": [
                   {
-                    "lemma": "bhāgin",
-                    "type": "subanta",
-                    "meaning": "having a share, fortunate",
-                    "gender": "m",
-                    "vibhakti": 2,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "भागिन्",
-                      "tel": "భాగిన్",
-                      "tam": "பாகிந்"
+                      "tam": "பாகிந்",
+                      "tel": "భాగిన్"
                     },
+                    "gender": "m",
+                    "lemma": "bhāgin",
+                    "meaning": "having a share, fortunate",
+                    "note": "'bhāginam'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/bhāgin",
-                    "note": "'bhāginam'"
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
                   }
-                ]
+                ],
+                "surface": "bhāginam"
               },
               {
-                "surface": "santama-thā-bhāgañ",
                 "entries": [
                   {
-                    "lemma": "as",
-                    "type": "tinanta",
-                    "meaning": "being",
                     "forms": {
                       "deva": "अस्",
-                      "tel": "అస్",
-                      "tam": "அஸ்"
+                      "tam": "அஸ்",
+                      "tel": "అస్"
                     },
+                    "lemma": "as",
+                    "meaning": "being",
+                    "note": "'santam' pres. part.",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/as",
-                    "note": "'santam' pres. part."
+                    "type": "tinanta"
                   },
                   {
-                    "lemma": "atha",
-                    "type": "avyaya",
-                    "meaning": "then, thereupon",
                     "forms": {
                       "deva": "अथ",
-                      "tel": "అథ",
-                      "tam": "அத"
+                      "tam": "அத",
+                      "tel": "అథ"
                     },
-                    "ref": "https://ambuda.org/tools/dictionaries/mw/atha"
+                    "lemma": "atha",
+                    "meaning": "then, thereupon",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/atha",
+                    "type": "avyaya"
                   },
                   {
-                    "lemma": "abhāga",
-                    "type": "subanta",
-                    "meaning": "shareless, without a portion",
-                    "gender": "m",
-                    "vibhakti": 2,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "अभाग",
-                      "tel": "అభాగ",
-                      "tam": "அபாக"
+                      "tam": "அபாக",
+                      "tel": "అభాగ"
                     },
+                    "gender": "m",
+                    "lemma": "abhāga",
+                    "meaning": "shareless, without a portion",
+                    "note": "'abhāgam'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/abhāga",
-                    "note": "'abhāgam'"
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
                   }
-                ]
+                ],
+                "surface": "santama-thā-bhāgañ"
               },
               {
-                "surface": "cikīrṣati",
                 "entries": [
                   {
-                    "lemma": "kṛ",
-                    "type": "tinanta",
-                    "meaning": "wishes to make",
                     "forms": {
                       "deva": "कृ",
-                      "tel": "కృ",
-                      "tam": "க்ரு'"
+                      "tam": "க்ரு'",
+                      "tel": "కృ"
                     },
+                    "lemma": "kṛ",
+                    "meaning": "wishes to make",
+                    "note": "'cikīrṣati' desiderative 3rd sg.",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
-                    "note": "'cikīrṣati' desiderative 3rd sg."
+                    "type": "tinanta"
                   }
-                ]
+                ],
+                "surface": "cikīrṣati"
               },
               {
-                "surface": "abhāgama-gne",
                 "entries": [
                   {
-                    "lemma": "abhāga",
-                    "type": "subanta",
-                    "meaning": "shareless",
-                    "gender": "m",
-                    "vibhakti": 2,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "अभाग",
-                      "tel": "అభాగ",
-                      "tam": "அபாக"
+                      "tam": "அபாக",
+                      "tel": "అభాగ"
                     },
+                    "gender": "m",
+                    "lemma": "abhāga",
+                    "meaning": "shareless",
+                    "note": "'abhāgam'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/abhāga",
-                    "note": "'abhāgam'"
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
                   },
                   {
-                    "lemma": "agni",
-                    "type": "subanta",
-                    "meaning": "O Agni",
-                    "gender": "m",
-                    "vibhakti": 8,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "अग्नि",
-                      "tel": "అగ్ని",
-                      "tam": "அக்நி"
+                      "tam": "அக்நி",
+                      "tel": "అగ్ని"
                     },
+                    "gender": "m",
+                    "lemma": "agni",
+                    "meaning": "O Agni",
+                    "note": "'agne'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/agni",
-                    "note": "'agne'"
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 8
                   }
-                ]
+                ],
+                "surface": "abhāgama-gne"
               },
               {
-                "surface": "taṅ",
                 "entries": [
                   {
-                    "lemma": "tad",
-                    "type": "sarvanāma",
-                    "meaning": "him",
-                    "gender": "-",
-                    "vibhakti": 2,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "तद्",
-                      "tel": "తద్",
-                      "tam": "தத்"
+                      "tam": "தத்",
+                      "tel": "తద్"
                     },
+                    "gender": "-",
+                    "lemma": "tad",
+                    "meaning": "him",
+                    "note": "'tam'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/tad",
-                    "note": "'tam'"
+                    "type": "sarvanāma",
+                    "vacana": "eka",
+                    "vibhakti": 2
                   }
-                ]
+                ],
+                "surface": "taṅ"
               },
               {
-                "surface": "kuru",
                 "entries": [
                   {
-                    "lemma": "kṛ",
-                    "type": "tinanta",
-                    "meaning": "make!",
                     "forms": {
                       "deva": "कृ",
-                      "tel": "కృ",
-                      "tam": "க்ரு'"
+                      "tam": "க்ரு'",
+                      "tel": "కృ"
                     },
+                    "lemma": "kṛ",
+                    "meaning": "make!",
+                    "note": "'kuru' imperative 2nd sg.",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
-                    "note": "'kuru' imperative 2nd sg."
+                    "type": "tinanta"
                   }
-                ]
+                ],
+                "surface": "kuru"
               },
               {
-                "surface": "māma-gne",
                 "entries": [
                   {
-                    "lemma": "asmad",
-                    "type": "sarvanāma",
-                    "meaning": "me",
-                    "gender": "-",
-                    "vibhakti": 2,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "अस्मद्",
-                      "tel": "అస్మద్",
-                      "tam": "அஸ்மத்"
+                      "tam": "அஸ்மத்",
+                      "tel": "అస్మద్"
                     },
+                    "gender": "-",
+                    "lemma": "asmad",
+                    "meaning": "me",
+                    "note": "'mām'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/asmad",
-                    "note": "'mām'"
+                    "type": "sarvanāma",
+                    "vacana": "eka",
+                    "vibhakti": 2
                   },
                   {
-                    "lemma": "agni",
-                    "type": "subanta",
-                    "meaning": "O Agni",
-                    "gender": "m",
-                    "vibhakti": 8,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "अग्नि",
-                      "tel": "అగ్ని",
-                      "tam": "அக்நி"
+                      "tam": "அக்நி",
+                      "tel": "అగ్ని"
                     },
+                    "gender": "m",
+                    "lemma": "agni",
+                    "meaning": "O Agni",
+                    "note": "'agne'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/agni",
-                    "note": "'agne'"
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 8
                   }
-                ]
+                ],
+                "surface": "māma-gne"
               },
               {
-                "surface": "bhāginaṅ",
                 "entries": [
                   {
-                    "lemma": "bhāgin",
-                    "type": "subanta",
-                    "meaning": "a sharer, fortunate",
-                    "gender": "m",
-                    "vibhakti": 2,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "भागिन्",
-                      "tel": "భాగిన్",
-                      "tam": "பாகிந்"
+                      "tam": "பாகிந்",
+                      "tel": "భాగిన్"
                     },
+                    "gender": "m",
+                    "lemma": "bhāgin",
+                    "meaning": "a sharer, fortunate",
+                    "note": "'bhāginam'",
                     "ref": "https://ambuda.org/tools/dictionaries/mw/bhāgin",
-                    "note": "'bhāginam'"
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
+                  }
+                ],
+                "surface": "bhāginaṅ"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "कृ",
+                      "tam": "க்ரு'",
+                      "tel": "కృ"
+                    },
+                    "lemma": "kṛ",
+                    "meaning": "make!",
+                    "note": "'kuru' imperative 2nd sg.",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
+                    "type": "tinanta"
+                  }
+                ],
+                "surface": "kuru"
+              }
+            ]
+          }
+        ],
+        "label": "Bhāgya Sūktam",
+        "source": "kṛṣṇayajurveda · Taittirīya Brāhmaṇa 2.8.9 · Ṛgveda 7.41",
+        "title": "Bhāgya Sūktam",
+        "verses": [
+          {
+            "id": "v-8",
+            "n": "8",
+            "tokens": [
+              {
+                "deva": "यो",
+                "iast": "yo",
+                "t": "syl",
+                "tam": "யோ",
+                "tel": "యో",
+                "units": [
+                  {
+                    "c": "y"
+                  },
+                  {
+                    "c": "o"
                   }
                 ]
               },
               {
-                "surface": "kuru",
-                "entries": [
+                "t": "sp"
+              },
+              {
+                "deva": "मा",
+                "iast": "mā",
+                "t": "syl",
+                "tam": "மா",
+                "tel": "మా",
+                "units": [
                   {
-                    "lemma": "kṛ",
-                    "type": "tinanta",
-                    "meaning": "make!",
-                    "forms": {
-                      "deva": "कृ",
-                      "tel": "కృ",
-                      "tam": "க்ரு'"
-                    },
-                    "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
-                    "note": "'kuru' imperative 2nd sg."
+                    "c": "m"
+                  },
+                  {
+                    "c": "ā",
+                    "svara": "dirgha-svarita"
                   }
                 ]
+              },
+              {
+                "deva": "ऽ",
+                "iast": "'",
+                "t": "syl",
+                "tam": "ऽ",
+                "tel": "ఽ",
+                "units": [
+                  {
+                    "c": "'"
+                  }
+                ]
+              },
+              {
+                "deva": "ग्ने",
+                "iast": "gne",
+                "t": "syl",
+                "tam": "க்நே",
+                "tel": "గ్నే",
+                "units": [
+                  {
+                    "c": "g",
+                    "hg": 1,
+                    "hold": "long"
+                  },
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "e"
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "deva": "भा",
+                "iast": "bhā",
+                "t": "syl",
+                "tam": "பா",
+                "tel": "భా",
+                "units": [
+                  {
+                    "c": "bh"
+                  },
+                  {
+                    "c": "ā",
+                    "svara": "anudatta"
+                  }
+                ]
+              },
+              {
+                "deva": "गि",
+                "iast": "gi",
+                "t": "syl",
+                "tam": "கி",
+                "tel": "గి",
+                "units": [
+                  {
+                    "c": "g"
+                  },
+                  {
+                    "c": "i"
+                  }
+                ]
+              },
+              {
+                "deva": "नम्",
+                "iast": "nam",
+                "t": "syl",
+                "tam": "நம்",
+                "tel": "నమ్",
+                "units": [
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "m",
+                    "candra": true,
+                    "change": true,
+                    "sup": "gṁ",
+                    "svara": "svarita"
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "deva": "स",
+                "iast": "sa",
+                "t": "syl",
+                "tam": "ஸ",
+                "tel": "స",
+                "units": [
+                  {
+                    "c": "s",
+                    "hg": 2,
+                    "hold": "short"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "anudatta"
+                  }
+                ]
+              },
+              {
+                "deva": "न्त",
+                "iast": "nta",
+                "t": "syl",
+                "tam": "ந்த",
+                "tel": "న్త",
+                "units": [
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "t",
+                    "hg": 3,
+                    "hold": "short"
+                  },
+                  {
+                    "c": "a"
+                  }
+                ]
+              },
+              {
+                "deva": "म-",
+                "iast": "ma-",
+                "t": "syl",
+                "tam": "ம-",
+                "tel": "మ-",
+                "units": [
+                  {
+                    "c": "m"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "-"
+                  }
+                ]
+              },
+              {
+                "deva": "था-",
+                "iast": "thā-",
+                "t": "syl",
+                "tam": "தா-",
+                "tel": "థా-",
+                "units": [
+                  {
+                    "c": "th"
+                  },
+                  {
+                    "c": "ā",
+                    "svara": "svarita"
+                  },
+                  {
+                    "c": "-"
+                  }
+                ]
+              },
+              {
+                "deva": "भा",
+                "iast": "bhā",
+                "t": "syl",
+                "tam": "பா",
+                "tel": "భా",
+                "units": [
+                  {
+                    "c": "bh"
+                  },
+                  {
+                    "c": "ā",
+                    "svara": "anudatta"
+                  }
+                ]
+              },
+              {
+                "deva": "गञ्",
+                "iast": "gañ",
+                "t": "syl",
+                "tam": "கஞ்",
+                "tel": "గఞ్",
+                "units": [
+                  {
+                    "c": "g"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "ñ",
+                    "change": true
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "deva": "चि",
+                "iast": "ci",
+                "t": "syl",
+                "tam": "சி",
+                "tel": "చి",
+                "units": [
+                  {
+                    "c": "c",
+                    "hg": 4,
+                    "hold": "short"
+                  },
+                  {
+                    "c": "i"
+                  }
+                ]
+              },
+              {
+                "deva": "की",
+                "iast": "kī",
+                "t": "syl",
+                "tam": "கீ",
+                "tel": "కీ",
+                "units": [
+                  {
+                    "c": "k"
+                  },
+                  {
+                    "c": "ī",
+                    "svara": "svarita"
+                  }
+                ]
+              },
+              {
+                "deva": "र्ष",
+                "iast": "rṣa",
+                "t": "syl",
+                "tam": "ர்ஷ",
+                "tel": "ర్ష",
+                "units": [
+                  {
+                    "c": "r"
+                  },
+                  {
+                    "c": "ṣ",
+                    "hg": 5,
+                    "hold": "long",
+                    "sbhakti": true
+                  },
+                  {
+                    "c": "a"
+                  }
+                ]
+              },
+              {
+                "deva": "ति",
+                "iast": "ti",
+                "t": "syl",
+                "tam": "தி",
+                "tel": "తి",
+                "units": [
+                  {
+                    "c": "t"
+                  },
+                  {
+                    "c": "i"
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "s": "।",
+                "t": "danda"
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "t": "br"
+              },
+              {
+                "deva": "अ",
+                "iast": "a",
+                "t": "syl",
+                "tam": "அ",
+                "tel": "అ",
+                "units": [
+                  {
+                    "c": "a"
+                  }
+                ]
+              },
+              {
+                "deva": "भा",
+                "iast": "bhā",
+                "t": "syl",
+                "tam": "பா",
+                "tel": "భా",
+                "units": [
+                  {
+                    "c": "bh"
+                  },
+                  {
+                    "c": "ā",
+                    "svara": "anudatta"
+                  }
+                ]
+              },
+              {
+                "deva": "ग",
+                "iast": "ga",
+                "t": "syl",
+                "tam": "க",
+                "tel": "గ",
+                "units": [
+                  {
+                    "c": "g"
+                  },
+                  {
+                    "c": "a"
+                  }
+                ]
+              },
+              {
+                "deva": "म-",
+                "iast": "ma-",
+                "t": "syl",
+                "tam": "ம-",
+                "tel": "మ-",
+                "units": [
+                  {
+                    "c": "m"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "svarita"
+                  },
+                  {
+                    "c": "-"
+                  }
+                ]
+              },
+              {
+                "deva": "ग्ने",
+                "iast": "gne",
+                "t": "syl",
+                "tam": "க்நே",
+                "tel": "గ్నే",
+                "units": [
+                  {
+                    "c": "g",
+                    "hg": 1,
+                    "hold": "short"
+                  },
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "e",
+                    "svara": "anudatta"
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "deva": "तङ्",
+                "iast": "taṅ",
+                "t": "syl",
+                "tam": "தங்",
+                "tel": "తఙ్",
+                "units": [
+                  {
+                    "c": "t"
+                  },
+                  {
+                    "c": "a"
+                  },
+                  {
+                    "c": "ṅ",
+                    "change": true
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "deva": "कु",
+                "iast": "ku",
+                "t": "syl",
+                "tam": "கு",
+                "tel": "కు",
+                "units": [
+                  {
+                    "c": "k",
+                    "hg": 2,
+                    "hold": "short"
+                  },
+                  {
+                    "c": "u",
+                    "svara": "svarita"
+                  }
+                ]
+              },
+              {
+                "deva": "रु",
+                "iast": "ru",
+                "t": "syl",
+                "tam": "ரு",
+                "tel": "రు",
+                "units": [
+                  {
+                    "c": "r"
+                  },
+                  {
+                    "c": "u",
+                    "svara": "anudatta"
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "deva": "मा",
+                "iast": "mā",
+                "t": "syl",
+                "tam": "மா",
+                "tel": "మా",
+                "units": [
+                  {
+                    "c": "m"
+                  },
+                  {
+                    "c": "ā"
+                  }
+                ]
+              },
+              {
+                "deva": "म-",
+                "iast": "ma-",
+                "t": "syl",
+                "tam": "ம-",
+                "tel": "మ-",
+                "units": [
+                  {
+                    "c": "m"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "svarita"
+                  },
+                  {
+                    "c": "-"
+                  }
+                ]
+              },
+              {
+                "deva": "ग्ने",
+                "iast": "gne",
+                "t": "syl",
+                "tam": "க்நே",
+                "tel": "గ్నే",
+                "units": [
+                  {
+                    "c": "g",
+                    "hg": 3,
+                    "hold": "short"
+                  },
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "e"
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "deva": "भा",
+                "iast": "bhā",
+                "t": "syl",
+                "tam": "பா",
+                "tel": "భా",
+                "units": [
+                  {
+                    "c": "bh"
+                  },
+                  {
+                    "c": "ā",
+                    "svara": "anudatta"
+                  }
+                ]
+              },
+              {
+                "deva": "गि",
+                "iast": "gi",
+                "t": "syl",
+                "tam": "கி",
+                "tel": "గి",
+                "units": [
+                  {
+                    "c": "g"
+                  },
+                  {
+                    "c": "i"
+                  }
+                ]
+              },
+              {
+                "deva": "नङ्",
+                "iast": "naṅ",
+                "t": "syl",
+                "tam": "நங்",
+                "tel": "నఙ్",
+                "units": [
+                  {
+                    "c": "n"
+                  },
+                  {
+                    "c": "a",
+                    "svara": "svarita"
+                  },
+                  {
+                    "c": "ṅ",
+                    "change": true
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "deva": "कु",
+                "iast": "ku",
+                "t": "syl",
+                "tam": "கு",
+                "tel": "కు",
+                "units": [
+                  {
+                    "c": "k",
+                    "hg": 4,
+                    "hold": "short"
+                  },
+                  {
+                    "c": "u"
+                  }
+                ]
+              },
+              {
+                "deva": "रु",
+                "iast": "ru",
+                "t": "syl",
+                "tam": "ரு",
+                "tel": "రు",
+                "units": [
+                  {
+                    "c": "r"
+                  },
+                  {
+                    "c": "u"
+                  }
+                ]
+              },
+              {
+                "t": "sp"
+              },
+              {
+                "s": "॥",
+                "t": "danda"
+              },
+              {
+                "s": "8",
+                "t": "num"
+              },
+              {
+                "s": "॥",
+                "t": "danda"
+              }
+            ],
+            "translation": {
+              "en": "O Agni, whoever wishes to deprive me, the fortunate one, make him dispossessed, o Agni! Make me fortunate, o Agni!"
+            },
+            "words": [
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "यद्",
+                      "tam": "யத்",
+                      "tel": "యద్"
+                    },
+                    "gender": "m",
+                    "lemma": "yad",
+                    "meaning": "who (rel.)",
+                    "note": "'yo'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/yad",
+                    "type": "sarvanāma",
+                    "vacana": "eka",
+                    "vibhakti": 1
+                  }
+                ],
+                "surface": "yo"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "अस्मद्",
+                      "tam": "அஸ்மத்",
+                      "tel": "అస్మద్"
+                    },
+                    "gender": "-",
+                    "lemma": "asmad",
+                    "meaning": "me",
+                    "note": "'mā'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/asmad",
+                    "type": "sarvanāma",
+                    "vacana": "eka",
+                    "vibhakti": 2
+                  },
+                  {
+                    "forms": {
+                      "deva": "अग्नि",
+                      "tam": "அக்நி",
+                      "tel": "అగ్ని"
+                    },
+                    "gender": "m",
+                    "lemma": "agni",
+                    "meaning": "O Agni",
+                    "note": "'agne'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/agni",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 8
+                  }
+                ],
+                "surface": "mā'gne"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "भागिन्",
+                      "tam": "பாகிந்",
+                      "tel": "భాగిన్"
+                    },
+                    "gender": "m",
+                    "lemma": "bhāgin",
+                    "meaning": "having a share, fortunate",
+                    "note": "'bhāginam'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/bhāgin",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
+                  }
+                ],
+                "surface": "bhāginam"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "अस्",
+                      "tam": "அஸ்",
+                      "tel": "అస్"
+                    },
+                    "lemma": "as",
+                    "meaning": "being",
+                    "note": "'santam' pres. part.",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/as",
+                    "type": "tinanta"
+                  },
+                  {
+                    "forms": {
+                      "deva": "अथ",
+                      "tam": "அத",
+                      "tel": "అథ"
+                    },
+                    "lemma": "atha",
+                    "meaning": "then, thereupon",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/atha",
+                    "type": "avyaya"
+                  },
+                  {
+                    "forms": {
+                      "deva": "अभाग",
+                      "tam": "அபாக",
+                      "tel": "అభాగ"
+                    },
+                    "gender": "m",
+                    "lemma": "abhāga",
+                    "meaning": "shareless, without a portion",
+                    "note": "'abhāgam'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/abhāga",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
+                  }
+                ],
+                "surface": "santama-thā-bhāgañ"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "कृ",
+                      "tam": "க்ரு'",
+                      "tel": "కృ"
+                    },
+                    "lemma": "kṛ",
+                    "meaning": "wishes to make",
+                    "note": "'cikīrṣati' desiderative 3rd sg.",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
+                    "type": "tinanta"
+                  }
+                ],
+                "surface": "cikīrṣati"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "अभाग",
+                      "tam": "அபாக",
+                      "tel": "అభాగ"
+                    },
+                    "gender": "m",
+                    "lemma": "abhāga",
+                    "meaning": "shareless",
+                    "note": "'abhāgam'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/abhāga",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
+                  },
+                  {
+                    "forms": {
+                      "deva": "अग्नि",
+                      "tam": "அக்நி",
+                      "tel": "అగ్ని"
+                    },
+                    "gender": "m",
+                    "lemma": "agni",
+                    "meaning": "O Agni",
+                    "note": "'agne'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/agni",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 8
+                  }
+                ],
+                "surface": "abhāgama-gne"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "तद्",
+                      "tam": "தத்",
+                      "tel": "తద్"
+                    },
+                    "gender": "-",
+                    "lemma": "tad",
+                    "meaning": "him",
+                    "note": "'tam'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/tad",
+                    "type": "sarvanāma",
+                    "vacana": "eka",
+                    "vibhakti": 2
+                  }
+                ],
+                "surface": "taṅ"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "कृ",
+                      "tam": "க்ரு'",
+                      "tel": "కృ"
+                    },
+                    "lemma": "kṛ",
+                    "meaning": "make!",
+                    "note": "'kuru' imperative 2nd sg.",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
+                    "type": "tinanta"
+                  }
+                ],
+                "surface": "kuru"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "अस्मद्",
+                      "tam": "அஸ்மத்",
+                      "tel": "అస్మద్"
+                    },
+                    "gender": "-",
+                    "lemma": "asmad",
+                    "meaning": "me",
+                    "note": "'mām'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/asmad",
+                    "type": "sarvanāma",
+                    "vacana": "eka",
+                    "vibhakti": 2
+                  },
+                  {
+                    "forms": {
+                      "deva": "अग्नि",
+                      "tam": "அக்நி",
+                      "tel": "అగ్ని"
+                    },
+                    "gender": "m",
+                    "lemma": "agni",
+                    "meaning": "O Agni",
+                    "note": "'agne'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/agni",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 8
+                  }
+                ],
+                "surface": "māma-gne"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "भागिन्",
+                      "tam": "பாகிந்",
+                      "tel": "భాగిన్"
+                    },
+                    "gender": "m",
+                    "lemma": "bhāgin",
+                    "meaning": "a sharer, fortunate",
+                    "note": "'bhāginam'",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/bhāgin",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
+                  }
+                ],
+                "surface": "bhāginaṅ"
+              },
+              {
+                "entries": [
+                  {
+                    "forms": {
+                      "deva": "कृ",
+                      "tam": "க்ரு'",
+                      "tel": "కృ"
+                    },
+                    "lemma": "kṛ",
+                    "meaning": "make!",
+                    "note": "'kuru' imperative 2nd sg.",
+                    "ref": "https://ambuda.org/tools/dictionaries/mw/kṛ",
+                    "type": "tinanta"
+                  }
+                ],
+                "surface": "kuru"
               }
             ]
           }
         ]
       }
     ],
-    "recording": {
-      "byVerse": {
-        "v-1": {
-          "file": "bhagya-suktam-1.mp3",
-          "duration": 21.736,
-          "label": "Verse 1",
-          "lines": [
-            {
-              "start": 0,
-              "end": 6.952
-            },
-            {
-              "start": 6.952,
-              "end": 13.08
-            },
-            {
-              "start": 13.08,
-              "end": 17.064
-            },
-            {
-              "start": 17.064,
-              "end": 21.736
-            }
-          ]
-        },
-        "v-2": {
-          "file": "bhagya-suktam-2.mp3",
-          "duration": 17.432,
-          "label": "Verse 2",
-          "lines": [
-            {
-              "start": 0,
-              "end": 3.528
-            },
-            {
-              "start": 3.528,
-              "end": 8.184
-            },
-            {
-              "start": 8.184,
-              "end": 12.368
-            },
-            {
-              "start": 12.368,
-              "end": 17.432
-            }
-          ]
-        },
-        "v-3": {
-          "file": "bhagya-suktam-3.mp3",
-          "duration": 15.504,
-          "label": "Verse 3",
-          "lines": [
-            {
-              "start": 0,
-              "end": 3.472
-            },
-            {
-              "start": 3.472,
-              "end": 7.864
-            },
-            {
-              "start": 7.864,
-              "end": 11.4
-            },
-            {
-              "start": 11.4,
-              "end": 15.504
-            }
-          ]
-        },
-        "v-4": {
-          "file": "bhagya-suktam-4.mp3",
-          "duration": 17.664,
-          "label": "Verse 4",
-          "lines": [
-            {
-              "start": 0,
-              "end": 3.648
-            },
-            {
-              "start": 3.648,
-              "end": 9.256
-            },
-            {
-              "start": 9.256,
-              "end": 12.704
-            },
-            {
-              "start": 12.704,
-              "end": 17.664
-            }
-          ]
-        },
-        "v-5": {
-          "file": "bhagya-suktam-5.mp3",
-          "duration": 15.808,
-          "label": "Verse 5",
-          "lines": [
-            {
-              "start": 0,
-              "end": 4.056
-            },
-            {
-              "start": 4.056,
-              "end": 8.16
-            },
-            {
-              "start": 8.16,
-              "end": 11.632
-            },
-            {
-              "start": 11.632,
-              "end": 15.808
-            }
-          ]
-        },
-        "v-6": {
-          "file": "bhagya-suktam-6.mp3",
-          "duration": 16.152,
-          "label": "Verse 6",
-          "lines": [
-            {
-              "start": 0,
-              "end": 3.136
-            },
-            {
-              "start": 3.136,
-              "end": 7.696
-            },
-            {
-              "start": 7.696,
-              "end": 11.256
-            },
-            {
-              "start": 11.256,
-              "end": 16.152
-            }
-          ]
-        },
-        "v-7": {
-          "file": "bhagya-suktam-7.mp3",
-          "duration": 17.728,
-          "label": "Verse 7",
-          "lines": [
-            {
-              "start": 0,
-              "end": 4.16
-            },
-            {
-              "start": 4.16,
-              "end": 9.304
-            },
-            {
-              "start": 9.304,
-              "end": 12.976
-            },
-            {
-              "start": 12.976,
-              "end": 17.728
-            }
-          ]
-        },
-        "v-8": {
-          "file": "bhagya-suktam-8.mp3",
-          "duration": 14.2,
-          "label": "Verse 8",
-          "lines": [
-            {
-              "start": 0,
-              "end": 7.784
-            },
-            {
-              "start": 7.784,
-              "end": 14.2
-            }
-          ]
-        },
-        "v-9": {
-          "file": "bhagya-suktam-9.mp3",
-          "duration": 4.093,
-          "label": "Verse 9",
-          "lines": [
-            {
-              "start": 0,
-              "end": 4.093
-            }
-          ]
-        }
-      }
+    "source": "kṛṣṇayajurveda · Taittirīya Brāhmaṇa 2.8.9",
+    "subtitle": "Hymn for fortune and the awakening of dawn",
+    "title": "bhāgya sūktam",
+    "titleForms": {
+      "devanagari": "भाग्य सूक्तम्",
+      "iast": "bhāgya sūktam",
+      "tamil": "பாக்ய ஸூக்தம்",
+      "telugu": "భాగ్య సూక్తమ్"
     },
-    "audioBase": "/tests/bhagya-suktam/audio/"
+    "version": 2
   },
   "expect": {
     "attested": true,

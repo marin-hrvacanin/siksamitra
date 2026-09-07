@@ -1,6 +1,27 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist", "types": ["node"] },
-  "include": ["src/**/*"],
-  "references": [{ "path": "../format" }, { "path": "../engine" }, { "path": "../interop" }]
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "references": [
+    {
+      "path": "../format"
+    },
+    {
+      "path": "../engine"
+    },
+    {
+      "path": "../interop"
+    },
+    {
+      "path": "../edit"
+    }
+  ]
 }

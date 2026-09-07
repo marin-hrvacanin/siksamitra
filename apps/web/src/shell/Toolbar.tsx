@@ -19,6 +19,10 @@ import { Ribbon, type RibbonGroup } from './Ribbon.js';
 import { ViewSwitcher } from './ViewSwitcher.js';
 import { AppearanceMenu } from './AppearanceMenu.js';
 import type { Appearance } from '../state/useAppearance.js';
+import {
+  AutoButtons, EditToggle, HistoryButtons, MarkButtons,
+} from '../editor/EditGroup.js';
+import type { Session } from '../editor/useSession.js';
 
 const SCRIPTS: readonly { k: ChantScriptKey; label: string; title?: string }[] = [
   { k: 'iast', label: 'IAST' },
@@ -54,13 +58,14 @@ function CommandButtons(
 }
 
 export function Toolbar(
-  { ctx, documents, slug, onSlug, onSwitchView, look }: {
+  { ctx, documents, slug, onSlug, onSwitchView, look, session }: {
     ctx: CommandContext;
     documents: readonly { slug: string; title: string }[];
     slug: string;
     onSlug: (s: string) => void;
     onSwitchView: (k: ViewKind) => void;
     look: Appearance;
+    session: Session;
   },
 ): ReactNode {
   /*
@@ -69,6 +74,39 @@ export function Toolbar(
    * is worse than losing the zoom buttons, which have keyboard equivalents.
    */
   const groups: RibbonGroup[] = [
+    /*
+     * Editing leads. Whether a keystroke will change the document is the most
+     * consequential thing on this bar, so it is the last thing to collapse —
+     * and the marking buttons sit beside it, because that is the work.
+     */
+    {
+      id: 'mode',
+      label: 'Mode',
+      priority: 0,
+      content: <EditToggle session={session} />,
+    },
+    ...(session.editing
+      ? [
+        {
+          id: 'holdings',
+          label: 'Holding',
+          priority: 1,
+          content: <MarkButtons session={session} />,
+        },
+        {
+          id: 'auto',
+          label: 'Rules',
+          priority: 3,
+          content: <AutoButtons session={session} />,
+        },
+        {
+          id: 'history',
+          label: 'History',
+          priority: 2,
+          content: <HistoryButtons session={session} />,
+        },
+      ]
+      : []),
     {
       id: 'view',
       label: 'View',

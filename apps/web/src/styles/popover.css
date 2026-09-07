@@ -24,7 +24,7 @@
      has to be separable from what is behind it. Nothing else here is raised. */
 }
 
-.ap__grp { min-width: 11rem; }
+.ap__grp { min-width: var(--menu-min); }
 .ap__lbl {
   margin: 0 0 var(--space-3);
   font-size: var(--text-ui-sm);

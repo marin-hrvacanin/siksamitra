@@ -16,12 +16,14 @@ import { flowColumnWidthPx, type PageGeometry } from '@siksamitra/layout';
 import { DocumentBlocks } from './DocumentBlocks.js';
 
 export function FlowView(
-  { doc, script, showMarks, page, zoom }: {
+  { doc, script, showMarks, page, zoom, addressable = false }: {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
     page: PageGeometry;
     zoom: number;
+    /** The editor is drawing: letters carry `data-u` so a click finds them. */
+    addressable?: boolean;
   },
 ): ReactNode {
   return (
@@ -30,7 +32,12 @@ export function FlowView(
         className="flow__column chant-marks"
         style={{ width: `${flowColumnWidthPx(page, zoom)}px`, fontSize: `${zoom}rem` }}
       >
-        <DocumentBlocks doc={doc} script={script} showMarks={showMarks} />
+        <DocumentBlocks
+          doc={doc}
+          script={script}
+          showMarks={showMarks}
+          addressable={addressable}
+        />
       </div>
     </div>
   );

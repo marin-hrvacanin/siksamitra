@@ -15,5 +15,6 @@
 @import './styles/ribbon.css';
 @import './styles/canvas.css';
 @import './styles/popover.css';
+@import './styles/editor.css';
 @import './styles/status.css';
 @import './styles/diagnostics.css';

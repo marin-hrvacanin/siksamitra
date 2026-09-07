@@ -27,7 +27,7 @@ import { useMeasuredBlocks } from './useMeasure.js';
 const isHeading = (id: string): boolean => id.startsWith('h:');
 
 export function PagedView(
-  { doc, script, showMarks, page, zoom, contentKey }: {
+  { doc, script, showMarks, page, zoom, contentKey, addressable = false }: {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
@@ -35,6 +35,8 @@ export function PagedView(
     zoom: number;
     /** Changes when the document changes, to trigger re-measurement. */
     contentKey: string;
+    /** The editor is drawing: letters carry `data-u` so a click finds them. */
+    addressable?: boolean;
   },
 ): ReactNode {
   const probe = useRef<HTMLDivElement>(null);
@@ -91,7 +93,13 @@ export function PagedView(
               data-page={p.index + 1}
             >
               <div className="page__content chant-marks" style={{ fontSize: `${zoom}rem` }}>
-                <DocumentBlocks doc={doc} script={script} showMarks={showMarks} only={ids} />
+                <DocumentBlocks
+                  doc={doc}
+                  script={script}
+                  showMarks={showMarks}
+                  only={ids}
+                  addressable={addressable}
+                />
               </div>
               <footer className="page__folio" aria-hidden>
                 {p.index + 1} / {map.pages.length}

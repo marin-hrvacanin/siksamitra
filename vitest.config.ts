@@ -20,6 +20,7 @@ const alias = {
   '@siksamitra/interop': pkg('interop'),
   '@siksamitra/storage': pkg('storage'),
   '@siksamitra/layout': pkg('layout'),
+  '@siksamitra/edit': pkg('edit'),
   '@siksamitra/tokens': pkg('tokens', 'generated/tokens.ts'),
   '@siksamitra/render/theme': pkg('render', 'src/theme/marks.ts'),
   '@siksamitra/render': pkg('render'),
@@ -27,4 +28,10 @@ const alias = {
 
 export default defineConfig({
   resolve: { alias },
+  /*
+   * The automatic JSX runtime, so a component test can write JSX without
+   * importing React. Without it the classic runtime is used and every test
+   * fails with "React is not defined" — which says nothing about the test.
+   */
+  esbuild: { jsx: 'automatic' },
 });

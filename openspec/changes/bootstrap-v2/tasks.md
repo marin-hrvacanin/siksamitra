@@ -68,14 +68,35 @@
 
 ## 8. The editor
 
-- [ ] 8.1 Port the marked-line surface and the source map
-- [ ] 8.2 Replace modal per-verse editing with a continuous caret bounded by the section
-- [ ] 8.3 Selection across verses, select-all scoped to the section, multi-verse paste
-- [ ] 8.4 Command log with inverses; one gesture is one undo step
-- [ ] 8.5 Attested-verse protection with explicit confirmation
-- [ ] 8.6 Rebuild the v1 feature set as tool chrome: ribbon, dialogs, keyboard, autorun, autosvara
+- [x] 8.1 Port the marked-line surface and the source map
+      — `packages/edit`, and `data-u` written by the one renderer
+- [x] 8.2 Replace modal per-verse editing with a continuous caret bounded by
+      the section — `caret.ts`; a click lands on the letter under the pointer,
+      measured in a browser by `tools/edit-smoke.mjs`
+- [x] 8.3 Selection across verses, select-all scoped to the section,
+      multi-verse paste — `range.ts`, and a verse that survives keeps its id
+- [x] 8.4 One gesture is one undo step, and undo is byte-exact — a REVERSE
+      PATCH rather than an analytic inverse, because undo is the feature a user
+      trusts most and inspects least (`history.ts`)
+- [x] 8.5 Attested-verse protection — refused where the edit is attempted, by
+      name, before anything changes
+- [x] 8.5a Give the shipped corpus a source layer, so there is something to
+      edit at all: 466 of 573 verses, each proved by exact re-derivation
+      (`sm attach-src`). This was not on the list and nothing worked without it.
+- [x] 8.5b Apply `ChantOverride` in the pipeline. It had been in the format
+      since v4 and was applied by nothing, so rule zero was a docstring.
+- [x] 8.5c Apply `ChantVerse.svaraRegister` and the accented witness.
+      `applyAttestedSvara` computed the accents and assigned none, so an
+      attested verse could not be regenerated at all.
+- [ ] 8.6 Rebuild the v1 feature set as tool chrome: dialogs, autorun,
+      autosvara. The ribbon, the keyboard and the holding buttons are done —
+      one table, `keymap.ts`, with the buttons rendered from it.
 - [ ] 8.7 Port the audio cutter
-- [ ] 8.8 In-canvas caret editing for the Indic scripts (reverse transliteration per keystroke, caret mapped through shaping)
+- [ ] 8.8 In-canvas caret editing for the Indic scripts (reverse
+      transliteration per keystroke, caret mapped through shaping). The
+      addressing is in place — an akṣara carries `data-u` and `data-un`,
+      because you cannot click half a conjunct — but typing in an Indic script
+      still goes through IAST.
 
 ## 9. The applications
 

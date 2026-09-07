@@ -8,27 +8,442 @@
     "verse": "u-avahana-1"
   },
   "document": {
-    "format": "vedaunion.chant",
-    "version": 3,
-    "id": "puja-vidhi",
-    "title": "pūjā vidhi",
-    "subtitle": "The sixteen-step pūjā — ṣoḍaśopacāra",
-    "source": "Veda Union pūjā class · ṣoḍaśopacāra pūjā",
-    "primaryScript": "iast",
-    "scripts": [
-      "iast",
-      "devanagari",
-      "telugu",
-      "tamil"
+    "figures": [
+      {
+        "alt": "A lit brass oil lamp on a tall stand, its wick burning, with unbroken rice grains and marigold flowers lying beside it.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-dipa",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-dipa.png?v=2be24db2",
+        "width": 512
+      },
+      {
+        "alt": "A seated worshipper with both hands on the crown of his head: thumb, middle and ring fingers resting on the head, the index fingers and the little fingers raised and meeting tip to tip, the arms forming a roof over the head.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-guru",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-guru-dhyanam.png?v=394e9316",
+        "width": 512
+      },
+      {
+        "alt": "Two palms pressed together, fingers upward, in añjali.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-anjali",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-anjali.png?v=55408c8e",
+        "width": 512
+      },
+      {
+        "alt": "Drops of water falling onto a woven grass mat, with the offering spoon lying across one corner.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-asana",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-asana.png?v=478693b3",
+        "width": 512
+      },
+      {
+        "alt": "A raised right hand gripping the handle of a brass bell, ringing it.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-ghanta",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-ghanta.png?v=2486027f",
+        "width": 512
+      },
+      {
+        "alt": "A right palm laid over the mouth of the round-bellied brass kalaśa, with the offering spoon lying beside it.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-kalasha",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-kalasha.png?v=cca8ea28",
+        "width": 512
+      },
+      {
+        "alt": "A right hand holding a single marigold out to a cast-brass mūrti, with unbroken rice lying on the pedestal at its feet.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-avahana",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-avahana.png?v=e3a23d46",
+        "width": 512
+      },
+      {
+        "alt": "A right hand tipping water from a naga-finialled copper spoon into a shallow copper dish, before a cast-brass murti.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "end",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-arghya",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-arghya.png?v=5d52175c",
+        "width": 512
+      },
+      {
+        "alt": "Five small brass cups in a row, holding milk, curd, ghee, honey and sugar.",
+        "captionAt": "none",
+        "crop": "auto",
+        "flow": "block",
+        "frame": "none",
+        "height": 156,
+        "id": "fig-panchamrita",
+        "rounded": true,
+        "size": "medium",
+        "src": "/figures/puja-vidhi/step-panchamrita.png?v=981e8438",
+        "width": 512
+      },
+      {
+        "alt": "A folded crimson silk cloth with a gold border, and a coiled sacred thread lying beside it.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-vastra",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-vastra.png?v=c18eb572",
+        "width": 512
+      },
+      {
+        "alt": "A brass plate holding two bangles, a beaded necklace with a red pendant, and two small rings.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-abharana",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-abharana.png?v=3fc33d8a",
+        "width": 512
+      },
+      {
+        "alt": "The brow of a cast-brass mūrti, marked with a round disc of pale sandal paste and, centred within it, a smaller round dot of vermilion kuṅkuma.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "end",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-gandha",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-gandha.png?v=5bb69d0a",
+        "width": 512
+      },
+      {
+        "alt": "A brass plate holding marigold and red flowers beside a heap of turmeric-yellow unbroken rice.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-pushpa",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-pushpa.png?v=b01db862",
+        "width": 512
+      },
+      {
+        "alt": "Both hands raised: the right holding three lit incense sticks trailing smoke, the left ringing the bell.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-dhupa",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-dhupa.png?v=bdca1732",
+        "width": 512
+      },
+      {
+        "alt": "Both hands raised: the right holding a lit brass oil lamp trailing smoke, the left ringing the bell.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-dipam",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-dipam.png?v=b3141ea4",
+        "width": 512
+      },
+      {
+        "alt": "A brass plate of freshly cooked rice with a small bowl of ghee and two bananas, drops of water falling onto it.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "end",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-naivedya",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-naivedya.png?v=8ba3e11a",
+        "width": 512
+      },
+      {
+        "alt": "A standing worshipper seen from the side, showing a lit camphor lamp in his raised right hand to a brass mūrti facing him, the bell held low in his left.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-karpura",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-karpura.png?v=a85864f6",
+        "width": 512
+      },
+      {
+        "alt": "A brass plate holding three betel leaves and three areca nuts.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-tambula",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-tambula.png?v=05f8ea90",
+        "width": 512
+      },
+      {
+        "alt": "Two cupped hands holding a heap of marigold and rose-coloured flowers.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-mantrapushpa",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-mantrapushpa.png?v=e289570a",
+        "width": 512
+      },
+      {
+        "alt": "A seated worshipper in profile: the left hand holds the spoon over the plate, the right is raised to the lips to sip from the root of the thumb.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "end",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-acamana",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-acamana.png?v=eb88be04",
+        "width": 512
+      },
+      {
+        "alt": "A worshipper lying face down at full length on the ground, seen from the side, arms stretched out beyond his head with the palms pressed together, forehead, chest, knees and feet all touching.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-namaskara",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-namaskara.png?v=13b57603",
+        "width": 512
+      },
+      {
+        "alt": "A woman kneeling in the five-limb salutation, seen from the side: knees, both hands and forehead on the ground, the chest held clear of it.",
+        "captionAt": "none",
+        "crop": "square",
+        "flow": "start",
+        "frame": "none",
+        "height": 512,
+        "id": "fig-pancanga",
+        "rounded": true,
+        "size": "small",
+        "src": "/figures/puja-vidhi/step-pancanga.png?v=86c96d09",
+        "width": 512
+      }
     ],
-    "titleForms": {
-      "iast": "pūjā vidhi",
-      "devanagari": "पूजा विधि",
-      "telugu": "పూజా విధి",
-      "tamil": "பூஜா விதி"
-    },
-    "lineBreak": "source",
-    "variants": "/chants/variants/puja-vidhi.index.json",
+    "format": "vedaunion.chant",
+    "groups": [
+      {
+        "at": "upa-07-snanam",
+        "default": false,
+        "id": "abhisheka",
+        "kind": "expansion",
+        "label": {
+          "en": "Abhiṣekam — the bath with the five nectars"
+        },
+        "members": [
+          "upa-07a-ksira",
+          "upa-07b-dadhi",
+          "upa-07c-ajya",
+          "upa-07d-madhu",
+          "upa-07e-sarkara",
+          "upa-07f-phalodaka",
+          "upa-07g-suddhodaka"
+        ],
+        "mode": "after",
+        "note": {
+          "kind": "option",
+          "text": {
+            "en": "An optional expansion of the bath: milk, curd, ghee, honey and sugar, then fruit-water, then pure water. Pour in a thin, continuous stream rather than a splash."
+          }
+        },
+        "source": "Taittirīya Saṁhitā; Ṛgveda 9.85.6 for the sugar"
+      },
+      {
+        "default": true,
+        "fixed": true,
+        "id": "kshama-general",
+        "kind": "optional",
+        "label": {
+          "en": "Kṣamā prārthanā"
+        },
+        "members": [
+          "close-kshama"
+        ],
+        "onlyDeity": [
+          "ganesha",
+          "subrahmanya",
+          "surya",
+          "dattatreya"
+        ],
+        "source": "the pūjā material"
+      },
+      {
+        "default": true,
+        "fixed": true,
+        "id": "kshama-narayana",
+        "kind": "optional",
+        "label": {
+          "en": "Kṣamā prārthanā · Nārāyaṇa"
+        },
+        "members": [
+          "close-kshama-narayana"
+        ],
+        "onlyDeity": [
+          "vishnu",
+          "krishna",
+          "rama",
+          "hanuman"
+        ],
+        "source": "Veda Union · Youth Wing sādhanā"
+      },
+      {
+        "default": true,
+        "fixed": true,
+        "id": "kshama-devi",
+        "kind": "optional",
+        "label": {
+          "en": "Kṣamā prārthanā · Devī"
+        },
+        "members": [
+          "close-kshama-devi"
+        ],
+        "onlyDeity": [
+          "devi",
+          "durga",
+          "lakshmi",
+          "sarasvati",
+          "gayatri"
+        ],
+        "source": "Veda Union · sādhana"
+      },
+      {
+        "default": true,
+        "fixed": true,
+        "id": "kshama-shiva",
+        "kind": "optional",
+        "label": {
+          "en": "Kṣamā prārthanā · Śiva"
+        },
+        "members": [
+          "close-kshama-shiva"
+        ],
+        "onlyDeity": [
+          "shiva",
+          "parameshvara"
+        ],
+        "source": "Veda Union · Śrī Rudram"
+      },
+      {
+        "at": "upa-16-vandanam",
+        "default": true,
+        "fixed": true,
+        "id": "stotram",
+        "kind": "expansion",
+        "label": {
+          "en": "Saṅkaṭanāśana Gaṇeśa Stotram"
+        },
+        "members": [
+          "stotram"
+        ],
+        "mode": "after",
+        "onlyDeity": [
+          "ganesha"
+        ],
+        "source": "Śrī Nārada Purāṇa"
+      },
+      {
+        "at": "upa-10-gandham",
+        "default": true,
+        "fixed": true,
+        "id": "vibhuti",
+        "kind": "expansion",
+        "label": {
+          "en": "Vibhūti — the sacred ash"
+        },
+        "members": [
+          "upa-10a-vibhuti"
+        ],
+        "mode": "after",
+        "note": {
+          "kind": "option",
+          "text": {
+            "en": "Dry ash, applied after the sandal paste."
+          }
+        },
+        "onlyDeity": [
+          "shiva",
+          "parameshvara"
+        ],
+        "source": "Śaiva / smārta practice"
+      }
+    ],
+    "id": "puja-vidhi",
     "instructions": [
       {
         "kind": "option",
@@ -55,475 +470,251 @@
         }
       }
     ],
-    "figures": [
+    "lineBreak": "source",
+    "overrides": [
       {
-        "id": "fig-dipa",
-        "src": "/figures/puja-vidhi/step-dipa.png?v=2be24db2",
-        "alt": "A lit brass oil lamp on a tall stand, its wick burning, with unbroken rice grains and marigold flowers lying beside it.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 18,
+          "line": 0,
+          "verse": "p-guru-akhanda"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-guru",
-        "src": "/figures/puja-vidhi/step-guru-dhyanam.png?v=394e9316",
-        "alt": "A seated worshipper with both hands on the crown of his head: thumb, middle and ring fingers resting on the head, the index fingers and the little fingers raised and meeting tip to tip, the arms forming a roof over the head.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 26,
+          "line": 0,
+          "verse": "p-guru-akhanda"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-anjali",
-        "src": "/figures/puja-vidhi/step-anjali.png?v=55408c8e",
-        "alt": "Two palms pressed together, fingers upward, in añjali.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 16,
+          "line": 1,
+          "verse": "p-guru-akhanda"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-asana",
-        "src": "/figures/puja-vidhi/step-asana.png?v=478693b3",
-        "alt": "Drops of water falling onto a woven grass mat, with the offering spoon lying across one corner.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 18,
+          "line": 0,
+          "verse": "p-vighneshvara"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-ghanta",
-        "src": "/figures/puja-vidhi/step-ghanta.png?v=2486027f",
-        "alt": "A raised right hand gripping the handle of a brass bell, ringing it.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 33,
+          "line": 0,
+          "verse": "p-asana"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-kalasha",
-        "src": "/figures/puja-vidhi/step-kalasha.png?v=cca8ea28",
-        "alt": "A right palm laid over the mouth of the round-bellied brass kalaśa, with the offering spoon lying beside it.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 9,
+          "line": 0,
+          "verse": "v-tryambakam"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-avahana",
-        "src": "/figures/puja-vidhi/step-avahana.png?v=e3a23d46",
-        "alt": "A right hand holding a single marigold out to a cast-brass mūrti, with unbroken rice lying on the pedestal at its feet.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 8,
+          "line": 0,
+          "verse": "s-2"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-arghya",
-        "src": "/figures/puja-vidhi/step-arghya.png?v=5d52175c",
-        "alt": "A right hand tipping water from a naga-finialled copper spoon into a shallow copper dish, before a cast-brass murti.",
-        "flow": "end",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 29,
+          "line": 0,
+          "verse": "s-3"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-panchamrita",
-        "src": "/figures/puja-vidhi/step-panchamrita.png?v=981e8438",
-        "alt": "Five small brass cups in a row, holding milk, curd, ghee, honey and sugar.",
-        "flow": "block",
-        "size": "medium",
-        "captionAt": "none",
-        "crop": "auto",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 156
+        "at": {
+          "letter": 7,
+          "line": 1,
+          "verse": "s-3"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-vastra",
-        "src": "/figures/puja-vidhi/step-vastra.png?v=c18eb572",
-        "alt": "A folded crimson silk cloth with a gold border, and a coiled sacred thread lying beside it.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 30,
+          "line": 0,
+          "verse": "s-5"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-abharana",
-        "src": "/figures/puja-vidhi/step-abharana.png?v=3fc33d8a",
-        "alt": "A brass plate holding two bangles, a beaded necklace with a red pendant, and two small rings.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 42,
+          "line": 0,
+          "verse": "s-7"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-gandha",
-        "src": "/figures/puja-vidhi/step-gandha.png?v=5bb69d0a",
-        "alt": "The brow of a cast-brass mūrti, marked with a round disc of pale sandal paste and, centred within it, a smaller round dot of vermilion kuṅkuma.",
-        "flow": "end",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 2,
+          "line": 1,
+          "verse": "s-7"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-pushpa",
-        "src": "/figures/puja-vidhi/step-pushpa.png?v=b01db862",
-        "alt": "A brass plate holding marigold and red flowers beside a heap of turmeric-yellow unbroken rice.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 18,
+          "line": 1,
+          "verse": "ck-devi-5"
+        },
+        "ch": "ṁ",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "change": null,
+          "sup": null
+        },
+        "why": "source-witness"
       },
       {
-        "id": "fig-dhupa",
-        "src": "/figures/puja-vidhi/step-dhupa.png?v=bdca1732",
-        "alt": "Both hands raised: the right holding three lit incense sticks trailing smoke, the left ringing the bell.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
-      },
-      {
-        "id": "fig-dipam",
-        "src": "/figures/puja-vidhi/step-dipam.png?v=b3141ea4",
-        "alt": "Both hands raised: the right holding a lit brass oil lamp trailing smoke, the left ringing the bell.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
-      },
-      {
-        "id": "fig-naivedya",
-        "src": "/figures/puja-vidhi/step-naivedya.png?v=8ba3e11a",
-        "alt": "A brass plate of freshly cooked rice with a small bowl of ghee and two bananas, drops of water falling onto it.",
-        "flow": "end",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
-      },
-      {
-        "id": "fig-karpura",
-        "src": "/figures/puja-vidhi/step-karpura.png?v=a85864f6",
-        "alt": "A standing worshipper seen from the side, showing a lit camphor lamp in his raised right hand to a brass mūrti facing him, the bell held low in his left.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
-      },
-      {
-        "id": "fig-tambula",
-        "src": "/figures/puja-vidhi/step-tambula.png?v=05f8ea90",
-        "alt": "A brass plate holding three betel leaves and three areca nuts.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
-      },
-      {
-        "id": "fig-mantrapushpa",
-        "src": "/figures/puja-vidhi/step-mantrapushpa.png?v=e289570a",
-        "alt": "Two cupped hands holding a heap of marigold and rose-coloured flowers.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
-      },
-      {
-        "id": "fig-acamana",
-        "src": "/figures/puja-vidhi/step-acamana.png?v=eb88be04",
-        "alt": "A seated worshipper in profile: the left hand holds the spoon over the plate, the right is raised to the lips to sip from the root of the thumb.",
-        "flow": "end",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
-      },
-      {
-        "id": "fig-namaskara",
-        "src": "/figures/puja-vidhi/step-namaskara.png?v=13b57603",
-        "alt": "A worshipper lying face down at full length on the ground, seen from the side, arms stretched out beyond his head with the palms pressed together, forehead, chest, knees and feet all touching.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
-      },
-      {
-        "id": "fig-pancanga",
-        "src": "/figures/puja-vidhi/step-pancanga.png?v=86c96d09",
-        "alt": "A woman kneeling in the five-limb salutation, seen from the side: knees, both hands and forehead on the ground, the chest held clear of it.",
-        "flow": "start",
-        "size": "small",
-        "captionAt": "none",
-        "crop": "square",
-        "frame": "none",
-        "rounded": true,
-        "width": 512,
-        "height": 512
+        "at": {
+          "letter": 3,
+          "line": 0,
+          "verse": "ck-shiva-1"
+        },
+        "ch": "m",
+        "note": "recorded by attach-src: the shipped document carries this mark and the rules do not place it",
+        "set": {
+          "candra": true,
+          "sup": "gṁ"
+        },
+        "why": "source-witness"
       }
     ],
-    "groups": [
-      {
-        "id": "abhisheka",
-        "label": {
-          "en": "Abhiṣekam — the bath with the five nectars"
-        },
-        "source": "Taittirīya Saṁhitā; Ṛgveda 9.85.6 for the sugar",
-        "kind": "expansion",
-        "at": "upa-07-snanam",
-        "mode": "after",
-        "members": [
-          "upa-07a-ksira",
-          "upa-07b-dadhi",
-          "upa-07c-ajya",
-          "upa-07d-madhu",
-          "upa-07e-sarkara",
-          "upa-07f-phalodaka",
-          "upa-07g-suddhodaka"
-        ],
-        "default": false,
-        "note": {
-          "kind": "option",
-          "text": {
-            "en": "An optional expansion of the bath: milk, curd, ghee, honey and sugar, then fruit-water, then pure water. Pour in a thin, continuous stream rather than a splash."
-          }
-        }
-      },
-      {
-        "id": "kshama-general",
-        "label": {
-          "en": "Kṣamā prārthanā"
-        },
-        "source": "the pūjā material",
-        "kind": "optional",
-        "members": [
-          "close-kshama"
-        ],
-        "default": true,
-        "fixed": true,
-        "onlyDeity": [
-          "ganesha",
-          "subrahmanya",
-          "surya",
-          "dattatreya"
-        ]
-      },
-      {
-        "id": "kshama-narayana",
-        "label": {
-          "en": "Kṣamā prārthanā · Nārāyaṇa"
-        },
-        "source": "Veda Union · Youth Wing sādhanā",
-        "kind": "optional",
-        "members": [
-          "close-kshama-narayana"
-        ],
-        "default": true,
-        "fixed": true,
-        "onlyDeity": [
-          "vishnu",
-          "krishna",
-          "rama",
-          "hanuman"
-        ]
-      },
-      {
-        "id": "kshama-devi",
-        "label": {
-          "en": "Kṣamā prārthanā · Devī"
-        },
-        "source": "Veda Union · sādhana",
-        "kind": "optional",
-        "members": [
-          "close-kshama-devi"
-        ],
-        "default": true,
-        "fixed": true,
-        "onlyDeity": [
-          "devi",
-          "durga",
-          "lakshmi",
-          "sarasvati",
-          "gayatri"
-        ]
-      },
-      {
-        "id": "kshama-shiva",
-        "label": {
-          "en": "Kṣamā prārthanā · Śiva"
-        },
-        "source": "Veda Union · Śrī Rudram",
-        "kind": "optional",
-        "members": [
-          "close-kshama-shiva"
-        ],
-        "default": true,
-        "fixed": true,
-        "onlyDeity": [
-          "shiva",
-          "parameshvara"
-        ]
-      },
-      {
-        "id": "stotram",
-        "label": {
-          "en": "Saṅkaṭanāśana Gaṇeśa Stotram"
-        },
-        "source": "Śrī Nārada Purāṇa",
-        "kind": "expansion",
-        "at": "upa-16-vandanam",
-        "mode": "after",
-        "members": [
-          "stotram"
-        ],
-        "default": true,
-        "fixed": true,
-        "onlyDeity": [
-          "ganesha"
-        ]
-      },
-      {
-        "id": "vibhuti",
-        "label": {
-          "en": "Vibhūti — the sacred ash"
-        },
-        "source": "Śaiva / smārta practice",
-        "kind": "expansion",
-        "at": "upa-10-gandham",
-        "mode": "after",
-        "members": [
-          "upa-10a-vibhuti"
-        ],
-        "default": true,
-        "fixed": true,
-        "onlyDeity": [
-          "shiva",
-          "parameshvara"
-        ],
-        "note": {
-          "kind": "option",
-          "text": {
-            "en": "Dry ash, applied after the sandal paste."
-          }
-        }
-      }
+    "primaryScript": "iast",
+    "profile": {
+      "patch": {},
+      "preset": "rigveda"
+    },
+    "scripts": [
+      "iast",
+      "devanagari",
+      "telugu",
+      "tamil"
     ],
     "sections": [
       {
         "id": "upa-01-avahanam",
-        "n": "1",
-        "title": "Āvāhanam",
-        "part": "The sixteen upacāras",
-        "source": "The sixteen-step pūjā · invocation",
         "items": [
           {
-            "t": "verse",
             "id": "u-avahana-1",
             "n": null,
+            "t": "verse",
             "tokens": [
               {
+                "deva": "अ",
+                "iast": "a",
                 "t": "syl",
+                "tam": "அ",
+                "tel": "అ",
                 "units": [
                   {
                     "c": "a"
                   }
-                ],
-                "iast": "a",
-                "deva": "अ",
-                "tel": "అ",
-                "tam": "அ"
+                ]
               },
               {
+                "deva": "स्मिन्",
+                "iast": "smin",
                 "t": "syl",
+                "tam": "ஸ்மிந்",
+                "tel": "స్మిన్",
                 "units": [
                   {
                     "c": "s"
                   },
                   {
                     "c": "m",
-                    "hold": "short",
-                    "hg": 1
+                    "hg": 1,
+                    "hold": "short"
                   },
                   {
                     "c": "i"
@@ -531,84 +722,84 @@
                   {
                     "c": "n"
                   }
-                ],
-                "iast": "smin",
-                "deva": "स्मिन्",
-                "tel": "స్మిన్",
-                "tam": "ஸ்மிந்"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "बि",
+                "iast": "bi",
                 "t": "syl",
+                "tam": "பி",
+                "tel": "బి",
                 "units": [
                   {
                     "c": "b",
-                    "hold": "short",
-                    "hg": 2
+                    "hg": 2,
+                    "hold": "short"
                   },
                   {
                     "c": "i"
                   }
-                ],
-                "iast": "bi",
-                "deva": "बि",
-                "tel": "బి",
-                "tam": "பி"
+                ]
               },
               {
+                "deva": "म्बे",
+                "iast": "mbe",
                 "t": "syl",
+                "tam": "ம்பே",
+                "tel": "మ్బే",
                 "units": [
                   {
                     "c": "m"
                   },
                   {
                     "c": "b",
-                    "hold": "short",
-                    "hg": 3
+                    "hg": 3,
+                    "hold": "short"
                   },
                   {
                     "c": "e"
                   }
-                ],
-                "iast": "mbe",
-                "deva": "म्बे",
-                "tel": "మ్బే",
-                "tam": "ம்பே"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "श्री",
+                "iast": "śrī",
                 "t": "syl",
+                "tam": "ஶ்ரீ",
+                "tel": "శ్రీ",
                 "units": [
                   {
                     "c": "ś"
                   },
                   {
                     "c": "r",
-                    "hold": "long",
-                    "hg": 4
+                    "hg": 4,
+                    "hold": "long"
                   },
                   {
                     "c": "ī"
                   }
-                ],
-                "iast": "śrī",
-                "deva": "श्री",
-                "tel": "శ్రీ",
-                "tam": "ஶ்ரீ"
+                ]
               },
               {
                 "t": "sp"
               },
               {
-                "t": "slot",
                 "name": "deity",
+                "t": "slot",
                 "tokens": [
                   {
+                    "deva": "दे",
+                    "iast": "de",
                     "t": "syl",
+                    "tam": "தே",
+                    "tel": "దే",
                     "units": [
                       {
                         "c": "d"
@@ -616,14 +807,14 @@
                       {
                         "c": "e"
                       }
-                    ],
-                    "iast": "de",
-                    "deva": "दे",
-                    "tel": "దే",
-                    "tam": "தே"
+                    ]
                   },
                   {
+                    "deva": "वन्",
+                    "iast": "van",
                     "t": "syl",
+                    "tam": "வந்",
+                    "tel": "వన్",
                     "units": [
                       {
                         "c": "v"
@@ -635,11 +826,7 @@
                         "c": "n",
                         "change": true
                       }
-                    ],
-                    "iast": "van",
-                    "deva": "वन्",
-                    "tel": "వన్",
-                    "tam": "வந்"
+                    ]
                   }
                 ]
               },
@@ -647,12 +834,16 @@
                 "t": "sp"
               },
               {
+                "deva": "ध्या",
+                "iast": "dhyā",
                 "t": "syl",
+                "tam": "த்யா",
+                "tel": "ధ్యా",
                 "units": [
                   {
                     "c": "dh",
-                    "hold": "short",
-                    "hg": 5
+                    "hg": 5,
+                    "hold": "short"
                   },
                   {
                     "c": "y"
@@ -660,14 +851,14 @@
                   {
                     "c": "ā"
                   }
-                ],
-                "iast": "dhyā",
-                "deva": "ध्या",
-                "tel": "ధ్యా",
-                "tam": "த்யா"
+                ]
               },
               {
+                "deva": "या",
+                "iast": "yā",
                 "t": "syl",
+                "tam": "யா",
+                "tel": "యా",
                 "units": [
                   {
                     "c": "y"
@@ -675,14 +866,14 @@
                   {
                     "c": "ā"
                   }
-                ],
-                "iast": "yā",
-                "deva": "या",
-                "tel": "యా",
-                "tam": "யா"
+                ]
               },
               {
+                "deva": "मि",
+                "iast": "mi",
                 "t": "syl",
+                "tam": "மி",
+                "tel": "మి",
                 "units": [
                   {
                     "c": "m"
@@ -690,18 +881,14 @@
                   {
                     "c": "i"
                   }
-                ],
-                "iast": "mi",
-                "deva": "मि",
-                "tel": "మి",
-                "tam": "மி"
+                ]
               },
               {
                 "t": "sp"
               },
               {
-                "t": "danda",
-                "s": "।"
+                "s": "।",
+                "t": "danda"
               }
             ],
             "translation": {
@@ -709,129 +896,137 @@
             },
             "words": [
               {
-                "surface": "asmin",
                 "entries": [
                   {
-                    "lemma": "idam",
-                    "type": "subanta",
-                    "meaning": "in this",
-                    "gender": "n",
-                    "vibhakti": 7,
-                    "vacana": "eka",
-                    "stem": "pronominal (idam)",
                     "forms": {
                       "deva": "इदम्",
-                      "tel": "ఇదమ్",
-                      "tam": "இதம்"
-                    }
+                      "tam": "இதம்",
+                      "tel": "ఇదమ్"
+                    },
+                    "gender": "n",
+                    "lemma": "idam",
+                    "meaning": "in this",
+                    "stem": "pronominal (idam)",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 7
                   }
-                ]
+                ],
+                "surface": "asmin"
               },
               {
-                "surface": "bimbe",
                 "entries": [
                   {
-                    "lemma": "bimba",
-                    "type": "subanta",
-                    "meaning": "in the image, in the icon",
-                    "gender": "n",
-                    "vibhakti": 7,
-                    "vacana": "eka",
-                    "stem": "a-stem",
                     "forms": {
                       "deva": "बिम्ब",
-                      "tel": "బిమ్బ",
-                      "tam": "பிம்ப"
-                    }
+                      "tam": "பிம்ப",
+                      "tel": "బిమ్బ"
+                    },
+                    "gender": "n",
+                    "lemma": "bimba",
+                    "meaning": "in the image, in the icon",
+                    "stem": "a-stem",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 7
                   }
-                ]
+                ],
+                "surface": "bimbe"
               },
               {
-                "surface": "śrī",
                 "entries": [
                   {
-                    "lemma": "śrī",
-                    "type": "other",
-                    "meaning": "revered, holy",
-                    "note": "honorific prefixed to the name of the deity",
                     "forms": {
                       "deva": "श्री",
-                      "tel": "శ్రీ",
-                      "tam": "ஶ்ரீ"
-                    }
+                      "tam": "ஶ்ரீ",
+                      "tel": "శ్రీ"
+                    },
+                    "lemma": "śrī",
+                    "meaning": "revered, holy",
+                    "note": "honorific prefixed to the name of the deity",
+                    "type": "other"
                   }
-                ]
+                ],
+                "surface": "śrī"
               },
               {
-                "surface": "devan",
                 "entries": [
                   {
-                    "lemma": "deva",
-                    "type": "subanta",
-                    "meaning": "deva — a slot for the name of the deity being worshipped",
-                    "gender": "m",
-                    "vibhakti": 2,
-                    "vacana": "eka",
-                    "stem": "a-stem",
-                    "note": "the anusvāra assimilates to the following stop (rendered in the change colour)",
                     "forms": {
                       "deva": "देव",
-                      "tel": "దేవ",
-                      "tam": "தேவ"
-                    }
+                      "tam": "தேவ",
+                      "tel": "దేవ"
+                    },
+                    "gender": "m",
+                    "lemma": "deva",
+                    "meaning": "deva — a slot for the name of the deity being worshipped",
+                    "note": "the anusvāra assimilates to the following stop (rendered in the change colour)",
+                    "stem": "a-stem",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
                   }
-                ]
+                ],
+                "surface": "devan"
               },
               {
-                "surface": "dhyāyāmi",
                 "entries": [
                   {
-                    "lemma": "dhyai",
-                    "type": "tinanta",
-                    "meaning": "I meditate upon, I visualise",
-                    "root": "dhyai",
-                    "gana": "1 (bhvādi)",
-                    "lakara": "laṭ",
-                    "purusha": 1,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "ध्यै",
-                      "tel": "ధ్యై",
-                      "tam": "த்யை"
-                    }
+                      "tam": "த்யை",
+                      "tel": "ధ్యై"
+                    },
+                    "gana": "1 (bhvādi)",
+                    "lakara": "laṭ",
+                    "lemma": "dhyai",
+                    "meaning": "I meditate upon, I visualise",
+                    "purusha": 1,
+                    "root": "dhyai",
+                    "type": "tinanta",
+                    "vacana": "eka"
                   }
-                ]
+                ],
+                "surface": "dhyāyāmi"
               }
             ]
           }
         ],
+        "n": "1",
+        "part": "The sixteen upacāras",
+        "source": "The sixteen-step pūjā · invocation",
+        "title": "Āvāhanam",
         "verses": [
           {
             "id": "u-avahana-1",
             "n": null,
             "tokens": [
               {
+                "deva": "अ",
+                "iast": "a",
                 "t": "syl",
+                "tam": "அ",
+                "tel": "అ",
                 "units": [
                   {
                     "c": "a"
                   }
-                ],
-                "iast": "a",
-                "deva": "अ",
-                "tel": "అ",
-                "tam": "அ"
+                ]
               },
               {
+                "deva": "स्मिन्",
+                "iast": "smin",
                 "t": "syl",
+                "tam": "ஸ்மிந்",
+                "tel": "స్మిన్",
                 "units": [
                   {
                     "c": "s"
                   },
                   {
                     "c": "m",
-                    "hold": "short",
-                    "hg": 1
+                    "hg": 1,
+                    "hold": "short"
                   },
                   {
                     "c": "i"
@@ -839,84 +1034,84 @@
                   {
                     "c": "n"
                   }
-                ],
-                "iast": "smin",
-                "deva": "स्मिन्",
-                "tel": "స్మిన్",
-                "tam": "ஸ்மிந்"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "बि",
+                "iast": "bi",
                 "t": "syl",
+                "tam": "பி",
+                "tel": "బి",
                 "units": [
                   {
                     "c": "b",
-                    "hold": "short",
-                    "hg": 2
+                    "hg": 2,
+                    "hold": "short"
                   },
                   {
                     "c": "i"
                   }
-                ],
-                "iast": "bi",
-                "deva": "बि",
-                "tel": "బి",
-                "tam": "பி"
+                ]
               },
               {
+                "deva": "म्बे",
+                "iast": "mbe",
                 "t": "syl",
+                "tam": "ம்பே",
+                "tel": "మ్బే",
                 "units": [
                   {
                     "c": "m"
                   },
                   {
                     "c": "b",
-                    "hold": "short",
-                    "hg": 3
+                    "hg": 3,
+                    "hold": "short"
                   },
                   {
                     "c": "e"
                   }
-                ],
-                "iast": "mbe",
-                "deva": "म्बे",
-                "tel": "మ్బే",
-                "tam": "ம்பே"
+                ]
               },
               {
                 "t": "sp"
               },
               {
+                "deva": "श्री",
+                "iast": "śrī",
                 "t": "syl",
+                "tam": "ஶ்ரீ",
+                "tel": "శ్రీ",
                 "units": [
                   {
                     "c": "ś"
                   },
                   {
                     "c": "r",
-                    "hold": "long",
-                    "hg": 4
+                    "hg": 4,
+                    "hold": "long"
                   },
                   {
                     "c": "ī"
                   }
-                ],
-                "iast": "śrī",
-                "deva": "श्री",
-                "tel": "శ్రీ",
-                "tam": "ஶ்ரீ"
+                ]
               },
               {
                 "t": "sp"
               },
               {
-                "t": "slot",
                 "name": "deity",
+                "t": "slot",
                 "tokens": [
                   {
+                    "deva": "दे",
+                    "iast": "de",
                     "t": "syl",
+                    "tam": "தே",
+                    "tel": "దే",
                     "units": [
                       {
                         "c": "d"
@@ -924,14 +1119,14 @@
                       {
                         "c": "e"
                       }
-                    ],
-                    "iast": "de",
-                    "deva": "दे",
-                    "tel": "దే",
-                    "tam": "தே"
+                    ]
                   },
                   {
+                    "deva": "वन्",
+                    "iast": "van",
                     "t": "syl",
+                    "tam": "வந்",
+                    "tel": "వన్",
                     "units": [
                       {
                         "c": "v"
@@ -943,11 +1138,7 @@
                         "c": "n",
                         "change": true
                       }
-                    ],
-                    "iast": "van",
-                    "deva": "वन्",
-                    "tel": "వన్",
-                    "tam": "வந்"
+                    ]
                   }
                 ]
               },
@@ -955,12 +1146,16 @@
                 "t": "sp"
               },
               {
+                "deva": "ध्या",
+                "iast": "dhyā",
                 "t": "syl",
+                "tam": "த்யா",
+                "tel": "ధ్యా",
                 "units": [
                   {
                     "c": "dh",
-                    "hold": "short",
-                    "hg": 5
+                    "hg": 5,
+                    "hold": "short"
                   },
                   {
                     "c": "y"
@@ -968,14 +1163,14 @@
                   {
                     "c": "ā"
                   }
-                ],
-                "iast": "dhyā",
-                "deva": "ध्या",
-                "tel": "ధ్యా",
-                "tam": "த்யா"
+                ]
               },
               {
+                "deva": "या",
+                "iast": "yā",
                 "t": "syl",
+                "tam": "யா",
+                "tel": "యా",
                 "units": [
                   {
                     "c": "y"
@@ -983,14 +1178,14 @@
                   {
                     "c": "ā"
                   }
-                ],
-                "iast": "yā",
-                "deva": "या",
-                "tel": "యా",
-                "tam": "யா"
+                ]
               },
               {
+                "deva": "मि",
+                "iast": "mi",
                 "t": "syl",
+                "tam": "மி",
+                "tel": "మి",
                 "units": [
                   {
                     "c": "m"
@@ -998,18 +1193,14 @@
                   {
                     "c": "i"
                   }
-                ],
-                "iast": "mi",
-                "deva": "मि",
-                "tel": "మి",
-                "tam": "மி"
+                ]
               },
               {
                 "t": "sp"
               },
               {
-                "t": "danda",
-                "s": "।"
+                "s": "।",
+                "t": "danda"
               }
             ],
             "translation": {
@@ -1017,104 +1208,115 @@
             },
             "words": [
               {
-                "surface": "asmin",
                 "entries": [
                   {
-                    "lemma": "idam",
-                    "type": "subanta",
-                    "meaning": "in this",
-                    "gender": "n",
-                    "vibhakti": 7,
-                    "vacana": "eka",
-                    "stem": "pronominal (idam)",
                     "forms": {
                       "deva": "इदम्",
-                      "tel": "ఇదమ్",
-                      "tam": "இதம்"
-                    }
+                      "tam": "இதம்",
+                      "tel": "ఇదమ్"
+                    },
+                    "gender": "n",
+                    "lemma": "idam",
+                    "meaning": "in this",
+                    "stem": "pronominal (idam)",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 7
                   }
-                ]
+                ],
+                "surface": "asmin"
               },
               {
-                "surface": "bimbe",
                 "entries": [
                   {
-                    "lemma": "bimba",
-                    "type": "subanta",
-                    "meaning": "in the image, in the icon",
-                    "gender": "n",
-                    "vibhakti": 7,
-                    "vacana": "eka",
-                    "stem": "a-stem",
                     "forms": {
                       "deva": "बिम्ब",
-                      "tel": "బిమ్బ",
-                      "tam": "பிம்ப"
-                    }
+                      "tam": "பிம்ப",
+                      "tel": "బిమ్బ"
+                    },
+                    "gender": "n",
+                    "lemma": "bimba",
+                    "meaning": "in the image, in the icon",
+                    "stem": "a-stem",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 7
                   }
-                ]
+                ],
+                "surface": "bimbe"
               },
               {
-                "surface": "śrī",
                 "entries": [
                   {
-                    "lemma": "śrī",
-                    "type": "other",
-                    "meaning": "revered, holy",
-                    "note": "honorific prefixed to the name of the deity",
                     "forms": {
                       "deva": "श्री",
-                      "tel": "శ్రీ",
-                      "tam": "ஶ்ரீ"
-                    }
+                      "tam": "ஶ்ரீ",
+                      "tel": "శ్రీ"
+                    },
+                    "lemma": "śrī",
+                    "meaning": "revered, holy",
+                    "note": "honorific prefixed to the name of the deity",
+                    "type": "other"
                   }
-                ]
+                ],
+                "surface": "śrī"
               },
               {
-                "surface": "devan",
                 "entries": [
                   {
-                    "lemma": "deva",
-                    "type": "subanta",
-                    "meaning": "deva — a slot for the name of the deity being worshipped",
-                    "gender": "m",
-                    "vibhakti": 2,
-                    "vacana": "eka",
-                    "stem": "a-stem",
-                    "note": "the anusvāra assimilates to the following stop (rendered in the change colour)",
                     "forms": {
                       "deva": "देव",
-                      "tel": "దేవ",
-                      "tam": "தேவ"
-                    }
+                      "tam": "தேவ",
+                      "tel": "దేవ"
+                    },
+                    "gender": "m",
+                    "lemma": "deva",
+                    "meaning": "deva — a slot for the name of the deity being worshipped",
+                    "note": "the anusvāra assimilates to the following stop (rendered in the change colour)",
+                    "stem": "a-stem",
+                    "type": "subanta",
+                    "vacana": "eka",
+                    "vibhakti": 2
                   }
-                ]
+                ],
+                "surface": "devan"
               },
               {
-                "surface": "dhyāyāmi",
                 "entries": [
                   {
-                    "lemma": "dhyai",
-                    "type": "tinanta",
-                    "meaning": "I meditate upon, I visualise",
-                    "root": "dhyai",
-                    "gana": "1 (bhvādi)",
-                    "lakara": "laṭ",
-                    "purusha": 1,
-                    "vacana": "eka",
                     "forms": {
                       "deva": "ध्यै",
-                      "tel": "ధ్యై",
-                      "tam": "த்யை"
-                    }
+                      "tam": "த்யை",
+                      "tel": "ధ్యై"
+                    },
+                    "gana": "1 (bhvādi)",
+                    "lakara": "laṭ",
+                    "lemma": "dhyai",
+                    "meaning": "I meditate upon, I visualise",
+                    "purusha": 1,
+                    "root": "dhyai",
+                    "type": "tinanta",
+                    "vacana": "eka"
                   }
-                ]
+                ],
+                "surface": "dhyāyāmi"
               }
             ]
           }
         ]
       }
-    ]
+    ],
+    "source": "Veda Union pūjā class · ṣoḍaśopacāra pūjā",
+    "subtitle": "The sixteen-step pūjā — ṣoḍaśopacāra",
+    "title": "pūjā vidhi",
+    "titleForms": {
+      "devanagari": "पूजा विधि",
+      "iast": "pūjā vidhi",
+      "tamil": "பூஜா விதி",
+      "telugu": "పూజా విధి"
+    },
+    "variants": "/chants/variants/puja-vidhi.index.json",
+    "version": 3
   },
   "expect": {
     "attested": true,

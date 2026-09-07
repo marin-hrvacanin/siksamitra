@@ -13,7 +13,7 @@
 
 import { Fragment, type ReactNode } from 'react';
 import type { ChantDoc, ChantScriptKey, ChantToken, ChantVerse } from '@siksamitra/format';
-import { renderToken } from './token-renderers.js';
+import { renderToken, unitsBefore, type TokenContext } from './token-renderers.js';
 
 export interface BlockRef {
   readonly id: string;
@@ -52,8 +52,8 @@ const FONT_STACK = 'var(--font-body)';
  * consequence of the column width.
  */
 function VerseLines(
-  { verse, script, showMarks }: {
-    verse: ChantVerse; script: ChantScriptKey; showMarks: boolean;
+  { verse, script, showMarks, addressable }: {
+    verse: ChantVerse; script: ChantScriptKey; showMarks: boolean; addressable: boolean;
   },
 ): ReactNode {
   // Split at `br`: a recitation line is a BREATH, so it is a real unit of the
@@ -64,26 +64,41 @@ function VerseLines(
     if (t.t === 'br') lines.push([]);
     else lines[lines.length - 1]!.push(t);
   }
-  const ctx = { script, showMarks, fontStack: FONT_STACK };
+  const ctx: TokenContext = {
+    script, showMarks, fontStack: FONT_STACK, ...(addressable ? { addressable } : {}),
+  };
 
+  /*
+   * The unit counter runs over the WHOLE verse, not per line: `SrcMap.units`
+   * is one entry per letter of the verse in token order, and a `br` contributes
+   * none. A per-line counter would address every letter after the first break
+   * to the wrong source offset — the mark would land a line early.
+   */
+  let offset = 0;
   return (
     <>
-      {lines.map((line, li) => (
-        <div className="pada" data-line={li} key={li}>
-          {line.map((t, ti) => renderToken(t, ti, ctx))}
-        </div>
-      ))}
+      {lines.map((line, li) => {
+        const base = offset;
+        offset += unitsBefore(line, line.length);
+        return (
+          <div className="pada" data-line={li} key={li}>
+            {line.map((t, ti) => renderToken(t, ti, ctx, base + unitsBefore(line, ti)))}
+          </div>
+        );
+      })}
     </>
   );
 }
 
 export function DocumentBlocks(
-  { doc, script, showMarks, only }: {
+  { doc, script, showMarks, only, addressable = false }: {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
     /** Render only these block ids — how the paged view draws one page. */
     only?: ReadonlySet<string>;
+    /** The editor is drawing: letters carry `data-u`, verses `data-verse`. */
+    addressable?: boolean;
   },
 ): ReactNode {
   const wanted = (id: string): boolean => only === undefined || only.has(id);
@@ -102,9 +117,21 @@ export function DocumentBlocks(
               const id = `v:${section.id}:${verse.id}`;
               if (!wanted(id)) return null;
               return (
-                <div className="verse" data-block-id={id} key={verse.id}>
+                <div
+                  className="verse"
+                  data-block-id={id}
+                  data-verse={verse.id}
+                  data-section={section.id}
+                  {...(verse.src === undefined ? { 'data-attested': '1' } : {})}
+                  key={verse.id}
+                >
                   {verse.n != null && <span className="verse__n" aria-hidden>{verse.n}</span>}
-                  <VerseLines verse={verse} script={script} showMarks={showMarks} />
+                  <VerseLines
+                    verse={verse}
+                    script={script}
+                    showMarks={showMarks}
+                    addressable={addressable}
+                  />
                 </div>
               );
             })}

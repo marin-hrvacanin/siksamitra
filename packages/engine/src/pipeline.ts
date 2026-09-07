@@ -8,7 +8,7 @@
  *
  * See specs/chant-editor/02-ENGINE.md §7.
  */
-import type { ChantToken } from '@siksamitra/format';
+import type { ChantOverride, ChantToken } from '@siksamitra/format';
 import { lex } from './lex.js';
 import type { SrcSpan } from './lex.js';
 import { emitWithSpans } from './emit.js';
@@ -17,6 +17,8 @@ import { DEFAULT_PROFILE } from './profile.js';
 import type { Profile } from './profile.js';
 import { RULES, STAGE_ORDER, isEnabled } from './rules/index.js';
 import { SVARA_PLANS, applySvaraPlan, applyAttestedSvara } from './rules/svara.js';
+import { applyOverrides } from './overrides.js';
+import type { OverrideResult } from './overrides.js';
 import type { RuleCtx, Trace, Warning } from './rules/types.js';
 
 export interface DeriveSource {
@@ -40,6 +42,10 @@ export interface Derivation {
   srcMap: SrcMap;
   warnings: Warning[];
   stats: { syllables: number; units: number; holdings: number; svaras: number };
+  /** What the author's hand did to this derivation, and what it could not do.
+   *  Reported rather than swallowed: an `owner-hand` override that no longer
+   *  addresses a letter is the one failure the editor must surface. */
+  overrides: OverrideResult;
 }
 
 export interface DeriveOptions extends EmitOptions {
@@ -49,6 +55,12 @@ export interface DeriveOptions extends EmitOptions {
   trace?: boolean;
   /** Apply an unverified metre preset anyway (02A S08). */
   allowUnverifiedPlan?: boolean;
+  /**
+   * The document's hand-placed marks. Applied LAST, so they overrule every
+   * rule including the svara plan — see `overrides.ts`. Filtered by
+   * `verseId`, so passing the whole document's array is correct and cheap.
+   */
+  overrides?: readonly ChantOverride[];
 }
 
 /**
@@ -116,6 +128,19 @@ export function derive(
     }
   }
 
+  /*
+   * The author's hand, last. After the rules and after svara, because an
+   * override exists to overrule them: a transcribed accent the positional plan
+   * disagrees with is evidence, and the engine does not get to win that
+   * argument. Rule zero, enforced here rather than described in a docstring.
+   */
+  const overrides = applyOverrides(
+    elems,
+    opts?.overrides ?? [],
+    opts?.verseId ?? '',
+    ctx,
+  );
+
   // The spans come back FROM `emit`, not from a second pass over `elems`:
   // `emit` decides what a unit is, and a caret map built by any other rule
   // drifts the moment that decision changes.
@@ -126,6 +151,7 @@ export function derive(
     srcMap: { units: spans, lines },
     warnings,
     stats: stats(tokens),
+    overrides,
   };
 }
 

@@ -4,6 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="/favicon.svg" />
+    <!--
+      The vendored faces, linked rather than imported. `public/` is copied
+      verbatim and is not bundled, so a stylesheet in it can only be reached
+      from here — and it must come before the app's own sheets so a face is
+      declared before anything asks for it.
+    -->
+    <link rel="stylesheet" href="/fonts/fonts.css" />
     <title>śikṣāmitra</title>
   </head>
   <body>

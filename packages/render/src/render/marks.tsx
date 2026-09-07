@@ -58,6 +58,21 @@ export interface MarkRenderOptions {
   /** `.pada`'s resolved font family list — the holding box is measured against
    *  the face that will actually draw the glyph. */
   fontStack: string;
+  /**
+   * This syllable's first unit index within its verse. Present ⇒ the editor is
+   * drawing, and every letter carries `data-u` so a click can find it.
+   *
+   * ADDRESSABILITY IS OPTIONAL BUT THE RENDERER IS NOT DUPLICATED. The reader
+   * omits this and its markup is byte-identical to before, which is the whole
+   * reason it is a parameter rather than a second implementation — the parallel
+   * path is what once printed Devanagari on top of itself.
+   *
+   * In an Indic script the addressable element is the AKSARA, not the letter:
+   * you cannot click half a conjunct, and this program's answer to that is not
+   * to pretend otherwise. Such an element carries `data-u` plus `data-un`, the
+   * number of units it stands for.
+   */
+  unitOffset?: number;
 }
 
 /** One syllable's form in a script. Older fragment tables carry only IAST +
@@ -92,6 +107,9 @@ export function renderUnit(
   o: MarkRenderOptions,
   withSup = true,
   withSbhakti = true,
+  /** Index within the syllable, for `data-u`. Defaults to `key`, which is the
+   *  local index everywhere it is called from except inside a holding run. */
+  local = key,
 ): ReactNode {
   const cls = ['u'];
   if (o.showMarks && u.svara) cls.push(`sv-${u.svara}`);
@@ -101,7 +119,12 @@ export function renderUnit(
   return (
     <Fragment key={key}>
       {withSbhakti && u.sbhakti ? <span className="sbhakti" aria-hidden /> : null}
-      <span className={cls.join(' ')}>{glyph}</span>
+      <span
+        className={cls.join(' ')}
+        {...(o.unitOffset === undefined ? {} : { 'data-u': o.unitOffset + local })}
+      >
+        {glyph}
+      </span>
       {withSup && u.sup ? <sup className="u__sup">{u.sup}</sup> : null}
     </Fragment>
   );
@@ -132,7 +155,7 @@ export function renderIastUnits(units: Unit[], o: MarkRenderOptions): ReactNode[
       const inked = run.map((ru) => ru.c + (ru.candra ? '̐' : '')).join('');
       out.push(
         <span className={`hold hold-${variant}`} key={i} style={holdBoxVars(inked, o.fontStack)}>
-          {run.map((ru, k) => renderUnit(ru, i + k, o, false, false))}
+          {run.map((ru, k) => renderUnit(ru, i + k, o, false, false, i + k))}
         </span>,
       );
       run.forEach((ru, k) => {
@@ -178,7 +201,16 @@ export function renderSyl(
   // The box is drawn by `.hold::after`, so it needs its own element: the
   // akṣara's own ::before/::after already carry the svara marks, and one
   // syllable can be both held and accented.
-  const aksara = <span className={cls.join(' ')}>{text}</span>;
+  const aksara = (
+    <span
+      className={cls.join(' ')}
+      {...(o.unitOffset === undefined
+        ? {}
+        : { 'data-u': o.unitOffset, 'data-un': syl.units.length })}
+    >
+      {text}
+    </span>
+  );
   return (
     <Fragment key={key}>
       {sbhakti ? <span className="sbhakti" aria-hidden /> : null}

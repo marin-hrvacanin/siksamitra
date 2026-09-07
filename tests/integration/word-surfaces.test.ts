@@ -19,7 +19,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { canonicalJson, normalizeChantDoc } from '@siksamitra/format';
 import type { ChantDoc, ChantVerse } from '@siksamitra/format';
-import { detectJoins, expandJoins, surfacesOf, wordsAlign } from '../words.js';
+import { detectJoins, expandJoins, surfacesOf, wordsAlign } from '@siksamitra/engine';
 
 const DIR = 'corpus/chants';
 const FILES = readdirSync(DIR).filter((f) => f.endsWith('.json')).sort();

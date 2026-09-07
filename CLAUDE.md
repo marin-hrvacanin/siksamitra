@@ -37,6 +37,8 @@ switch statement — see *Extension points* below.
 | adding a writing system | `openspec/.../specs/scripts/spec.md`, then `packages/engine/src/script/` |
 | touching the look | `openspec/.../specs/design-system/spec.md`, then `packages/tokens/src/` |
 | working on views, pages, zoom | `openspec/.../specs/render/spec.md` + `packages/layout/src/` |
+| working on the editor | `packages/edit/src/index.ts` — the layering is in its header — then `apps/web/src/editor/` |
+| wondering why a document cannot be edited | `docs/INTERCHANGE.md` §9.7 (rule zero) and `packages/cli/src/attach-src.ts` |
 | adding a test | [`tests/README.md`](tests/README.md) — which tier, and what each may *not* do |
 | building an installer | [`docs/PACKAGING.md`](docs/PACKAGING.md) |
 | wondering why something is the way it is | `openspec/changes/bootstrap-v2/design.md` — eight decisions with their rejected alternatives |
@@ -58,12 +60,17 @@ packages/
              profiles, the script registry, transliteration. NEVER LEAVES.
   render/    the one renderer IN THIS PROGRAM: tokens -> screen and paper.
   layout/    pure: pagination, zoom, scroll anchoring, view modes.
+  edit/      what an edit IS. The caret over a section, the one function that
+             changes a verse's source, hand-placed marks as overrides,
+             rebasing them when the text moves, the holding invariants, undo.
+             No React, no DOM, no clock.
   tokens/    every design value. Three theme axes, generated into CSS/TS/JSON.
   interop/   Word, PDF, .vuchant, and (planned) v1 .smdoc.
   storage/   the ChantStore interface + a local file store.
   cli/       the headless SDK, the CLI, and all the gates.
 apps/
-  web/       the application. Vite + React.
+  web/       the application. Vite + React. `src/editor/` is the surface: a
+             caret over drawn text, nothing contenteditable.
   desktop/   the Tauri 2 shell. Four commands, knows nothing about documents.
 assets/fonts/  11 vendored OFL families. Committed on purpose.
 corpus/    11 verified documents + the interchange fixtures. What the gates
@@ -102,6 +109,14 @@ Not style preferences. Each one is here because its absence cost something.
    testing nothing because it forgot this.
 10. **Commits are in the owner's name, with no AI attribution and no co-author
     trailers.** Do not add one, do not offer to.
+11. **A verse is written through `withVerses`.** A composed section stores its
+    verses in `items` too, and `normalizeChantDoc` rebuilds `verses` from
+    those — so a writer that touches only `verses` has its work discarded on
+    the next load. It happened to all 573 verses of the corpus at once.
+12. **Nothing is `contenteditable`.** The text is drawn, the caret is ours, and
+    keystrokes arrive through a hidden field. v1's Quill editor made the
+    document *be* the DOM, which is why "is this holding correct?" had no
+    answer.
 
 ---
 
@@ -120,6 +135,8 @@ that is true today:
 | a command (button + shortcut together) | `apps/web/src/shell/commands.ts` |
 | a ribbon group | the array in `apps/web/src/shell/Toolbar.tsx` |
 | a token type's rendering | `apps/web/src/views/token-renderers.tsx` |
+| an editing key or a marking button | `apps/web/src/editor/keymap.ts` — one table, buttons render from it |
+| an editing command | `EditCommand` in `packages/edit/src/session.ts` |
 | a font | `tools/fonts/manifest.mjs`, then `npm run fonts` |
 
 Where it is **not** yet true, and should become so: `emit.ts` still writes four
@@ -143,10 +160,16 @@ npm run spec               # the OpenSpec CLI
 
 The gates, individually: `check:modules` `check:tokens` `check:literals`
 `check:fixtures` `check:conformance` `check:transliteration` `check:lossless`
-`check:engine` `check:fonts`.
+`check:engine` `check:fonts` `check:web`.
+
+`sm attach-src <doc.json>` gives a document its source layer back where a
+derivation reproduces it exactly — which is what makes it editable at all.
 
 Browser-driven checks need a Chromium: `CHROME=<path> node tools/<name>.mjs`.
-`tools/theme-matrix.mjs` and `tools/responsive.mjs` need `npm run dev` running.
+`tools/theme-matrix.mjs`, `tools/responsive.mjs`, `tools/smoke.mjs` and
+`tools/edit-smoke.mjs` all need `npm run dev` running. On this machine the
+Chromium is Edge:
+`CHROME="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"`.
 
 ---
 
@@ -162,6 +185,14 @@ by making a check actually run:
 - A "four scripts verified" claim that was two.
 - A responsive check that read every window width as two rows, because it
   counted `top` values on centre-aligned elements of different heights.
+- `npm run dev` serving a 500 for days, because `main.tsx` imported a
+  stylesheet out of `public/` — which Vite refuses. Nothing had run the app.
+- A theme-contrast gate that had never executed a single assertion: it asked
+  for `.tb`, and the toolbar stopped being that when the ribbon replaced it.
+- A literal-value gate that walked only `packages/` while every stylesheet in
+  the program lives in `apps/web/src`.
+- A source layer attached to all 573 verses of the corpus and silently
+  discarded, because `items` — not `verses` — is what a load reads.
 
 So: **run it, read the output, and report the number you saw.** If a gate is
 green, say which gate. If something is not built, say so — `tasks.md` is kept

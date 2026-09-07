@@ -35,7 +35,10 @@ const result = await p.evaluate(async () => {
         app.setAttribute('data-chrome', chrome);
         app.setAttribute('data-mode', mode);
         canvas.setAttribute('data-doc', doc);
-        const tb = getComputedStyle(document.querySelector('.tb'));
+        // `.rb` is the ribbon. This gate asked for `.tb`, which the toolbar
+        // stopped being when the responsive ribbon replaced it — so it threw
+        // on its first line and had never actually run since.
+        const tb = getComputedStyle(document.querySelector('.rb'));
         const page = document.querySelector('.flow__column') ?? canvas;
         const pg = getComputedStyle(page);
         out.push({

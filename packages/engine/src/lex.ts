@@ -44,6 +44,23 @@ export type ElemKind =
   | 'pause'
   /** An authored line break: `//`. Ends nothing. */
   | 'br'
+  /**
+   * An authored pāda divider: `¦`. Drawn as a hairline, recited as nothing.
+   *
+   * It had no source spelling at all, so the 59 bars in Puruṣa Sūktam could
+   * not be reproduced from any source and the document could not be given a
+   * source layer. `¦` (U+00A6) rather than `|`, which is the daṇḍa, or `/`,
+   * which is the line break.
+   */
+  | 'bar'
+  /**
+   * A verse number: a run of digits. Structure, not speech.
+   *
+   * Also had no spelling, so 204 numbered verses were unregenerable. The
+   * digits are carried through verbatim — a document may number its verses in
+   * any script, and converting them here would be a decision nobody asked for.
+   */
+  | 'num'
   /** The short pause a praṇava or bīja takes. Ends a saṁyukta. */
   | 'ompause'
   /** A vowel-hiatus pause. */
@@ -195,6 +212,25 @@ export function lex(lines: string[], profile: Profile = DEFAULT_PROFILE): LexRes
       elems.push({
         kind: 'hyphen', ch: '', text: '-',
         src: { line: p.line, start: p.start, end: p.start + 1 },
+        word: -1, line: p.line, vowel: false, cons: false,
+      });
+      return;
+    }
+    if (allIn(p.text, new Set(['¦']))) {
+      elems.push({
+        kind: 'bar', ch: '', text: p.text,
+        src: { line: p.line, start: p.start, end: p.start + p.text.length },
+        word: -1, line: p.line, vowel: false, cons: false,
+      });
+      return;
+    }
+    // Digits, optionally with an interior dot: Śrī Rudram numbers its verses
+    // `1.1`, anuvāka by verse, and reading that as a word lost both the number
+    // and the daṇḍa after it in 36 verses.
+    if (/^[0-9०-९౦-౯௦-௯]+(?:\.[0-9०-९౦-౯௦-௯]+)*$/u.test(p.text)) {
+      elems.push({
+        kind: 'num', ch: '', text: p.text,
+        src: { line: p.line, start: p.start, end: p.start + p.text.length },
         word: -1, line: p.line, vowel: false, cons: false,
       });
       return;

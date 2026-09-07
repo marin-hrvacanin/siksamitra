@@ -1,0 +1,97 @@
+/* The editing surface. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+/* The caret is an absolutely positioned child of the scrolling canvas, so it
+   must have a positioned ancestor — otherwise it is placed against the
+   viewport and sits still while the text scrolls past it. */
+.canvas { position: relative; }
+
+/* ── the caret ─────────────────────────────────────────────────────────── */
+
+/* Ink, not an accent: a caret marks where a letter will go, so it is the
+   colour a letter would be. It also means the caret is legible on every
+   document theme without a second decision. */
+.caret {
+  position: absolute;
+  width: var(--border-thick);
+  background: var(--doc-ink);
+  pointer-events: none;
+  animation: caret-blink 1.06s steps(1) infinite;
+  z-index: 2;
+}
+
+@keyframes caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* A blinking caret is motion, and motion is a setting. Someone who has asked
+   their system to stop animating things has asked for this too. */
+@media (prefers-reduced-motion: reduce) {
+  .caret { animation: none; }
+}
+
+/* ── the field the browser types into ──────────────────────────────────── */
+
+/*
+ * Positioned AT the caret and effectively invisible — not `display: none`.
+ * An IME's candidate window appears where the field is, so a hidden field puts
+ * the candidate list in the corner of the screen and makes composing Indic
+ * text through an IME unusable.
+ */
+.editor__field {
+  position: absolute;
+  width: var(--space-1);
+  height: var(--space-1);
+  padding: 0;
+  border: 0;
+  margin: 0;
+  opacity: 0;
+  resize: none;
+  overflow: hidden;
+  white-space: pre;
+  z-index: 1;
+}
+
+/* ── the selection ─────────────────────────────────────────────────────── */
+
+/*
+ * Painted onto the letters themselves rather than drawn as a rectangle behind
+ * them. A marked syllable is several inline boxes with marks outside the line
+ * box, so a rectangle either clips a holding or covers it.
+ *
+ * The accent rather than the ink, so the selection reads as the tool acting on
+ * the document and not as part of the text. Mixed from the token, so it
+ * follows the theme instead of being a value chosen once.
+ */
+.is-selected {
+  background: color-mix(in srgb, var(--chrome-accent) 22%, transparent);
+  border-radius: var(--chrome-radius);
+}
+
+/* ── what is editable, and what is not ─────────────────────────────────── */
+
+.canvas.is-editing { cursor: text; }
+
+/*
+ * A transcribed verse: its marks were read off a hand-marked source and exist
+ * nowhere else, so it cannot be re-derived and the session refuses to edit it.
+ * Saying so quietly here is much better than letting someone try and be told
+ * afterwards — and it is a hairline in the margin, not a warning colour,
+ * because there is nothing wrong with it.
+ */
+.canvas.is-editing .verse[data-attested] {
+  cursor: default;
+  border-inline-start: var(--border-thick) solid var(--doc-quiet);
+  padding-inline-start: var(--space-3);
+  margin-inline-start: calc(-1 * (var(--space-3) + var(--border-thick)));
+}
+
+/* ── the status bar's editing half ─────────────────────────────────────── */
+
+.status__caret {
+  color: var(--chrome-ink-mute);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
