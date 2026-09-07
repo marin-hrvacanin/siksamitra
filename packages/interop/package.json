@@ -19,6 +19,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@siksamitra/edit": "2.0.0-alpha.0",
     "@siksamitra/engine": "2.0.0-alpha.0",
     "@siksamitra/format": "2.0.0-alpha.0",
     "@siksamitra/tokens": "2.0.0-alpha.0",

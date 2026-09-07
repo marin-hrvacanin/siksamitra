@@ -23,7 +23,7 @@
     "apps/desktop"
   ],
   "scripts": {
-    "build": "npm-run-all --serial build:format build:engine build:interop build:layout build:edit build:audio build:storage build:render build:cli",
+    "build": "npm-run-all --serial build:format build:engine build:edit build:interop build:layout build:audio build:storage build:render build:cli",
     "build:format": "npm run -w @siksamitra/format build",
     "build:engine": "npm run -w @siksamitra/engine build",
     "build:interop": "npm run -w @siksamitra/interop build",

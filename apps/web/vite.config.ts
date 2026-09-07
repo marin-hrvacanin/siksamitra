@@ -31,6 +31,7 @@ export default defineConfig({
       '@siksamitra/storage': pkg('storage'),
       '@siksamitra/layout': pkg('layout'),
       '@siksamitra/edit': pkg('edit'),
+      '@siksamitra/audio': pkg('audio'),
       '@siksamitra/tokens/word': pkg('tokens', 'src/word.ts'),
       '@siksamitra/tokens': pkg('tokens', 'generated/tokens.ts'),
       '@siksamitra/render/theme': pkg('render', 'src/theme/marks.ts'),

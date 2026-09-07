@@ -9,11 +9,20 @@
     ],
     "noEmit": true,
     "paths": {
-      "@siksamitra/format": [
-        "../../packages/format/src/index.ts"
+      "@siksamitra/audio": [
+        "../../packages/audio/src/index.ts"
+      ],
+      "@siksamitra/edit": [
+        "../../packages/edit/src/index.ts"
       ],
       "@siksamitra/engine": [
         "../../packages/engine/src/index.ts"
+      ],
+      "@siksamitra/format": [
+        "../../packages/format/src/index.ts"
+      ],
+      "@siksamitra/interop": [
+        "../../packages/interop/src/index.ts"
       ],
       "@siksamitra/layout": [
         "../../packages/layout/src/index.ts"
@@ -26,9 +35,6 @@
       ],
       "@siksamitra/tokens": [
         "../../packages/tokens/generated/tokens.ts"
-      ],
-      "@siksamitra/edit": [
-        "../../packages/edit/src/index.ts"
       ],
       "@siksamitra/tokens/word": [
         "../../packages/tokens/src/word.ts"

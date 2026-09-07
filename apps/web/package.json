@@ -10,9 +10,11 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@siksamitra/audio": "2.0.0-alpha.0",
     "@siksamitra/edit": "2.0.0-alpha.0",
     "@siksamitra/engine": "2.0.0-alpha.0",
     "@siksamitra/format": "2.0.0-alpha.0",
+    "@siksamitra/interop": "2.0.0-alpha.0",
     "@siksamitra/layout": "2.0.0-alpha.0",
     "@siksamitra/render": "2.0.0-alpha.0",
     "@siksamitra/storage": "2.0.0-alpha.0",
