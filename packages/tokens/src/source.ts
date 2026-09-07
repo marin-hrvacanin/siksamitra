@@ -157,6 +157,58 @@ export const BASE = {
   "shadow-sm": "0 1px 2px rgba(42, 27, 71, 0.06)",
   "shadow-md": "0 6px 24px -8px rgba(42, 27, 71, 0.16)",
   "shadow-lg": "0 18px 50px -18px rgba(42, 27, 71, 0.28)",
+  /* ── spacing ──────────────────────────────────────────────────────────────
+     A geometric-ish scale in rem, so every gap in the program is one of nine
+     values and all of them scale with the root. Literal spacing is how a
+     stylesheet ends up with 0.45rem next to 0.5rem next to 7px, each chosen by
+     a different person on a different day. */
+  "space-0": "0",
+  "space-1": "0.125rem",
+  "space-2": "0.25rem",
+  "space-3": "0.375rem",
+  "space-4": "0.5rem",
+  "space-5": "0.75rem",
+  "space-6": "1rem",
+  "space-7": "1.5rem",
+  "space-8": "2rem",
+  "space-9": "3rem",
+
+  /* ── chrome type ──────────────────────────────────────────────────────────
+     The tool's own text, one step below the document's. Chrome should be
+     legible and unobtrusive rather than competing with what is being read. */
+  "text-ui": "0.72rem",
+  "text-ui-sm": "0.66rem",
+  "text-ui-lg": "0.8rem",
+  "text-brand": "0.95rem",
+
+  /* ── control geometry ─────────────────────────────────────────────────── */
+  "control-h": "1.55rem",
+  "toolbar-h": "2.25rem",
+  "status-h": "1.5rem",
+  "gutter": "3rem",
+  "measure-pad": "2rem",
+
+  /* ── borders ──────────────────────────────────────────────────────────────
+     A hairline is ONE DEVICE PIXEL and is deliberately not relative: scaled
+     with the text it becomes a visible rule at large sizes and vanishes at
+     small ones, and its job is to be the thinnest line the screen can draw. */
+  "border-hair": "1px",
+  "border-thick": "0.125rem",
+
+  /* ── the document's own presentation ─────────────────────────────────────
+     Separate from the chrome tokens above, because the two answer different
+     questions: chrome should recede, and the document should be read. A theme
+     that wants a different reading register — the website's, say — patches
+     these and leaves the tool alone. */
+  "doc-bg": "#faf7f0",
+  "doc-ink": "#2a1b47",
+  "doc-size": "1rem",
+  "doc-leading": "1.9",
+  "doc-title-size": "1.35rem",
+  "doc-title-face": "var(--font-display)",
+  "doc-pad": "2rem",
+  "doc-verse-gap": "1.15rem",
+
 } as const;
 
 export type TokenName = keyof typeof BASE;
@@ -214,6 +266,31 @@ export const THEMES = {
       "shadow-sm": "0 1px 2px rgba(0, 0, 0, 0.4)",
       "shadow-md": "0 6px 24px -8px rgba(0, 0, 0, 0.55)",
       "shadow-lg": "0 18px 50px -18px rgba(0, 0, 0, 0.65)",
+    },
+  },
+  /**
+   * How the document reads on vedaunion.org.
+   *
+   * Pinned by the `web` view (see layout/view.ts) because the point of that
+   * mode is to show the PLATFORM's appearance — a preview the author can
+   * re-colour is a preview of nothing.
+   *
+   * It patches the document register, not the chrome: the site sets its text
+   * larger and more open than a tool would, on the warm ground the site uses,
+   * with the display face for headings. The tool's own chrome stays exactly as
+   * it is, because the author has not gone anywhere.
+   */
+  'vu-web': {
+    scheme: 'light',
+    patch: {
+      "doc-bg": "#faf7f0",
+      "doc-ink": "#2a1b47",
+      "doc-size": "1.15rem",
+      "doc-leading": "2.05",
+      "doc-title-size": "1.75rem",
+      "doc-pad": "3rem",
+      "doc-verse-gap": "1.5rem",
+      "color-vellum": "#faf7f0",
     },
   },
 } as const satisfies Record<string, Theme>;

@@ -40,6 +40,10 @@ tests/
 specs/
 śikṣāmitra/
 
+# === Generated previews ===
+design-preview.html
+shots/
+
 # === Portable packages are build output, not source ===
 *.vuchant
 *.smdoc

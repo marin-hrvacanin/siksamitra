@@ -1,0 +1,25 @@
+import puppeteer from 'puppeteer-core';
+import { mkdirSync } from 'node:fs';
+const out = process.argv[2] ?? 'shots';
+mkdirSync(out, { recursive: true });
+const b = await puppeteer.launch({ executablePath: process.env.CHROME, headless: 'shell', args: ['--no-sandbox'] });
+const p = await b.newPage();
+await p.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
+await p.goto('http://localhost:5273/', { waitUntil: 'networkidle0' });
+await p.waitForSelector('[data-block-id]');
+const click = (label) => p.evaluate((l) => [...document.querySelectorAll('.seg__b')].find((b) => b.textContent === l)?.click(), label);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+await wait(400); await p.screenshot({ path: `${out}/1-flow.png` });
+await click('Pages'); await p.waitForSelector('.page'); await wait(900);
+await p.screenshot({ path: `${out}/2-pages.png` });
+await p.evaluate(() => [...document.querySelectorAll('.zoom__f')].find((b) => b.textContent === 'Page')?.click());
+await wait(700); await p.screenshot({ path: `${out}/3-fit-page.png` });
+await click('Web'); await wait(600); await p.screenshot({ path: `${out}/4-web.png` });
+await click('Flow');
+await p.evaluate(() => [...document.querySelectorAll('.tb__b')].find((b) => b.textContent === 'देव')?.click());
+await wait(700); await p.screenshot({ path: `${out}/5-devanagari.png` });
+await p.evaluate(() => [...document.querySelectorAll('.tb__b')].find((b) => b.textContent === 'Dark')?.click());
+await wait(500); await p.screenshot({ path: `${out}/6-dark.png` });
+console.log('wrote 6 screenshots to', out);
+await b.close();

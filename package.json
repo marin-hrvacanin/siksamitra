@@ -2,7 +2,7 @@
   "name": "siksamitra",
   "version": "2.0.0-alpha.0",
   "private": true,
-  "description": "śikṣāmitra — the editor for Vedic and classical Sanskrit recitation text. v2.",
+  "description": "\u015bik\u1e63\u0101mitra \u2014 the editor for Vedic and classical Sanskrit recitation text. v2.",
   "type": "module",
   "license": "UNLICENSED",
   "engines": {
@@ -51,7 +51,9 @@
     "test:component": "vitest run --project component",
     "test:security": "vitest run --project security",
     "build:layout": "npm run -w @siksamitra/layout build",
-    "check:modules": "node tools/check-modules.mjs"
+    "check:modules": "node tools/check-modules.mjs",
+    "build:web": "npm run -w @siksamitra/web build",
+    "design": "tsx tools/design/preview.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",
@@ -61,6 +63,7 @@
     "@types/node": "^22.10.2",
     "jsdom": "^25.0.1",
     "npm-run-all": "^4.1.5",
+    "puppeteer-core": "^25.10.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vitest": "^2.1.8"

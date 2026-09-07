@@ -1,0 +1,29 @@
+{
+  "name": "@siksamitra/web",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@siksamitra/engine": "2.0.0-alpha.0",
+    "@siksamitra/format": "2.0.0-alpha.0",
+    "@siksamitra/layout": "2.0.0-alpha.0",
+    "@siksamitra/render": "2.0.0-alpha.0",
+    "@siksamitra/storage": "2.0.0-alpha.0",
+    "@siksamitra/tokens": "2.0.0-alpha.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5"
+  }
+}

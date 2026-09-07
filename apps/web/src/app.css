@@ -1,0 +1,224 @@
+/* =============================================================================
+   The application shell.
+
+   TOOL CHROME, NOT A LANDING PAGE. One UI face, dense controls, hairlines, a
+   real status bar. The landing register — large display type, generous
+   spacing, decorative colour — belongs on a website; on a tool it wastes the
+   screen the document needs and makes every control look like a call to
+   action.
+
+   The only reading face on screen is the text being edited.
+
+   Every value here resolves to a token. `check:literals` scans this file, so a
+   literal colour or size fails the build rather than quietly starting the drift
+   that ended v1 with a 169 KB stylesheet nobody could reason about.
+   ============================================================================= */
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--color-vellum-dim);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: var(--toolbar-h) 1fr var(--status-h);
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── toolbar ───────────────────────────────────────────────────────────── */
+
+.tb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
+  background: var(--color-vellum);
+  border-bottom: var(--border-hair) solid var(--color-rule);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tb::-webkit-scrollbar { display: none; }
+
+.tb__brand {
+  font-family: var(--font-display);
+  font-size: var(--text-brand);
+  color: var(--color-violet);
+  padding-right: var(--space-2);
+  white-space: nowrap;
+}
+
+.tb__gap { flex: 1; }
+
+.tb__grp {
+  display: flex;
+  align-items: center;
+  gap: var(--border-hair);
+  padding-left: var(--space-4);
+  margin-left: var(--space-2);
+  border-left: var(--border-hair) solid var(--color-rule);
+}
+
+.tb__b, .seg__b, .zoom__b, .zoom__v, .zoom__f {
+  font: inherit;
+  color: var(--color-ink-soft);
+  background: transparent;
+  border: var(--border-hair) solid transparent;
+  border-radius: var(--radius-xs);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tb__b:hover:not(:disabled), .seg__b:hover, .zoom__b:hover, .zoom__v:hover, .zoom__f:hover {
+  background: var(--color-vellum-warm);
+  color: var(--color-ink);
+}
+.tb__b:disabled { opacity: 0.4; cursor: default; }
+.tb__b.is-on, .zoom__f.is-on {
+  background: var(--color-vellum-warm);
+  border-color: var(--color-rule-strong);
+  color: var(--color-violet);
+}
+
+.tb__sel {
+  font: inherit;
+  color: var(--color-ink);
+  background: var(--color-vellum-dim);
+  border: var(--border-hair) solid var(--color-rule);
+  border-radius: var(--radius-xs);
+  padding: var(--space-1) var(--space-2);
+  max-width: var(--space-9);
+}
+
+/* A segmented control: three states, one click each, current one readable. */
+.seg {
+  display: inline-flex;
+  border: var(--border-hair) solid var(--color-rule);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.seg__b { border-radius: 0; border: 0; border-right: var(--border-hair) solid var(--color-rule); }
+.seg__b:last-child { border-right: 0; }
+.seg__b.is-on { background: var(--color-violet); color: var(--color-vellum); }
+
+.zoom { display: inline-flex; align-items: center; }
+.zoom__v { min-width: var(--space-9); text-align: center; font-variant-numeric: tabular-nums; }
+
+/* ── the canvas ────────────────────────────────────────────────────────── */
+
+.canvas {
+  overflow: auto;
+  background: var(--color-vellum-dim);
+  /* Anchoring is done by us on a view change; the browser's own anchoring
+     fights it and produces a double correction. */
+  overflow-anchor: none;
+}
+
+.canvas__msg {
+  color: var(--color-ink-mute);
+  padding: var(--gutter);
+  font-style: italic;
+}
+
+/* Flow: a measure column on the page's own content width, so a line that fits
+   here fits on paper and switching to Pages reflows nothing. */
+.flow { display: flex; justify-content: center; padding: var(--gutter) 0; }
+.flow__column {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  border: var(--border-hair) solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  padding: var(--doc-pad);
+  box-shadow: var(--shadow-sm);
+}
+
+/* The document register: set by tokens, so the `web` theme changes how a
+   document READS without touching a component or the chrome around it. */
+.flow__column, .page__content {
+  font-family: var(--font-body);
+  font-size: var(--doc-size);
+  line-height: var(--doc-leading);
+}
+.verse { margin-block: var(--doc-verse-gap); }
+.section__title {
+  font-family: var(--doc-title-face);
+  font-size: var(--doc-title-size);
+  color: var(--color-violet-deep);
+  margin-block: var(--space-7) var(--space-5);
+}
+.verse__n {
+  color: var(--color-ink-light);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  margin-right: var(--space-4);
+}
+
+/* Paged: pages on a desk. The grey around them is what tells the eye these are
+   sheets and not a scrolling column. */
+.paged {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gutter);
+  padding: var(--gutter) 0;
+}
+
+.page {
+  position: relative;
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.page__content { height: 100%; overflow: hidden; }
+.page__folio {
+  position: absolute;
+  right: var(--space-5);
+  bottom: var(--space-3);
+  font-size: var(--text-ui);
+  color: var(--color-ink-light);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The measuring probe: laid out but not seen.
+   `visibility: hidden`, NOT `display: none` — a display-none subtree has no
+   geometry and every measurement comes back zero. */
+.paged__probe {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  left: -99999px; /* token-exempt: off-canvas parking, not a layout distance */
+  top: 0;
+}
+.paged__measuring { color: var(--color-ink-mute); font-style: italic; padding: var(--gutter); }
+
+/* ── status bar ────────────────────────────────────────────────────────── */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-5);
+  background: var(--color-vellum);
+  border-top: var(--border-hair) solid var(--color-rule);
+  color: var(--color-ink-mute);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.status__sep { color: var(--color-ink-light); }
+.status__gap { flex: 1; }
+.status__warn { color: var(--color-gold-deep); }
+
+/* A token type with no renderer: visible, not silent. The failure mode a
+   switch statement hides. */
+.token--unknown { color: var(--color-danger); }

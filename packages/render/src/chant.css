@@ -77,14 +77,14 @@
 .chant-track__play svg { margin-left: 3px; }
 .chant-track:hover .chant-track__play { transform: scale(1.06); }
 .chant-track__text { min-width: 0; flex: 1; }
-.chant-track__eyebrow { display: block; font-family: var(--font-grotesk); font-size: .6rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--color-violet); }
+.chant-track__eyebrow { display: block; font-family: var(--font-ui); font-size: .6rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--color-violet); }
 .chant-track__title { display: block; font-family: var(--font-display); font-size: 1.55rem; line-height: 1.08; letter-spacing: -.01em; color: var(--color-ink); margin-top: .15rem; }
 .chant-track__preview {
   display: block; font-family: "Gentium Book Plus", "Noto Serif Devanagari", serif;
   font-size: 1.02rem; color: var(--color-ink-mute); margin-top: .25rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.chant-track__note { display: block; font-family: var(--font-grotesk); font-size: .72rem; color: var(--color-ink-mute); margin-top: .35rem; line-height: 1.4; }
+.chant-track__note { display: block; font-family: var(--font-ui); font-size: .72rem; color: var(--color-ink-mute); margin-top: .35rem; line-height: 1.4; }
 .chant-track__go { flex: none; color: var(--color-violet); display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; border: 1px solid var(--color-rule-violet); border-radius: var(--radius-pill); }
 .chant-track:hover .chant-track__go { background: color-mix(in srgb, var(--color-violet) 8%, transparent); }
 @media (max-width: 520px) {
@@ -118,7 +118,7 @@
   position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
   display: inline-flex; align-items: center; gap: .4rem; cursor: pointer;
   border: 1px solid var(--color-rule); background: var(--color-bg); color: var(--color-ink);
-  border-radius: var(--radius-pill); padding: .45rem .9rem; font-family: var(--font-grotesk); font-size: .72rem; letter-spacing: .06em;
+  border-radius: var(--radius-pill); padding: .45rem .9rem; font-family: var(--font-ui); font-size: .72rem; letter-spacing: .06em;
 }
 .chant-modal__close:hover { border-color: var(--color-violet); color: var(--color-violet); }
 @media (max-width: 520px) {
@@ -149,7 +149,7 @@
   border: 1px solid var(--c-line); background: color-mix(in srgb, var(--c-bg-raise) 92%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   color: var(--c-ink); border-radius: var(--radius-pill); padding: .6rem .95rem;
-  font-family: var(--font-grotesk); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+  font-family: var(--font-ui); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
   box-shadow: var(--shadow-md);
   transition: border-color .15s, background .15s, color .15s, transform .1s;
 }
@@ -180,7 +180,7 @@
 .chant-nav__head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1rem 1.1rem; border-bottom: 1px solid var(--color-rule);
-  font-family: var(--font-grotesk); font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--color-violet);
+  font-family: var(--font-ui); font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--color-violet);
 }
 .chant-nav__x { appearance: none; border: none; background: transparent; color: var(--color-ink-mute); cursor: pointer; width: 30px; height: 30px; display: grid; place-items: center; border-radius: var(--radius-control); }
 .chant-nav__x:hover { background: var(--color-bg-alt); color: var(--color-ink); }
@@ -189,7 +189,7 @@
 .chant-nav__sec { margin-bottom: .35rem; }
 .chant-nav__seclabel {
   display: block; width: 100%; text-align: left; appearance: none; border: none; background: transparent; cursor: pointer;
-  font-family: var(--font-grotesk); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--color-ink);
+  font-family: var(--font-ui); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--color-ink);
   padding: .45rem .45rem; font-weight: 600; border-radius: var(--radius-control);
 }
 .chant-nav__seclabel:hover { color: var(--color-violet); background: var(--color-bg-alt); }
@@ -205,7 +205,7 @@
 }
 .chant-nav__v:hover { background: var(--color-bg-alt); color: var(--color-violet); }
 .chant-nav__vn {
-  flex: none; min-width: 1.5rem; text-align: right; font-family: var(--font-grotesk);
+  flex: none; min-width: 1.5rem; text-align: right; font-family: var(--font-ui);
   font-variant-numeric: lining-nums tabular-nums; font-size: .74rem; font-weight: 600; color: var(--color-violet);
 }
 .chant-nav__vtext {
@@ -240,10 +240,10 @@
    the text actually has something to set (a saṅkalpa module, a deity slot). */
 .chant-settings__group { margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px solid var(--c-line); }
 .chant-settings__group-title {
-  font-family: var(--font-grotesk); font-size: .68rem; letter-spacing: .18em;
+  font-family: var(--font-ui); font-size: .68rem; letter-spacing: .18em;
   text-transform: uppercase; color: var(--c-violet); margin-bottom: .8rem;
 }
-.chant-settings__hint { font-family: var(--font-grotesk); font-size: .72rem; line-height: 1.5; color: var(--c-ink-mute); margin-top: .8rem; }
+.chant-settings__hint { font-family: var(--font-ui); font-size: .72rem; line-height: 1.5; color: var(--c-ink-mute); margin-top: .8rem; }
 @media (max-width: 640px) {
   .chant-settings-pop {
     position: fixed; inset: auto 0 0 0; top: auto; width: 100%;
@@ -258,7 +258,7 @@
 .chant-speed .sk-label { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
 .chant-speed__val {
   font-variant-numeric: tabular-nums; color: var(--color-violet); font-weight: 600;
-  font-family: var(--font-grotesk); font-size: .9rem;
+  font-family: var(--font-ui); font-size: .9rem;
 }
 .chant-speed__range {
   -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin: .55rem 0 .2rem;
@@ -276,13 +276,13 @@
 .chant-speed__range:focus-visible { outline: 2px solid var(--color-violet); outline-offset: 3px; }
 .chant-speed__ticks {
   display: flex; justify-content: space-between; font-size: .66rem; letter-spacing: .04em;
-  color: var(--color-ink-mute); font-variant-numeric: tabular-nums; font-family: var(--font-grotesk);
+  color: var(--color-ink-mute); font-variant-numeric: tabular-nums; font-family: var(--font-ui);
 }
 
 .seg { display: flex; flex-wrap: wrap; gap: .35rem; }
 .seg button {
   appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: .35em;
-  font-family: var(--font-grotesk); font-size: .82rem;
+  font-family: var(--font-ui); font-size: .82rem;
   padding: .42rem .8rem; border-radius: var(--radius-pill);
   border: 1px solid var(--c-line); background: var(--c-bg);
   color: var(--c-ink-soft); transition: all .14s;
@@ -333,10 +333,10 @@
    line to itself once the head is more than one row. */
 .section__head { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem .8rem; margin-bottom: 1rem; }
 .section__label {
-  font-family: var(--font-grotesk); font-size: .74rem; letter-spacing: .2em;
+  font-family: var(--font-ui); font-size: .74rem; letter-spacing: .2em;
   text-transform: uppercase; color: var(--c-violet); min-width: 0;
 }
-.section__src { font-family: var(--font-grotesk); font-size: .64rem; letter-spacing: .04em; color: var(--c-ink-mute); font-style: normal; min-width: 0; }
+.section__src { font-family: var(--font-ui); font-size: .64rem; letter-spacing: .04em; color: var(--c-ink-mute); font-style: normal; min-width: 0; }
 .section__rule { flex: 1 1 2rem; min-width: 2rem; height: 1px; background: var(--c-line); }
 
 /* A section the reader COMPOSES in place rather than reading from the document
@@ -551,7 +551,7 @@
    around it, so without a margin it welds the two words it separates. */
 .danda { color: var(--c-ink-mute); margin: 0 .24em; }
 .vnum {
-  font-family: var(--font-grotesk); font-size: .6em; color: var(--c-violet);
+  font-family: var(--font-ui); font-size: .6em; color: var(--c-violet);
   background: color-mix(in srgb, var(--c-violet) 10%, transparent);
   border-radius: var(--radius-control); padding: .05em .45em; vertical-align: .2em; margin-left: .3em; letter-spacing: .04em;
   font-variant-numeric: lining-nums;
@@ -565,11 +565,11 @@
    Same quiet register as `.section__src`, so it reads as apparatus and never
    competes with the mantra above it or the sense below. */
 .verse__src {
-  margin-top: .4rem; font-family: var(--font-grotesk); font-size: .64rem;
+  margin-top: .4rem; font-family: var(--font-ui); font-size: .64rem;
   letter-spacing: .04em; color: var(--c-ink-mute); font-style: normal;
   max-width: 44rem;
 }
-.translation__eyebrow { font-style: normal; font-family: var(--font-grotesk); font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:var(--c-ink-mute); margin-right:.5rem; }
+.translation__eyebrow { font-style: normal; font-family: var(--font-ui); font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:var(--c-ink-mute); margin-right:.5rem; }
 
 /* ---- practice mode ------------------------------------------------------- */
 .practice { max-width: min(80rem, 94vw); margin: 0 auto; padding: 3.4rem clamp(1rem,4vw,1.6rem) 7rem; }
@@ -579,7 +579,7 @@
   min-height: 44dvh; display: flex; flex-direction: column; justify-content: center; text-align: center;
   container-type: inline-size;   /* the column `.pada` sizes itself off */
 }
-.practice__meta { font-family: var(--font-grotesk); font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:var(--c-ink-mute); margin-bottom: 1.2rem; }
+.practice__meta { font-family: var(--font-ui); font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:var(--c-ink-mute); margin-bottom: 1.2rem; }
 .practice .pada, .practice .pada-secondary { text-align: center; }
 .practice__controls {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
@@ -636,17 +636,17 @@
 .wp__word { font-family:"Gentium Book Plus","Noto Serif Devanagari","Noto Serif Telugu","Noto Serif Tamil",serif; font-size: 2rem; line-height:1.25; }
 .wp__word-sec { font-family:"Gentium Book Plus","Noto Serif Devanagari","Noto Serif Telugu","Noto Serif Tamil",serif; font-size: 1.25rem; color: var(--c-ink-mute); margin-top: .1rem; }
 
-.wp__sandhi-note { font-family: var(--font-grotesk); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--c-violet); margin-top:.35rem; }
+.wp__sandhi-note { font-family: var(--font-ui); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--c-violet); margin-top:.35rem; }
 .wp__entry + .wp__entry { margin-top:1.1rem; padding-top:1.1rem; border-top:1px dashed var(--c-line); }
 .wp__lemma { display:flex; align-items:baseline; gap:.5rem; flex-wrap:wrap; margin: 1rem 0 .2rem; padding-bottom:.7rem; border-bottom:1px solid var(--c-line-soft); }
-.wp__lemma-label { font-family: var(--font-grotesk); font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--c-ink-mute); }
+.wp__lemma-label { font-family: var(--font-ui); font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--c-ink-mute); }
 .wp__lemma-form { font-family:"Gentium Book Plus",serif; font-size:1.3rem; color:var(--c-ink); }
-.wp__pill { margin-left:auto; font-family: var(--font-grotesk); font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; padding:.2rem .55rem; border-radius:var(--radius-pill); border:1px solid var(--c-line); color:var(--c-ink-soft); }
+.wp__pill { margin-left:auto; font-family: var(--font-ui); font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; padding:.2rem .55rem; border-radius:var(--radius-pill); border:1px solid var(--c-line); color:var(--c-ink-soft); }
 .wp__pill--subanta { color: var(--c-hold); border-color: color-mix(in srgb,var(--c-hold) 40%,var(--c-line)); }
 .wp__pill--tinanta { color: var(--c-svara); border-color: color-mix(in srgb,var(--c-svara) 40%,var(--c-line)); }
 
 .wp__grid { display:grid; grid-template-columns: auto 1fr; gap: .45rem 1rem; margin: .8rem 0; }
-.wp__grid dt { font-family: var(--font-grotesk); font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; color:var(--c-ink-mute); align-self:center; }
+.wp__grid dt { font-family: var(--font-ui); font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; color:var(--c-ink-mute); align-self:center; }
 .wp__grid dd { margin:0; font-size:1rem; }
 .wp__meaning { margin-top:.6rem; font-style: italic; color: var(--c-ink-soft); line-height:1.5; }
 .wp__note { margin-top:.5rem; font-size:.85rem; color: var(--c-ink-mute); }
@@ -655,14 +655,14 @@
   display:flex; align-items:center; gap:.5rem; margin-top:1rem; text-decoration:none;
   border:1px solid var(--c-line); border-radius:var(--radius-control); padding:.6rem .8rem;
   color: var(--c-violet); background: color-mix(in srgb,var(--c-violet) 6%, transparent);
-  font-family: var(--font-grotesk); font-size:.85rem; transition: border-color .14s;
+  font-family: var(--font-ui); font-size:.85rem; transition: border-color .14s;
 }
 .wp__dict:hover { border-color: var(--c-violet); }
 .wp__dict b { font-family:"Gentium Book Plus",serif; font-style: normal; }
-.wp__close { margin-top:1rem; width:100%; appearance:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; border:1px solid var(--c-line); background:var(--c-bg); color:var(--c-ink); border-radius:var(--radius-control); padding:.7rem; font-family: var(--font-grotesk); }
+.wp__close { margin-top:1rem; width:100%; appearance:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; border:1px solid var(--c-line); background:var(--c-bg); color:var(--c-ink); border-radius:var(--radius-control); padding:.7rem; font-family: var(--font-ui); }
 
 /* ---- legend -------------------------------------------------------------- */
-.legend { display:flex; flex-wrap:wrap; gap:.5rem 1.1rem; margin-top:2.5rem; padding-top:1.4rem; border-top:1px solid var(--c-line); font-family: var(--font-grotesk); font-size:.72rem; color:var(--c-ink-mute); }
+.legend { display:flex; flex-wrap:wrap; gap:.5rem 1.1rem; margin-top:2.5rem; padding-top:1.4rem; border-top:1px solid var(--c-line); font-family: var(--font-ui); font-size:.72rem; color:var(--c-ink-mute); }
 .legend span { display:inline-flex; align-items:center; gap:.45rem; }
 .lg { width: 1.3em; height: 1.3em; display:inline-block; border-radius:3px; position: relative; flex:none; }
 /* the key swatch stands for a holding box — same stroke, same air */
@@ -671,7 +671,7 @@
 .lg-svarita::before { content:""; position:absolute; left:50%; top:1px; transform:translateX(-50%); width:2.4px; height:5px; background:var(--c-svara); }
 .lg-anudatta::after { content:""; position:absolute; left:15%; right:15%; bottom:1px; height:2.4px; background:var(--c-svara); }
 
-.chant-foot { text-align:center; color:var(--c-ink-mute); font-family: var(--font-grotesk); font-size:.7rem; letter-spacing:.1em; padding: 2rem 1rem 2.5rem; }
+.chant-foot { text-align:center; color:var(--c-ink-mute); font-family: var(--font-ui); font-size:.7rem; letter-spacing:.1em; padding: 2rem 1rem 2.5rem; }
 
 @media (prefers-reduced-motion: reduce) {
   .wp, .wp-float, .verse, .chant-settings-pop, .chant-modal, .chant-fab { animation: none !important; transition: none !important; }
@@ -684,7 +684,7 @@
    THE THIRD REGISTER. The reader already runs two type registers — mantra
    (chant serif, upright, ink) and translation (serif, italic, soft ink). A
    DIRECTION is a third, and it is separated from both on TWO axes at once,
-   never one: the UI face (--font-grotesk, the same family as the contents menu
+   never one: the UI face (--font-ui, the same family as the contents menu
    and the section labels) AND muted ink on a tinted strip.
 
    Critically it is NOT multiplied by --fs. The font-size slider grows mantra
@@ -711,7 +711,7 @@
   display: block;
   margin: .55rem 0; padding: 0 0 0 clamp(.2rem, 2vw, 1rem);
   background: none; border: 0;
-  font-family: var(--font-grotesk);
+  font-family: var(--font-ui);
   font-size: clamp(.9rem, 3.4vw, .97rem); line-height: 1.55;
   color: var(--c-ink-mute);
 }
@@ -750,7 +750,7 @@
 .fig--frame-violet .fig__box { border: 1px solid var(--color-rule-violet, var(--c-violet)); }
 .fig--rounded .fig__box, .fig--rounded .fig__img { border-radius: var(--radius-card, 10px); }
 .fig__cap {
-  font-family: var(--font-grotesk); font-size: .72rem; line-height: 1.5;
+  font-family: var(--font-ui); font-size: .72rem; line-height: 1.5;
   color: var(--c-ink-mute); margin-top: .45rem;
 }
 .fig--cap-above .fig__cap { margin: 0 0 .45rem; }
@@ -762,15 +762,15 @@
 .emb { margin: .9rem 0; padding: .2rem 0 .2rem .9rem; border-left: 2px dashed var(--c-line); }
 .emb__head { display: flex; align-items: baseline; gap: .5em; margin-bottom: .3rem; }
 .emb__eyebrow {
-  font-family: var(--font-grotesk); font-size: .6rem; font-weight: 600;
+  font-family: var(--font-ui); font-size: .6rem; font-weight: 600;
   letter-spacing: .18em; text-transform: uppercase; color: var(--c-ink-mute);
 }
-.emb__title { font-family: var(--font-grotesk); font-size: .8rem; color: var(--c-violet); text-decoration: none; }
+.emb__title { font-family: var(--font-ui); font-size: .8rem; color: var(--c-violet); text-decoration: none; }
 .emb__title:hover { text-decoration: underline; }
-.emb__msg { font-family: var(--font-grotesk); font-size: .84rem; color: var(--c-ink-mute); margin: .3rem 0; }
+.emb__msg { font-family: var(--font-ui); font-size: .84rem; color: var(--c-ink-mute); margin: .3rem 0; }
 .emb__actions { display: flex; gap: .8rem; align-items: center; margin-top: .4rem; flex-wrap: wrap; }
 .emb__link, .emb__retry {
-  font-family: var(--font-grotesk); font-size: .74rem; color: var(--c-violet);
+  font-family: var(--font-ui); font-size: .74rem; color: var(--c-violet);
   background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none;
 }
 .emb__link:hover, .emb__retry:hover { text-decoration: underline; }
@@ -784,7 +784,7 @@
   margin: clamp(1.4rem, 5vw, 2.2rem) 0 0; padding: .75rem .9rem;
   border: 1px dotted color-mix(in srgb, var(--c-violet) 42%, transparent);
   border-radius: var(--radius-card, 10px);
-  font-family: var(--font-grotesk);
+  font-family: var(--font-ui);
 }
 .grp-row__text { min-width: 0; flex: 1; display: grid; gap: .15rem; }
 .grp-row__label { font-size: .82rem; color: var(--c-ink); }
@@ -800,7 +800,7 @@
 
 /* ---- contents: numbering runs + the include row -------------------------- */
 .chant-nav__part {
-  font-family: var(--font-grotesk); font-size: .6rem; font-weight: 600;
+  font-family: var(--font-ui); font-size: .6rem; font-weight: 600;
   letter-spacing: .18em; text-transform: uppercase; color: var(--c-ink-mute);
   margin: .9rem 0 .3rem; padding: 0 .55rem;
 }
