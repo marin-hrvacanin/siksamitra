@@ -35,7 +35,15 @@ const BASELINE = 'tools/module-baseline.json';
  */
 const LIMIT = 400;
 
-const SKIP = ['/generated/', '.generated.', '/node_modules/', '/dist/', '/target/'];
+/*
+ * Generated or copied output. Its size is the generator's business, and
+ * reviewing it by eye is not the point of this gate — it flagged the vendored
+ * `fonts.css` (642 machine-written @font-face rules) as a monolith to split.
+ */
+const SKIP = [
+  '/generated/', '.generated.', '/node_modules/', '/dist/', '/target/',
+  '/public/fonts/', '/assets/fonts/', '/corpus/',
+];
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {

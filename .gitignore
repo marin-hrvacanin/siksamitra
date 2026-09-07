@@ -53,7 +53,8 @@ shots/
 *.smdoc
 
 # === Claude Code local config ===
-CLAUDE.md
+# CLAUDE.md is COMMITTED: it is the map a contributor or agent needs on clone.
+# Only machine-local settings are ignored.
 .claude/settings.local.json
 
 # === OS / editor ===
