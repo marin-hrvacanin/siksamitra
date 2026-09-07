@@ -30,3 +30,9 @@ export {
 export type {
   WordCharStyle, WordMarkRole, WordParaRole, WordParaStyle,
 } from './word-styles.js';
+
+// ── package boundary hardening ──────────────────────────────────────────────
+export {
+  LIMITS, badEntryNames, entryNameProblem, formatBytes,
+} from './entry-name.js';
+export type { BadEntryName } from './entry-name.js';

@@ -11,6 +11,9 @@
       "path": "packages/interop"
     },
     {
+      "path": "packages/layout"
+    },
+    {
       "path": "packages/storage"
     },
     {

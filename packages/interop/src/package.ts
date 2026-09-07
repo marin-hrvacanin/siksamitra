@@ -19,6 +19,7 @@
  * See specs/chant-editor/01-FORMAT.md §4.
  */
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
+import { LIMITS, entryNameProblem, formatBytes } from './entry-name.js';
 import { canonicalJson, normalizeChantDoc } from '@siksamitra/format';
 import type { ChantDoc } from '@siksamitra/format';
 
@@ -149,9 +150,44 @@ export class PackageError extends Error {}
 
 export async function unpack(bytes: Uint8Array): Promise<ChantPackage> {
   let entries: Record<string, Uint8Array>;
+  let count = 0;
+  let total = 0;
   try {
-    entries = unzipSync(bytes);
-  } catch {
+    // The filter runs BEFORE an entry is inflated, and a zip records each
+    // entry's uncompressed size in its own header — so a bomb is refused while
+    // it is still a few kilobytes on disk. Inflating first and measuring after
+    // is measuring the damage.
+    entries = unzipSync(bytes, {
+      filter: (file) => {
+        count += 1;
+        if (count > LIMITS.entryCount) {
+          throw new PackageError(`more than ${LIMITS.entryCount} entries`);
+        }
+        const problem = entryNameProblem(file.name);
+        if (problem !== null) {
+          throw new PackageError(`entry "${file.name}": ${problem}`);
+        }
+        if (file.originalSize !== undefined) {
+          if (file.originalSize > LIMITS.entryBytes) {
+            throw new PackageError(
+              `entry "${file.name}" declares ${formatBytes(file.originalSize)},`
+              + ` over the ${formatBytes(LIMITS.entryBytes)} limit`,
+            );
+          }
+          total += file.originalSize;
+          if (total > LIMITS.totalBytes) {
+            throw new PackageError(
+              `entries total more than ${formatBytes(LIMITS.totalBytes)} uncompressed`,
+            );
+          }
+        }
+        return true;
+      },
+    });
+  } catch (e) {
+    // A refusal from the filter is a real diagnosis and must not be flattened
+    // into "not a zip", which would send someone looking for the wrong problem.
+    if (e instanceof PackageError) throw e;
     throw new PackageError('not a zip — a .vuchant is a zip archive');
   }
 
@@ -174,6 +210,12 @@ export async function unpack(bytes: Uint8Array): Promise<ChantPackage> {
 
   const docBytes = entries['document.json'];
   if (docBytes === undefined) throw new PackageError('no document.json');
+  if (docBytes.length > LIMITS.documentBytes) {
+    throw new PackageError(
+      `document.json is ${formatBytes(docBytes.length)}, over the`
+      + ` ${formatBytes(LIMITS.documentBytes)} limit — it is parsed into objects`,
+    );
+  }
   const hash = await sha256Hex(docBytes);
   if (hash !== manifest.docHash) {
     // Refused rather than repaired: a document that does not match its hash was
