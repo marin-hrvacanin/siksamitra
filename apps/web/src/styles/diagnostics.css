@@ -1,0 +1,7 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+/* A token type with no renderer: visible, not silent. The failure mode a
+   switch statement hides. */
+.token--unknown { color: var(--chrome-danger); }

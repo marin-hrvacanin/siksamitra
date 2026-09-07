@@ -149,7 +149,42 @@ export function holdingSpans(tokens: readonly ChantToken[]): HoldingSpan[] {
     offset += units.length;
   }
 
-  return spans;
+  /*
+   * Merge runs that share a GROUP across a syllable boundary.
+   *
+   * A geminate does this: the corpus marks `dan·naḥ` with one `hg` on the two
+   * `n`s, and `ij·jo` likewise — one box over `nn`, which Devanagari writes as
+   * a single conjunct akṣara and IAST syllabifies apart. Scanning per syllable
+   * therefore reports one authored box as two, and an invariant test caught it
+   * on exactly those two verses.
+   *
+   * The group id is the author's statement of intent, so it wins over the
+   * syllable split. Runs with NO group are left alone: two boxes that merely
+   * happen to touch were not claimed to be one.
+   */
+  const merged: HoldingSpan[] = [];
+  for (const span of spans) {
+    const prev = merged[merged.length - 1];
+    if (
+      prev !== undefined
+      && prev.group !== null
+      && prev.group === span.group
+      && prev.len === span.len
+      && span.from === prev.to + 1
+    ) {
+      merged[merged.length - 1] = {
+        group: prev.group,
+        len: prev.len,
+        from: prev.from,
+        to: span.to,
+        letters: prev.letters + span.letters,
+      };
+      continue;
+    }
+    merged.push(span);
+  }
+
+  return merged;
 }
 
 /**

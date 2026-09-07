@@ -1,0 +1,39 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+/* ── status bar ────────────────────────────────────────────────────────── */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-5);
+  background: var(--chrome-raise);
+  border-top: var(--border-hair) solid var(--chrome-line);
+  color: var(--chrome-ink-mute);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.status__sep { color: var(--chrome-ink-mute); }
+
+/*
+ * The status bar sheds detail rather than overflowing. What survives longest is
+ * what a person cannot get elsewhere: the document, then the view and zoom.
+ * Section and syllable counts are the first to go — they are reassurance, not
+ * information you act on.
+ */
+@media (max-width: 62rem) {
+  .status__opt { display: none; }
+}
+@media (max-width: 44rem) {
+  .status__opt2 { display: none; }
+}
+.status__gap { flex: 1; }
+.status__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+.status__warn { color: var(--chrome-accent); }

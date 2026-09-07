@@ -1,0 +1,73 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+/* ── the canvas ────────────────────────────────────────────────────────── */
+
+.canvas {
+  overflow: auto;
+  background: var(--chrome-desk);
+  /* Anchoring is done by us on a view change; the browser's own anchoring
+     fights it and produces a double correction. */
+  overflow-anchor: none;
+}
+
+.canvas__msg {
+  color: var(--chrome-ink-mute);
+  padding: var(--gutter);
+  font-style: italic;
+}
+
+/* Flow: a measure column on the page's own content width, so a line that fits
+   here fits on paper and switching to Pages reflows nothing. */
+.flow { display: flex; justify-content: center; padding: var(--gutter) 0; }
+.flow__column {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  padding: var(--doc-pad);
+  box-shadow: var(--chrome-shadow);
+}
+
+
+/* Paged: pages on a desk. The grey around them is what tells the eye these are
+   sheets and not a scrolling column. */
+.paged {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gutter);
+  padding: var(--gutter) 0;
+}
+
+.page {
+  position: relative;
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  box-shadow: var(--chrome-shadow-lift);
+  border-radius: var(--chrome-radius);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.page__content { height: 100%; overflow: hidden; }
+.page__folio {
+  position: absolute;
+  right: var(--space-5);
+  bottom: var(--space-3);
+  font-size: var(--text-ui);
+  color: var(--chrome-ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The measuring probe: laid out but not seen.
+   `visibility: hidden`, NOT `display: none` — a display-none subtree has no
+   geometry and every measurement comes back zero. */
+.paged__probe {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  left: -99999px; /* token-exempt: off-canvas parking, not a layout distance */
+  top: 0;
+}
+.paged__measuring { color: var(--chrome-ink-mute); font-style: italic; padding: var(--gutter); }

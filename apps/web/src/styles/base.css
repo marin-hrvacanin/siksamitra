@@ -1,0 +1,54 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+/* =============================================================================
+   The application shell.
+
+   TOOL CHROME, NOT A LANDING PAGE. One UI face, dense controls, hairlines, a
+   real status bar. The landing register — large display type, generous
+   spacing, decorative colour — belongs on a website; on a tool it wastes the
+   screen the document needs and makes every control look like a call to
+   action.
+
+   The only reading face on screen is the text being edited.
+
+   Every value here resolves to a token. `check:literals` scans this file, so a
+   literal colour or size fails the build rather than quietly starting the drift
+   that ended v1 with a 169 KB stylesheet nobody could reason about.
+   ============================================================================= */
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+/*
+ * `body` is OUTSIDE `.app`, so it resolves the DEFAULT theme's tokens, not the
+ * chosen one. Colouring text here and letting it inherit inward put the default
+ * theme's ink on the chosen theme's background: on Nirṇaya that was near-black
+ * text on charcoal, a contrast of 1.5, and the theme matrix caught it across
+ * eleven combinations.
+ *
+ * So body carries only what cannot vary, and every themed surface states its
+ * own ink.
+ */
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Nothing may scroll the window sideways. A tool that does has lost a control
+   off the edge, and the person cannot know what. */
+html, body { overflow-x: hidden; }
+
+.app {
+  display: grid;
+  grid-template-rows: minmax(var(--toolbar-h), auto) 1fr var(--status-h);
+  height: 100%;
+  overflow: hidden;
+  /* The themed root. Everything inside inherits from here. */
+  background: var(--chrome-bg);
+  color: var(--chrome-ink);
+}

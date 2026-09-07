@@ -34,6 +34,7 @@
 - [x] 4.7 Move the saṅkalpa and nāmāvalī variable modules
 - [ ] 4.8 Re-wire the theme token generator (`gen-tokens.mjs`) to v2 paths and prove `check:tokens`
 - [ ] 4.9 Move the render-check surface and its measuring harness
+- [ ] 4.11 **The renderer splits a geminate box that the format reader merges.** `renderIastUnits` scans per SYLLABLE, so one authored `hg` spanning `dan·naḥ` draws as two adjacent boxes; `holdingSpans` now merges it, because the group id is the author's intent. Two readings of one document inside one codebase — the renderer must join a run continued into the next syllable. Found by the holding-invariant suite on bhagya-suktam v-3 and v-5.
 - [ ] 4.10 Replace the saṅkalpa-shaped hole in the host contract with a general module registry — `HostCoordinates` currently names one module by type, which is honest but not general
 
 ## 5. The interop package

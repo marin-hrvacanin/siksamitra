@@ -1,0 +1,48 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+.tb__b, .seg__b, .zoom__b, .zoom__v, .zoom__f {
+  font: inherit;
+  color: var(--chrome-ink-soft);
+  background: transparent;
+  border: var(--border-hair) solid transparent;
+  border-radius: var(--chrome-radius);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tb__b:hover:not(:disabled), .seg__b:hover, .zoom__b:hover, .zoom__v:hover, .zoom__f:hover {
+  background: var(--chrome-sunk);
+  color: var(--chrome-ink);
+}
+.tb__b:disabled { opacity: 0.4; cursor: default; }
+.tb__b.is-on, .zoom__f.is-on {
+  background: var(--chrome-sunk);
+  border-color: var(--chrome-line);
+  color: var(--chrome-accent);
+}
+
+.tb__sel {
+  font: inherit;
+  color: var(--chrome-ink);
+  background: var(--chrome-bg);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  padding: var(--space-1) var(--space-2);
+  max-width: var(--space-9);
+}
+
+/* A segmented control: three states, one click each, current one readable. */
+.seg {
+  display: inline-flex;
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  overflow: hidden;
+}
+.seg__b { border-radius: 0; border: 0; border-right: var(--border-hair) solid var(--chrome-line); }
+.seg__b:last-child { border-right: 0; }
+.seg__b.is-on { background: var(--chrome-accent); color: var(--chrome-raise); }
+
+.zoom { display: inline-flex; align-items: center; }
+.zoom__v { min-width: var(--space-9); text-align: center; font-variant-numeric: tabular-nums; }

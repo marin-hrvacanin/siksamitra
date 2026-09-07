@@ -1,0 +1,77 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+/* ── appearance popover ───────────────────────────────────────────────────
+   A popover, not a settings page: this is a thing people try repeatedly and
+   compare, and a full-page trip loses the document they were judging against. */
+
+.ap { position: relative; }
+
+.ap__pop {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 20;
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-5);
+  background: var(--chrome-raise);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  box-shadow: var(--chrome-shadow-lift);
+  /* Hairline + a shadow only where one is genuinely needed: a floating layer
+     has to be separable from what is behind it. Nothing else here is raised. */
+}
+
+.ap__grp { min-width: 11rem; }
+.ap__lbl {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-ui-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chrome-ink-mute);
+}
+
+.ap__opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--chrome-ink-soft);
+  background: transparent;
+  border: var(--border-hair) solid transparent;
+  border-radius: var(--chrome-radius);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-1);
+  cursor: pointer;
+}
+.ap__opt:hover { background: var(--chrome-sunk); color: var(--chrome-ink); }
+.ap__opt.is-on {
+  border-color: var(--chrome-accent);
+  background: var(--chrome-sunk);
+  color: var(--chrome-ink);
+}
+
+.ap__name { display: block; }
+.ap__note {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-ui-sm);
+  line-height: 1.45;
+  color: var(--chrome-ink-mute);
+}
+
+/* The document surfaces read the DOCUMENT axis. */
+.flow__column, .page {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+}
+.flow__column, .page__content {
+  font-family: var(--font-body);
+  font-size: var(--doc-size);
+  line-height: var(--doc-leading);
+}
+.section__title { color: var(--doc-heading); }
+.verse__n, .page__folio { color: var(--doc-quiet); }
+.fill, .plain { color: var(--doc-fill); }
