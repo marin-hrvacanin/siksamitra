@@ -1,8 +1,12 @@
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import puppeteer from 'puppeteer-core';
 const b = await puppeteer.launch({ executablePath: process.env.CHROME, headless: 'shell', args: ['--no-sandbox'] });
 const p = await b.newPage();
 await p.setViewport({ width: 1500, height: 1000, deviceScaleFactor: 2 });
-await p.goto('file:///D:/Projects/siksamitra/design-preview.html', { waitUntil: 'load' });
+/* Relative to this file, not to whoever's machine wrote it. */
+const page = pathToFileURL(resolve(fileURLToPath(new URL('../..', import.meta.url)), 'design-preview.html')).href;
+await p.goto(page, { waitUntil: 'load' });
 await new Promise(r => setTimeout(r, 900));
 console.log(await p.evaluate(() => ({
   panels: document.querySelectorAll('.dp-panel').length,

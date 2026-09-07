@@ -39,8 +39,18 @@ await page.evaluate(() => document.fonts.ready);
  * here means the expectations below are the numbers a person can read out of
  * Word's own dialogs.
  */
-const measured = await page.evaluate(async () => {
-  const mod = await import('/@fs/D:/Projects/siksamitra/packages/tokens/generated/tokens.ts');
+/*
+ * THE LIST OF THEMES IS PASSED IN, not imported inside the page.
+ *
+ * This used to `import('/@fs/D:/Projects/siksamitra/...')` — an absolute path
+ * to this machine, through the dev server's own file-serving route. It
+ * therefore worked here and nowhere else: on CI it failed against a BUILT app,
+ * which has no such route and no such drive. The names are ordinary data and
+ * Node can read them from the same module the app does.
+ */
+const { DOCUMENT_IDS, DEFAULT_DOCUMENT } = await import('../packages/tokens/generated/tokens.ts');
+
+const measured = await page.evaluate(async ({ ids, fallback }) => {
   const canvas = document.querySelector('.canvas');
   const root = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
   const pt = (px) => Math.round((Number.parseFloat(px) / root) * 12 * 1000) / 1000;
@@ -89,7 +99,7 @@ const measured = await page.evaluate(async () => {
   };
 
   const out = {};
-  for (const id of mod.DOCUMENT_IDS) {
+  for (const id of ids) {
     canvas.setAttribute('data-doc', id);
     // A reflow, so the container query and the clamp have resolved.
     void document.body.offsetHeight;
@@ -108,9 +118,9 @@ const measured = await page.evaluate(async () => {
       },
     };
   }
-  canvas.setAttribute('data-doc', mod.DEFAULT_DOCUMENT);
+  canvas.setAttribute('data-doc', fallback);
   return out;
-});
+}, { ids: DOCUMENT_IDS, fallback: DEFAULT_DOCUMENT });
 
 /* The expectations, from the same table the exporter and the theme read. */
 const { WORD_PARAGRAPHS } = await import('../packages/tokens/src/word.ts');

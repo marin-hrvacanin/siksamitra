@@ -25,8 +25,11 @@ const lum = (rgb) => {
   return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(bl);
 };
 
-const result = await p.evaluate(async (sel) => {
-  const { CHROME_IDS, DOCUMENT_IDS, MODES } = await import('/@fs/D:/Projects/siksamitra/packages/tokens/generated/tokens.ts');
+/* Read in Node and passed in, not imported through the dev server's own
+   file route from an absolute path on one machine — see `doc-fidelity.mjs`. */
+const { CHROME_IDS, DOCUMENT_IDS, MODES } = await import('../packages/tokens/generated/tokens.ts');
+
+const result = await p.evaluate(async (sel, CHROME_IDS, MODES, DOCUMENT_IDS) => {
   const app = document.querySelector('.app');
   const canvas = document.querySelector('.canvas');
   const out = [];
@@ -55,7 +58,7 @@ const result = await p.evaluate(async (sel) => {
     }
   }
   return out;
-}, UI);
+}, UI, CHROME_IDS, MODES, DOCUMENT_IDS);
 
 let bad = 0;
 const transparent = (c) => c === 'rgba(0, 0, 0, 0)' || c === 'transparent' || c === '';
