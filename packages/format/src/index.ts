@@ -25,5 +25,11 @@ export type { HoldingSpan } from './text.js';
 
 // ── the document model ──────────────────────────────────────────────────────
 export * from './chant.js';
+
+// ── a document as a file: read it, write it, or start an empty one ──────────
+export {
+  CHANT_FILE_FORMAT, blankChantDoc, readChantFile, writeChantFile,
+} from './chant-file.js';
+export type { ChantFileRead } from './chant-file.js';
 export * from './chant-doc.js';
 export * from './chant-vars.js';

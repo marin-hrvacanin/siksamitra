@@ -97,6 +97,34 @@
   overflow: hidden;
   min-width: 0;
 }
+/*
+ * SWITCHING TABS SHOULD LOOK LIKE A MOVEMENT, not a substitution.
+ *
+ * The panel used to be replaced between two frames, which reads as a flicker:
+ * the eye is told something changed but not what, and on a ribbon where the
+ * groups differ in width the whole row appears to jump. A short rise and fade
+ * gives the change a direction, and 120 ms is under the threshold where a
+ * transition starts to feel like waiting.
+ *
+ * The TABS themselves ease their colour rather than snapping, for the same
+ * reason and at the same speed.
+ */
+@keyframes rbn-panel-in {
+  from { opacity: 0; transform: translateY(calc(-1 * var(--space-2))); }
+  to   { opacity: 1; transform: none; }
+}
+.rbn__body { animation: rbn-panel-in var(--motion-quick) ease-out; }
+.rbn__tab { transition: background var(--motion-quick) ease-out, color var(--motion-quick) ease-out; }
+
+/*
+ * Somebody who has asked their system to stop animating things has asked for
+ * this too. The panel still changes; it simply arrives rather than moving.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .rbn__body { animation: none; }
+  .rbn__tab { transition: none; }
+}
+
 .rbn.is-folded .rbn__body { display: none; }
 
 /* ── a group ─────────────────────────────────────────────────────────────── */
@@ -129,6 +157,20 @@
 }
 
 /* A collapsed group, kept measurable — see the note in `Ribbon.tsx`. */
+/*
+ * The measuring box: no size of its own, and its contents clipped so their
+ * width never reaches the row's scroll size. `clip` and not `hidden` — hidden
+ * would make this a scroll container and put the overflow back on the page's
+ * arithmetic, which is the whole thing being avoided.
+ */
+.rbn__measure {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: clip;
+}
 .grp.is-collapsed {
   position: absolute;
   visibility: hidden;

@@ -73,7 +73,7 @@ if (skipChecks) {
 
 // 3. The fonts into the app, then the web bundle the shell wraps.
 run('node scripts/copy-fonts.mjs');
-run('npm run -w @siksamitra/web build');
+run('npm run build:web');
 
 // 4. The shell.
 const bundles = all

@@ -53,6 +53,15 @@ export interface Binding {
    *  is right for the caret keys: nobody wants an "arrow left" button. */
   ribbon?: 'history' | 'marks' | 'auto';
   /**
+   * Whether the button shows as pressed, given what is selected.
+   *
+   * A holding button is a STATE, not only an action: Word's bold button is lit
+   * when the selection is bold, and without the same thing here marking
+   * already-marked text gave no feedback at all — the box was already on the
+   * page, so a correct mark and a dead button looked identical.
+   */
+  pressed?: (session: Session) => boolean;
+  /**
    * The glyph on that button. Required in practice for a ribbon action: a
    * ribbon of words is a menu, and this one has to be usable at a glance by
    * someone coming from Word. The holding icons are our own notation — the box
@@ -116,8 +125,9 @@ export const EDIT_KEYS: readonly Binding[] = [
     ribbon: 'marks',
     icon: 'hold-short',
     size: 'lg',
-    hint: 'A thin box — a short vowel before',
-    run: (s) => s.mark({ hold: 'short' }),
+    hint: 'A thin box — a short vowel before. Press it again to take it off',
+    pressed: (s) => s.holdState === 'short',
+    run: (s) => s.toggleHold('short'),
   },
   {
     key: 'h',
@@ -127,8 +137,9 @@ export const EDIT_KEYS: readonly Binding[] = [
     ribbon: 'marks',
     icon: 'hold-long',
     size: 'lg',
-    hint: 'A thick box — a long vowel before',
-    run: (s) => s.mark({ hold: 'long' }),
+    hint: 'A thick box — a long vowel before. Press it again to take it off',
+    pressed: (s) => s.holdState === 'long',
+    run: (s) => s.toggleHold('long'),
   },
   {
     key: 'j',
@@ -137,6 +148,7 @@ export const EDIT_KEYS: readonly Binding[] = [
     ribbon: 'marks',
     icon: 'hold-none',
     hint: 'There is NO holding here — overrules the rules',
+    pressed: (s) => s.holdState === 'none',
     run: (s) => s.mark({ hold: null }),
   },
   {

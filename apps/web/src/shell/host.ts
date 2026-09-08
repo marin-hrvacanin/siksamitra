@@ -11,6 +11,11 @@
  * every call fails; behind a dynamic import inside a guard, a browser never
  * loads it at all and the bundle splits it out on its own.
  *
+ * THIS MODULE OWNS THE WINDOW. The disk is the other half of the same seam and
+ * lives in `file-host.ts`, separately, so that a browser — which never opens a
+ * file dialog until somebody asks for one — does not carry the file code in
+ * the bundle it loads to read a document.
+ *
  * THE PLATFORM COMES FROM THE USER AGENT, deliberately, rather than from
  * `plugin-os`. The only thing the platform decides here is where the window's
  * buttons go, and the web view already knows which one it is: WebView2 says
@@ -105,6 +110,22 @@ export interface WindowControls {
   isMaximized: () => Promise<boolean>;
   /** Fires when the window is maximised or restored, by us or by the OS. */
   onResized: (fn: () => void) => Promise<() => void>;
+  /**
+   * ASK BEFORE THE WINDOW GOES, and take the decision away from the shell.
+   *
+   * Every close gesture is refused here — the caption button, Alt+F4, the task
+   * bar, a shutdown — and `fn` is left to decide. Without that, closing the
+   * window with unsaved changes loses them in silence, and it is the one way
+   * out of a document nobody remembers to defend.
+   *
+   * The app then calls `destroy`, which is the same close WITHOUT the
+   * close-requested round trip; calling `close` again would come straight back
+   * here and never end.
+   */
+  onCloseRequested: (fn: () => void) => Promise<() => void>;
+  destroy: () => Promise<void>;
+  /** The OS window's own title — the task bar and Alt+F4 read it, not ours. */
+  setTitle: (title: string) => Promise<void>;
 }
 
 let controls: Promise<WindowControls | null> | null = null;
@@ -134,6 +155,19 @@ export function windowControls(): Promise<WindowControls | null> {
           const stop = await w.onResized(() => fn());
           return stop;
         },
+        onCloseRequested: async (fn: () => void) => {
+          const stop = await w.onCloseRequested((event) => {
+            /* ALWAYS prevented, unconditionally. The handler runs before the
+               app has had a chance to ask anything — the answer arrives from a
+               dialog several seconds later — so there is no state in which
+               letting the default through would be right. */
+            event.preventDefault();
+            fn();
+          });
+          return stop;
+        },
+        destroy: () => w.destroy(),
+        setTitle: (title: string) => w.setTitle(title),
       };
     } catch {
       /* A desktop shell without the window permissions is a real state: the

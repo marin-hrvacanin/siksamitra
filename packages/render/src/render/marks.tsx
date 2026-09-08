@@ -73,6 +73,23 @@ export interface MarkRenderOptions {
    * number of units it stands for.
    */
   unitOffset?: number;
+  /**
+   * This syllable's holding continues from the syllable before it / into the
+   * one after it, so the box must not close on that side.
+   *
+   * A BOX IS DRAWN PER SYLLABLE and cannot be anything else: an Indic akṣara
+   * is one shaped cluster and you cannot box half a conjunct, which is the
+   * owner's own ruling (MARKING-RULES §2.4). So two adjacent held letters that
+   * fall either side of a syllable boundary drew two touching boxes — the
+   * owner's report was "holdings only include two letters and don't combine
+   * when adjacent, which is not good", and marking five letters produced three
+   * boxes rather than one.
+   *
+   * The fix is not to move the boundary. It is to stop drawing the edge where
+   * the two meet, so the pair reads as the single box it is.
+   */
+  joinL?: boolean;
+  joinR?: boolean;
 }
 
 /** One syllable's form in a script. Older fragment tables carry only IAST +
@@ -153,8 +170,14 @@ export function renderIastUnits(units: Unit[], o: MarkRenderOptions): ReactNode[
         if (ru.sbhakti) out.push(<span className="sbhakti" aria-hidden key={`sb-${i}-${k}`} />);
       });
       const inked = run.map((ru) => ru.c + (ru.candra ? '̐' : '')).join('');
+      /* Only the run that TOUCHES the edge may be left open, or a box in the
+         middle of the syllable would lose a side it has no neighbour on. */
+      const openL = o.joinL === true && i === 0;
+      const openR = o.joinR === true && j === units.length;
+      const cls = `hold hold-${variant}`
+        + (openL ? ' hold--join-l' : '') + (openR ? ' hold--join-r' : '');
       out.push(
-        <span className={`hold hold-${variant}`} key={i} style={holdBoxVars(inked, o.fontStack)}>
+        <span className={cls} key={i} style={holdBoxVars(inked, o.fontStack)}>
           {run.map((ru, k) => renderUnit(ru, i + k, o, false, false, i + k))}
         </span>,
       );
@@ -215,7 +238,23 @@ export function renderSyl(
     <Fragment key={key}>
       {sbhakti ? <span className="sbhakti" aria-hidden /> : null}
       {hold
-        ? <span className={`hold hold-${hold}`} style={holdBoxVars(text, o.fontStack)}>{aksara}</span>
+        ? (
+          <span
+            /*
+             * The join belongs here too. It was wired only into the IAST
+             * branch, so the owner's report — five adjacent letters drawing
+             * three boxes — went on reproducing in Devanagari, Telugu and
+             * Tamil while the IAST screenshot in `tools/shot-marking.mjs`
+             * showed it fixed.
+             */
+            className={`hold hold-${hold}`
+              + (o.joinL === true ? ' hold--join-l' : '')
+              + (o.joinR === true ? ' hold--join-r' : '')}
+            style={holdBoxVars(text, o.fontStack)}
+          >
+            {aksara}
+          </span>
+        )
         : aksara}
     </Fragment>
   );

@@ -157,3 +157,40 @@ html, body { overflow-x: hidden; }
 :root {
   --mask-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm0 2a3 3 0 0 1 3 3v3H9V7a3 3 0 0 1 3-3Z'/%3E%3C/svg%3E");
 }
+
+/* ── scrollbars ─────────────────────────────────────────────────────────── */
+
+/*
+ * THE THEME REACHES THE SCROLLBAR TOO.
+ *
+ * The browser's default bar is a grey slab with its own idea of light and
+ * dark, and beside a dark window it is the brightest thing on screen — the one
+ * piece of the program that had not been designed.
+ *
+ * `scrollbar-color` first, because it is the standard property and the one
+ * that will still work in five years; the WebKit pseudo-elements after it for
+ * the finer shape, which is what the desktop shell actually renders with. Both
+ * say the same thing, so neither has to be read to understand the other.
+ *
+ * `color-scheme` on the app is what makes a browser that supports NEITHER draw
+ * a dark bar in a dark window rather than a white one.
+ */
+.app {
+  scrollbar-color: var(--chrome-line) transparent;
+  scrollbar-width: thin;
+}
+
+.app ::-webkit-scrollbar { width: var(--scrollbar-w); height: var(--scrollbar-w); }
+.app ::-webkit-scrollbar-track { background: transparent; }
+.app ::-webkit-scrollbar-thumb {
+  background: var(--chrome-line);
+  border-radius: var(--scrollbar-w);
+  /* Inset by a transparent border, so the bar reads as a thin rail rather
+     than filling its gutter edge to edge. */
+  border: var(--space-1) solid transparent;
+  background-clip: padding-box;
+}
+.app ::-webkit-scrollbar-thumb:hover { background: var(--chrome-ink-mute); }
+/* Where two bars meet. Left alone it is a small grey square of the browser's
+   own choosing, in the one corner both bars point at. */
+.app ::-webkit-scrollbar-corner { background: transparent; }

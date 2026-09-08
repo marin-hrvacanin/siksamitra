@@ -28,8 +28,20 @@ export interface OverflowGroup {
 }
 
 export interface OverflowResult {
-  /** Attach to the row being measured. */
-  readonly ref: React.RefObject<HTMLDivElement | null>;
+  /**
+   * Attach to the row being measured.
+   *
+   * A CALLBACK ref, not a `RefObject`, because the row is not always the same
+   * element. The ribbon body is keyed on the tab, so switching tabs REPLACES
+   * it — and a `RefObject` records that silently, leaving the effect's
+   * observer attached to the element that just left the document. It went on
+   * reporting: a detached row measures its groups at zero width, the widths
+   * map filled up with the previous tab's ids at 0px, and because it was no
+   * longer empty the guard below never re-measured. Every group then cost
+   * nothing, everything "fitted", and the View tab ran 256px past a 380px
+   * window. A callback ref makes the swap a dependency change.
+   */
+  readonly ref: (el: HTMLDivElement | null) => void;
   /** Ids that fit and should render inline. */
   readonly visible: ReadonlySet<string>;
   /** Ids that fit as a SINGLE folded button of their own. */
@@ -60,9 +72,20 @@ export function useOverflow(
   groups: readonly OverflowGroup[],
   reserve = 220,
 ): OverflowResult {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const [row, setRow] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((el: HTMLDivElement | null) => setRow(el), []);
   /** Natural width of each group at the current density, measured once. */
   const widths = useRef<Map<string, number>>(new Map());
+  /**
+   * The ids the widths were measured for, joined.
+   *
+   * Which groups are in the row changes with the tab, and widths belonging to
+   * a different set of groups are not evidence about this one. Comparing the
+   * set is what makes the re-measure happen on a tab change without anyone
+   * having to remember to ask for it — and it is stable across a collapse,
+   * because a folded group stays in the row as `[data-group]`.
+   */
+  const measuredFor = useRef<string>('');
   const [available, setAvailable] = useState<number>(0);
   const [tick, setTick] = useState(0);
   /**
@@ -82,25 +105,47 @@ export function useOverflow(
 
   const remeasure = useCallback(() => {
     widths.current.clear();
+    measuredFor.current = '';
     setTick((t) => t + 1);
   }, []);
 
   useEffect(() => {
-    const row = ref.current;
     if (row === null) return;
 
     const read = (): void => {
+      /*
+       * A row that has left the document measures everything at zero. Reading
+       * it is worse than not reading it, because the zeros are recorded and
+       * believed.
+       */
+      if (!row.isConnected) return;
+      const els = [...row.querySelectorAll<HTMLElement>('[data-group]')];
+      const ids = els.map((el) => el.dataset['group'] ?? '');
+      const signature = ids.join('|');
       // Measure each group's natural width ONCE per density/content change.
       // Re-measuring while some are collapsed would read the collapsed width
       // and the row would never expand again — a one-way ratchet that looks
       // like the ribbon slowly eating itself.
-      if (widths.current.size === 0) {
-        for (const el of row.querySelectorAll<HTMLElement>('[data-group]')) {
+      if (signature !== measuredFor.current) {
+        measuredFor.current = signature;
+        /* Another tab's groups are not this row's budget. */
+        for (const id of [...widths.current.keys()]) {
+          if (!ids.includes(id)) widths.current.delete(id);
+        }
+        let got = false;
+        for (const el of els) {
           const id = el.dataset['group'];
           if (id === undefined) continue;
-          widths.current.set(id, el.getBoundingClientRect().width);
+          const w = el.getBoundingClientRect().width;
+          /*
+           * A zero is not a measurement. A group is laid out absolutely while
+           * collapsed and still has a width, so a zero here means the row is
+           * mid-change — and recording it would tell the fit that the group
+           * costs nothing, which is how five groups came to "fit" in 380px.
+           */
+          if (w > 0) { widths.current.set(id, w); got = true; }
         }
-        if (widths.current.size > 0) setMeasured((n) => n + 1);
+        if (got) setMeasured((n) => n + 1);
       }
       /*
        * The CONTENT box, not the border box. The row carries its own
@@ -139,13 +184,14 @@ export function useOverflow(
       void fonts?.ready.then(() => {
         if (!live) return;
         widths.current.clear();
+        measuredFor.current = '';
         setTick((t) => t + 1);
       });
     }
     const observer = new ResizeObserver(read);
     observer.observe(row);
     return () => { live = false; observer.disconnect(); };
-  }, [tick]);
+  }, [row, tick]);
 
   const { visible, collapsed, overflow } = useMemo(() => {
     /*
@@ -175,7 +221,6 @@ export function useOverflow(
    * them back.
    */
   useEffect(() => {
-    const row = ref.current;
     if (row === null) return;
     row.dataset['fit'] = JSON.stringify({
       available: Math.round(available),
@@ -184,7 +229,7 @@ export function useOverflow(
       collapsed,
       overflow,
     });
-  }, [available, visible, collapsed, overflow, measured]);
+  }, [row, available, visible, collapsed, overflow, measured]);
 
   return { ref, visible, collapsed, overflow, remeasure };
 }

@@ -224,31 +224,24 @@ export function Ribbon(
 
       <div
         className="rbn__body"
+        /*
+         * KEYED ON THE TAB, so React builds a new panel rather than patching
+         * the old one — which is what lets the animation below run at all. A
+         * patched panel is the same element, and an element that never enters
+         * never plays an entry animation.
+         */
+        key={tab.id}
         id="rbn-body"
         role="tabpanel"
         aria-labelledby={`rbn-tab-${tab.id}`}
         ref={ref}
       >
-        {tab.groups.map((g) => {
-          const shown = visible.has(g.id);
-          return (
-            <section
-              className={shown ? 'grp' : 'grp is-collapsed'}
-              data-group={g.id}
-              key={g.id}
-              /*
-               * A collapsed group stays in the DOM, out of flow, so its natural
-               * width is still measurable. Removing it would leave the ribbon
-               * unable to discover that it fits again when the window grows —
-               * a one-way collapse that never comes back.
-               */
-              aria-hidden={!shown}
-            >
-              <div className="grp__body">{g.content}</div>
-              <div className="grp__label">{g.label}</div>
-            </section>
-          );
-        })}
+        {tab.groups.filter((g) => visible.has(g.id)).map((g) => (
+          <section className="grp" data-group={g.id} key={g.id}>
+            <div className="grp__body">{g.content}</div>
+            <div className="grp__label">{g.label}</div>
+          </section>
+        ))}
 
         {[...collapsed].map((id) => {
           const g = tab.groups.find((x) => x.id === id)!;
@@ -268,6 +261,28 @@ export function Ribbon(
             onToggle={() => setOpen((o) => (o === '__more' ? null : '__more'))}
           />
         )}
+
+        {/*
+          THE GROUPS THAT DID NOT FIT, KEPT ONLY TO BE MEASURED.
+
+          A collapsed group has to stay in the DOM or the ribbon can never
+          discover that it fits again when the window grows — it would be a
+          one-way collapse. It used to stay in the row itself, out of flow, and
+          that was fine until a group grew wider than a narrow window: the File
+          group measures 423 CSS pixels, and its hidden copy alone made a row
+          of 380 report 44 of overflow. The copies now sit in a box of size
+          zero whose `overflow: clip` keeps them out of the row's scroll size,
+          which is what `tools/responsive.mjs` measures and what a person would
+          see if the row did not clip.
+        */}
+        <div className="rbn__measure" aria-hidden>
+          {tab.groups.filter((g) => !visible.has(g.id)).map((g) => (
+            <section className="grp is-collapsed" data-group={g.id} key={g.id}>
+              <div className="grp__body">{g.content}</div>
+              <div className="grp__label">{g.label}</div>
+            </section>
+          ))}
+        </div>
       </div>
     </div>
   );

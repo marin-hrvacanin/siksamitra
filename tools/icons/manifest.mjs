@@ -85,6 +85,11 @@ export const SYMBOL = {
   loop: 'repeat',
   waveform: 'graphic_eq',
   microphone: 'mic',
+  /* Moving a pada boundary a hair earlier or later. Chevrons rather than
+     arrows: an arrow in this ribbon means motion through the document, and
+     these move a MARK along the recording by 0.05 s. */
+  'nudge-back': 'chevron_left',
+  'nudge-on': 'chevron_right',
 
   /* the shell */
   appearance: 'palette',

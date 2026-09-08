@@ -17,6 +17,7 @@ import { App } from './App.js';
 import '@siksamitra/tokens/tokens.css';
 import '@siksamitra/render/mark-geometry.css';
 import '@siksamitra/render/chant.css';
+import '@siksamitra/render/hold-join.css';
 import './app.css';
 
 const root = document.getElementById('root');

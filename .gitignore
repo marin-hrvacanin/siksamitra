@@ -82,3 +82,6 @@ src/**/*.d.ts
 src/**/*.d.ts.map
 dist-types/
 .work/
+
+# Screenshots and measurements the tools write for us to look at.
+/artifacts/

@@ -13,23 +13,23 @@
  * the same reason, in its quick-access bar.
  */
 import type { ReactNode } from 'react';
-import type { ChantDoc } from '@siksamitra/format';
 import { TitleBar } from './TitleBar.js';
 import { Icon } from '../ui/Icon.js';
-import type { Session } from '../editor/useSession.js';
+import type { DocFile } from './useDocFile.js';
 
-export function AppTitleBar(
-  { doc, file, session }: {
-    doc: ChantDoc | null;
-    /** A document opened from disk names its file; a library one names us. */
-    file: { name: string } | null;
-    session: Session;
-  },
-): ReactNode {
+export function AppTitleBar({ file }: { file: DocFile }): ReactNode {
+  const { doc, session } = file;
   return (
     <TitleBar
-      title={doc === null ? 'śikṣāmitra' : doc.title}
-      subtitle={file === null ? 'śikṣāmitra' : file.name}
+      /*
+       * THE MARK GOES BEFORE THE NAME. A bullet is what VS Code, Sublime and
+       * TextMate all put there, and it is in front because the name is the
+       * part that gets truncated: "durga-sukt…" with the mark at the end says
+       * nothing at all. Nothing else in this bar changes while typing, so the
+       * dot appearing is the whole signal.
+       */
+      title={doc === null ? 'śikṣāmitra' : `${file.dirty ? '• ' : ''}${doc.title}`}
+      subtitle={doc === null ? 'śikṣāmitra' : file.name}
       leading={<span className="tbar__mark" aria-hidden>śi</span>}
       trailing={(
         <>

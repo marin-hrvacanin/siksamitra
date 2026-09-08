@@ -50,6 +50,11 @@ export {
 } from './marks.js';
 export type { MarkPatch, MarkReason, UnitAddress } from './marks.js';
 
+export { adoptSource, unitsOf } from './adopt-source.js';
+export { markUnits } from './mark-tokens.js';
+export { tokenSrcMap } from './token-src-map.js';
+export type { AdoptResult } from './adopt-source.js';
+
 export { deriveVerse, profileChain, verseSrcMap } from './derive-verse.js';
 export type { DeriveVerseResult, VerseReport } from './derive-verse.js';
 

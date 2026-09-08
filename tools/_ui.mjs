@@ -13,6 +13,34 @@
  * So the contract lives here, once. When the shell changes, this file changes
  * and the tools do not.
  */
+import { assertFresh } from './build-stamp.mjs';
+
+export { assertFresh };
+
+/**
+ * Where the app is, for every tool.
+ *
+ * It was written out in each of them, and they did not agree: the theme matrix
+ * asked for 5273 while the app was being served on 5293, and passed only
+ * because CI happened to use the port it had guessed.
+ */
+export const APP_URL = process.env.URL ?? 'http://localhost:5273/';
+
+/**
+ * Open the app, and refuse to drive a build that is not the source on disk.
+ *
+ * The freshness check belongs here rather than in each tool, because a check a
+ * tool has to remember to make is a check that will be forgotten — and this
+ * one was missing entirely while every browser gate reported green against a
+ * bundle built hours earlier. See `build-stamp.mjs`.
+ */
+export async function openApp(page, url = APP_URL, { selector = '.rbn' } = {}) {
+  await assertFresh(url);
+  await page.goto(url, { waitUntil: 'networkidle0' });
+  await page.waitForSelector(selector);
+  await page.evaluate(() => document.fonts.ready);
+  return page;
+}
 
 /** The parts of the window, by selector. */
 export const UI = {

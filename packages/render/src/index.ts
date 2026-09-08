@@ -40,8 +40,14 @@ export { default as ChantReader } from './ChantReader.js';
 export { ChantEmbed } from './ChantEmbed.js';
 export { ChantSettings } from './ChantSettings.js';
 
+// ── playing a mapping, the same way in the reader and in the editor ─────────
+export { applyRate, SEG_LEAD, startAt } from './transport.js';
+export type { StartAt } from './transport.js';
+
 // ── the primitives the editor renders with ──────────────────────────────────
 export { renderSyl, toScriptDigits } from './render/marks.js';
+export { holdJoins } from './render/hold-joins.js';
+export type { HoldJoin } from './render/hold-joins.js';
 export type { ScriptKey } from './render/marks.js';
 
 // ── mark palettes, generated from the one token source ──────────────────────

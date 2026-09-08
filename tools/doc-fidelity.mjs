@@ -19,8 +19,9 @@
  *   CHROME=<path> node tools/doc-fidelity.mjs
  */
 import puppeteer from 'puppeteer-core';
+import { APP_URL, openApp } from './_ui.mjs';
 
-const URL = process.env.URL ?? 'http://localhost:5273/';
+const URL = APP_URL;
 const exe = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
 const browser = await puppeteer.launch({
@@ -28,9 +29,7 @@ const browser = await puppeteer.launch({
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 1500, height: 950 });
-await page.goto(URL, { waitUntil: 'networkidle0' });
-await page.waitForSelector('.pada');
-await page.evaluate(() => document.fonts.ready);
+await openApp(page, URL, { selector: '.pada' });
 
 /**
  * Measure one document element, in POINTS.

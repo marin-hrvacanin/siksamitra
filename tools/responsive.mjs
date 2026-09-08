@@ -19,7 +19,7 @@
  *   CHROME=<path> node tools/responsive.mjs
  */
 import puppeteer from 'puppeteer-core';
-import { openTab } from './_ui.mjs';
+import { APP_URL, openApp, openTab } from './_ui.mjs';
 
 const WIDTHS = [1920, 1600, 1400, 1200, 1024, 900, 880, 800, 700, 620, 560, 500, 440, 400, 380];
 const TABS = ['home', 'marking', 'audio', 'view'];
@@ -34,9 +34,7 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
-await page.goto(process.env.URL ?? 'http://localhost:5273/', { waitUntil: 'networkidle0' });
-await page.waitForSelector('.rbn');
-await page.evaluate(() => document.fonts.ready);
+await openApp(page, APP_URL);
 
 const problems = [];
 const rows = [];

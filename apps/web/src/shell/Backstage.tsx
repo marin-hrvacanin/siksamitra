@@ -20,17 +20,27 @@ import type { ChantDoc } from '@siksamitra/format';
 import { Icon } from '../ui/Icon.js';
 import { AccountPanel } from './AccountPanel.js';
 import type { AccountApi } from '../account/useAccount.js';
-import type { RecentDocument } from './useRecents.js';
+import type { LibraryDoc } from './library.js';
+import type { RecentDoc } from './useRecents.js';
 
 export function Backstage(
-  { doc, documents, slug, recents, onSlug, onClose, actions, onAbout, account }: {
+  {
+    doc, documents, openRef, dirty, recents, canReopen, onOpen, onClose, actions,
+    onAbout, account,
+  }: {
     doc: ChantDoc | null;
-    documents: readonly { slug: string; title: string }[];
-    slug: string;
-    recents: readonly RecentDocument[];
-    onSlug: (slug: string) => void;
+    documents: readonly LibraryDoc[];
+    /** Where the open document lives, so its row can say so. `null` for one
+     *  that has never been saved. */
+    openRef: string | null;
+    dirty: boolean;
+    recents: readonly RecentDoc[];
+    /** Whether a row can be opened again from here — see `canReopen` in
+     *  `useDocFile`. A browser cannot reopen a file by name. */
+    canReopen: (row: RecentDoc) => boolean;
+    onOpen: (ref: string, kind: RecentDoc['kind']) => void;
     onClose: () => void;
-    /** Open / save / export / print — the same ones the ribbon shows. */
+    /** New / open / save / export / print — the same ones the ribbon shows. */
     actions: ReactNode;
     /** The About page. A placeholder until there is something to say. */
     onAbout: () => void;
@@ -77,6 +87,7 @@ export function Backstage(
           <span>Back</span>
         </button>
         <h1 className="bs__title">{doc?.title ?? 'No document'}</h1>
+        {dirty && <span className="bs__unsaved">unsaved changes</span>}
       </header>
 
       <div className="bs__body">
@@ -124,18 +135,32 @@ export function Backstage(
               Nothing yet. What you open appears here, most recent first.
             </p>
           )}
-          {recents.map((r) => (
-            <button
-              type="button"
-              key={r.slug}
-              className={r.slug === slug ? 'bs__item is-on' : 'bs__item'}
-              onClick={() => { onSlug(r.slug); onClose(); }}
-            >
-              <Icon name="document" size="md" />
-              <span className="bs__item-name">{r.title}</span>
-              <span className="bs__item-when">{when(r.at)}</span>
-            </button>
-          ))}
+          {recents.map((r) => {
+            /*
+             * A ROW THAT CANNOT BE OPENED SAYS SO rather than disappearing.
+             * A file picked in Safari or Firefox leaves no handle the page may
+             * keep, so it cannot be reopened by name — but it is still the
+             * document somebody was working on yesterday, and dropping it from
+             * the list would make the list look broken instead of the browser
+             * look limited.
+             */
+            const can = canReopen(r);
+            return (
+              <button
+                type="button"
+                key={r.ref}
+                className={r.ref === openRef ? 'bs__item is-on' : 'bs__item'}
+                disabled={!can}
+                title={can ? r.name : `${r.name} — a browser cannot reopen a file by name; `
+                  + 'choose it again with Open'}
+                onClick={() => { onOpen(r.ref, r.kind); onClose(); }}
+              >
+                <Icon name="document" size="md" />
+                <span className="bs__item-name">{r.title}</span>
+                <span className="bs__item-when">{when(r.at)}</span>
+              </button>
+            );
+          })}
 
           <h2 className="bs__lbl bs__lbl--second">Library</h2>
           <p className="bs__note">The documents that come with the program.</p>
@@ -143,12 +168,12 @@ export function Backstage(
             <button
               type="button"
               key={d.slug}
-              className={d.slug === slug ? 'bs__item is-on' : 'bs__item'}
-              onClick={() => { onSlug(d.slug); onClose(); }}
+              className={d.slug === openRef ? 'bs__item is-on' : 'bs__item'}
+              onClick={() => { onOpen(d.slug, 'library'); onClose(); }}
             >
               <Icon name="document" size="md" />
               <span className="bs__item-name">{d.title}</span>
-              {d.slug === slug && <span className="bs__item-when">open</span>}
+              {d.slug === openRef && <span className="bs__item-when">open</span>}
             </button>
           ))}
         </section>

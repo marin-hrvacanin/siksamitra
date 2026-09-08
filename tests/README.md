@@ -57,6 +57,12 @@ its bugs most cheaply.
 | the holding invariants | `packages/edit/src/__tests__/holdings.test.ts`, `tests/integration/holding-invariants.test.ts` |
 | pages, zoom, the three views | `packages/layout/src/__tests__/zoom.test.ts`, `paginate.test.ts`, `anchor.test.ts` |
 | the document's type scale, and 1:1 with his `.docx` | `tests/integration/document-type.test.ts`, `word-fidelity.test.ts` + the `check:document` gate |
+| reading and writing a `.json` document — the refusals, the empty one | `packages/format/src/__tests__/chant-file.test.ts` |
+| the same over the eleven documents that ship | `tests/integration/chant-file.test.ts` |
+| the document lifecycle: new, open, save, save as, the guard, recents | `tests/component/doc-lifecycle.test.tsx` |
+| unsaved changes, and what each answer to the guard means | `apps/web/src/shell/__tests__/doc-file.test.ts` |
+| the most-recently-used list | `apps/web/src/shell/__tests__/recents.test.ts` |
+| Save / Don't save / Cancel, as a person meets it | `tests/component/guard-dialog.test.tsx` |
 | `.smdoc` v2 — saving and opening a document | `tests/integration/smdoc-container.test.ts` |
 | `.smdoc` v1 — opening his older documents | `tests/integration/smdoc-v1.test.ts` |
 | Word import and export | `tests/integration/word-surfaces.test.ts` |

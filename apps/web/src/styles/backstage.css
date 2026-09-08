@@ -101,6 +101,21 @@
 }
 .bs__item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bs__item-when { color: var(--chrome-ink-mute); }
+/* A recents row for a file this host cannot reopen. Dimmed rather than hidden
+   — see `Backstage.tsx` for why the row stays. */
+.bs__item:disabled { color: var(--chrome-ink-mute); cursor: default; }
+.bs__item:disabled:hover { background: transparent; }
+
+/* The unsaved mark, beside the document's name. The same fact the title bar
+   and the status bar carry, said here because this is the view somebody is in
+   when they are deciding what to do with the file. */
+.bs__unsaved {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--chrome-accent) 16%, transparent);
+  color: var(--chrome-ink-soft);
+  font-size: var(--text-ui-sm);
+}
 
 .bs__info { display: flex; flex-direction: column; align-items: flex-start; }
 .bs__about {

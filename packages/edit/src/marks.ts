@@ -82,7 +82,7 @@ export function markLetters(
   why: MarkReason,
   note?: string,
 ): { overrides: ChantOverride[]; placed: number; missed: number } {
-  const out = [...overrides];
+  let out = [...overrides];
   let placed = 0;
   let missed = 0;
 
@@ -92,32 +92,48 @@ export function markLetters(
       missed += 1;
       continue;
     }
-    const index = out.findIndex((o) => sameAddress(o.at, found.at));
-    if (index === -1) {
-      out.push({
-        at: found.at,
-        set: { ...patch },
-        why,
-        ch: found.ch,
-        ...(note === undefined ? {} : { note }),
-      });
-    } else {
-      const prev = out[index]!;
-      const merged: ChantOverride = {
-        ...prev,
-        set: { ...prev.set, ...patch },
-        // Escalate only. See the header: a later editorial pass must not
-        // relabel the owner's own decision.
-        why: WEIGHT[why] >= WEIGHT[prev.why] ? why : prev.why,
-        ch: found.ch,
-      };
-      if (note !== undefined) merged.note = note;
-      out[index] = merged;
-    }
+    out = mergeOverride(out, {
+      at: found.at,
+      set: { ...patch },
+      why,
+      ch: found.ch,
+      ...(note === undefined ? {} : { note }),
+    });
     placed += 1;
   }
 
   return { overrides: out, placed, missed };
+}
+
+/**
+ * Add one override, merging with whatever already addresses that letter.
+ *
+ * Split out of `markLetters` because adopting a source layer needs the same
+ * rule — one override per letter, `why` escalates and never demotes — and a
+ * second copy of it is a second place for the two to drift apart.
+ */
+export function mergeOverride(
+  overrides: readonly ChantOverride[],
+  next: ChantOverride,
+): ChantOverride[] {
+  const out = [...overrides];
+  const index = out.findIndex((o) => sameAddress(o.at, next.at));
+  if (index === -1) {
+    out.push(next);
+    return out;
+  }
+  const prev = out[index]!;
+  const merged: ChantOverride = {
+    ...prev,
+    set: { ...prev.set, ...next.set },
+    // Escalate only. See the header: a later editorial pass must not
+    // relabel the owner's own decision.
+    why: WEIGHT[next.why] >= WEIGHT[prev.why] ? next.why : prev.why,
+    ...(next.ch === undefined ? {} : { ch: next.ch }),
+  };
+  if (next.note !== undefined) merged.note = next.note;
+  out[index] = merged;
+  return out;
 }
 
 /**

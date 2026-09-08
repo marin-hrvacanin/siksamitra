@@ -1,0 +1,69 @@
+/* JOINING TWO HOLDING BOXES THAT MEET.
+ *
+ * A box is drawn per syllable and cannot be otherwise: an Indic aksara is one
+ * shaped cluster, and half a conjunct cannot be boxed (MARKING-RULES §2.4). So
+ * five adjacent held letters spanning three syllables drew three touching
+ * boxes, which the owner reported as "holdings only include two letters and
+ * don't combine when adjacent, which is not good".
+ *
+ * The pair keeps its elements and loses the EDGE where they meet, so the run
+ * reads as the single box it is. `holdJoins` in the renderer decides which
+ * edges those are.
+ *
+ * THREE SHADOWS, NOT A BORDER, AND NOT A CLIP. Two earlier attempts:
+ *
+ *   a clip took the vertical stroke off with `clip-path`, and took the ENDS
+ *   off the top and bottom rules with it — a gap in the line at every syllable
+ *   boundary, which is "the holding looks broken";
+ *
+ *   a border simply omitted one side, and lost the stroke WEIGHT: Chromium
+ *   floors `border-width` to a whole pixel, so the long stroke — measured
+ *   1.937px at the editor's size — drew at 1px, exactly the short stroke's
+ *   width. Long and short are distinguished by weight and by nothing else
+ *   (`MARK_GEOMETRY`: "measured, not chosen … must stay distinguishable at
+ *   every text size"), so on precisely the runs this feature exists for, the
+ *   two marks became the same mark. It also changed the box's width by a
+ *   pixel, because `box-sizing: border-box` does nothing for an auto-width
+ *   inline-block.
+ *
+ * An inset box-shadow offset on one axis paints one edge, keeps sub-pixel
+ * widths, and costs no layout at all — so the geometry is identical to an
+ * unjoined box and no letter moves. */
+
+.hold.hold-short,
+.syl--aksara.hold-short { --hold-w: var(--mark-hold-stroke-short); }
+.hold.hold-long,
+.syl--aksara.hold-long { --hold-w: var(--mark-hold-stroke-long); }
+
+/* One edge each. The offset direction chooses which. */
+.hold,
+.syl--aksara {
+  --hj-top: inset 0 var(--hold-w) 0 0 var(--c-hold);
+  --hj-bottom: inset 0 calc(-1 * var(--hold-w)) 0 0 var(--c-hold);
+  --hj-left: inset var(--hold-w) 0 0 0 var(--c-hold);
+  --hj-right: inset calc(-1 * var(--hold-w)) 0 0 0 var(--c-hold);
+}
+
+/* Open on the left: top, bottom and right. */
+.hold.hold--join-l,
+.syl--aksara.hold--join-l {
+  box-shadow: var(--hj-top), var(--hj-bottom), var(--hj-right);
+  margin-left: 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+/* Open on the right: top, bottom and left. */
+.hold.hold--join-r,
+.syl--aksara.hold--join-r {
+  box-shadow: var(--hj-top), var(--hj-bottom), var(--hj-left);
+  margin-right: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+
+/* Open both ways — the middle of a run. */
+.hold.hold--join-l.hold--join-r,
+.syl--aksara.hold--join-l.hold--join-r {
+  box-shadow: var(--hj-top), var(--hj-bottom);
+}

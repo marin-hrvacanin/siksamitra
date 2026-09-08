@@ -18,6 +18,7 @@
 @import './styles/nav.css';
 @import './styles/popover.css';
 @import './styles/backstage.css';
+@import './styles/dialog.css';
 /* The document comes after the shell and after `chant.css` (imported in
    `main.tsx`), because it overrides the inherited platform stylesheet's idea
    of how a mantra is set. It must stay before `editor.css`, whose caret and

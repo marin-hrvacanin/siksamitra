@@ -50,6 +50,7 @@ import { namavaliFor } from "./modules/namavali.js";
 import type { ChantScript } from "./preferences.js";
 import { ChantSettings } from "./ChantSettings";
 import { resetHoldBoxes } from "./holdBox";
+import { applyRate, SEG_LEAD, startAt } from "./transport.js";
 // The mark drawing lives in ONE place, shared with the editor. CLAUDE.md
 // forbids a second renderer for marked text; these are the primitives that
 // draw a mark, lifted out verbatim (render/marks.tsx).
@@ -57,6 +58,7 @@ import {
   plainText, renderSyl as renderSylShared, sylText, toScriptDigits, wordSurface,
 } from "./render/marks";
 import "./chant.css";
+import "./hold-join.css";
 
 /* ==========================================================================
    Veda Union — the ONE marked-text reader.
@@ -628,106 +630,66 @@ export default function ChantReader({
 
   /* Playback rate, in ONE place.
    *
-   * Three things conspired here, and the symptom was a verse and a single pāda
-   * playing at different speeds:
+   * The symptom was a verse and a single pāda playing at different speeds, and
+   * the cause was two closures each reading `audioSpeed` out of their own
+   * scope: `playVerse` is rebuilt constantly (it depends on `playingVerse`) so
+   * it happened to see the current speed, while `playSegment` depends only on
+   * stable things and kept whatever the speed was when the reader mounted. So
+   * the rate lives in a ref, which no closure can hold a stale copy of.
    *
-   *  1. `playVerse` and `playSegment` each read `audioSpeed` out of their own
-   *     closure and NEITHER listed it as a dependency. `playVerse` is rebuilt
-   *     constantly (it depends on `playingVerse`) so it happened to see the
-   *     current speed; `playSegment` depends only on stable things, so it kept
-   *     whatever the speed was when the reader mounted. Two call sites, two
-   *     different answers.
-   *  2. Assigning `src` RESETS the rate. The media load algorithm sets
-   *     `playbackRate` back to `defaultPlaybackRate` (1 unless told otherwise),
-   *     and it runs as a queued task — so `a.src = …; a.playbackRate = x;`
-   *     silently loses `x`. `playSegment` set the rate inside `loadeddata`,
-   *     i.e. after the load, which is why it behaved differently again.
-   *  3. The live-apply effect set `playbackRate` but not `defaultPlaybackRate`,
-   *     so the next clip reverted.
-   *
-   * So: the rate lives in a ref (no closure can go stale), `applyRate` writes
-   * BOTH properties, and `loadedmetadata` re-asserts it after every load. */
+   * WRITING it is `applyRate` in `transport.ts`, shared with the editor's
+   * transport — assigning `src` resets the rate, and the reason that has to be
+   * two properties rather than one is written down there. */
   const speedRef = useRef(audioSpeed);
-  const applyRate = useCallback(() => {
+  const applyLocalRate = useCallback(() => {
     const a = audioRef.current;
-    if (!a) return;
-    a.defaultPlaybackRate = speedRef.current;
-    a.playbackRate = speedRef.current;
+    if (a) applyRate(a, speedRef.current);
   }, []);
-  useEffect(() => { speedRef.current = audioSpeed; applyRate(); }, [audioSpeed, applyRate]);
+  useEffect(() => { speedRef.current = audioSpeed; applyLocalRate(); }, [audioSpeed, applyLocalRate]);
 
-  /* Start at a KNOWN position, every time.
-   *
-   * `a.src = src; a.currentTime = t; a.play()` does not do that. Assigning
-   * `currentTime` before the media has loaded is dropped or deferred, and
-   * assigning the same `src` may or may not trigger a reload, so playback began
-   * sometimes at `t` and sometimes a little past it — the same clip differing
-   * between presses, which is what "sometimes it swallows the first syllable"
-   * was. A fade cannot do that: it is baked into the file and would swallow
-   * identically every time.
-   *
-   * So: make sure metadata is there, seek, WAIT FOR `seeked`, then play. Each
-   * step is confirmed rather than assumed, and a play is cancelled if another
-   * one starts while we are waiting. */
+  /* Start at a KNOWN position, every time — `startAt` in `transport.ts`, which
+   * the editor's transport uses as well. Why it is not `a.src = …;
+   * a.currentTime = t; a.play()` is written down there, with the artefact that
+   * measured it. The token is here because it is this component's play that is
+   * being cancelled, and only this component knows when another one starts. */
   const playTokenRef = useRef(0);
 
-  const startAt = useCallback(
+  const startClip = useCallback(
     async (src: string, offset: number, segEnd: number | null, looping: boolean) => {
       const a = audioRef.current;
       if (!a) return false;
       const token = ++playTokenRef.current;
-      const once = (ev: string) =>
-        new Promise<void>((res) => {
-          const h = () => { a.removeEventListener(ev, h); res(); };
-          a.addEventListener(ev, h);
-        });
-
-      if (!a.src.endsWith(src)) {
-        a.src = src;
-        a.load();
-        await once("loadedmetadata");
-      } else if (a.readyState < 1) {
-        await once("loadedmetadata");
-      }
-      if (token !== playTokenRef.current) return false;
-
       segEndRef.current = segEnd;
-      a.loop = looping;
-      applyRate();
-      if (Math.abs(a.currentTime - offset) > 0.005) {
-        a.currentTime = offset;
-        await once("seeked");
-        if (token !== playTokenRef.current) return false;
-      }
-      try {
-        await a.play();
-      } catch {
-        return false;
-      }
-      return token === playTokenRef.current;
+      return startAt(a, {
+        src,
+        at: offset,
+        rate: speedRef.current,
+        loop: looping,
+        alive: () => token === playTokenRef.current,
+      });
     },
-    [applyRate],
+    [],
   );
 
   const playVerse = useCallback((v: Verse, s: Section) => {
     const audioSrc = audioFileFor(v, s);
     if (!audioSrc) return;
     if (playingVerse === v.id) { stop(); return; }
-    void startAt(audioSrc, 0, null, loop && mode === "practice").then((ok) =>
+    void startClip(audioSrc, 0, null, loop && mode === "practice").then((ok) =>
       setPlayingVerse(ok ? v.id : null),
     );
-  }, [audioFileFor, playingVerse, stop, loop, mode, startAt]);
+  }, [audioFileFor, playingVerse, stop, loop, mode, startClip]);
 
   // Play a single pāda: seek to its offset in the verse clip and stop at its end.
   const playSegment = useCallback((v: Verse, li: number) => {
     const s = sectionOf(v);
     const src = s ? audioFileFor(v, s) : null; const seg = linesFor(v)?.[li];
     if (!src || !seg) return;
-    void startAt(src, seg.start, seg.end, false).then((ok) => {
+    void startClip(src, seg.start, seg.end, false).then((ok) => {
       if (!ok) return;
       setPlayingVerse(v.id); setActiveSeg({ vid: v.id, li });
     });
-  }, [audioFileFor, linesFor, sectionOf, startAt]);
+  }, [audioFileFor, linesFor, sectionOf, startClip]);
 
   /* Stop a single-pāda clip at its end, and track which pāda is sounding.
    *
@@ -750,25 +712,6 @@ export default function ChantReader({
    * rAF cannot cover: rAF does not run while the tab is hidden, but the audio
    * keeps playing, so without it a pāda backgrounded mid-play would never
    * stop. One function, two callers, no second code path to drift. */
-  /* Stop a pāda a HAIR before its boundary.
-   *
-   * `pause()` does not retract audio the device has already buffered, and that
-   * buffer is tens of milliseconds on a wired output and can be 100–200 ms over
-   * Bluetooth. So even a frame-accurate decision to stop is heard late, and what
-   * you hear late is the attack of the NEXT line's first syllable.
-   *
-   * The error has to go one way or the other, and the two directions are not
-   * equally audible: a pāda ends on a HELD syllable that is already decaying, so
-   * clipping its last few tens of milliseconds is inaudible, whereas letting the
-   * next word's consonant through is exactly the artefact being removed. Hence a
-   * small lead rather than none.
-   *
-   * This is a mitigation, not a cure — the cure is scheduling the stop in the
-   * audio clock (Web Audio `start(when, offset, duration)`), which stops
-   * sample-accurately and exposes `outputLatency` so the highlight can be
-   * matched to the ears too. `<audio>` + `currentTime` cannot express either. */
-  const SEG_LEAD = 0.035;
-
   const tick = useCallback(() => {
     const a = audioRef.current; if (!a) return;
     if (segEndRef.current != null && a.currentTime >= segEndRef.current - SEG_LEAD) {
@@ -1007,7 +950,7 @@ export default function ChantReader({
   return (
     <div ref={rootRef} className={`chant-root${embedded ? " is-embedded" : ""}${compact ? " is-compact" : ""}`} style={{ ["--fs" as string]: fontScale }}>
       <audio ref={audioRef} onEnded={onEnded} onTimeUpdate={tick}
-             onLoadedMetadata={applyRate} preload="none" />
+             onLoadedMetadata={applyLocalRate} preload="none" />
 
       {/* Floating controls — Contents + Settings, stacked at the top-left, below
           the modal-head tray and above the document. On phones they collapse

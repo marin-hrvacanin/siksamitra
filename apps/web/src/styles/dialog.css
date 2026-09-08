@@ -1,0 +1,95 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size. */
+
+/*
+ * THE GUARD — the one modal in the program. See `shell/GuardDialog.tsx` for
+ * why it exists at all and why it is not the platform's `confirm`.
+ *
+ * It covers the WHOLE window, including the title bar, which is the opposite
+ * of the backstage's rule. The backstage is a place you are in and may leave
+ * by dragging the window somewhere else; this is a question that must be
+ * answered before anything happens — including closing, which is the gesture
+ * that raised it. A title bar with a live close button over an unanswered
+ * "save your work?" is the dialog defeating itself.
+ */
+.guard {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  /* The wash is the chrome's own ink at low opacity rather than a grey: the
+     shell has six palettes and a fixed scrim reads as dirt on half of them. */
+  background: color-mix(in srgb, var(--chrome-title) 55%, transparent);
+}
+
+.guard__box {
+  width: var(--menu-wide);
+  max-width: 100%;
+  padding: var(--space-7);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  box-shadow: var(--chrome-shadow-lift);
+}
+
+.guard__q {
+  margin: 0;
+  font-size: var(--text-ui-lg);
+  font-weight: 600;
+}
+.guard__note {
+  margin: var(--space-3) 0 0;
+  color: var(--chrome-ink-soft);
+}
+.guard__what {
+  margin: var(--space-5) 0 0;
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-mute);
+}
+
+/* Destructive at the far left, the two safe answers together at the right —
+   the arrangement every platform uses, so the mouse cannot arrive at "Don't
+   save" while aiming for the button next to Save. */
+.guard__acts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+.guard__gap { flex: 1 1 auto; }
+
+.guard__b {
+  height: var(--control-h);
+  padding: 0 var(--space-5);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-bg);
+  color: var(--chrome-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.guard__b:hover { background: var(--chrome-sunk); }
+.guard__b:focus-visible {
+  outline: var(--border-thick) solid var(--chrome-accent);
+  outline-offset: var(--space-1);
+}
+
+.guard__b--go {
+  background: var(--chrome-accent);
+  color: var(--chrome-accent-on);
+  border-color: var(--chrome-accent);
+}
+.guard__b--go:hover { background: var(--chrome-accent-hover); }
+
+/* Named, not merely coloured. A red button whose label is "Don't save" is
+   readable with the colour switched off, which is the state a fifth of
+   readers are in. */
+.guard__b--danger { color: var(--chrome-danger); }
+.guard__b--danger:hover {
+  background: color-mix(in srgb, var(--chrome-danger) 12%, transparent);
+}

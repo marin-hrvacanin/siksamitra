@@ -215,6 +215,10 @@ export const BASE = {
   "menu-wide": "24rem",
   "panel-min": "13rem",
 
+  /* How wide a scrollbar is. Narrow enough to read as a rail beside the text
+     rather than a panel of its own, wide enough to catch with a mouse. */
+  "scrollbar-w": "0.6rem",
+
   /* ── borders ──────────────────────────────────────────────────────────────
      A hairline is ONE DEVICE PIXEL and is deliberately not relative: scaled
      with the text it becomes a visible rule at large sizes and vanishes at

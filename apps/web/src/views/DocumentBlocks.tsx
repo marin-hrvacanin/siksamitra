@@ -27,6 +27,7 @@ import { Fragment, memo, type ReactNode } from 'react';
 import type {
   ChantDoc, ChantItem, ChantScriptKey, ChantSection, ChantToken, ChantVerse,
 } from '@siksamitra/format';
+import { holdJoins } from '@siksamitra/render';
 import { renderToken, unitsBefore, type TokenContext } from './token-renderers.js';
 
 export interface BlockRef {
@@ -165,7 +166,14 @@ function VerseLines(
             {li === 0 && number !== undefined && (
               <span className="verse__n" aria-hidden>{number}</span>
             )}
-            {line.map((t, ti) => renderToken(t, ti, ctx, base + unitsBefore(line, ti)))}
+            {(() => {
+              /* Which boxes run through a syllable boundary, once per line —
+                 see `holdJoins`. Per line, because a line break ends a box. */
+              const joins = holdJoins(line);
+              return line.map((t, ti) => renderToken(
+                t, ti, ctx, base + unitsBefore(line, ti), joins.get(ti),
+              ));
+            })()}
           </div>
         );
       })}

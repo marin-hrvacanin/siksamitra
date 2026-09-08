@@ -40,6 +40,12 @@ function context(over: Partial<CommandContext> = {}): CommandContext & { calls: 
     theme: 'light',
     setTheme: () => calls.push('setTheme'),
     editing: false,
+    hasDoc: true,
+    dirty: false,
+    newDoc: () => calls.push('newDoc'),
+    openDoc: () => calls.push('openDoc'),
+    save: () => calls.push('save'),
+    saveAs: () => calls.push('saveAs'),
     ...over,
   } as CommandContext & { calls: string[] };
 }
@@ -67,7 +73,7 @@ describe('the command registry', () => {
   });
 
   it('puts every command in a group the toolbar reads', () => {
-    const groups = new Set(['view', 'zoom', 'text', 'appearance']);
+    const groups = new Set(['file', 'view', 'zoom', 'text', 'appearance']);
     for (const c of COMMANDS) expect(groups, c.id).toContain(c.group);
     // And every group has something in it, or the ribbon shows an empty box.
     for (const g of groups) {
@@ -92,6 +98,12 @@ describe('the command registry', () => {
     expect(COMMANDS.find((c) => c.id === 'zoom.in')!.enabled?.(context({ zoom: 4 }))).toBe(false);
     expect(COMMANDS.find((c) => c.id === 'zoom.out')!.enabled?.(context({ zoom: 0.25 })))
       .toBe(false);
+    // Saving with nothing open is a grey button, not a refusal at the far end.
+    for (const id of ['file.save', 'file.saveAs']) {
+      const command = COMMANDS.find((c) => c.id === id)!;
+      expect(command.enabled?.(context({ hasDoc: false })), id).toBe(false);
+      expect(command.enabled?.(context({ hasDoc: true })), id).toBe(true);
+    }
   });
 
   it('reports a toggle s state from the context, not from itself', () => {

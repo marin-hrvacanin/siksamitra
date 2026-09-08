@@ -117,11 +117,24 @@ export const refusalForEdit = (section: ChantSection, blocked: readonly string[]
   + 'by hand — the program cannot rebuild them, and so will not change the '
   + 'text under them.';
 
-/** The refusal for a MARK aimed at a transcribed verse: there is nowhere to put it. */
-export const refusalForMark = (section: ChantSection, verseId: string): string =>
-  `${named(section, [verseId])} copied from a marked source, so the marks on it `
-  + 'are a record of what someone wrote by hand — there is nowhere to put a new '
-  + 'one without losing that record.';
+/**
+ * The refusal for a MARK on a transcribed verse that could not adopt a source.
+ *
+ * This is now the RARE case rather than the ordinary one. Marking a
+ * transcribed verse first gives it a source layer whose derivation reproduces
+ * its marks exactly (see `adoptSource`), and only a verse the engine cannot
+ * reproduce reaches here — so the message names what went wrong with THIS
+ * verse instead of explaining a rule. The person is looking at a letter they
+ * cannot mark and needs to know why this one.
+ */
+export const refusalForMark = (
+  section: ChantSection,
+  verseId: string,
+  why?: string,
+): string =>
+  `${named(section, [verseId])} copied from a marked source, and its marks `
+  + `could not be reproduced from its own text${why === undefined ? '' : ` — ${why}`}. `
+  + 'They are the only record of what someone wrote by hand, so nothing was changed.';
 
 /** The refusal for a command that names verses outside the section it addresses. */
 export const refusalForOutside = (section: ChantSection, outside: readonly string[]): string =>

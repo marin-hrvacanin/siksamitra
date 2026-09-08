@@ -7,7 +7,7 @@
     "frontendDist": "../../web/dist",
     "devUrl": "http://localhost:5273",
     "beforeDevCommand": "npm run -w @siksamitra/web dev",
-    "beforeBuildCommand": "npm run -w @siksamitra/web build"
+    "beforeBuildCommand": "npm --prefix ../.. run build:web"
   },
   "app": {
     "windows": [
@@ -41,7 +41,6 @@
     "active": true,
     "targets": [
       "nsis",
-      "msi",
       "app",
       "dmg",
       "deb",

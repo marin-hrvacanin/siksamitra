@@ -42,7 +42,16 @@
 }
 .seg__b { border-radius: 0; border: 0; border-right: var(--border-hair) solid var(--chrome-line); }
 .seg__b:last-child { border-right: 0; }
-.seg__b.is-on { background: var(--chrome-accent); color: var(--chrome-raise); }
+/*
+ * THE CHOSEN HALF, in the colour made for text ON the accent.
+ *
+ * It used `--chrome-raise`, which is a SURFACE colour — the shade a panel is,
+ * not the shade writing on saffron should be. On some themes that is light
+ * text on a light accent, and the selected option simply disappeared: you
+ * could see which one was NOT chosen. `--chrome-accent-on` exists for exactly
+ * this and its contrast is checked by the theme gate.
+ */
+.seg__b.is-on { background: var(--chrome-accent); color: var(--chrome-accent-on); }
 
 .zoom { display: inline-flex; align-items: center; }
 .zoom__v { min-width: var(--space-9); text-align: center; font-variant-numeric: tabular-nums; }

@@ -32,26 +32,118 @@
   .pada { transition: none; }
 }
 
-/* ── the transport ─────────────────────────────────────────────────────── */
+/* ── the dock ──────────────────────────────────────────────────────────── */
 
 /*
- * A BAR UNDER THE DOCUMENT, above the status line.
+ * A DOCK UNDER THE DOCUMENT, above the status line.
  *
  * Not a floating player: it is a part of the window with a row of its own, so
  * it never covers the last line of the page — which is exactly the line
  * somebody is looking at when they are listening to the end of a verse.
+ *
+ * The row is `auto` in the app's grid, so with no recording the dock is not
+ * rendered and the row costs nothing at all.
  */
-.abar {
+.adock {
   grid-row: 4;
   grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-top: var(--border-hair) solid var(--chrome-line);
+  background: var(--chrome-raise);
+}
+
+/* ── the waveform ──────────────────────────────────────────────────────── */
+
+.adock__wave {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5) 0;
+  min-width: 0;
+}
+
+/*
+ * HOW TALL THE STRIP IS.
+ *
+ * `--space-9` — 3rem, the tallest step on the scale. A waveform shorter than
+ * this cannot show the difference between a breath and a quiet syllable, which
+ * is the only judgement anybody makes from it; taller and it takes a line of
+ * the document away for a picture that is already legible.
+ */
+.wave {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--space-9);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-sunk);
+  /* The playhead is positioned as a percentage of the window, and while the
+     recitation is playing outside the seconds on screen that percentage is
+     negative or past 100 — unclipped, the line was drawn across the status bar
+     and the page. */
+  overflow: hidden;
+  cursor: pointer;
+  /* The drag is a pointer gesture on a horizontal strip, which is exactly what
+     a browser reads as a scroll or a swipe-back on a trackpad. */
+  touch-action: none;
+}
+.wave:focus-visible {
+  outline: var(--rule-mark) solid var(--chrome-accent);
+  outline-offset: var(--border-hair);
+}
+.wave__c {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * The playhead is its own element rather than part of the drawing: it moves
+ * sixty times a second and the waveform behind it does not, so repainting the
+ * canvas to move it would repaint three hundred boundaries for nothing.
+ */
+.wave__head {
+  position: absolute;
+  inset-block: 0;
+  width: var(--rule-mark);
+  margin-inline-start: calc(var(--rule-mark) / -2);
+  background: var(--chrome-ink);
+  pointer-events: none;
+}
+
+/* What is selected, in words. Fixed width so the strip does not resize itself
+   every time the selection moves to a longer verse number. */
+.adock__say {
+  flex: 0 0 auto;
+  width: var(--panel-min);
+  margin: 0;
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.adock__kind {
+  display: block;
+  color: var(--chrome-ink-soft);
+}
+/* The three states a boundary can be in, in the same colours the strip draws
+   them, so the word and the tick agree. */
+.adock__kind[data-kind='breath'] { color: var(--chrome-accent); }
+.adock__kind[data-kind='even'] { color: var(--chrome-danger); }
+.adock__kind[data-kind='hand'] { color: var(--chrome-ink); }
+.adock__kind[data-kind='edge'] { color: var(--chrome-ink-soft); }
+
+/* ── the transport ─────────────────────────────────────────────────────── */
+
+.abar {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   padding: 0 var(--space-5);
   height: var(--control-h);
   min-height: var(--control-h);
-  border-top: var(--border-hair) solid var(--chrome-line);
-  background: var(--chrome-raise);
   color: var(--chrome-ink);
   font-size: var(--text-ui-sm);
 }

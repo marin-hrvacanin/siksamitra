@@ -3,20 +3,17 @@
  *
  * The same three steps the command line runs — find the breaths, work out what
  * share of the time each pāda's syllables are owed, match the two — over the
- * same `@siksamitra/audio`. Only the decoding differs: the browser has a
- * decoder for every format anyone will hand it, so there is no WAV reader here
- * and no ffmpeg.
- *
- * IT DECODES AT 8 kHz MONO ON PURPOSE. The analysis is loudness over 20 ms
- * windows; anything above about 8 kHz cannot change the answer and costs the
- * whole decode. A 40 minute Rudram at 44.1 kHz stereo is 400 MB of floats in a
- * tab, which is how a browser runs out of memory doing arithmetic it did not
- * need to do.
+ * same `@siksamitra/audio`, so `sm audio map` and the Map it button produce
+ * the same mapping from the same recording. Only the decoding differs, and
+ * that is not here either: `take.ts` owns it, because the waveform wants the
+ * same samples and decoding a 40 minute take twice is 400 MB of floats through
+ * a tab for nothing.
  */
 import {
-  confidence, detectSilences, mapPadas, padasOf, writeMapping, type MappedPada,
+  confidence, mapPadas, padasOf, writeMapping, type MappedPada,
 } from '@siksamitra/audio';
 import type { ChantDoc } from '@siksamitra/format';
+import type { Take } from './take.js';
 
 export interface MapResult {
   readonly doc: ChantDoc;
@@ -28,41 +25,31 @@ export interface MapResult {
   readonly note: string;
 }
 
-const ANALYSIS_RATE = 8000;
-
-/** Decode to mono at the rate the analysis actually uses. */
-async function decode(file: File): Promise<{ pcm: Float32Array; rate: number }> {
-  const bytes = await file.arrayBuffer();
-  /* `OfflineAudioContext` resamples as it decodes, which is the cheap way to
-     get 8 kHz — `decodeAudioData` on a normal context gives the hardware rate
-     and would need resampling afterwards. Its length is a placeholder; nothing
-     is rendered. */
-  const Ctor = (globalThis as { OfflineAudioContext?: typeof OfflineAudioContext })
-    .OfflineAudioContext;
-  if (Ctor === undefined) throw new Error('this browser cannot decode audio');
-  const ctx = new Ctor(1, ANALYSIS_RATE, ANALYSIS_RATE);
-  const buffer = await ctx.decodeAudioData(bytes);
-  return { pcm: buffer.getChannelData(0), rate: buffer.sampleRate };
+/**
+ * Where the recitation begins and ends inside the file.
+ *
+ * A take opens with room tone almost every time — the recorder was running
+ * before the voice was. Giving the first pāda that silence drifts every
+ * boundary after it, so a leading and trailing gap are trimmed. The same rule
+ * as `audio-commands.ts`, and it has to be: the window and the command line
+ * must not disagree about where a chant starts.
+ */
+export function boundsOf(take: Take): { from: number; to: number } {
+  const head = take.gaps[0];
+  const tail = take.gaps[take.gaps.length - 1];
+  return {
+    from: head !== undefined && head.start <= 0.05 ? head.end : 0,
+    to: tail !== undefined && tail.end >= take.duration - 0.05 ? tail.start : take.duration,
+  };
 }
 
-export async function mapRecording(
+export function mapRecording(
   doc: ChantDoc,
-  file: File,
+  take: Take,
   options: { sectionId?: string } = {},
-): Promise<MapResult> {
-  const { pcm, rate } = await decode(file);
-  const duration = pcm.length / rate;
-  const gaps = detectSilences(pcm, rate);
-
-  /*
-   * A take opens with room tone almost every time — the recorder was running
-   * before the voice was. Giving the first pāda that silence drifts every
-   * boundary after it, so a leading and trailing gap are trimmed.
-   */
-  const head = gaps[0];
-  const tail = gaps[gaps.length - 1];
-  const from = head !== undefined && head.start <= 0.05 ? head.end : 0;
-  const to = tail !== undefined && tail.end >= duration - 0.05 ? tail.start : duration;
+): MapResult {
+  const { duration, gaps } = take;
+  const { from, to } = boundsOf(take);
 
   const sections = options.sectionId === undefined
     ? doc.sections
@@ -72,7 +59,7 @@ export async function mapRecording(
 
   const mapped = mapPadas(padas, duration, gaps, { from, to });
   const heard = confidence(mapped);
-  const next = writeMapping(doc, file.name, mapped, {
+  const next = writeMapping(doc, take.file.name, mapped, {
     duration: Math.round(duration * 100) / 100,
   });
 
@@ -83,7 +70,7 @@ export async function mapRecording(
     confidence: heard,
     breaths: gaps.length,
     duration,
-    note: `${file.name}: ${mapped.length} pāda(s) mapped over `
+    note: `${take.file.name}: ${mapped.length} pāda(s) mapped over `
       + `${Math.round(duration)}s. ${Math.round(heard * 100)}% landed on a breath`
       + `${guessed === 0 ? '' : `; ${guessed} evenly spaced, and marked as guesses`}.`,
   };

@@ -163,7 +163,7 @@ export const CHROME_TOKENS = {
       "chrome-ink-mute": "#9898a0",
       "chrome-accent": "#bb7f2e",
       "chrome-accent-hover": "#a06a24",
-      "chrome-accent-on": "#ffffff",
+      "chrome-accent-on": "#231803",
       "chrome-danger": "#c0392b",
       "chrome-title": "#e6e6ea",
       "chrome-title-ink": "#1b1b1f",

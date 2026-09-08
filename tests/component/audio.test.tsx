@@ -7,12 +7,21 @@
  * is being sung, that "Map it" is not offered before there is anything to map,
  * that the readout beside it is a fact and not a greyed-out button, and that
  * the highlight lands on the pāda the clock is inside.
+ *
+ * The WAVEFORM is drawn on a canvas in an effect, which server rendering does
+ * not run, so what is checked here is everything about it that is not the
+ * drawing: that it can be reached and read without a picture at all. What the
+ * canvas actually paints is not covered by any test — see the report.
  */
 import { describe, expect, it, afterEach, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import type { ChantDoc } from '@siksamitra/format';
-import { AudioBar, MappingGroup, SpeedGroup, TransportGroup } from '../../apps/web/src/shell/AudioGroup.js';
+import {
+  AudioBar, BoundaryGroup, MappingGroup, SpeedGroup, TransportGroup,
+} from '../../apps/web/src/shell/AudioGroup.js';
 import { padasOfDoc, sourceFor, type Recording } from '../../apps/web/src/audio/useRecording.js';
+import type { Mapping } from '../../apps/web/src/audio/useMapping.js';
+import { Waveform } from '../../apps/web/src/audio/Waveform.js';
 
 function mount(node: React.ReactNode): HTMLElement {
   const host = document.createElement('div');
@@ -43,6 +52,30 @@ const player = (over: Partial<Recording> = {}): Recording => ({
   ...over,
 });
 
+/** A mapping with nothing in it; each test names the two or three fields it
+ *  is about, so a new field on `Mapping` does not rewrite every case. */
+const mapping = (over: Partial<Mapping> = {}): Mapping => ({
+  take: null,
+  busy: null,
+  padas: [],
+  seams: [],
+  kinds: [],
+  guesses: 0,
+  selected: null,
+  view: { from: 0, to: 10 },
+  duration: 10,
+  attach: vi.fn(),
+  align: vi.fn(),
+  select: vi.fn(),
+  drag: vi.fn(),
+  nudge: vi.fn(),
+  setFrom: vi.fn(),
+  nextGuess: vi.fn(),
+  zoom: vi.fn(),
+  followPlayhead: vi.fn(),
+  ...over,
+});
+
 const doc = (byVerse: Record<string, unknown> | null, base?: string): ChantDoc => ({
   title: 't',
   titleForms: { iast: 't' },
@@ -56,20 +89,22 @@ describe('the transport', () => {
   it('says what it will do next, not what it is doing', () => {
     /* A button labelled with the CURRENT state is the classic media-player
        ambiguity — "Play" while it is playing reads as a status. */
-    expect(mount(<TransportGroup audio={player()} verseId={null} />).textContent)
+    expect(mount(<TransportGroup audio={player()} at={null} />).textContent)
       .toContain('Play');
-    expect(mount(<TransportGroup audio={player({ playing: true })} verseId={null} />).textContent)
+    expect(mount(<TransportGroup audio={player({ playing: true })} at={null} />).textContent)
       .toContain('Pause');
   });
 
-  it('will not offer to play "this verse" when the caret is in none', () => {
-    const off = mount(<TransportGroup audio={player()} verseId={null} />);
-    const button = [...off.querySelectorAll('button')].find((b) => b.textContent === 'This verse');
-    expect(button?.disabled).toBe(true);
+  it('will not offer to play a verse or a line when the caret is in none', () => {
+    const off = mount(<TransportGroup audio={player()} at={null} />);
+    const named = (host: HTMLElement, label: string): HTMLButtonElement | undefined =>
+      [...host.querySelectorAll('button')].find((b) => b.textContent === label);
+    expect(named(off, 'This verse')?.disabled).toBe(true);
+    expect(named(off, 'This line')?.disabled).toBe(true);
 
-    const on = mount(<TransportGroup audio={player()} verseId="v-2" />);
-    const live = [...on.querySelectorAll('button')].find((b) => b.textContent === 'This verse');
-    expect(live?.disabled).toBe(false);
+    const on = mount(<TransportGroup audio={player()} at={{ verseId: 'v-2', line: 1 }} />);
+    expect(named(on, 'This verse')?.disabled).toBe(false);
+    expect(named(on, 'This line')?.disabled).toBe(false);
   });
 
   it('shows which speed is in force, so the pressed one is unambiguous', () => {
@@ -105,17 +140,29 @@ describe('the transport', () => {
 describe('mapping', () => {
   it('will not offer to map before a recording is open', () => {
     const host = mount(
-      <MappingGroup doc={doc(null)} audio={player()} onMap={vi.fn()} onNote={vi.fn()} />,
+      <MappingGroup doc={doc(null)} audio={player()} mapping={mapping()} />,
     );
     const map = [...host.querySelectorAll('button')].find((b) => b.textContent === 'Map it');
     expect(map?.disabled).toBe(true);
+  });
+
+  it('says what it is doing while it is doing it, rather than looking hung', () => {
+    /* Decoding a 40 minute take is the one thing in this program that takes
+       long enough to look broken, and `decodeAudioData` reports no progress —
+       so the stage is named instead of a bar being animated at nothing. */
+    const host = mount(
+      <MappingGroup doc={doc(null)} audio={player()} mapping={mapping({ busy: 'Decoding the audio…' })} />,
+    );
+    expect(host.textContent).toContain('Decoding the audio…');
+    const open = [...host.querySelectorAll('button')].find((b) => b.textContent === 'Open take');
+    expect(open?.disabled).toBe(true);
   });
 
   it('states what the document already has as a FACT, not a dead button', () => {
     /* "Why are so many options greyed out?" — because half of them were never
        controls. This one is a readout. */
     const none = mount(
-      <MappingGroup doc={doc(null)} audio={player()} onMap={vi.fn()} onNote={vi.fn()} />,
+      <MappingGroup doc={doc(null)} audio={player()} mapping={mapping()} />,
     );
     expect(none.querySelector('.rbn__read')?.textContent).toContain('Not mapped yet');
 
@@ -123,8 +170,7 @@ describe('mapping', () => {
       <MappingGroup
         doc={doc({ 'v-1': { file: 'a.wav' }, 'v-2': { file: 'a.wav' } })}
         audio={player()}
-        onMap={vi.fn()}
-        onNote={vi.fn()}
+        mapping={mapping()}
       />,
     );
     expect(some.querySelector('.rbn__read')?.textContent).toContain('2 verses mapped');
@@ -133,11 +179,88 @@ describe('mapping', () => {
 
   it('keeps the file input out of sight but in the accessibility tree', () => {
     const host = mount(
-      <MappingGroup doc={doc(null)} audio={player()} onMap={vi.fn()} onNote={vi.fn()} />,
+      <MappingGroup doc={doc(null)} audio={player()} mapping={mapping()} />,
     );
     const input = host.querySelector('input[type="file"]');
     expect(input?.className).toBe('u-offscreen');
     expect(input?.getAttribute('accept')).toBe('audio/*');
+  });
+});
+
+describe('fixing a boundary by hand', () => {
+  const named = (host: HTMLElement, label: string): HTMLButtonElement | undefined =>
+    [...host.querySelectorAll('button')].find((b) => b.textContent === label);
+
+  it('offers nothing to move until a boundary is picked', () => {
+    const host = mount(<BoundaryGroup audio={player()} mapping={mapping()} />);
+    expect(named(host, 'Set here')?.disabled).toBe(true);
+    expect(named(host, 'Earlier')?.disabled).toBe(true);
+    expect(named(host, 'Later')?.disabled).toBe(true);
+
+    const picked = mount(
+      <BoundaryGroup audio={player()} mapping={mapping({ selected: 2, seams: [0, 4, 9, 13] })} />,
+    );
+    expect(named(picked, 'Set here')?.disabled).toBe(false);
+    expect(named(picked, 'Earlier')?.disabled).toBe(false);
+  });
+
+  it('offers "next guess" only while there is a guess left to look at', () => {
+    const clean = mount(<BoundaryGroup audio={player()} mapping={mapping({ guesses: 0 })} />);
+    expect(named(clean, 'Next guess')?.disabled).toBe(true);
+    /* And it says WHY, rather than being a dead control with no explanation —
+       "why are so many options greyed out?" is the complaint this answers. */
+    expect(named(clean, 'Next guess')?.title).toContain('landed on a breath');
+
+    const work = mount(<BoundaryGroup audio={player()} mapping={mapping({ guesses: 3 })} />);
+    expect(named(work, 'Next guess')?.disabled).toBe(false);
+  });
+});
+
+describe('the strip under the document', () => {
+  const seams = [0, 4, 9, 13, 20];
+
+  it('is reachable and readable without the picture', () => {
+    const host = mount(
+      <Waveform
+        take={null}
+        view={{ from: 0, to: 20 }}
+        seams={seams}
+        kinds={['even', 'breath', 'even', 'breath', 'even']}
+        selected={2}
+        at={17}
+        says="v-1 pāda 2 to v-2 pāda 1"
+        onSelect={vi.fn()}
+        onDrag={vi.fn()}
+        onScrub={vi.fn()}
+      />,
+    );
+    const strip = host.querySelector('.wave') as HTMLElement;
+    expect(strip.getAttribute('role')).toBe('slider');
+    expect(strip.getAttribute('tabindex')).toBe('0');
+    /* The value a screen reader announces is the SELECTED boundary, not the
+       playhead — the strip is a boundary editor that happens to show a clock. */
+    /* 9 is the selected boundary; 17 is the playhead. The boundary wins. */
+    expect(strip.getAttribute('aria-valuenow')).toBe('9');
+    expect(strip.getAttribute('aria-valuetext')).toContain('pāda 2');
+  });
+
+  it('puts the playhead where the clock is, as a fraction of what is shown', () => {
+    const host = mount(
+      <Waveform
+        take={null}
+        view={{ from: 10, to: 20 }}
+        seams={seams}
+        kinds={[]}
+        selected={null}
+        at={15}
+        says={null}
+        onSelect={vi.fn()}
+        onDrag={vi.fn()}
+        onScrub={vi.fn()}
+      />,
+    );
+    const head = host.querySelector('.wave__head') as HTMLElement;
+    expect(head.style.left).toBe('50%');
   });
 });
 

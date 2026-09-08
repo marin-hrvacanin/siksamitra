@@ -19,11 +19,13 @@ const UNVERIFIED: Partial<Record<ChantScriptKey, string>> = {
 };
 
 export function StatusBar(
-  { doc, state, script, session, note }: {
+  { doc, state, script, session, dirty, note }: {
     doc: ChantDoc | null;
     state: ViewState;
     script: ChantScriptKey;
     session: Session;
+    /** Whether the document has changes that are not on disk. */
+    dirty: boolean;
     /** What just happened — an open, an export, a refusal. The status bar is
      *  where a program says such things; a modal for "saved" is an insult. */
     note?: string | null;
@@ -38,6 +40,18 @@ export function StatusBar(
   return (
     <footer className="status">
       <span className="status__title">{doc?.title ?? '—'}</span>
+      {/*
+        SPELLED OUT, not only marked. The title bar carries the bullet, which
+        is enough once you know what it means; the status bar is where a
+        program says things in words, and "unsaved changes" is the sentence
+        somebody is looking for when they are about to close the window.
+      */}
+      {dirty && (
+        <>
+          <span className="status__sep" aria-hidden>·</span>
+          <span className="status__warn">unsaved changes</span>
+        </>
+      )}
       <span className="status__sep status__opt" aria-hidden>·</span>
       <span className="status__opt">{doc?.sections.length ?? 0} sections</span>
       <span className="status__sep status__opt2" aria-hidden>·</span>

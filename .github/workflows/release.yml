@@ -107,8 +107,13 @@ jobs:
           }
           case "${{ runner.os }}" in
             Windows)
+              # NSIS only. The MSI target refuses a version whose pre-release
+              # identifier is not numeric — "2.0.0-alpha.0" fails it with
+              # "must be numeric-only and cannot be greater than 65535" — and
+              # it failed the whole build, after the NSIS installer had
+              # already been produced. NSIS is Tauri's own recommendation for
+              # Windows and is what the download page links.
               take "$BUNDLE/nsis/*-setup.exe" siksamitra-windows-setup.exe
-              take "$BUNDLE/msi/*.msi"        siksamitra-windows.msi
               ;;
             macOS)
               if [ "${{ matrix.target }}" = "aarch64-apple-darwin" ]; then

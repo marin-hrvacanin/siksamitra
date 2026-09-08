@@ -13,6 +13,7 @@ raise the limit.
 | `canvas.css` | the flow column, the desk, a page, the measuring probe |
 | `popover.css` | the appearance menu |
 | `backstage.css` | the File view: the backstage, its lists, and the account |
+| `dialog.css` | the guard — the one modal, asked before work is thrown away |
 | `document.css` | **the page**: type, hierarchy, indents, translations |
 | `status.css` | the status bar and what it sheds when narrow |
 | `diagnostics.css` | states that should be visible rather than silent |

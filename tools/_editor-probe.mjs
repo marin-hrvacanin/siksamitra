@@ -12,9 +12,10 @@
  * in this repository once already.
  */
 import puppeteer from 'puppeteer-core';
+import { APP_URL, openApp } from './_ui.mjs';
 
 const exe = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const URL = process.env.URL ?? 'http://localhost:5273/';
+const URL = APP_URL;
 
 const browser = await puppeteer.launch({
   executablePath: exe,

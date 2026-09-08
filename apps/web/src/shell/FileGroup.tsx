@@ -1,13 +1,22 @@
 /**
- * The file: open one, save one, export one, print one.
+ * The File group: New, Open, Save, Save As — and the other formats.
  *
- * WHAT WAS MISSING. The program could read the four documents in its own
- * corpus and nothing else: no way to open a file, no way to get a document
- * back out. Everything needed for all four of those already existed in
- * `@siksamitra/interop` — the native container, the Word writer, the importer
- * — and none of it was reachable from the window. This group is that wiring
- * and nothing more: it moves bytes between the disk and the same functions the
- * command-line tool uses, so there is no second implementation of any format.
+ * WHAT WAS MISSING, TWICE OVER.
+ *
+ * The first pass gave the program an importer and an exporter and called it
+ * File: it could read a `.smdoc` and hand back a download, and that was all.
+ * There was no way to make a document, no way to write one back where it came
+ * from, and nothing anywhere knew whether the thing on screen had been changed
+ * — so the answer to "what happens to my work when I close this?" was that it
+ * went. The four commands at the top of this group are that gap, and they come
+ * from the registry so that the button and the accelerator cannot drift apart:
+ * see `commands.ts` and `useDocFile.ts`.
+ *
+ * IMPORT IS NOT OPEN, and it stopped pretending to be. `.smdoc`, `.vuchant`
+ * and `.docx` come IN and cannot be written back — a `.docx` round trip is
+ * lossy by construction and a `.vuchant` is a package, not this document — so
+ * an imported document arrives unsaved, named after the file it came from, and
+ * the first Save takes it to a `.json` of its own.
  *
  * PRINTING IS THE PDF PATH, deliberately. The paged view already lays the
  * document out on real A4 with his own 25 mm margins, measured from his file;
@@ -18,7 +27,10 @@
  */
 import { useRef, useState, type ReactNode } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
+import { CommandButtons } from './CommandButtons.js';
 import { RibbonButton, RibbonStack } from './RibbonButton.js';
+import { fileNameFor } from './doc-file.js';
+import type { CommandContext } from './commands.js';
 
 /** What wrote the file. Stored in the manifest so a reader knows what derived
  *  it — see `DocumentManifest`. */
@@ -37,15 +49,13 @@ function download(name: string, bytes: Uint8Array | string, type: string): void 
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** A file name that is safe on all three platforms, from a document's title. */
-const fileName = (title: string, ext: string): string =>
-  `${(title.trim() === '' ? 'document' : title).replace(/[^\p{L}\p{N} .-]/gu, '_')}.${ext}`;
-
 export function FileGroup(
-  { doc, onOpen, onNote }: {
+  { ctx, doc, onImport, onNote }: {
+    /** New / Open / Save / Save As come from the registry through this. */
+    ctx: CommandContext;
     doc: ChantDoc | null;
-    /** A document read off the disk, ready to replace what is open. */
-    onOpen: (doc: ChantDoc, name: string) => void;
+    /** A document an importer produced, ready to replace what is open. */
+    onImport: (doc: ChantDoc, name: string) => void;
     /** Say what happened — the status bar is where a refusal belongs. */
     onNote: (message: string) => void;
   },
@@ -53,7 +63,7 @@ export function FileGroup(
   const picker = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
-  const open = async (file: File): Promise<void> => {
+  const importFrom = async (file: File): Promise<void> => {
     setBusy(true);
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
@@ -74,10 +84,10 @@ export function FileGroup(
          */
         const interop = await import('@siksamitra/interop');
         if (interop.documentFlavour(bytes) === 'v2') {
-          onOpen(interop.unpackDocument(bytes).doc, file.name);
+          onImport(interop.unpackDocument(bytes).doc, file.name);
         } else {
           const result = await interop.importSmdoc(bytes);
-          onOpen(result.doc, file.name);
+          onImport(result.doc, file.name);
           const marks = result.doc.overrides?.length ?? 0;
           onNote(
             `${file.name}: an older document, derived into this format`
@@ -87,7 +97,7 @@ export function FileGroup(
       } else if (ext === 'docx') {
         const { importDocx } = await import('@siksamitra/interop');
         const result = importDocx(bytes);
-        onOpen(result.doc, file.name);
+        onImport(result.doc, file.name);
         if (result.report.unresolved.length > 0) {
           onNote(
             `${file.name}: ${result.report.unresolved.length} run(s) whose styling this `
@@ -95,7 +105,7 @@ export function FileGroup(
           );
         }
       } else {
-        onNote(`${file.name}: not a document this program reads (.smdoc, .vuchant, .docx)`);
+        onNote(`${file.name}: not a document this program imports (.smdoc, .vuchant, .docx)`);
       }
     } catch (e) {
       /*
@@ -109,7 +119,7 @@ export function FileGroup(
     }
   };
 
-  const save = async (): Promise<void> => {
+  const exportPackage = async (): Promise<void> => {
     if (doc === null) return;
     setBusy(true);
     try {
@@ -121,14 +131,14 @@ export function FileGroup(
        * keeps its tokens — the container verifies that per verse rather than
        * trusting the engine, so a lean file cannot lose a mark.
        */
-      const bytes = await packDocument(doc, { slug: fileName(doc.title, 'smdoc'), engine: ENGINE });
+      const bytes = await packDocument(doc, { slug: fileNameFor(doc.title, 'smdoc'), engine: ENGINE });
       download(
-        fileName(doc.title, 'smdoc'),
+        fileNameFor(doc.title, 'smdoc'),
         bytes,
         'application/vnd.siksamitra.document+zip',
       );
     } catch (e) {
-      onNote(`Could not save: ${e instanceof Error ? e.message : 'unknown error'}`);
+      onNote(`Could not export: ${e instanceof Error ? e.message : 'unknown error'}`);
     } finally {
       setBusy(false);
     }
@@ -149,7 +159,7 @@ export function FileGroup(
         }),
       ]);
       download(
-        fileName(doc.title, 'docx'),
+        fileNameFor(doc.title, 'docx'),
         exportDocx(doc, template),
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       );
@@ -161,52 +171,59 @@ export function FileGroup(
   };
 
   return (
-    <div className="rbg">
-      <input
-        ref={picker}
-        type="file"
-        accept=".smdoc,.vuchant,.docx"
-        className="u-hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          /* Cleared after reading, so opening the SAME file twice fires twice
-             — otherwise the second attempt looks like a broken button. */
-          e.target.value = '';
-          if (file !== undefined) void open(file);
-        }}
+    <>
+      <CommandButtons
+        group="file"
+        ctx={ctx}
+        large={['file.new', 'file.open', 'file.save']}
       />
-      <RibbonButton
-        icon="open"
-        label="Open"
-        size="lg"
-        title="Open a .smdoc, a chant package or a Word document"
-        disabled={busy}
-        onClick={() => picker.current?.click()}
-      />
-      <RibbonStack>
-        <RibbonButton
-          icon="save"
-          label="Save a copy"
-          title="Write this document as a .smdoc — everything it holds, losslessly"
-          disabled={doc === null || busy}
-          onClick={() => void save()}
+      <div className="rbg">
+        <input
+          ref={picker}
+          type="file"
+          accept=".smdoc,.vuchant,.docx"
+          className="u-hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            /* Cleared after reading, so importing the SAME file twice fires
+               twice — otherwise the second attempt looks like a broken
+               button. */
+            e.target.value = '';
+            if (file !== undefined) void importFrom(file);
+          }}
         />
-        <RibbonButton
-          icon="export"
-          label="Export Word"
-          title="Write a .docx using his own template's styles"
-          disabled={doc === null || busy}
-          onClick={() => void exportWord()}
-        />
-        <RibbonButton
-          icon="print"
-          label="Print / PDF"
-          accel="Ctrl+P"
-          title="Print, or save as PDF — the pages you see in Pages view"
-          disabled={doc === null}
-          onClick={() => window.print()}
-        />
-      </RibbonStack>
-    </div>
+        <RibbonStack>
+          <RibbonButton
+            icon="import"
+            label="Import"
+            title="Read a .smdoc, a chant package or a Word document"
+            disabled={busy}
+            onClick={() => picker.current?.click()}
+          />
+          <RibbonButton
+            icon="export"
+            label="Export Word"
+            title="Write a .docx using his own template's styles"
+            disabled={doc === null || busy}
+            onClick={() => void exportWord()}
+          />
+          <RibbonButton
+            icon="print"
+            label="Print / PDF"
+            accel="Ctrl+P"
+            title="Print, or save as PDF — the pages you see in Pages view"
+            disabled={doc === null}
+            onClick={() => window.print()}
+          />
+          <RibbonButton
+            icon="document"
+            label="Package"
+            title="Write a .smdoc — everything this document holds, losslessly"
+            disabled={doc === null || busy}
+            onClick={() => void exportPackage()}
+          />
+        </RibbonStack>
+      </div>
+    </>
   );
 }

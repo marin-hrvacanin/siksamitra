@@ -26,7 +26,7 @@
  * the seam that lets a better aligner replace the floor without touching the
  * mapping.
  */
-import type { Span } from './silence.js';
+import { breathsIn, type Span } from './silence.js';
 
 export interface Pada {
   readonly verseId: string;
@@ -67,7 +67,9 @@ export interface MapOptions {
   readonly snapWithin?: number;
 }
 
-const DEFAULT_SNAP = 1.2;
+/** Exported so the editor can say "this boundary is on a breath" by exactly
+ *  the rule that put it there, rather than by a second threshold of its own. */
+export const DEFAULT_SNAP = 1.2;
 
 /**
  * Split a duration between pādas by weight, then pull each seam to a breath.
@@ -99,10 +101,10 @@ export function mapPadas(
   }
   seams.push(to);
 
-  const breaths = silences.map((s) => (s.start + s.end) / 2).sort((a, b) => a - b);
+  const breaths = breathsIn(silences);
   const snapped = seams.map((t, i) => {
     if (i === 0 || i === seams.length - 1) return { at: t, from: 'even' as const };
-    const near = nearest(breaths, t);
+    const near = nearestTo(breaths, t);
     if (near === null || Math.abs(near - t) > within) return { at: t, from: 'even' as const };
     return { at: near, from: 'breath' as const };
   });
@@ -129,8 +131,8 @@ export function mapPadas(
   return padas.map((p, i) => ({
     verseId: p.verseId,
     line: p.line,
-    start: round(snapped[i]!.at),
-    end: round(snapped[i + 1]!.at),
+    start: roundSeconds(snapped[i]!.at),
+    end: roundSeconds(snapped[i + 1]!.at),
     /* A pāda is "from a breath" when the boundary it STARTS at is — the one it
        ends at belongs to the pāda after it. The first pāda takes the quality
        of the boundary that ends it, since its start is fixed. */
@@ -139,10 +141,14 @@ export function mapPadas(
 }
 
 /** Two decimal places: a hundredth of a second is below what anyone can hear
- *  a boundary move, and it keeps the document's bytes stable. */
-const round = (t: number): number => Math.round(t * 100) / 100;
+ *  a boundary move, and it keeps the document's bytes stable. Exported because
+ *  a boundary dragged by hand in the editor has to land on the same grid as
+ *  one this file placed, or every drag rewrites the whole mapping's bytes. */
+export const roundSeconds = (t: number): number => Math.round(t * 100) / 100;
 
-function nearest(sorted: readonly number[], t: number): number | null {
+/** The nearest of a SORTED list, or null if the list is empty. Exported for
+ *  `seams.ts`, which asks the same question of the same list after the fact. */
+export function nearestTo(sorted: readonly number[], t: number): number | null {
   if (sorted.length === 0) return null;
   let lo = 0;
   let hi = sorted.length - 1;

@@ -24,6 +24,7 @@ export default defineConfig({
       '@siksamitra/tokens/tokens.css': pkg('tokens', 'generated/tokens.css'),
       '@siksamitra/render/mark-geometry.css': pkg('render', 'src/generated/mark-geometry.css'),
       '@siksamitra/render/chant.css': pkg('render', 'src/chant.css'),
+      '@siksamitra/render/hold-join.css': pkg('render', 'src/hold-join.css'),
       '@siksamitra/render/print.css': pkg('render', 'src/print.css'),
       '@siksamitra/format': pkg('format'),
       '@siksamitra/engine': pkg('engine'),

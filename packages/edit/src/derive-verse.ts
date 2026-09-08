@@ -162,9 +162,26 @@ export function verseSrcMap(
 ): Derivation['srcMap'] | null {
   if (verse.src === undefined) return null;
   const profile = resolveProfile(profileChain(verse, section, docProfile));
-  return derive({ lines: [...verse.src.lines] }, profile, {
-    verseId: verse.id,
-    overrides,
-    trace: false,
-  }).srcMap;
+  /*
+   * THE SAME INPUT `deriveVerse` USES — accents and verse number included.
+   *
+   * This passed only `lines`, so the map a mark is addressed THROUGH was built
+   * from a different derivation than the tokens the mark lands ON. An accent
+   * layer can change how a syllable divides, and where it does, a unit index
+   * names one letter here and another there: the mark is placed on the letter
+   * the person clicked and recorded against its neighbour.
+   */
+  return derive(
+    {
+      lines: [...verse.src.lines],
+      ...(verse.src.accented === undefined ? {} : { accented: [...verse.src.accented] }),
+    },
+    profile,
+    {
+      verseId: verse.id,
+      verseN: verse.n ?? null,
+      overrides,
+      trace: false,
+    },
+  ).srcMap;
 }

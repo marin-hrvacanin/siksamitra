@@ -27,7 +27,7 @@ import {
   type EditCommand, type EditState, type FlatSource, type History, type Selection,
 } from '@siksamitra/edit';
 import { selectedUnits, type UnitRange } from './selection.js';
-import { useMarks, type MarkField } from './useMarks.js';
+import { useMarks, type HoldState, type MarkField } from './useMarks.js';
 import { useText } from './useText.js';
 import { useRegister } from './useRegister.js';
 import { useSetRecording } from './useSetRecording.js';
@@ -40,7 +40,7 @@ const COALESCE_MS = 900;
  *  `OverrideField`, named here so the toolbar can type its buttons. */
 /* The list itself lives with the commands that use it. Re-exported because
    the keymap and the ribbon both name it. */
-export type { MarkField } from './useMarks.js';
+export type { HoldState, MarkField } from './useMarks.js';
 
 export interface Session {
   doc: ChantDoc;
@@ -100,6 +100,10 @@ export interface Session {
   mark: (patch: Record<string, unknown>, note?: string) => void;
   unmark: (fields: readonly MarkField[]) => void;
   autoHoldings: (mode: 'keep' | 'replace') => void;
+  /** What the selection is carrying, so a holding button can show it. */
+  holdState: HoldState;
+  /** Press a holding button on letters that already have it, and it comes off. */
+  toggleHold: (value: 'short' | 'long') => void;
 
   /**
    * WHICH REGISTER'S RULES GOVERN THE TEXT.
@@ -143,6 +147,9 @@ export interface Session {
   redoEdit: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  /** The history, for the one thing that needs a POSITION in it and not a
+   *  yes/no: unsaved changes. The arithmetic is in `shell/doc-file.ts`. */
+  history: History;
 
   /** What the last command did. Never inferred, always reported. */
   refusals: string[];
@@ -272,6 +279,26 @@ export function useSession(doc: ChantDoc): Session {
     setRevision((n) => n + 1);
   }, []);
 
+  /**
+   * SAY WHY NOTHING HAPPENED.
+   *
+   * A command that finds nothing to do used to return in silence, and the
+   * commonest way to meet that is also the least obvious: five of Durgā
+   * Sūktam's nine verses are copied from a marked source, so a selection made
+   * anywhere in most of the document reaches no editable letter. The page
+   * showed a highlight, the button did nothing, and the program said nothing —
+   * which reads as broken rather than as refused.
+   *
+   * It is not a document change, so it is not an undo step; it only replaces
+   * what the status bar is saying.
+   */
+  const refuse = useCallback((why: string) => {
+    setLive((current) => ({
+      ...current,
+      state: { ...current.state, refusals: [why], reports: [], lostMarks: [] },
+    }));
+  }, []);
+
   const setSelection = useCallback((selection: Selection | null, id?: string) => {
     if (id !== undefined && id !== sectionId) setSectionId(id);
     setLive((current) => ({ ...current, state: select(current.state, selection) }));
@@ -311,8 +338,10 @@ export function useSession(doc: ChantDoc): Session {
   /* Placing marks by hand is its own small module — see `useMarks`. It is the
      one part of this hook that is about the MARKING rather than about the
      text, and it is the part a reader comes looking for. */
-  const { mark, unmark, autoHoldings } = useMarks({
-    run, section, selected, selection: state.selection, srcMapOf,
+  const {
+    mark, unmark, autoHoldings, holdState, toggleHold,
+  } = useMarks({
+    run, refuse, section, selected, selection: state.selection, srcMapOf,
   });
 
   const undoEdit = useCallback(() => {
@@ -350,6 +379,8 @@ export function useSession(doc: ChantDoc): Session {
     mark,
     unmark,
     autoHoldings,
+    holdState,
+    toggleHold,
     register: registerOf(live),
     sectionRegister: section === undefined ? null : registerOf(live, section),
     setRegister,
@@ -360,6 +391,7 @@ export function useSession(doc: ChantDoc): Session {
     redoEdit,
     canUndo: live_.history.past.length > 0,
     canRedo: live_.history.future.length > 0,
+    history: live_.history,
     refusals: state.refusals,
     lostMarks: state.lostMarks,
     orphaned: state.orphaned,

@@ -14,7 +14,7 @@
 
 import { Fragment, type ReactNode } from 'react';
 import type { ChantScriptKey, ChantToken } from '@siksamitra/format';
-import { renderSyl } from '@siksamitra/render';
+import { holdJoins, renderSyl, type HoldJoin } from '@siksamitra/render';
 
 export interface TokenContext {
   readonly script: ChantScriptKey;
@@ -35,14 +35,19 @@ type Renderer<T extends ChantToken['t']> = (
   ctx: TokenContext,
   /** This token's first unit index within the verse. */
   unitOffset: number,
+  /** Whether this syllable's box is continued by its neighbour — see
+   *  `holdJoins`. Absent for every token type that is not a syllable. */
+  join?: HoldJoin,
 ) => ReactNode;
 
 /** Every token type, drawn. Keyed so the compiler demands all of them. */
 export const TOKEN_RENDERERS: { readonly [T in ChantToken['t']]: Renderer<T> } = {
-  syl: (t, key, ctx, unitOffset) => renderSyl(t, ctx.script, key, {
+  syl: (t, key, ctx, unitOffset, join) => renderSyl(t, ctx.script, key, {
     showMarks: ctx.showMarks,
     fontStack: ctx.fontStack,
     ...(ctx.addressable === true ? { unitOffset } : {}),
+    ...(join?.joinL === true ? { joinL: true } : {}),
+    ...(join?.joinR === true ? { joinR: true } : {}),
   }),
 
   sp: (_t, key) => <span className="sp" key={key}> </span>,
@@ -105,7 +110,14 @@ export const TOKEN_RENDERERS: { readonly [T in ChantToken['t']]: Renderer<T> } =
    */
   slot: (t, key, ctx, unitOffset) => (
     <span className="slot" data-slot={t.name} key={key}>
-      {t.tokens.map((child, i) => renderToken(child, i, ctx, unitOffset + unitsBefore(t.tokens, i)))}
+      {(() => {
+        /* A slot is transparent, so its children join each other exactly as
+           the tokens around it do — computed over the slot's own stream. */
+        const inner = holdJoins(t.tokens);
+        return t.tokens.map((child, i) => renderToken(
+          child, i, ctx, unitOffset + unitsBefore(t.tokens, i), inner.get(i),
+        ));
+      })()}
     </span>
   ),
 };
@@ -121,6 +133,7 @@ export function renderToken(
   key: number,
   ctx: TokenContext,
   unitOffset = 0,
+  join?: HoldJoin,
 ): ReactNode {
   const render = TOKEN_RENDERERS[token.t] as Renderer<ChantToken['t']> | undefined;
   if (render === undefined) {
@@ -133,7 +146,7 @@ export function renderToken(
       </span>
     );
   }
-  return render(token, key, ctx, unitOffset);
+  return render(token, key, ctx, unitOffset, join);
 }
 
 /**

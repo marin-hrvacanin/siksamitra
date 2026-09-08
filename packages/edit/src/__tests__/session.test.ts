@@ -106,7 +106,16 @@ describe('rule zero', () => {
     expect(linesOf(state, 'v-3')).toEqual(['oṁ hotāraṁ']);
   });
 
-  it('refuses to place a mark on a transcribed verse rather than doing nothing', () => {
+  it('MARKS a transcribed verse rather than refusing', () => {
+    /*
+     * THIS TEST USED TO ASSERT THE OPPOSITE, and the behaviour it locked in is
+     * the one the owner reported three times as a broken button: select
+     * letters, press Long, read a paragraph about evidence, see nothing
+     * happen. Rule zero protects the marks from being REPLACED BY A GUESS, and
+     * a person placing a mark by hand is not a guess. The verse now takes the
+     * mark — see `adopt-source.test.ts` for the proof that its existing marks
+     * survive the operation unchanged.
+     */
     const start = newState(mixed());
     const { state } = apply(start, emptyHistory(), {
       k: 'mark',
@@ -115,8 +124,9 @@ describe('rule zero', () => {
       patch: { hold: 'long' },
       why: 'owner-hand',
     });
-    expect(state.refusals[0]).toContain('Verse 2');
-    expect(state.refusals[0]).toContain('nowhere to put a new one');
+    expect(state.refusals).toEqual([]);
+    const marked = section1(state).verses[1]!.tokens.find((t) => t.t === 'syl');
+    expect(marked!.t === 'syl' && marked.units[0]!.hold).toBe('long');
   });
 
   it('never invents a source layer for a transcribed verse', () => {

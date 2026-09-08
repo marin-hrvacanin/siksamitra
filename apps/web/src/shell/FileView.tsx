@@ -6,46 +6,39 @@
  * file comes from or what an account is, so it can be rendered in a test with
  * three fake rows and no session at all.
  *
- * The list of documents that ship with the program lives here rather than in
- * `App` because this is the only view that shows it.
+ * Everything about the document's life — which one is open, whether it has
+ * been changed, what happens when another is chosen — arrives as one `DocFile`
+ * rather than as six props. That is not tidiness: with six, the ribbon and
+ * this view each held their own idea of which document was open, and the two
+ * drifted the first time a Save As renamed one.
  */
 import type { ReactNode } from 'react';
-import type { ChantDoc } from '@siksamitra/format';
 import { Backstage } from './Backstage.js';
 import { FileGroup } from './FileGroup.js';
-import type { RecentDocument } from './useRecents.js';
+import { DOCUMENTS } from './library.js';
+import type { CommandContext } from './commands.js';
+import type { DocFile } from './useDocFile.js';
 import type { AccountApi } from '../account/useAccount.js';
-import type { Session } from '../editor/useSession.js';
-
-/** What comes with the program. Named here, and nowhere else. */
-export const DOCUMENTS: readonly { slug: string; title: string }[] = [
-  { slug: 'durga-suktam', title: 'Durgā Sūktam' },
-  { slug: 'bhagya-suktam', title: 'Bhāgya Sūktam' },
-  { slug: 'purusha-suktam', title: 'Puruṣa Sūktam' },
-  { slug: 'sri-rudram', title: 'Śrī Rudram' },
-];
 
 export function FileView(
-  { doc, session, slug, recents, account, onSlug, onOpened, onClose, onNote }: {
-    doc: ChantDoc | null;
-    session: Session;
-    slug: string;
-    recents: readonly RecentDocument[];
+  { file, ctx, account, onClose, onNote }: {
+    file: DocFile;
+    ctx: CommandContext;
     account: AccountApi;
-    onSlug: (slug: string) => void;
-    onOpened: (doc: ChantDoc, name: string) => void;
     onClose: () => void;
     onNote: (note: string) => void;
   },
 ): ReactNode {
   return (
     <Backstage
-      doc={doc}
+      doc={file.doc}
       documents={DOCUMENTS}
-      slug={slug}
-      recents={recents}
+      openRef={file.ref}
+      dirty={file.dirty}
+      recents={file.recents}
+      canReopen={file.canReopen}
       account={account}
-      onSlug={onSlug}
+      onOpen={(ref, kind) => file.switchTo(ref, kind)}
       onClose={onClose}
       onAbout={() => onNote(
         'śikṣāmitra 2.0.0-alpha — a workbench for marked Sanskrit recitation text. '
@@ -53,11 +46,12 @@ export function FileView(
       )}
       actions={(
         <FileGroup
-          doc={session.doc}
-          onOpen={(opened, name) => {
-            onOpened(opened, name);
-            /* Opening something is one of the three ways out of this view —
-               staying here after a document changed underneath would leave
+          ctx={ctx}
+          doc={file.doc}
+          onImport={(imported, name) => {
+            file.adopt(imported, name);
+            /* Importing something is one of the ways out of this view —
+               staying here after the document changed underneath would leave
                the reader looking at the wrong file's facts. */
             onClose();
           }}

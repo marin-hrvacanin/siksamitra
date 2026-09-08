@@ -24,14 +24,15 @@
 import type { ReactNode } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
 import { PAGE_SIZES, type ViewKind } from '@siksamitra/layout';
-import { commandsIn, type CommandContext, type CommandGroup } from './commands.js';
+import type { CommandContext } from './commands.js';
+import { CommandButtons } from './CommandButtons.js';
 import { Ribbon, type RibbonGroup, type RibbonTab } from './Ribbon.js';
-import { RibbonButton, RibbonStack } from './RibbonButton.js';
 import { FileGroup } from './FileGroup.js';
 import { ScriptGroup } from './ScriptGroup.js';
 import { RegisterGroup } from './RegisterGroup.js';
-import { MappingGroup, SpeedGroup, TransportGroup } from './AudioGroup.js';
+import { BoundaryGroup, MappingGroup, SpeedGroup, TransportGroup } from './AudioGroup.js';
 import type { Recording } from '../audio/useRecording.js';
+import type { Mapping } from '../audio/useMapping.js';
 import { ViewSwitcher } from './ViewSwitcher.js';
 import { AppearanceMenu } from './AppearanceMenu.js';
 import type { Appearance } from '../state/useAppearance.js';
@@ -41,54 +42,16 @@ import {
 import type { Session } from '../editor/useSession.js';
 
 
-/**
- * The commands of one group, as ribbon buttons.
- *
- * `large` names the ones that get the big face — the actions the group is
- * about. Everything else stacks. Naming them here rather than in the registry
- * keeps the registry about what a command IS, not how big it looks.
- */
-function CommandButtons(
-  { group, ctx, large = [] }: {
-    group: CommandGroup;
-    ctx: CommandContext;
-    large?: readonly string[];
-  },
-): ReactNode {
-  const all = commandsIn(group);
-  const big = all.filter((c) => large.includes(c.id));
-  const small = all.filter((c) => !large.includes(c.id));
-  const button = (c: (typeof all)[number], size: 'lg' | 'sm'): ReactNode => (
-    <RibbonButton
-      key={c.id}
-      icon={c.icon}
-      label={c.label}
-      size={size}
-      {...(c.hint === undefined ? {} : { title: c.hint })}
-      {...(c.key === undefined ? {} : { accel: c.key })}
-      disabled={!(c.enabled?.(ctx) ?? true)}
-      {...(c.active === undefined ? {} : { pressed: c.active(ctx) })}
-      onClick={() => c.run(ctx)}
-    />
-  );
-  return (
-    <div className="rbg">
-      {big.map((c) => button(c, 'lg'))}
-      {small.length > 0 && <RibbonStack>{small.map((c) => button(c, 'sm'))}</RibbonStack>}
-    </div>
-  );
-}
-
 export function Toolbar(
   {
     ctx, onSwitchView, look, session,
-    onOpenFile, onNote, tab, onTab, folded, onFolded, onFile, audio, onMapAudio,
+    onImport, onNote, tab, onTab, folded, onFolded, onFile, audio, mapping,
   }: {
     ctx: CommandContext;
     onSwitchView: (k: ViewKind) => void;
     look: Appearance;
     session: Session;
-    onOpenFile: (doc: ChantDoc, name: string) => void;
+    onImport: (doc: ChantDoc, name: string) => void;
     onNote: (message: string) => void;
     tab: string;
     onTab: (id: string) => void;
@@ -97,7 +60,8 @@ export function Toolbar(
     /** Opens the backstage — see `Backstage.tsx`. */
     onFile: () => void;
     audio: Recording;
-    onMapAudio: (file: File) => void;
+    /** The take, the boundaries and the selection — see `useMapping`. */
+    mapping: Mapping;
   },
 ): ReactNode {
   /*
@@ -130,7 +94,9 @@ export function Toolbar(
     },
     {
       id: 'file', label: 'File', icon: 'document', priority: 4,
-      content: <FileGroup doc={session.doc} onOpen={onOpenFile} onNote={onNote} />,
+      content: (
+        <FileGroup ctx={ctx} doc={ctx.hasDoc ? session.doc : null} onImport={onImport} onNote={onNote} />
+      ),
     },
   ];
 
@@ -220,25 +186,33 @@ export function Toolbar(
    * and a loop, the other with the eyes and a selection — and a group that
    * only fits when the window is wide is a group most people never find.
    */
+  const head = session.selection?.head ?? null;
   const audioTab: RibbonGroup[] = [
     {
       id: 'transport', label: 'Play', icon: 'play', priority: 0,
       content: (
         <TransportGroup
           audio={audio}
-          verseId={session.selection?.head.verseId ?? null}
+          at={head === null ? null : { verseId: head.verseId, line: head.line }}
         />
       ),
     },
     {
-      id: 'speed', label: 'Speed', icon: 'loop', priority: 2,
-      content: <SpeedGroup audio={audio} />,
+      id: 'mapping', label: 'The recording', icon: 'waveform', priority: 1,
+      content: <MappingGroup doc={session.doc} audio={audio} mapping={mapping} />,
+    },
+    /*
+     * BEFORE Speed, and never folded away first. Fixing the two boundaries the
+     * mapper guessed is the work the Audio tab exists for; the speed is a
+     * comfort, and a comfort should collapse before a tool.
+     */
+    {
+      id: 'boundary', label: 'Boundary', icon: 'marks', priority: 2,
+      content: <BoundaryGroup audio={audio} mapping={mapping} />,
     },
     {
-      id: 'mapping', label: 'The recording', icon: 'waveform', priority: 1,
-      content: (
-        <MappingGroup doc={session.doc} audio={audio} onMap={onMapAudio} onNote={onNote} />
-      ),
+      id: 'speed', label: 'Speed', icon: 'loop', priority: 3,
+      content: <SpeedGroup audio={audio} />,
     },
   ];
 

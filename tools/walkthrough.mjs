@@ -16,7 +16,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { mark, openTab, setMode, setView } from './_ui.mjs';
+import { mark, openApp, openTab, setMode, setView } from './_ui.mjs';
 
 const exe = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const URL = process.env.URL ?? 'http://localhost:5273/';
@@ -80,9 +80,7 @@ async function shot(name, what) {
 }
 
 await page.setViewport({ width: 1500, height: 950, deviceScaleFactor: 2 });
-await page.goto(URL, { waitUntil: 'networkidle0' });
-await page.waitForSelector('[data-block-id]', { timeout: 20000 });
-await page.evaluate(() => document.fonts.ready);
+await openApp(page, URL, { selector: '[data-block-id]' });
 await wait(400);
 
 /* ── 1. the document, read-only ─────────────────────────────────────────── */

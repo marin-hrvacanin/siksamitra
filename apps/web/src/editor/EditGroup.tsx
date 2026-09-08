@@ -46,6 +46,7 @@ function Buttons(
        * does everywhere else.
        */
       disabled={!(b.enabled?.(session) ?? true)}
+      {...(b.pressed === undefined ? {} : { pressed: b.pressed(session) })}
       onClick={() => {
         if (!session.editing) session.setEditing(true);
         /* Only a binding with something to run gets a button; the ribbon shows

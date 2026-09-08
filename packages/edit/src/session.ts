@@ -24,12 +24,13 @@ import {
   addressAt, flatten, type Selection, type VerseSource,
 } from './caret.js';
 import { replaceRange } from './range.js';
+import { applyMark } from './apply-mark.js';
+import { tokenSrcMap } from './token-src-map.js';
 import {
-  attestedInRange, refusalForEdit, refusalForMark, refusalForOutside,
+  attestedInRange, refusalForEdit, refusalForOutside,
 } from './rule-zero.js';
 import {
-  autoHoldings, clearMarks, markLetters,
-  type MarkPatch, type MarkReason, type UnitAddress,
+  autoHoldings, type MarkPatch, type MarkReason, type UnitAddress,
 } from './marks.js';
 import { verseSrcMap, type VerseReport } from './derive-verse.js';
 import {
@@ -120,20 +121,24 @@ export function srcMapFor(
   const section = sectionOf(doc, sectionId);
   const verse = section?.verses.find((v) => v.id === verseId);
   if (section === undefined || verse === undefined) return null;
-  return verseSrcMap(verse, section, doc.profile, doc.overrides ?? []);
+  /*
+   * A TRANSCRIBED VERSE IS STILL ADDRESSABLE.
+   *
+   * `verseSrcMap` answers null for one, because there is no source to derive
+   * from — and every caller read that as "these letters have no addresses",
+   * so a drag across the first verse of Durgā Sūktam produced no selection at
+   * all and the holding button had nothing to mark. The letters are on the
+   * page and can be pointed at; `tokenSrcMap` maps them onto the same recited
+   * text the caret already uses.
+   */
+  return verseSrcMap(verse, section, doc.profile, doc.overrides ?? [])
+    ?? tokenSrcMap(verse);
 }
 
 const refuse = (state: EditState, history: History, why: string): Applied => ({
   state: { ...quiet(state), refusals: [why] },
   history,
 });
-
-/** Group mark targets by verse, since a source map is per verse. */
-function byVerse(targets: readonly UnitAddress[]): Map<string, UnitAddress[]> {
-  const out = new Map<string, UnitAddress[]>();
-  for (const t of targets) out.set(t.verseId, [...(out.get(t.verseId) ?? []), t]);
-  return out;
-}
 
 export function apply(state: EditState, history: History, command: EditCommand): Applied {
   /*
@@ -163,6 +168,15 @@ export function apply(state: EditState, history: History, command: EditCommand):
   }
 
   const before = snapshot(state.doc, [section.id], state.selection);
+  /*
+   * The section as this command is building it.
+   *
+   * Marking a transcribed verse gives it a source layer first (see
+   * `adoptSource`), which changes the verse — and everything downstream
+   * writes sources and re-derives against THIS, not against the section as it
+   * arrived.
+   */
+  let working: ChantSection = section;
   const sources = sourcesOf(section);
   let overrides: readonly ChantOverride[] = state.doc.overrides ?? [];
   let nextSources: readonly VerseSource[] = sources;
@@ -219,27 +233,24 @@ export function apply(state: EditState, history: History, command: EditCommand):
     const at = addressAt(flatten(nextSources), result.caret);
     selection = at === null ? null : { anchor: at, head: at };
   } else if (command.k === 'mark' || command.k === 'unmark') {
-    const groups = byVerse(command.targets);
-    touched = new Set(groups.keys());
-    for (const [verseId, targets] of groups) {
-      const map = srcMapFor(state.doc, section.id, verseId);
-      if (map === null) {
-        /*
-         * No source map means no source layer: a transcribed verse. An
-         * override addresses a letter in a source that does not exist, so
-         * there is nowhere to put this mark — and the marks already on the
-         * verse are the transcription itself. Refused by name rather than
-         * dropped, because a mark button that silently does nothing is the
-         * worst of the three possible behaviours.
-         */
-        touched.delete(verseId);
-        blockedMarks.push(refusalForMark(section, verseId));
-        continue;
-      }
-      overrides = command.k === 'mark'
-        ? markLetters(overrides, map, targets, command.patch, command.why, command.note).overrides
-        : clearMarks(overrides, map, targets, command.fields);
-    }
+    /* The whole of it is `applyMark` — see there for why a transcribed verse
+       takes a mark rather than refusing one. */
+    const done = applyMark(working, state.doc.profile, overrides, command);
+    working = done.section;
+    overrides = done.overrides;
+    touched = done.touched;
+    blockedMarks.push(...done.refusals);
+    /*
+     * THE SOURCES, AS THE VERSES NOW HOLD THEM.
+     *
+     * A mark changes no text, so this is not an edit — but adopting a source
+     * layer changes how a verse's text is WRITTEN DOWN. `sourcesOf` had
+     * already stood the rendered text in for the verse (`linesFromTokens`),
+     * and `writeSources` then compared that against the real source the verse
+     * had just acquired, decided the text had changed, and charged the edit
+     * two transcribed accents it never touched.
+     */
+    nextSources = sourcesOf(working);
   } else {
     /*
      * The verses must be in the named section. `autoHoldings` in `replace` mode
@@ -272,13 +283,13 @@ export function apply(state: EditState, history: History, command: EditCommand):
    * stays; this stops asking it the question.
    */
   const frozen = new Set(
-    section.verses.filter((v) => v.src === undefined).map((v) => v.id),
+    working.verses.filter((v) => v.src === undefined).map((v) => v.id),
   );
   for (const id of frozen) touched.delete(id);
 
   // Source first, then tokens: the derivation reads the source, so writing it
   // second would derive the text as it was before the edit.
-  const written = writeSources(section, nextSources);
+  const written = writeSources(working, nextSources);
   const withSource = written.section;
   for (const cost of written.accentsLost) {
     blockedMarks.push(

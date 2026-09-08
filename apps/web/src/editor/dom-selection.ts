@@ -126,10 +126,12 @@ export function addressAtDom(
   /*
    * A TRANSCRIBED VERSE HAS NO SOURCE MAP, AND IT DOES HAVE A PLACE.
    *
-   * It has no `src`, so `srcMapFor` returns null and a unit cannot be turned
-   * into a column. It is NOT absent from the flat source: `sourcesOf` falls
-   * back to `linesFromTokens` for exactly these verses, which is how rule zero
-   * finds them in order to refuse an edit that reaches one.
+   * It has no `src`, so it has no DERIVED source map. It is not absent from
+   * the flat source: `sourcesOf` falls back to `linesFromTokens` for exactly
+   * these verses, which is how rule zero finds them in order to refuse an edit
+   * that reaches one — and `srcMapFor` falls back to `tokenSrcMap` over that
+   * same text, so a unit here does turn into a column. It did not once, and a
+   * drag across the first verse of Durgā Sūktam selected nothing at all.
    *
    * An earlier version of this file believed otherwise — that such a verse
    * "contributes no lines" — and clamped the caret to the END OF THE PREVIOUS

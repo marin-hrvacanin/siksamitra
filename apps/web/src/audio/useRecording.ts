@@ -19,9 +19,18 @@
  * name in the mapping, or a file the person picked off their disk. The second
  * matters more than it looks: mapping a take means having the take, and the
  * take is a 40 MB file that has no business inside a document.
+ *
+ * STARTING AND STOPPING IS `transport.ts` IN `@siksamitra/render`, not code of
+ * its own. The reader met every defect of the media element first — a seek
+ * dropped because the metadata had not loaded, a speed reset by assigning
+ * `src`, a segment heard past its end because `pause()` does not retract what
+ * the device has buffered — and each fix is a measurement, not a preference.
+ * Two players with two copies of that would be two players that drift.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
+import { mappedIn } from '@siksamitra/audio';
+import { applyRate, SEG_LEAD, startAt } from '@siksamitra/render';
 
 export interface PadaAt {
   readonly verseId: string;
@@ -57,18 +66,11 @@ export interface Recording {
   readonly sung: PadaAt | null;
 }
 
-/** Every mapped pāda of a document, in time order. */
-export function padasOfDoc(doc: ChantDoc | null): PadaAt[] {
-  if (doc?.recording?.byVerse === undefined) return [];
-  const out: PadaAt[] = [];
-  for (const [verseId, raw] of Object.entries(doc.recording.byVerse)) {
-    const row = raw as { lines?: { start: number; end: number }[] };
-    for (const [line, span] of (row.lines ?? []).entries()) {
-      out.push({ verseId, line, start: span.start, end: span.end });
-    }
-  }
-  return out.sort((a, b) => a.start - b.start);
-}
+/** Every mapped pāda of a document, in the order it is heard. `@siksamitra/audio`
+ *  owns the reading, because the editor's boundary handles have to be numbered
+ *  the same way the transport plays them. */
+export const padasOfDoc = (doc: ChantDoc | null): PadaAt[] =>
+  (doc === null ? [] : mappedIn(doc));
 
 /** The file a verse's audio is in, resolved against the document's base. */
 export function sourceFor(doc: ChantDoc | null, verseId: string): string | null {
@@ -117,8 +119,12 @@ export function useRecording(doc: ChantDoc | null): Recording {
     };
   }, []);
 
+  /* The speed in a ref as well as in state: `start` must not hold a closure
+     over a speed that was current when it was built. */
+  const speed = useRef(rate);
   useEffect(() => {
-    if (el.current !== null) el.current.playbackRate = rate;
+    speed.current = rate;
+    if (el.current !== null) applyRate(el.current, rate);
   }, [rate]);
 
   /*
@@ -151,7 +157,7 @@ export function useRecording(doc: ChantDoc | null): Recording {
       setAt(t);
 
       const stop = until.current;
-      if (stop !== null && t >= stop) {
+      if (stop !== null && t >= stop - SEG_LEAD) {
         if (loop) {
           audio.currentTime = from.current;
         } else {
@@ -198,22 +204,35 @@ export function useRecording(doc: ChantDoc | null): Recording {
     });
   }, []);
 
+  /*
+   * WHICH PLAY IS THE WANTED ONE.
+   *
+   * `startAt` awaits a load and a seek, and a person clicking down a chant
+   * pāda by pāda starts a second play inside that wait. Without a token the
+   * first one resumes after the second and the wrong line sounds. Bumped by
+   * every start, and by pause and seek, so a play that is no longer wanted
+   * cannot come back.
+   */
+  const wanted = useRef(0);
+
   const start = useCallback((src: string | null, begin: number, end: number | null): void => {
     const audio = el.current;
     if (audio === null) return;
-    /* Only change `src` when it differs: assigning the same URL restarts the
-       download and drops a second of audio on a slow connection. */
+    if (src === null && audio.src === '') return;
+    /* Only change the shown name when the source really differs: `startAt`
+       leaves the element alone in that case, and renaming it would say a
+       different file was playing. */
     if (src !== null && !audio.src.endsWith(src) && audio.src !== src) {
-      audio.src = src;
       setName(src.split('/').pop() ?? src);
     }
-    if (audio.src === '') return;
+    const mine = wanted.current + 1;
+    wanted.current = mine;
     from.current = begin;
     until.current = end;
-    audio.currentTime = begin;
-    audio.playbackRate = rate;
-    void audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
-  }, [rate]);
+    void startAt(audio, {
+      src, at: begin, rate: speed.current, alive: () => mine === wanted.current,
+    }).then((ok) => setPlaying(ok));
+  }, []);
 
   const playPada = useCallback((verseId: string, line: number) => {
     const p = padasOfDoc(doc).find((x) => x.verseId === verseId && x.line === line);
@@ -232,7 +251,7 @@ export function useRecording(doc: ChantDoc | null): Recording {
   const playAll = useCallback(() => {
     const audio = el.current;
     if (audio === null) return;
-    if (playing) { audio.pause(); setPlaying(false); return; }
+    if (playing) { wanted.current += 1; audio.pause(); setPlaying(false); return; }
     const all = padasOfDoc(doc);
     const first = all[0];
     const src = object.current ?? (first === undefined ? null : sourceFor(doc, first.verseId));
@@ -242,6 +261,7 @@ export function useRecording(doc: ChantDoc | null): Recording {
   }, [doc, playing, start]);
 
   const pause = useCallback(() => {
+    wanted.current += 1;
     el.current?.pause();
     setPlaying(false);
   }, []);
@@ -251,8 +271,10 @@ export function useRecording(doc: ChantDoc | null): Recording {
     if (audio === null) return;
     audio.currentTime = Math.max(0, Math.min(t, audio.duration || t));
     setAt(audio.currentTime);
-    /* Seeking out of a segment means the segment is no longer what is playing. */
+    /* Seeking out of a segment means the segment is no longer what is playing,
+       and a start that is still waiting on a load must not seek back. */
     until.current = null;
+    wanted.current += 1;
   }, []);
 
   return {

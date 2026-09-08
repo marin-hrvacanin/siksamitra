@@ -37,7 +37,16 @@ export interface ChromeMode {
   readonly inkMute: string;
   readonly accent: string;
   readonly accentHover: string;
-  /** Text ON the accent. Contrast is checked by the theme gate. */
+  /**
+   * Text ON the accent, and it is the accent's own contrast partner.
+   *
+   * White is the reflex and it is often wrong: a clean saffron is a LIGHT
+   * colour, so white on it measured 3.39:1 — under the 4.5 a small label
+   * needs — and the chosen half of the light/dark toggle read as the unchosen
+   * one. A dark ink on gold passes comfortably and is what the dark theme
+   * already did. `check:themes` measures every pair now, so this cannot drift
+   * back one theme at a time.
+   */
   readonly accentOn: string;
   readonly danger: string;
   /**
@@ -110,7 +119,7 @@ export const CHROME_THEMES: readonly ChromeTheme[] = [
       bg: '#f2f2f5', raise: '#ffffff', sunk: '#e9e9ee', desk: '#e4e4e9',
       line: '#dddde1', lineSoft: '#e8e8ec',
       ink: '#1b1b1f', inkSoft: '#5c5c66', inkMute: '#9898a0',
-      accent: '#bb7f2e', accentHover: '#a06a24', accentOn: '#ffffff',
+      accent: '#bb7f2e', accentHover: '#a06a24', accentOn: '#231803',
       danger: '#c0392b',
       title: '#e6e6ea', titleInk: '#1b1b1f',
     },

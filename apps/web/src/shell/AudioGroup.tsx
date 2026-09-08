@@ -17,14 +17,18 @@ import type { ChantDoc } from '@siksamitra/format';
 import { Icon } from '../ui/Icon.js';
 import { RibbonButton, RibbonStack } from './RibbonButton.js';
 import type { Recording } from '../audio/useRecording.js';
+import { NUDGE, type Mapping } from '../audio/useMapping.js';
 
 /** The speeds worth having. Slower for learning; nothing faster than natural. */
 const SPEEDS = [0.5, 0.65, 0.8, 1] as const;
 
 export function TransportGroup(
-  { audio, verseId }: { audio: Recording; verseId: string | null },
+  { audio, at }: {
+    audio: Recording;
+    /** Where the caret is — the verse and the line it is on. */
+    at: { verseId: string; line: number } | null;
+  },
 ): ReactNode {
-  const hasVerse = verseId !== null;
   return (
     <div className="rbg" role="group" aria-label="Play">
       <RibbonButton
@@ -35,13 +39,26 @@ export function TransportGroup(
         accel="Space"
         onClick={() => (audio.playing ? audio.pause() : audio.playAll())}
       />
-      <RibbonStack>
+      {/*
+        THE VERSE AND THE LINE ARE BOTH HERE, and the line is the one somebody
+        learning a chant reaches for: a pāda is a breath, it is the unit a
+        recitation is taught in, and it is what the mapping exists to address.
+        The caret already says which one.
+      */}
+      <RibbonStack columns={2}>
         <RibbonButton
           icon="play-verse"
           label="This verse"
           title="Play the verse the caret is in"
-          disabled={!hasVerse}
-          onClick={() => { if (verseId !== null) audio.playVerse(verseId); }}
+          disabled={at === null}
+          onClick={() => { if (at !== null) audio.playVerse(at.verseId); }}
+        />
+        <RibbonButton
+          icon="play"
+          label="This line"
+          title="Play the pāda the caret is on"
+          disabled={at === null}
+          onClick={() => { if (at !== null) audio.playPada(at.verseId, at.line); }}
         />
         <RibbonButton
           icon="loop"
@@ -80,24 +97,25 @@ export function SpeedGroup({ audio }: { audio: Recording }): ReactNode {
 }
 
 export function MappingGroup(
-  { doc, audio, onMap, onNote }: {
+  { doc, audio, mapping }: {
     doc: ChantDoc | null;
     audio: Recording;
-    /** Runs the mapping and returns what to say about it. */
-    onMap: (file: File) => void;
-    onNote: (note: string) => void;
+    mapping: Mapping;
   },
 ): ReactNode {
   const pick = useRef<HTMLInputElement>(null);
-  const anchor = useRef<HTMLDivElement>(null);
   const mapped = Object.keys(doc?.recording?.byVerse ?? {}).length;
 
   return (
-    <div className="rbg" ref={anchor} role="group" aria-label="Mapping">
+    <div className="rbg" role="group" aria-label="Mapping">
       {/*
         A FILE INPUT, hidden behind a real button. The browser gives no other
         way to read a file off the disk, and its own button cannot be made to
         look like anything else in this window.
+
+        `audio/*` and not a list of extensions: the browser decodes whatever it
+        decodes, which is more formats than this program could name, and a
+        filter that guesses wrong hides the file somebody came to open.
       */}
       <input
         type="file"
@@ -110,8 +128,11 @@ export function MappingGroup(
              which is what somebody does after re-recording a take. */
           e.target.value = '';
           if (file === undefined) return;
+          /* Two things want it and each reads it its own way: the transport
+             plays it through a blob URL, the mapper decodes it to 8 kHz mono
+             samples. One choice, both told. */
           void audio.open(file);
-          onNote(`${file.name} opened.`);
+          void mapping.attach(file);
         }}
       />
       <RibbonButton
@@ -119,27 +140,110 @@ export function MappingGroup(
         label="Open take"
         size="lg"
         title="Choose a recording from this computer"
+        disabled={mapping.busy !== null}
         onClick={() => pick.current?.click()}
       />
       <RibbonStack>
         <RibbonButton
           icon="auto-keep"
           label="Map it"
-          title={audio.file === null
+          title={mapping.take === null
             ? 'Open a recording first'
             : 'Work out which second of the recording is which pāda'}
-          disabled={audio.file === null}
-          onClick={() => { if (audio.file !== null) onMap(audio.file); }}
+          disabled={mapping.take === null || mapping.busy !== null}
+          onClick={() => { void mapping.align(); }}
         />
         {/*
           A READOUT, not a disabled button. A greyed-out control says "you may
           not press this"; this is a fact about the document and there was
           never anything to press.
+
+          It says the GUESSES as well as the count, because that number is the
+          work left: the command line prints them with a `?` and they are the
+          two or three boundaries anybody actually has to look at.
         */}
         <p className="rbn__read" title="What this document already says about its audio">
           <Icon name="waveform" size="md" />
           <span>{mapped === 0 ? 'Not mapped yet' : `${mapped} verses mapped`}</span>
         </p>
+        <p className="rbn__read" aria-live="polite">
+          <Icon name={mapping.busy === null ? 'check' : 'history'} size="md" />
+          <span>
+            {mapping.busy
+              ?? (mapping.take === null
+                ? 'no take open'
+                : `${mapping.guesses} boundary(s) guessed`)}
+          </span>
+        </p>
+      </RibbonStack>
+    </div>
+  );
+}
+
+/**
+ * FIXING A BOUNDARY — the two or three the mapper had to guess.
+ *
+ * Everything here acts on the boundary selected in the strip under the
+ * document, so there is one selection and not two. Nudging and setting from
+ * the playhead exist because a boundary is a hundredth of a second and a hand
+ * on a mouse is not: at the zoom where a drag is precise enough, the take
+ * scrolls past faster than anybody can aim.
+ */
+export function BoundaryGroup(
+  { audio, mapping }: { audio: Recording; mapping: Mapping },
+): ReactNode {
+  const picked = mapping.selected !== null;
+  return (
+    <div className="rbg" role="group" aria-label="Boundary">
+      <RibbonButton
+        icon="check"
+        label="Set here"
+        size="lg"
+        title={picked
+          ? 'Move the selected boundary to where the recitation is playing'
+          : 'Pick a boundary in the strip below first'}
+        disabled={!picked}
+        onClick={() => mapping.setFrom(audio.at)}
+      />
+      <RibbonButton
+        icon="find"
+        label="Next guess"
+        size="lg"
+        title={mapping.guesses === 0
+          ? 'Every boundary landed on a breath'
+          : 'Go to the next boundary the mapper had to guess'}
+        disabled={mapping.guesses === 0}
+        onClick={() => { mapping.nextGuess(); }}
+      />
+      <RibbonStack columns={2}>
+        <RibbonButton
+          icon="nudge-back"
+          label="Earlier"
+          title="Move the boundary back a twentieth of a second"
+          disabled={!picked}
+          onClick={() => mapping.nudge(-NUDGE)}
+        />
+        <RibbonButton
+          icon="nudge-on"
+          label="Later"
+          title="Move the boundary on a twentieth of a second"
+          disabled={!picked}
+          onClick={() => mapping.nudge(NUDGE)}
+        />
+        <RibbonButton
+          icon="zoom-in"
+          label="Closer"
+          title="Show fewer seconds, so a boundary can be placed accurately"
+          disabled={mapping.take === null}
+          onClick={() => mapping.zoom(1)}
+        />
+        <RibbonButton
+          icon="zoom-out"
+          label="Wider"
+          title="Show more of the recording"
+          disabled={mapping.take === null}
+          onClick={() => mapping.zoom(-1)}
+        />
       </RibbonStack>
     </div>
   );

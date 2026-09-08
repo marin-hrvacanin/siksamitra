@@ -117,13 +117,21 @@ export interface MappingProblem {
  * in the editor, patched in a JSON file — and every one of these has been seen
  * in the corpus: a verse whose offsets run backwards, a pāda that overlaps the
  * next verse, a row naming a file no other row names.
+ *
+ * THE VERSES ARE PUT IN TIME ORDER FIRST, and that is not tidiness.
+ * `byVerse` is a record, and `canonicalJson` sorts a record's keys — so the
+ * file `sm audio map --write` produces has its verses in ALPHABETICAL order,
+ * which for ids past nine is v-1, v-10, v-11, v-12, v-2. Walking it as written
+ * and comparing each verse with the one before it made `sm audio check` report
+ * `v-2: starts before v-12 has finished` on a mapping it had just written
+ * itself, and exit 1. Reproduced with twelve contiguous verses.
  */
 export function checkMapping(doc: ChantDoc): MappingProblem[] {
   const out: MappingProblem[] = [];
   const verses = new Map<string, ChantVerse>();
   for (const s of doc.sections) for (const v of s.verses) verses.set(v.id, v);
 
-  let last: { verseId: string; end: number; file: string } | null = null;
+  const sound: { verseId: string; file: string; start: number; end: number }[] = [];
   for (const [verseId, raw] of Object.entries(doc.recording?.byVerse ?? {})) {
     const row = raw as RecordingRow;
     if (!verses.has(verseId)) {
@@ -144,12 +152,21 @@ export function checkMapping(doc: ChantDoc): MappingProblem[] {
       }
     }
     const first = rows[0];
-    if (last !== null && first !== undefined && last.file === row.file
-      && first.start < last.end - 0.001) {
-      out.push({ verseId, why: `starts before ${last.verseId} has finished` });
-    }
     const end = rows[rows.length - 1]?.end;
-    if (end !== undefined) last = { verseId, end, file: row.file };
+    if (first !== undefined && end !== undefined) {
+      sound.push({ verseId, file: row.file, start: first.start, end });
+    }
+  }
+
+  /* Within one take only: two clips have no second in common, so a verse in
+     `a.wav` starting at 0 says nothing about one in `b.wav` ending at 30. */
+  sound.sort((a, b) => (a.file === b.file ? a.start - b.start : a.file.localeCompare(b.file)));
+  for (const [i, v] of sound.entries()) {
+    const prev = sound[i - 1];
+    if (prev === undefined || prev.file !== v.file) continue;
+    if (v.start < prev.end - 0.001) {
+      out.push({ verseId: v.verseId, why: `starts before ${prev.verseId} has finished` });
+    }
   }
   return out;
 }

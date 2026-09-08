@@ -38,9 +38,19 @@ export interface CommandContext {
   readonly setTheme: (t: string) => void;
   /** The editor has the keyboard: a colliding accelerator stands down. */
   readonly editing: boolean;
+
+  /* ── the document as a file — see `shell/useDocFile.ts` ────────────────── */
+  /** Whether anything is open. Save with nothing open is not a refusal, it is
+   *  a button that should be grey. */
+  readonly hasDoc: boolean;
+  readonly dirty: boolean;
+  readonly newDoc: () => void;
+  readonly openDoc: () => void;
+  readonly save: () => void;
+  readonly saveAs: () => void;
 }
 
-export type CommandGroup = 'view' | 'zoom' | 'text' | 'appearance';
+export type CommandGroup = 'view' | 'zoom' | 'text' | 'appearance' | 'file';
 
 export interface Command {
   readonly id: string;
@@ -72,6 +82,54 @@ export interface Command {
 }
 
 export const COMMANDS: readonly Command[] = [
+  /*
+   * THE FILE, FIRST. Four accelerators everybody already has in their fingers,
+   * and they were the four this program did not have — there was no way to
+   * make a document, and no way to put one back where it came from.
+   *
+   * Ctrl+N is the one a browser keeps for itself: Chrome and Firefox open a
+   * window on it before the page is told. The button beside it works
+   * everywhere, and on the desktop — where the shell owns the whole keyboard —
+   * so does the key.
+   */
+  {
+    id: 'file.new',
+    icon: 'new-document',
+    label: 'New',
+    hint: 'Start an empty document',
+    group: 'file',
+    key: 'Ctrl+N',
+    run: (c) => c.newDoc(),
+  },
+  {
+    id: 'file.open',
+    icon: 'open',
+    label: 'Open',
+    hint: 'Open a document from disk',
+    group: 'file',
+    key: 'Ctrl+O',
+    run: (c) => c.openDoc(),
+  },
+  {
+    id: 'file.save',
+    icon: 'save',
+    label: 'Save',
+    hint: 'Write it back where it came from',
+    group: 'file',
+    key: 'Ctrl+S',
+    enabled: (c) => c.hasDoc,
+    run: (c) => c.save(),
+  },
+  {
+    id: 'file.saveAs',
+    icon: 'save-as',
+    label: 'Save as',
+    hint: 'Write it somewhere else, and work there from now on',
+    group: 'file',
+    key: 'Ctrl+Shift+S',
+    enabled: (c) => c.hasDoc,
+    run: (c) => c.saveAs(),
+  },
   {
     id: 'view.cycle',
     icon: 'view-pages',

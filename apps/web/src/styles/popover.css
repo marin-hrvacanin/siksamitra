@@ -209,3 +209,25 @@
 }
 
 /* The document's own styling is in `document.css` — the page is not chrome. */
+
+/*
+ * BACK TO THE DEFAULTS — a real button, which it was not.
+ *
+ * It had no rule of any kind, so it rendered as the browser's own grey chrome
+ * button in the middle of a themed panel: a different face, a different
+ * radius, a different everything. Quiet rather than prominent, because
+ * resetting is a way out and not a thing to invite.
+ */
+.ap__reset {
+  align-self: flex-start;
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-5);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink-soft);
+  font: inherit;
+  font-size: var(--text-ui-sm);
+  cursor: pointer;
+}
+.ap__reset:hover { background: var(--chrome-sunk); color: var(--chrome-ink); }

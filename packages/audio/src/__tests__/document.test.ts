@@ -144,6 +144,28 @@ describe('checking a mapping that was edited by hand', () => {
     expect(checkMapping(fine)).toEqual([]);
   });
 
+  /*
+   * THE REGRESSION. `canonicalJson` sorts a record's keys, so the file
+   * `sm audio map --write` writes has its verses in alphabetical order — and
+   * past nine that is v-1, v-10, v-11, v-12, v-2. Comparing each row with the
+   * one before it AS WRITTEN made `sm audio check` report
+   * "v-2: starts before v-12 has finished" about a contiguous mapping it had
+   * just produced itself, and exit 1.
+   */
+  it('reads the verses in time order, not in the order the record happens to hold them', () => {
+    const ids = Array.from({ length: 12 }, (_, i) => `v-${i + 1}`);
+    const twelve = doc(section(ids.map((id) => ({ id, tokens: [syl('a')] }))));
+    const rows: Record<string, unknown> = {};
+    /* Written in the order `canonicalJson` produces, which is the order the
+       file on disk is in — not the order the chant is sung in. */
+    for (const id of [...ids].sort()) {
+      const n = Number(id.slice(2));
+      rows[id] = { file: 'a.mp3', lines: [{ start: (n - 1) * 5, end: n * 5 }] };
+    }
+    expect(Object.keys(rows)[1]).toBe('v-10');
+    expect(checkMapping({ ...twelve, recording: { byVerse: rows } } as ChantDoc)).toEqual([]);
+  });
+
   it('catches a row for a verse the document does not have, and one with no file', () => {
     expect(checkMapping(withRows({ 'v-99': { file: 'a.mp3' } }))[0]?.why).toContain('no such verse');
     expect(checkMapping(withRows({ 'v-1': { file: '' } }))[0]?.why).toContain('no audio file');

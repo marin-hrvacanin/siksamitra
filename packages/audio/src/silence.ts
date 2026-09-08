@@ -111,3 +111,14 @@ export function detectSilences(
  * inaudible on both sides, which is what a boundary should be.
  */
 export const middleOf = (gap: Span): number => (gap.start + gap.end) / 2;
+
+/**
+ * The breaths of a recording as bare seconds, in order.
+ *
+ * Sorted, because both callers binary-search it: `map.ts` to snap a boundary
+ * onto a breath, `seams.ts` to say afterwards whether a boundary is sitting on
+ * one. They must agree about what "a breath" is down to the sample, so there
+ * is one list and not two.
+ */
+export const breathsIn = (gaps: readonly Span[]): number[] =>
+  gaps.map(middleOf).sort((a, b) => a - b);

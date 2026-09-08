@@ -13,7 +13,12 @@ page never has to know a version number:
 | link | built by |
 | --- | --- |
 | `siksamitra-windows-setup.exe` | `windows-latest`, NSIS |
-| `siksamitra-windows.msi` | `windows-latest`, WiX |
+
+No MSI. The WiX target rejects a version whose pre-release identifier is not
+numeric — `2.0.0-alpha.0` fails it — and it failed the whole Windows build
+after the NSIS installer had already been made. NSIS is Tauri's own
+recommendation for Windows.
+
 | `siksamitra-macos-apple-silicon.dmg` | `macos-14` |
 | `siksamitra-macos-intel.dmg` | `macos-13` |
 | `siksamitra-linux.AppImage` | `ubuntu-22.04` |

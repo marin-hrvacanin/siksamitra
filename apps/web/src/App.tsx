@@ -12,32 +12,28 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
+import type { ChantScriptKey } from '@siksamitra/format';
 import { anchorAt, scrollTopFor, type BlockOffset, type ViewKind } from '@siksamitra/layout';
 import { FlowView } from './views/FlowView.js';
 import { PagedView } from './views/PagedView.js';
 import { StatusBar } from './shell/StatusBar.js';
 import { AppTitleBar } from './shell/AppTitleBar.js';
 import { NavPanel } from './shell/NavPanel.js';
-import { DOCUMENTS, FileView } from './shell/FileView.js';
-import { useRecents } from './shell/useRecents.js';
+import { FileView } from './shell/FileView.js';
+import { GuardDialog } from './shell/GuardDialog.js';
+import { useDocFile } from './shell/useDocFile.js';
 import { useAccount } from './account/useAccount.js';
 import { Toolbar } from './shell/Toolbar.js';
 import { Icon } from './ui/Icon.js';
 import { handleKey, type CommandContext } from './shell/commands.js';
 import { EditorSurface } from './editor/EditorSurface.js';
-import { useSession } from './editor/useSession.js';
 import { useRecording } from './audio/useRecording.js';
-import { mapRecording } from './audio/map-in-browser.js';
-import { AudioBar } from './shell/AudioGroup.js';
+import { useMapping } from './audio/useMapping.js';
+import { AudioDock } from './audio/AudioDock.js';
 import { useViewState } from './state/useViewState.js';
 import { useViewport } from './state/useViewport.js';
 import { useElementWidth } from './state/useElementWidth.js';
-import { useDocument } from './state/useDocument.js';
 import { useAppearance } from './state/useAppearance.js';
-
-/** A document-shaped nothing, so the session hook is never conditional. */
-const EMPTY_DOC = { title: '', titleForms: {}, sections: [] };
 
 export function App() {
   const viewport = useViewport();
@@ -57,25 +53,16 @@ export function App() {
     [canvasWidth, viewport],
   );
   const state = useViewState(documentViewport, look.mode);
-  const [slug, setSlug] = useState(DOCUMENTS[0]!.slug);
-  const fetched = useDocument(slug);
-  /*
-   * A document opened FROM A FILE outranks the one fetched by slug, until
-   * another slug is picked. Two sources, one winner, and the rule stated here
-   * rather than in the picker — otherwise "Open" and the document list would
-   * each think they were in charge.
-   */
-  const [file, setFile] = useState<{ doc: ChantDoc; name: string } | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const opened = file?.doc ?? fetched.doc;
-  const error = file === null ? fetched.error : null;
   /*
-   * The session owns the document from here on: what is on screen is the
-   * EDITED document, not the one that was fetched. One source of truth, so a
-   * view cannot show text the editor does not have.
+   * THE DOCUMENT'S WHOLE LIFE, in one hook — which one is open, where it came
+   * from, whether it has been changed, and what has to be asked before any of
+   * that is thrown away. It owns the edit session too, because a save is a
+   * position in the undo history and the two cannot be held apart without
+   * disagreeing. See `shell/useDocFile.ts`.
    */
-  const session = useSession(opened ?? EMPTY_DOC);
-  const doc = opened === null ? null : session.doc;
+  const file = useDocFile(setNote);
+  const { session, doc, error } = file;
   const [script, setScript] = useState<ChantScriptKey>('iast');
   const [showMarks, setShowMarks] = useState(true);
   /*
@@ -95,13 +82,14 @@ export function App() {
    * the session's, so the highlight follows an edit.
    */
   const audio = useRecording(doc);
-  const mapAudio = useCallback((chosen: File) => {
-    if (doc === null) return;
-    setNote(`Listening to ${chosen.name}…`);
-    void mapRecording(doc, chosen)
-      .then((result) => { session.setRecording(result.doc); setNote(result.note); })
-      .catch((e: unknown) => setNote(`Could not map ${chosen.name}: ${String(e)}`));
-  }, [doc, session]);
+  /*
+   * THE MAPPING IS HERE FOR THE SAME REASON THE PLAYER IS. The ribbon's
+   * boundary buttons and the strip under the document have to be looking at
+   * ONE selected boundary, and this is the only place both are rendered from.
+   * It also keeps the take decoded once: `useMapping` holds the samples, so
+   * the waveform and the mapper read the same 8 kHz buffer.
+   */
+  const mapping = useMapping(doc, session.setRecording, setNote);
   const [folded, setFolded] = useState(false);
   const [navOpen, setNavOpen] = useState(true);
   /* Which outline rows are expanded. HERE rather than in the panel, because
@@ -110,7 +98,6 @@ export function App() {
   /** The File view — a place, over the whole window, not a panel. */
   const [fileOpen, setFileOpen] = useState(false);
 
-  const recents = useRecents(slug, doc?.title ?? null);
   /*
    * THE ACCOUNT LIVES HERE, not inside the File view.
    *
@@ -193,7 +180,13 @@ export function App() {
     theme: look.mode,
     setTheme: (m: string) => look.setMode(m === 'dark' ? 'dark' : 'light'),
     editing: session.editing,
-  }), [state, switchView, script, showMarks, look, session.editing]);
+    hasDoc: doc !== null,
+    dirty: file.dirty,
+    newDoc: file.newDoc,
+    openDoc: file.openDoc,
+    save: file.save,
+    saveAs: file.saveAs,
+  }), [state, switchView, script, showMarks, look, session.editing, doc, file]);
 
   /** One keyboard handler, reading the registry. No shortcut lives elsewhere. */
   useEffect(() => {
@@ -246,8 +239,8 @@ export function App() {
    * stayed at three.
    */
   const contentKey = useMemo(
-    () => `${slug}|${script}|${showMarks}|${session.editing}|${session.revision}`,
-    [slug, script, showMarks, session.editing, session.revision],
+    () => `${file.ref ?? ''}|${script}|${showMarks}|${session.editing}|${session.revision}`,
+    [file.ref, script, showMarks, session.editing, session.revision],
   );
 
   return (
@@ -264,16 +257,16 @@ export function App() {
       data-mode={look.mode}
       data-density={look.density}
     >
-      <AppTitleBar doc={doc} file={file} session={session} />
+      <AppTitleBar file={file} />
 
       <Toolbar
         audio={audio}
-        onMapAudio={mapAudio}
+        mapping={mapping}
         ctx={ctx}
         onSwitchView={switchView}
         look={look}
         session={session}
-        onOpenFile={(d, name) => { setFile({ doc: d, name }); setNote(`Opened ${name}`); }}
+        onImport={file.adopt}
         onNote={setNote}
         tab={tab}
         onTab={setTab}
@@ -284,16 +277,21 @@ export function App() {
 
       {fileOpen && (
         <FileView
-          doc={doc}
-          session={session}
-          slug={slug}
-          recents={recents}
+          file={file}
+          ctx={ctx}
           account={account}
-          onSlug={(next) => { setFile(null); setNote(null); setSlug(next); }}
-          onOpened={(d, name) => { setFile({ doc: d, name }); setNote(`Opened ${name}`); }}
           onClose={() => setFileOpen(false)}
           onNote={setNote}
         />
+      )}
+
+      {/*
+        Over everything, including the File view and the title bar — it is the
+        answer to "may I throw this away?", and every other control is a way of
+        avoiding the question.
+      */}
+      {file.pending !== null && (
+        <GuardDialog name={file.name} action={file.pending} onAnswer={file.answer} />
       )}
 
       <div className={navShown ? 'work' : 'work is-alone'}>
@@ -376,10 +374,19 @@ export function App() {
       </div>
       </div>
 
-      {/* The transport, only once there is something to transport. */}
-      {audio.name !== null && <AudioBar audio={audio} />}
+      {/* The transport and the waveform, only once there is something to play. */}
+      {(audio.name !== null || mapping.take !== null) && (
+        <AudioDock audio={audio} mapping={mapping} />
+      )}
 
-      <StatusBar doc={doc} state={state} script={script} session={session} note={note} />
+      <StatusBar
+        doc={doc}
+        state={state}
+        script={script}
+        session={session}
+        dirty={file.dirty}
+        note={note}
+      />
     </div>
   );
 }

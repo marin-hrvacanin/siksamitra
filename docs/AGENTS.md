@@ -11,9 +11,32 @@ Read `docs/authoring/` first for the rules the marks follow. This file is only
 about *working* them.
 
 ```
+npm run run                              # start it — see below
 npm run sm -- <command> [options]        # from this repository
 sm <command> [options]                   # once installed
 ```
+
+## Starting the program
+
+```bash
+npm run run              # the newest build, building whatever is stale
+npm run run -- --build   # rebuild the desktop app first (compiles Rust)
+npm run run -- --web     # skip the desktop app: serve the bundle in a browser
+npm run run -- --dev     # the dev server, with hot reload
+```
+
+One command on Windows, macOS and Linux. It knows the two things that are
+otherwise learnt the hard way: `copy:fonts` has to run before a desktop build
+or the window opens on "asset not found: index.html", and a desktop binary
+embeds the bundle it was built with, so one older than the bundle shows the
+previous version of the program. It says so rather than springing a
+minutes-long Rust build on you.
+
+**The browser gates refuse a stale build.** Every tool in `tools/` that drives
+a page checks the build stamp the web build writes (`tools/build-stamp.mjs`)
+against the source on disk, and stops if they disagree. They were pointed at a
+`serve apps/web/dist` from hours earlier and passed green against it while the
+source they were meant to be checking had changed underneath them.
 
 Every command takes `--json` (machine-readable on stdout, human on stderr).
 
@@ -90,6 +113,12 @@ exits 3 without writing; `--accept-loss` is how you say you meant it.
 A document can say which second of a recording is which pāda, and the reader
 plays from that — a verse, a single line, the line lit as it is sung. Nothing
 could ever produce that mapping, so most recordings never had one.
+
+The **Audio tab** does all of this in the window — attach a take, map it, see
+the boundaries on the waveform with the guessed ones marked, drag one straight,
+play a verse or a line — and it calls the functions below rather than its own,
+so the window and the command line produce the same mapping from the same file.
+The commands are what a script and an agent use.
 
 ```bash
 sm audio map durga.json --file take.wav --write   # listen, and work it out
