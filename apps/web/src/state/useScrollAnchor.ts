@@ -31,6 +31,22 @@ export interface ScrollAnchor {
   readonly offsetsOf: () => BlockOffset[];
   /** Switch view, keeping the reader's place. */
   readonly switchView: (next: ViewKind) => void;
+  /**
+   * Do something that changes the document's geometry, keeping the place.
+   *
+   * A ZOOM IS AS MUCH A CHANGE OF GEOMETRY AS A CHANGE OF VIEW, and only the
+   * view was anchored. Every length is scaled by the zoom and the column's
+   * width with it, so the text re-wraps and every block moves — while
+   * `scrollTop` stays exactly where it was, and `.canvas { overflow-anchor:
+   * none }` deliberately stops the browser from compensating.
+   *
+   * Measured on Śrī Rudram, 198 verses, at the middle of the document: one
+   * press of Zoom in moved the reader ELEVEN blocks, from the ninth verse of
+   * the tenth praśna to the sixth of the eleventh. The page got shorter —
+   * 49 568 px to 46 414 px, because a wider column wraps into fewer lines —
+   * and `scrollTop` did not move, so the words under the eye did.
+   */
+  readonly withAnchor: (change: () => void) => void;
 }
 
 export function useScrollAnchor(
@@ -72,15 +88,44 @@ export function useScrollAnchor(
    * lets the browser lay it out. Measured at one frame it read every height as
    * the OLD view's and landed a screen and a half out.
    */
-  const switchView = useCallback((next: ViewKind) => {
+  const withAnchor = useCallback((change: () => void) => {
     const el = scroller.current;
     const anchor = el === null ? null : anchorAt(el.scrollTop, offsetsOf());
-    setView(next);
+    change();
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const after = scroller.current;
-      if (after !== null) after.scrollTop = scrollTopFor(anchor, offsetsOf());
+      if (after === null) return;
+      const now = offsetsOf();
+      /*
+       * NOT AGAINST AN EMPTY LIST. The paged view draws `Measuring…` and its
+       * off-screen probe on the first paint, and `drawnBlocks` rightly ignores
+       * the probe — so two frames after a switch INTO pages there is nothing
+       * to anchor to, and `scrollTopFor(anchor, [])` is 0. Restoring that
+       * would land the reader at the top of the document, which is the exact
+       * betrayal this function exists to prevent. Wait a frame and try again;
+       * a few frames of the old scroll position is not worth a jump.
+       */
+      if (now.length === 0) {
+        let tries = 0;
+        const retry = (): void => {
+          const el2 = scroller.current;
+          if (el2 === null) return;
+          const later = offsetsOf();
+          if (later.length > 0) { el2.scrollTop = scrollTopFor(anchor, later); return; }
+          tries += 1;
+          if (tries < 30) requestAnimationFrame(retry);
+        };
+        requestAnimationFrame(retry);
+        return;
+      }
+      after.scrollTop = scrollTopFor(anchor, now);
     }));
-  }, [scroller, setView, offsetsOf]);
+  }, [scroller, offsetsOf]);
 
-  return { goToBlock, offsetsOf, switchView };
+  const switchView = useCallback(
+    (next: ViewKind) => withAnchor(() => setView(next)),
+    [withAnchor, setView],
+  );
+
+  return { goToBlock, offsetsOf, switchView, withAnchor };
 }

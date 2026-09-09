@@ -132,7 +132,7 @@ export function App() {
 
   /* Scrolling, anchoring and switching view without losing the place — the
      DOM half of `packages/layout`'s arithmetic. See `useScrollAnchor.ts`. */
-  const { goToBlock, switchView } = useScrollAnchor(scroller, state.setView);
+  const { goToBlock, switchView, withAnchor } = useScrollAnchor(scroller, state.setView);
 
   const ctx: CommandContext = useMemo(() => ({
     view: state.view.kind,
@@ -141,13 +141,20 @@ export function App() {
       state.view.kind === 'flow' ? 'paged' : state.view.kind === 'paged' ? 'web' : 'flow',
     ),
     zoom: state.zoom,
-    zoomIn: state.zoomIn,
-    zoomOut: state.zoomOut,
-    resetZoom: state.resetZoom,
-    setZoomMode: state.setZoom,
+    /*
+     * EVERY GEOMETRY CHANGE KEEPS THE READER'S PLACE, not just a change of
+     * view. Zoom scales every length and re-wraps the column, so the words
+     * under the eye move while `scrollTop` does not — measured on Śrī Rudram
+     * as eleven blocks of drift from one press of Zoom in. A page size
+     * re-paginates outright. `withAnchor` is what `switchView` already was.
+     */
+    zoomIn: () => withAnchor(state.zoomIn),
+    zoomOut: () => withAnchor(state.zoomOut),
+    resetZoom: () => withAnchor(state.resetZoom),
+    setZoomMode: (m: Parameters<typeof state.setZoom>[0]) => withAnchor(() => state.setZoom(m)),
     paginated: state.view.paginated,
     pageSize: state.page.id,
-    setPageSize: state.setPageSize,
+    setPageSize: (id: string) => withAnchor(() => state.setPageSize(id)),
     script,
     setScript,
     showMarks,
@@ -161,7 +168,7 @@ export function App() {
     openDoc: file.openDoc,
     save: file.save,
     saveAs: file.saveAs,
-  }), [state, switchView, script, showMarks, look, session.editing, doc, file]);
+  }), [state, switchView, withAnchor, script, showMarks, look, session.editing, doc, file]);
 
   /** One keyboard handler, reading the registry. No shortcut lives elsewhere. */
   useEffect(() => {

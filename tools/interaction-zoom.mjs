@@ -196,6 +196,110 @@ for (const view of ['Flow', 'Web']) {
   await wait(500);
 }
 
+
+/* ── the reader's place ──────────────────────────────────────────────────── */
+/*
+ * ZOOM MUST NOT MOVE THE WORDS UNDER THE EYE.
+ *
+ * Only a change of VIEW was anchored. A zoom scales every length and re-wraps
+ * the column, so every block moves while `scrollTop` stays where it was — and
+ * `.canvas { overflow-anchor: none }` deliberately stops the browser from
+ * compensating. Measured on Śrī Rudram at the middle of the document: one
+ * press of Zoom in moved the reader ELEVEN blocks, from the ninth verse of the
+ * tenth praśna to the sixth of the eleventh.
+ *
+ * DURGĀ SŪKTAM CANNOT SHOW THIS. It is nine verses and 2 621 px, so a step of
+ * zoom moves the top block by less than its own height and the check passes on
+ * a broken program. So this opens the longest document in the library.
+ */
+const openLibraryDoc = async (title) => {
+  const opened = await page.evaluate(() => {
+    const b = document.querySelector('.rbn__file');
+    if (b === null) return false;
+    b.click();
+    return true;
+  });
+  if (!opened) throw new Error('no File tab in the ribbon');
+  await page.waitForSelector('.bs__item', { timeout: 5000 });
+  await wait(400);
+  const hit = await page.evaluate((want) => {
+    const b = [...document.querySelectorAll('.bs__item')]
+      .find((x) => x.querySelector('.bs__item-name')?.textContent.trim() === want);
+    if (b === undefined) return 'missing';
+    b.click();
+    return 'clicked';
+  }, title);
+  if (hit !== 'clicked') throw new Error(`no library document "${title}"`);
+  await wait(3500);
+  await page.evaluate(() => document.fonts.ready);
+};
+
+/** The block at the top of the viewport, and how far down the list it is. */
+const atTop = () => page.evaluate(() => {
+  const c = document.querySelector('.canvas');
+  if (c === null) return null;
+  const top = c.getBoundingClientRect().top;
+  const blocks = [...document.querySelectorAll('[data-block-id]')]
+    .filter((e) => e.closest('.paged__probe') === null);
+  const hit = blocks.find((b) => b.getBoundingClientRect().bottom > top + 4);
+  return {
+    id: hit?.dataset.blockId ?? 'none',
+    index: blocks.indexOf(hit),
+    total: blocks.length,
+    height: Math.round(c.scrollHeight),
+  };
+});
+
+await openLibraryDoc('Śrī Rudram');
+await pressTab('View');
+await wait(300);
+await pressButton('Flow');
+await wait(1500);
+await pressButton('Actual size');
+await wait(900);
+await page.evaluate(() => {
+  const c = document.querySelector('.canvas');
+  c.scrollTop = Math.round(c.scrollHeight * 0.5);
+});
+await wait(800);
+
+const placeBefore = await atTop();
+check('a long document is open, and we are in the middle of it',
+  placeBefore !== null && placeBefore.total > 100 && placeBefore.index > 20,
+  placeBefore === null ? 'no canvas' : `block ${placeBefore.index} of ${placeBefore.total}`);
+
+await pressButton('Zoom in');
+await wait(1400);
+const placeAfter = await atTop();
+check("ZOOM KEEPS THE READER'S PLACE",
+  placeAfter !== null && Math.abs(placeAfter.index - placeBefore.index) <= 1,
+  `${placeBefore.id} → ${placeAfter?.id ?? 'none'} `
+  + `(block ${placeBefore.index} → ${placeAfter?.index ?? -1}, `
+  + `document ${placeBefore.height} → ${placeAfter?.height ?? -1} px)`);
+
+await pressButton('Zoom out');
+await wait(1400);
+const placeBack = await atTop();
+check('and zooming back out keeps it too',
+  placeBack !== null && Math.abs(placeBack.index - placeBefore.index) <= 1,
+  `block ${placeBack?.index ?? -1}, was ${placeBefore.index}`);
+
+/*
+ * THE CONTROL. The document really did change shape under the reader — if it
+ * had not, "the place was kept" would be true of doing nothing at all.
+ */
+check('and the document really did change shape (else nothing was kept)',
+  placeAfter !== null && placeAfter.height !== placeBefore.height,
+  `${placeBefore.height} → ${placeAfter?.height ?? -1} px`);
+
+/* Switching INTO the paged view, which restores against a view that is still
+   measuring — the case that needed the retry. */
+await pressButton('Pages');
+await wait(2500);
+const paged = await atTop();
+check('and switching into Pages does not throw the reader back to the top',
+  paged !== null && paged.index > 5, `block ${paged?.index ?? -1} of ${paged?.total ?? -1}`);
+
 await page.screenshot({ path: 'artifacts/zoom-gate.png' });
 console.log(`\n  ${passed} passed, ${failures.length} failed.`);
 console.log(`  console errors: ${errors.length === 0 ? 'none' : errors.slice(0, 3).join(' | ')}`);
