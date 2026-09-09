@@ -1,14 +1,17 @@
 /**
- * THE PICTURE GROUP — Word's Insert ▸ Pictures and its Picture Format tab, in
- * one ribbon group.
+ * THE PICTURE TAB — what you do to the picture you have selected.
  *
- * Word splits them because Word has a contextual tab that appears when a
- * picture is selected. This ribbon has no contextual tabs, and adding the
- * machinery for one so that four controls could hide would be a worse trade
- * than the one made here: the group is always present, Insert always works, and
- * the four controls that are ABOUT a picture are disabled until one is
- * selected — which is the same information without a tab that appears and
- * disappears under the cursor.
+ * Word's Picture Format tab, and now literally that: a CONTEXTUAL tab that
+ * appears when a picture is selected and goes away when it is not. Putting a
+ * picture in is a different job and lives on Insert.
+ *
+ * It used to be one group on Home, always present, with the four controls that
+ * are ABOUT a picture disabled until one was selected. The argument for that
+ * was that a tab appearing under the cursor is worse than four grey buttons.
+ * It is not, and the owner said so: "when the picture is selected it should
+ * have the Picture tab at the top shown, like in MSWord". Four permanently
+ * grey buttons on the first tab teach a person that the ribbon is mostly
+ * inert.
  *
  * WHAT IS NOT HERE, and each is refused with its reason in
  * `openspec/changes/document-images/design.md`: cropping, rotation, borders and
@@ -23,7 +26,7 @@ import {
 } from '@siksamitra/format';
 import { RibbonButton, RibbonStack } from './RibbonButton.js';
 import { PictureDialog } from './PictureDialog.js';
-import { readImageFile, type ReadImage } from '../editor/useFigures.js';
+import { readImageFile } from '../editor/useFigures.js';
 import type { Session } from '../editor/useSession.js';
 
 /**
@@ -60,13 +63,12 @@ const CAPTION_AT = [
   { id: 'none', label: 'None' },
 ] as const;
 
-export function PictureGroup(
+export function PictureFormatGroup(
   { session, onNote }: { session: Session; onNote: (note: string) => void },
 ): ReactNode {
   const { figures } = session;
   const fig = figures.figure;
   const picker = useRef<HTMLInputElement>(null);
-  const [pending, setPending] = useState<ReadImage | null>(null);
   /* The dialog, reopened on a picture that is already in the document. Its own
      state rather than a flag on `pending`, so a description being corrected can
      never be mistaken for a file waiting to be inserted. */
@@ -74,12 +76,9 @@ export function PictureGroup(
   /* Which gesture the picker was opened for. One `<input type=file>`, because
      two would be two things to keep in step and the browser only ever shows
      one at a time anyway. */
-  const mode = useRef<'insert' | 'replace'>('insert');
-
-  const choose = (which: 'insert' | 'replace'): void => {
-    mode.current = which;
+  const choose = (): void => {
     /* Cleared first: choosing the same file twice fires no `change` event,
-       so re-inserting a picture you had just removed did nothing at all. */
+       so re-picking a file you had just used did nothing at all. */
     if (picker.current !== null) picker.current.value = '';
     picker.current?.click();
   };
@@ -88,12 +87,8 @@ export function PictureGroup(
     if (file === undefined) return;
     const read = await readImageFile(file);
     if (typeof read === 'string') { onNote(read); return; }
-    if (mode.current === 'replace') {
-      figures.replace(read);
-      onNote(`Replaced with ${read.name} — ${read.width} × ${read.height} px.`);
-      return;
-    }
-    setPending(read);
+    figures.replace(read);
+    onNote(`Replaced with ${read.name} — ${read.width} × ${read.height} px.`);
   };
 
   return (
@@ -106,26 +101,18 @@ export function PictureGroup(
         onChange={(e) => { void took(e.target.files?.[0]); }}
       />
 
-      <RibbonButton
-        icon="image"
-        label="Picture"
-        size="lg"
-        title="Put a picture into this step, after the verse the caret is in"
-        onClick={() => choose('insert')}
-      />
-
       <RibbonStack>
         <RibbonButton
           icon="replace"
           label="Replace"
           title="Swap the bytes and keep the size, alignment, caption and description"
           disabled={fig === null}
-          onClick={() => choose('replace')}
+          onClick={choose}
         />
         <RibbonButton
           icon="marks"
           label="Describe"
-          title="What is in this picture, and what the caption says"
+          title="Its name, what is in it, and what the caption says"
           disabled={fig === null}
           onClick={() => setDescribing(true)}
         />
@@ -214,20 +201,6 @@ export function PictureGroup(
         />
       )}
 
-      {pending !== null && (
-        <PictureDialog
-          image={pending}
-          onCancel={() => setPending(null)}
-          onInsert={(alt, caption) => {
-            figures.insert(pending, alt, caption);
-            onNote(
-              `Picture added — ${pending.width} × ${pending.height} px, about `
-              + `${((pending.bytes * 4) / 3 / 1024).toFixed(0)} kB in the document.`,
-            );
-            setPending(null);
-          }}
-        />
-      )}
     </div>
   );
 }

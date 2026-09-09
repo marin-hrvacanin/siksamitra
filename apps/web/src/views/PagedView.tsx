@@ -36,7 +36,7 @@ const isHeading = (id: string): boolean => KEEP_WITH_NEXT.some((p) => id.startsW
 export function PagedView(
   {
     doc, script, showMarks, page, zoom, contentKey, addressable = false, rebuild = 0,
-    selectedFigure, onFigure,
+    selectedFigure, onFigure, onFigureResize,
   }: {
     doc: ChantDoc;
     script: ChantScriptKey;
@@ -54,6 +54,7 @@ export function PagedView(
      *  through to `DocumentBlocks`; this view has no opinion about either. */
     selectedFigure?: string;
     onFigure?: (blockId: string, sectionId: string, at: number) => void;
+    onFigureResize?: (pct: number) => void;
   },
 ): ReactNode {
   const probe = useRef<HTMLDivElement>(null);
@@ -146,6 +147,7 @@ export function PagedView(
                   only={ids}
                   addressable={addressable}
                   {...(selectedFigure === undefined ? {} : { selectedFigure })}
+                  {...(onFigureResize === undefined ? {} : { onFigureResize })}
                   {...(onFigure === undefined ? {} : { onFigure })}
                 />
               </div>

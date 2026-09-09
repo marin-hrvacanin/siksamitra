@@ -27,6 +27,9 @@
  * doubled would shrink against the text at every zoom but 100 %.
  */
 export const FIGURE = {
+  /* The corner grab handle on a selected picture: big enough to hit with a
+     mouse and small enough not to cover the picture at thumbnail size. */
+  "fig-handle": "0.5rem",
   "fig-thumb": "5.5rem",
   "fig-small": "25%",
   "fig-small-min": "7.5rem",

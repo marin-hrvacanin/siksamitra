@@ -141,14 +141,59 @@ export const imageDataUri = (mediaType: string, base64: string): string =>
 /**
  * What is wrong with this figure, as sentences. Empty means nothing is.
  *
- * `alt` IS REQUIRED and the requirement is not a formality. These documents are
- * liturgical manuals: a picture of a mudrā is the only form that instruction
- * takes, so a picture with no alternative text is a step a blind reciter cannot
- * perform. A caption is not a substitute — a caption is shown to everybody and
- * says what the picture is FOR, while alt says what is IN it — which is why
+ * ALT IS WANTED AND NOT DEMANDED, and the difference decides where the
+ * requirement can live. These documents are liturgical manuals: a picture of a
+ * mudrā is the only form that instruction takes, so one with no alternative
+ * text is a step a blind reciter cannot perform. That is worth reporting on
+ * every picture that lacks it.
+ *
+ * It is NOT worth stopping the insertion for. The owner's words: "photo name
+ * shouldn't be obligatory and neither description — by default it should only
+ * insert the picture and then in the picture tab you can set these." A dialog
+ * between choosing a file and seeing it on the page is a dialog people learn
+ * to dismiss, and a description written to get past a dialog is not a
+ * description. So `figureFaults` reports it, `sm validate` prints it, and
+ * `insertFigure` no longer refuses on it.
+ *
+ * A caption is not a substitute — a caption is shown to everybody and says
+ * what the picture is FOR, while alt says what is IN it — which is why
  * repeating one as the other is reported.
  */
+/**
+ * The narrowest and widest a dragged picture may be, as a percentage.
+ *
+ * Below the floor a picture is a speck nobody meant to make and cannot grab
+ * again; above the ceiling it is wider than the column it stands in.
+ */
+export const FIGURE_MIN_PCT = 5;
+export const FIGURE_MAX_PCT = 100;
+
 export function figureFaults(fig: ChantFigure, where = 'a figure'): string[] {
+  return [...figureBlockers(fig, where), ...figureNudges(fig, where)];
+}
+
+/**
+ * What a person has not written YET. Reported, never refused.
+ *
+ * One function rather than a filter on the prose of `figureFaults`: matching
+ * a sentence to decide whether it blocks is a test that passes until somebody
+ * rewords the sentence, and it did — rewording "has no alternative text" to
+ * name the control instead made the insertion start refusing again.
+ */
+export function figureNudges(fig: ChantFigure, where = 'a figure'): string[] {
+  const out: string[] = [];
+  if (typeof fig.alt !== 'string' || fig.alt.trim() === '') {
+    out.push(`${where}: has no description yet — add one on the Picture tab, `
+      + 'so somebody who cannot see it can still follow the step');
+  } else if (fig.caption?.en !== undefined && fig.caption.en.trim() === fig.alt.trim()) {
+    out.push(`${where}: repeats its caption as its description, so a screen `
+      + 'reader hears the same sentence twice and learns nothing about the picture');
+  }
+  return out;
+}
+
+/** What makes a figure unusable. These refuse the operation. */
+export function figureBlockers(fig: ChantFigure, where = 'a figure'): string[] {
   const out: string[] = [];
   const say = (s: string): number => out.push(`${where}: ${s}`);
 
@@ -169,18 +214,15 @@ export function figureFaults(fig: ChantFigure, where = 'a figure'): string[] {
     say('has a data: src that is not base64 image data');
   }
 
-  if (typeof fig.alt !== 'string' || fig.alt.trim() === '') {
-    say('has no alternative text — a picture with none is a step somebody '
-      + 'cannot follow');
-  } else if (fig.caption?.en !== undefined
-    && fig.caption.en.trim() === fig.alt.trim()) {
-    say('repeats its caption as its alternative text, so a screen reader hears '
-      + 'the same sentence twice and learns nothing about the picture');
-  }
-
   const inSet = <T extends string>(v: T | undefined, set: readonly T[], name: string): void => {
     if (v !== undefined && !set.includes(v)) say(`has ${name} "${v}" (${set.join(', ')})`);
   };
+  if (fig.widthPct !== undefined
+    && (!Number.isFinite(fig.widthPct) || fig.widthPct < FIGURE_MIN_PCT
+      || fig.widthPct > FIGURE_MAX_PCT)) {
+    say(`is ${String(fig.widthPct)}% wide, outside `
+      + `${FIGURE_MIN_PCT}–${FIGURE_MAX_PCT}%`);
+  }
   inSet(fig.size, FIGURE_SIZES, 'size');
   inSet(fig.flow, FIGURE_FLOWS, 'flow');
   inSet(fig.captionAt, FIGURE_CAPTION_AT, 'caption position');

@@ -118,7 +118,7 @@ function VerseLines(
  * exact rather than a guess.
  */
 function DocumentBlocksInner(
-  { doc, script, showMarks, only, addressable = false, selectedFigure, onFigure }: {
+  { doc, script, showMarks, only, addressable = false, selectedFigure, onFigure, onFigureResize }: {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
@@ -126,6 +126,8 @@ function DocumentBlocksInner(
     only?: ReadonlySet<string>;
     /** The block id of the picture the editor has selected, if any. */
     selectedFigure?: string;
+    /** A corner was dragged: the new width in per cent of the column. */
+    onFigureResize?: (pct: number) => void;
     /**
      * Somebody pointed at a picture.
      *
@@ -199,6 +201,9 @@ function DocumentBlocksInner(
                     fig={fig}
                     blockId={id}
                     selected={selectedFigure === id}
+                    {...(addressable && onFigureResize !== undefined && selectedFigure === id
+                      ? { onResize: onFigureResize }
+                      : {})}
                     {...(addressable && onFigure !== undefined
                       ? { onSelect: () => onFigure(id, section.id, at) }
                       : {})}

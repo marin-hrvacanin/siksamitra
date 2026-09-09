@@ -10,8 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   figureBytes, figureFaults, figuresOf, documentFigureFaults, imageDataUri,
-  imageMediaType, isEmbeddedImage, FIGURE_MAX_BYTES,
-} from '../figure.js';
+  imageMediaType, isEmbeddedImage, FIGURE_MAX_BYTES, figureBlockers, figureNudges } from '../figure.js';
 import type { ChantDoc, ChantFigure } from '../chant.js';
 
 /** A real 1x1 transparent PNG, 70 bytes: the 8-byte signature, IHDR, IDAT and
@@ -55,9 +54,20 @@ describe('what is wrong with a figure', () => {
     expect(figureFaults(fig())).toEqual([]);
   });
 
-  it('refuses a picture with no description', () => {
-    expect(figureFaults(fig({ alt: '' })).join(' ')).toContain('no alternative text');
-    expect(figureFaults(fig({ alt: '   ' })).join(' ')).toContain('no alternative text');
+  it('asks for a description, and does not block on one', () => {
+    /* A NUDGE, not a blocker: `figureFaults` reports it and `figureBlockers`
+       does not, which is what lets a picture be inserted before anybody has
+       written a sentence about it. */
+    expect(figureFaults(fig({ alt: '' })).join(' ')).toContain('no description yet');
+    expect(figureFaults(fig({ alt: '   ' })).join(' ')).toContain('no description yet');
+    expect(figureBlockers(fig({ alt: '' }))).toEqual([]);
+    expect(figureNudges(fig({ alt: '' })).join(' ')).toContain('no description yet');
+  });
+
+  it('holds a dragged width to the range a picture can be', () => {
+    expect(figureBlockers(fig({ widthPct: 58 }))).toEqual([]);
+    expect(figureBlockers(fig({ widthPct: 1 })).join(' ')).toContain('outside');
+    expect(figureBlockers(fig({ widthPct: 140 })).join(' ')).toContain('outside');
   });
 
   it('refuses a description that only repeats the caption', () => {
@@ -141,8 +151,8 @@ describe('finding every picture in a document', () => {
       }],
     };
     expect(documentFigureFaults(bad)).toEqual([
-      's-2/fig-1: has no alternative text — a picture with none is a step '
-      + 'somebody cannot follow',
+      's-2/fig-1: has no description yet — add one on the Picture tab, so '
+      + 'somebody who cannot see it can still follow the step',
     ]);
   });
 });

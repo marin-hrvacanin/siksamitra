@@ -79,3 +79,5 @@ export type { TextAndMarks, TokenHelp } from './migrate.js';
 export { textEdits } from './text-diff.js';
 export type { TextEdit3 } from './text-diff.js';
 export { splitsCharacter } from './mark.js';
+export { figureBlockers, figureNudges } from './figure.js';
+export { FIGURE_MAX_PCT, FIGURE_MIN_PCT } from './figure.js';

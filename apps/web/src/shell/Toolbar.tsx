@@ -30,7 +30,8 @@ import { Ribbon, type RibbonGroup, type RibbonTab } from './Ribbon.js';
 import { FileGroup } from './FileGroup.js';
 import { ScriptGroup } from './ScriptGroup.js';
 import { RegisterGroup } from './RegisterGroup.js';
-import { PictureGroup } from './PictureGroup.js';
+import { PictureFormatGroup } from './PictureGroup.js';
+import { InsertGroup } from './InsertGroup.js';
 import { BoundaryGroup, MappingGroup, SpeedGroup, TransportGroup } from './AudioGroup.js';
 import type { Recording } from '../audio/useRecording.js';
 import type { Mapping } from '../audio/useMapping.js';
@@ -92,19 +93,6 @@ export function Toolbar(
     {
       id: 'history', label: 'History', icon: 'undo', priority: 2,
       content: <HistoryButtons session={session} />,
-    },
-    /*
-     * ON HOME, where Word's Insert tab would be.
-     *
-     * A fifth tab for one group is a tab people do not find; the ribbon
-     * already collapses a group to a button when the window is narrow, which
-     * is what a rarely-used group should do. It folds before the file actions
-     * and after the history, because a picture is put in once and undo is
-     * reached for constantly.
-     */
-    {
-      id: 'picture', label: 'Picture', icon: 'image', priority: 3,
-      content: <PictureGroup session={session} onNote={onNote} />,
     },
     {
       id: 'file', label: 'File', icon: 'document', priority: 5,
@@ -230,11 +218,43 @@ export function Toolbar(
     },
   ];
 
+  /* Putting a thing INTO the document — Word's Insert tab, and Word's reason
+     for having one: it is a different job from formatting the thing you have
+     already put in, which is what the contextual tab below is for. */
+  const insert: RibbonGroup[] = [
+    {
+      id: 'insert', label: 'Insert', icon: 'image', priority: 0,
+      content: <InsertGroup session={session} onNote={onNote} onAudio={() => onTab('audio')} />,
+    },
+  ];
+
+  /* What you do to the picture you have selected. */
+  const pictureFormat: RibbonGroup[] = [
+    {
+      id: 'picture-format', label: 'Picture', icon: 'image', priority: 0,
+      content: <PictureFormatGroup session={session} onNote={onNote} />,
+    },
+  ];
+
+  /*
+   * A CONTEXTUAL TAB APPEARS WHEN ITS OBJECT IS SELECTED, and this is the list
+   * of them — one entry per kind of object. A table, a recording, or several
+   * things selected at once each become one more entry and nothing else.
+   */
+  const contextual: RibbonTab[] = [];
+  if (session.figures.selected !== null) {
+    contextual.push({
+      id: 'picture', label: 'Picture', groups: pictureFormat, contextual: 'Picture Tools',
+    });
+  }
+
   const tabs: readonly RibbonTab[] = [
     { id: 'home', label: 'Home', groups: home },
+    { id: 'insert', label: 'Insert', groups: insert },
     { id: 'marking', label: 'Marking', groups: marking },
     { id: 'audio', label: 'Audio', groups: audioTab },
     { id: 'view', label: 'View', groups: view },
+    ...contextual,
   ];
 
   return (

@@ -58,12 +58,29 @@ describe('a picture as a section item', () => {
     expect(done.section.items?.map((i) => i.t)).toEqual(['instruction', 'verse', 'figure']);
   });
 
-  it('refuses a picture with no description, and writes nothing', () => {
+  it('takes a picture with no description, and says one is wanted', () => {
+    /*
+     * IT USED TO REFUSE. The owner: "photo name shouldn't be obligatory and
+     * neither description — by default it should only insert the picture and
+     * then in the picture tab can you set these." A dialog between choosing a
+     * file and seeing it on the page is a dialog people learn to dismiss, and
+     * a description written to get past one is not a description.
+     */
     const before = doc().sections[0]!;
     const done = insertFigure(before, 1, fig('fig-1', { alt: '' }));
+    expect(done.changed).toBe(true);
+    expect(done.section).not.toBe(before);
+    expect(done.notes.join(' ')).toContain('no description yet');
+  });
+
+  it('still refuses one that cannot be drawn at all', () => {
+    /* A blocker is different in kind from something not written yet: a
+       picture with no bytes is not a picture. */
+    const before = doc().sections[0]!;
+    const done = insertFigure(before, 1, fig('fig-1', { src: '' }));
     expect(done.changed).toBe(false);
     expect(done.section).toBe(before);
-    expect(done.notes.join(' ')).toContain('no alternative text');
+    expect(done.notes.join(' ')).toContain('has no picture');
   });
 
   it('copies a shared picture before changing it, and says so', () => {

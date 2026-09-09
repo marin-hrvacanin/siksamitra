@@ -27,6 +27,8 @@ import { Toolbar } from './shell/Toolbar.js';
 import { Icon } from './ui/Icon.js';
 import { handleKey, type CommandContext } from './shell/commands.js';
 import { EditorSurface } from './editor/EditorSurface.js';
+import { useContextualTab } from './shell/useContextualTab.js';
+import { useShellState } from './shell/useShellState.js';
 import { useRecording } from './audio/useRecording.js';
 import { useMapping } from './audio/useMapping.js';
 import { AudioDock } from './audio/AudioDock.js';
@@ -72,7 +74,12 @@ export function App() {
    * — closing the panel and having it reopen when you open another chant is
    * the kind of small betrayal that stops a panel being used.
    */
-  const [tab, setTab] = useState('home');
+  /* Which ribbon tab is in front, including the contextual ones — see
+     `useContextualTab`. One entry per kind of object that has a tab. */
+  const { tab, setTab } = useContextualTab([
+    session.figures.selected === null ? null : 'picture',
+  ]);
+
   /*
    * THE RECITATION, if there is one.
    *
@@ -90,13 +97,10 @@ export function App() {
    * the waveform and the mapper read the same 8 kHz buffer.
    */
   const mapping = useMapping(doc, session.setRecording, setNote);
-  const [folded, setFolded] = useState(false);
-  const [navOpen, setNavOpen] = useState(true);
-  /* Which outline rows are expanded. HERE rather than in the panel, because
-     the panel unmounts when it is hidden and would forget them. */
-  const [navRows, setNavRows] = useState<ReadonlySet<string>>(new Set());
-  /** The File view — a place, over the whole window, not a panel. */
-  const [fileOpen, setFileOpen] = useState(false);
+  /* What is open, folded and expanded — see `shell/useShellState.ts`. */
+  const {
+    folded, setFolded, navOpen, setNavOpen, navRows, setNavRows, fileOpen, setFileOpen,
+  } = useShellState();
 
   /*
    * THE ACCOUNT LIVES HERE, not inside the File view.

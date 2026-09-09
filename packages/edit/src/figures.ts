@@ -17,7 +17,7 @@
  * through it.
  */
 import type { ChantDoc, ChantFigure, ChantItem, ChantSection } from '@siksamitra/format';
-import { FIGURE_DEFAULTS, figureFaults } from '@siksamitra/format';
+import { FIGURE_DEFAULTS, figureBlockers, figureNudges } from '@siksamitra/format';
 
 /** What a figure command did, and anything it had to say about it. */
 export interface FigureResult {
@@ -77,19 +77,27 @@ Set<string> {
  * index one past the end — which is a legal place to put a picture and a silly
  * thing to refuse.
  *
- * A FAULTY FIGURE IS REFUSED HERE and not further down. `figureFaults` is the
- * one definition of what a picture may be, and letting an alt-less picture into
- * a document to be caught by a gate later means it is already saved.
+ * A FAULTY FIGURE IS REFUSED HERE and not further down — except for a missing
+ * description, which is REPORTED and let through. `figureFaults` is the one
+ * definition of what a picture may be, and letting a picture with no bytes or
+ * a 40 MB one into a document to be caught by a gate later means it is already
+ * saved. A missing description is different in kind: it is something the
+ * person has not written YET, and the Picture tab is where they write it. See
+ * the note on `figureFaults`.
  */
 export function insertFigure(
   section: ChantSection, at: number, figure: ChantFigure,
 ): FigureResult {
-  const faults = figureFaults(figure, `the picture "${figure.id}"`);
-  if (faults.length > 0) return { section, notes: faults, changed: false };
+  const blockers = figureBlockers(figure, `the picture "${figure.id}"`);
+  if (blockers.length > 0) return { section, notes: blockers, changed: false };
   const items = itemsOf(section);
   const where = Math.max(0, Math.min(at, items.length));
   items.splice(where, 0, { t: 'figure', figure });
-  return { section: write(section, items), notes: [], changed: true };
+  return {
+    section: write(section, items),
+    notes: figureNudges(figure, `the picture "${figure.id}"`),
+    changed: true,
+  };
 }
 
 /**
@@ -142,8 +150,11 @@ export function updateFigure(
   const merged = { ...base, ...patch } as Record<string, unknown>;
   for (const [k, v] of Object.entries(patch)) if (v === undefined) delete merged[k];
   const next = merged as unknown as ChantFigure;
-  const faults = figureFaults(next, `the picture "${next.id}"`);
-  if (faults.length > 0) return { section, notes: faults, changed: false };
+  /* A missing description is reported, not refused — see `insertFigure`. It
+     would otherwise be impossible to CLEAR one, which is a thing a person may
+     legitimately want while they think of a better sentence. */
+  const blockers = figureBlockers(next, `the picture "${next.id}"`);
+  if (blockers.length > 0) return { section, notes: blockers, changed: false };
 
   items[at] = { t: 'figure', figure: next };
   return { section: write(section, items), notes, changed: true };

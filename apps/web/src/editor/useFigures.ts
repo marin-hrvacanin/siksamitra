@@ -15,7 +15,7 @@
  * `puja-vidhi.json` is in, naming 22 PNGs that live somewhere else. See
  * `packages/format/src/figure.ts`.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   FIGURE_MAX_BYTES, FIGURE_MEDIA_TYPES, figureBytes, imageDataUri,
   type ChantFigure, type ChantFigureFlow, type ChantFigureSize, type ChantSection,
@@ -46,6 +46,8 @@ export interface ReadImage {
 export interface FigureViewProps {
   readonly selectedFigure?: string;
   readonly onFigure: (blockId: string, sectionId: string, at: number) => void;
+  /** A corner was dragged on the selected picture: its width in per cent. */
+  readonly onFigureResize: (pct: number) => void;
 }
 
 export interface Figures {
@@ -187,10 +189,23 @@ export function useFigures(
     setSelected({ blockId: `f:${sectionId}:${at}`, sectionId, at });
   }, [doc, run, sectionId, verseId]);
 
+  /*
+   * The resize, behind a ref.
+   *
+   * `viewProps` is memoised on `selected` alone and must stay that way — a
+   * fresh object rebuilds all 198 verses of Śrī Rudram, measured at 377 ms a
+   * keystroke, which is what the memo exists to avoid. A ref lets the handler
+   * see the current figure without the memo depending on it.
+   */
+  const patchRef = useRef<(pct: number) => void>(() => {});
+
   const viewProps = useMemo<FigureViewProps>(() => ({
     ...(selected === null ? {} : { selectedFigure: selected.blockId }),
     onFigure: (blockId, sectionId, at) => setSelected({ blockId, sectionId, at }),
+    onFigureResize: (pct: number) => patchRef.current(pct),
   }), [selected]);
+
+  patchRef.current = (pct: number) => { patch({ widthPct: pct }); };
 
   return {
     selected,

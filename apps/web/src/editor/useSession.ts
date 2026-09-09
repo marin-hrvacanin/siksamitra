@@ -77,6 +77,8 @@ export interface Session {
   setEditing: (on: boolean) => void;
 
   setSelection: (selection: Selection | null, sectionId?: string) => void;
+  /** A person pointed at the text: deselect every object. See `useSession`. */
+  clearObjects: () => void;
 
   insert: (text: string) => void;
   remove: (direction: 1 | -1) => void;
@@ -332,6 +334,23 @@ export function useSession(doc: ChantDoc): Session {
     verseId: state.selection?.head.verseId,
   });
 
+  /**
+   * A PERSON POINTED AT THE TEXT, so nothing is selected but the caret.
+   *
+   * The caret and an object selection are two answers to "what is selected",
+   * and there is only ever one — otherwise a picture stays ringed for the rest
+   * of the session and the contextual Picture tab never goes away.
+   *
+   * It hangs off the GESTURE and not off `setSelection`, which was tried
+   * first and is wrong: inserting a picture selects it, the page re-renders,
+   * the browser reports its own caret through `selectionchange`, and the
+   * picture was deselected a moment after being placed. A caret change is
+   * often an echo; a mousedown in the text is not.
+   *
+   * One line per kind of object, so the next one is one line.
+   */
+  const clearObjects = useCallback(() => { figures.select(null); }, [figures]);
+
   const setRegister = useRegister(setLive, setRevision, sectionId);
   const setRecording = useSetRecording(setLive, setRevision);
 
@@ -350,6 +369,7 @@ export function useSession(doc: ChantDoc): Session {
     editing,
     setEditing,
     setSelection,
+    clearObjects,
     insert,
     remove,
     replaceRange: (from, to, text, kind) => replace(from, to, text, kind),

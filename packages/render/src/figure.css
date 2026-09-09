@@ -225,3 +225,36 @@
    gesture this program has. */
 .doc .fig { user-select: none; }
 .doc .fig__img { -webkit-user-drag: none; }
+
+/* ── the corner handles ───────────────────────────────────────────────────
+   Drawn only on the selected picture, and only where the editor asked for
+   them: `Figure` emits them when it is given an `onResize`, so a reader's
+   page and every export have none.
+
+   FOUR CORNERS AND NO SIDES. Word draws eight; a side handle changes the
+   aspect ratio, and for a photograph of a mudrā that is a wrong picture
+   rather than a resized one. */
+.fig__handles { position: absolute; inset: 0; pointer-events: none; }
+.fig { position: relative; }
+.fig__handle {
+  position: absolute;
+  width: var(--fig-handle);
+  height: var(--fig-handle);
+  background: var(--chrome-raise);
+  border: var(--rule-mark) solid var(--chrome-accent);
+  border-radius: var(--fig-handle);
+  pointer-events: auto;
+  /* Centred ON the corner, half in and half out, which is where a person
+     aims. */
+  margin: calc(var(--fig-handle) / -2) 0 0 calc(var(--fig-handle) / -2);
+}
+.fig__handle--nw { top: 0; left: 0; cursor: nwse-resize; }
+.fig__handle--ne { top: 0; left: 100%; cursor: nesw-resize; }
+.fig__handle--sw { top: 100%; left: 0; cursor: nesw-resize; }
+.fig__handle--se { top: 100%; left: 100%; cursor: nwse-resize; }
+@media print { .fig__handles { display: none; } }
+
+/* While a corner is being dragged the pointer belongs to the gesture: without
+   this the cursor flickers between the resize arrow and the I-beam as it
+   crosses the text, and a drag over the column selects it. */
+body.is-resizing { cursor: nwse-resize; user-select: none; }

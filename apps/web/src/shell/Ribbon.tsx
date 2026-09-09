@@ -46,6 +46,25 @@ export interface RibbonTab {
   readonly id: string;
   readonly label: string;
   readonly groups: readonly RibbonGroup[];
+  /**
+   * A CONTEXTUAL TAB: it exists only while something is selected, and it says
+   * what that something is.
+   *
+   * Word's arrangement, and for Word's reason. A picture has a dozen controls
+   * that mean nothing when no picture is selected, and putting them on Home
+   * makes Home a list of things that are usually disabled. So they live on a
+   * tab that appears when you select a picture, captioned with what it is
+   * for — "Picture Tools" — and goes away when you deselect.
+   *
+   * The caption is what makes it legible: a tab that silently appears and
+   * disappears is a tab people distrust. It is drawn above the tab, tinted,
+   * exactly as Word draws it.
+   *
+   * It is a FIELD rather than a special case for pictures, because the next
+   * object needs it too — a table, a recording, a selection of several things
+   * at once — and each of those should be one entry here and nothing else.
+   */
+  readonly contextual?: string;
 }
 
 /**
@@ -195,19 +214,30 @@ export function Ribbon(
           File
         </button>
         {tabs.map((t) => (
-          <button
-            type="button"
+          <span
             key={t.id}
-            role="tab"
-            id={`rbn-tab-${t.id}`}
-            aria-selected={t.id === tab.id}
-            aria-controls="rbn-body"
-            className={t.id === tab.id ? 'rbn__tab is-on' : 'rbn__tab'}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => { onActive(t.id); if (hidden) onHidden(false); }}
+            className={t.contextual === undefined ? 'rbn__slot' : 'rbn__slot rbn__slot--ctx'}
           >
-            {t.label}
-          </button>
+            {/*
+              THE CAPTION ABOVE A CONTEXTUAL TAB, which is what tells a person
+              why a tab they did not ask for has appeared.
+            */}
+            {t.contextual !== undefined && (
+              <span className="rbn__ctx" aria-hidden>{t.contextual}</span>
+            )}
+            <button
+              type="button"
+              role="tab"
+              id={`rbn-tab-${t.id}`}
+              aria-selected={t.id === tab.id}
+              aria-controls="rbn-body"
+              className={t.id === tab.id ? 'rbn__tab is-on' : 'rbn__tab'}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onActive(t.id); if (hidden) onHidden(false); }}
+            >
+              {t.label}
+            </button>
+          </span>
         ))}
         <div className="rbn__tabs-fill" />
         <button

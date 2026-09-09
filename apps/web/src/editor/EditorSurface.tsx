@@ -305,6 +305,20 @@ export function EditorSurface(
       now.replaceRange(at.from, at.to, '');
     };
 
+    /*
+     * POINTING AT THE TEXT DESELECTS WHATEVER OBJECT WAS SELECTED.
+     *
+     * On the way DOWN and outside a figure: a mousedown inside one is the
+     * figure taking the selection for itself (`figure.tsx` handles it and
+     * prevents the default), and clearing here would undo that in the same
+     * gesture.
+     */
+    const onPointerDown = (e: Event): void => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('.fig') !== null && target?.closest('.fig') !== undefined) return;
+      live.current.clearObjects();
+    };
+    el.addEventListener('mousedown', onPointerDown);
     el.addEventListener('beforeinput', onBeforeInput as EventListener);
     el.addEventListener('compositionstart', onCompositionStart);
     el.addEventListener('focusout', onBlur);
@@ -312,6 +326,7 @@ export function EditorSurface(
     el.addEventListener('copy', onCopy as EventListener);
     el.addEventListener('cut', onCut as EventListener);
     return () => {
+      el.removeEventListener('mousedown', onPointerDown);
       el.removeEventListener('beforeinput', onBeforeInput as EventListener);
       el.removeEventListener('compositionstart', onCompositionStart);
       el.removeEventListener('focusout', onBlur);

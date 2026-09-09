@@ -28,7 +28,7 @@
  */
 import type { MouseEvent, ReactNode } from 'react';
 import {
-  FIGURE_DEFAULTS, isEmbeddedImage, type ChantFigure,
+  FIGURE_DEFAULTS, FIGURE_MAX_PCT, FIGURE_MIN_PCT, isEmbeddedImage, type ChantFigure,
 } from '@siksamitra/format';
 
 /** Turn a figure's `src` into something an `<img>` can load, or `null`. */
@@ -60,6 +60,56 @@ export interface FigureProps {
    * the person did not point at.
    */
   onSelect?: () => void;
+  /**
+   * A corner was dragged. The width, in per cent of the column.
+   *
+   * The editor passes it; the reader and every export do not, so no handle is
+   * drawn and nothing is draggable on a page meant to be read.
+   */
+  onResize?: (pct: number) => void;
+}
+
+/**
+ * Dragging a corner, from the mousedown that started it.
+ *
+ * The width is measured against the COLUMN the picture stands in, because
+ * that is what the stored figure is a percentage of — measuring against the
+ * window would make the same drag mean different widths at different zooms.
+ *
+ * The listeners go on the window and not on the handle: a fast drag leaves the
+ * handle behind, and a pointer that has left the element still belongs to the
+ * gesture until the button comes up.
+ */
+function startResize(
+  e: MouseEvent,
+  corner: 'nw' | 'ne' | 'sw' | 'se',
+  onResize: (pct: number) => void,
+): void {
+  const handle = e.currentTarget as HTMLElement;
+  const figure = handle.closest('.fig') as HTMLElement | null;
+  const column = figure?.parentElement;
+  if (figure === null || column === null || column === undefined) return;
+
+  const startX = e.clientX;
+  const startW = figure.getBoundingClientRect().width;
+  const columnW = column.getBoundingClientRect().width;
+  if (columnW <= 0) return;
+  /* A west handle grows the picture when the pointer moves LEFT. */
+  const sign = corner === 'nw' || corner === 'sw' ? -1 : 1;
+
+  const move = (ev: globalThis.MouseEvent): void => {
+    const next = startW + sign * (ev.clientX - startX);
+    const pct = Math.round((next / columnW) * 100);
+    onResize(Math.max(FIGURE_MIN_PCT, Math.min(FIGURE_MAX_PCT, pct)));
+  };
+  const up = (): void => {
+    window.removeEventListener('mousemove', move);
+    window.removeEventListener('mouseup', up);
+    document.body.classList.remove('is-resizing');
+  };
+  document.body.classList.add('is-resizing');
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', up);
 }
 
 /** The classes that say what this figure is. `figure.css` does the rest. */
@@ -132,7 +182,7 @@ function Picture({ fig, url }: { fig: ChantFigure; url: string | null }): ReactN
  * elements exist, and a screen reader reads the two as one thing.
  */
 export function Figure(
-  { fig, resolve = EMBEDDED_ONLY, blockId, selected = false, onSelect }: FigureProps,
+  { fig, resolve = EMBEDDED_ONLY, blockId, selected = false, onSelect, onResize }: FigureProps,
 ): ReactNode {
   const captionAt = fig.captionAt ?? FIGURE_DEFAULTS.captionAt;
   const caption = captionAt === 'none' ? undefined : fig.caption?.en;
@@ -157,6 +207,9 @@ export function Figure(
        * changed through a command, like everything else here.
        */
       contentEditable={false}
+      {...(fig.widthPct === undefined ? {} : {
+        style: { width: `${fig.widthPct}%` },
+      })}
       {...(onSelect === undefined ? {} : {
         onMouseDown: (e: MouseEvent): void => { e.preventDefault(); onSelect(); },
       })}
@@ -166,6 +219,27 @@ export function Figure(
         <Picture fig={fig} url={url} />
       </div>
       {captionAt === 'above' ? null : cap}
+      {/*
+        THE FOUR CORNER HANDLES, drawn only on the selected picture in the
+        editor. Word's arrangement: corners resize, and there are no side
+        handles because a side handle changes the aspect ratio, which for a
+        photograph of a mudrā is a wrong picture rather than a resized one.
+      */}
+      {selected && onResize !== undefined && (
+        <span className="fig__handles" aria-hidden>
+          {(['nw', 'ne', 'sw', 'se'] as const).map((corner) => (
+            <span
+              key={corner}
+              className={`fig__handle fig__handle--${corner}`}
+              onMouseDown={(e: MouseEvent): void => {
+                e.preventDefault();
+                e.stopPropagation();
+                startResize(e, corner, onResize);
+              }}
+            />
+          ))}
+        </span>
+      )}
     </figure>
   );
 }

@@ -34,6 +34,40 @@
 }
 .rbn__tabs-fill { flex: 1 1 auto; }
 
+/*
+ * A TAB AND, ABOVE A CONTEXTUAL ONE, ITS CAPTION.
+ *
+ * Each tab sits in a slot so a caption can be stacked over it without moving
+ * the tab off the strip's baseline. An ordinary slot is the tab and nothing
+ * else, so the layout is unchanged for the four that are always there.
+ */
+.rbn__slot {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+}
+.rbn__slot--ctx { position: relative; }
+/*
+ * The caption is what tells a person why a tab they did not ask for has
+ * appeared. Tinted with the accent, small, and centred over its tab — Word's
+ * arrangement, and the reason is the same: a tab that appears silently is a
+ * tab people distrust.
+ */
+.rbn__ctx {
+  font-size: var(--text-ui-sm);
+  line-height: var(--ui-leading);
+  text-align: center;
+  color: var(--chrome-accent);
+  padding: var(--space-1) var(--space-3);
+  white-space: nowrap;
+  border-top-left-radius: var(--chrome-radius);
+  border-top-right-radius: var(--chrome-radius);
+  background: color-mix(in oklab, var(--chrome-accent) 14%, transparent);
+}
+.rbn__slot--ctx .rbn__tab { color: var(--chrome-accent); }
+.rbn__slot--ctx .rbn__tab.is-on { color: var(--chrome-ink); }
+
 .rbn__tab {
   font: inherit;
   font-size: var(--text-ui);

@@ -103,6 +103,21 @@ export interface ChantFigure {
   caption?: { en: string };
   flow?: ChantFigureFlow;
   size?: ChantFigureSize;
+  /**
+   * A width in PER CENT of the column, when a person has dragged a corner.
+   *
+   * `size` is five presets and stays the ordinary way to set a width: a
+   * document whose pictures are all "medium" is a document that stays tidy
+   * when the column changes. But a picture that is nearly right at half and
+   * wrong at three quarters has no preset, and Word lets you drag the corner,
+   * so this does too. Set, it wins over `size`.
+   *
+   * PER CENT AND NOT PIXELS, for the reason the whole sizing scheme is a
+   * fraction: a picture that held its pixel width would stop fitting the
+   * moment the page size, the zoom or the column changed. Clamped to 5..100
+   * on the way in — a picture at 2% is a picture nobody meant.
+   */
+  widthPct?: number;
   captionAt?: 'below' | 'above' | 'beside' | 'none';
   /** Reserves the aspect box BEFORE the image loads, so a figure landing
    *  mid-step never pushes the mantra being read down the screen. `auto` is
