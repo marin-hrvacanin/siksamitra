@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@lexical/headless": "^0.50.0",
     "@lexical/history": "^0.50.0",
     "@lexical/react": "^0.50.0",
     "@lexical/rich-text": "^0.50.0",

@@ -98,7 +98,7 @@ export const STAGE_OF: Readonly<Record<MarkKind, Stage>> = {
  * which belong to one letter each.
  */
 export const MERGING_KINDS: ReadonlySet<MarkKind> =
-  new Set<MarkKind>(['hold', 'svara', 'candra']);
+  new Set<MarkKind>(['hold', 'svara', 'candra', 'slot']);
 
 /** The kinds that sit BETWEEN letters rather than over them. */
 export const POINT_KINDS: ReadonlySet<MarkKind> = new Set<MarkKind>(['sbhakti', 'pause', 'syl']);
@@ -238,18 +238,34 @@ export function assertMarks(marks: readonly Mark[], text: string, where = ''): v
 
 /* ── the algebra ──────────────────────────────────────────────────────────── */
 
-/** Sort, then fuse any two neighbours of one kind that meet and agree. */
+/**
+ * Sort, then fuse any two markings of one kind that meet and agree.
+ *
+ * PER KIND, not by position in the sorted list. The first version walked the
+ * sorted array and fused neighbours, which fails whenever a marking of another
+ * kind sorts between two that should join: a svara over letters 10 to 12 with
+ * a candrabindu on letter 11 came out of the editor as svara 10-11 and svara
+ * 11-12, because a  sat between them in the array and the two halves
+ * never met. Grouping by kind first makes adjacency mean what it says.
+ */
 export function normalise(marks: readonly Mark[]): Mark[] {
-  const out = [...marks].sort(compareMarks);
-  for (let i = out.length - 1; i > 0; i -= 1) {
-    const here = out[i]!;
-    const prev = out[i - 1]!;
-    if (!MERGING_KINDS.has(here.k)) continue;
-    if (prev.to === here.from && sameValue(prev, here)) {
-      out.splice(i - 1, 2, { ...prev, to: here.to });
+  const byKind = new Map<MarkKind, Mark[]>();
+  for (const m of marks) byKind.set(m.k, [...(byKind.get(m.k) ?? []), m]);
+
+  const out: Mark[] = [];
+  for (const [kind, list] of byKind) {
+    if (!MERGING_KINDS.has(kind)) { out.push(...list); continue; }
+    const sorted = [...list].sort(compareMarks);
+    for (const m of sorted) {
+      const prev = out[out.length - 1];
+      if (prev !== undefined && prev.k === kind && prev.to === m.from && sameValue(prev, m)) {
+        out[out.length - 1] = { ...prev, to: m.to };
+        continue;
+      }
+      out.push(m);
     }
   }
-  return out;
+  return out.sort(compareMarks);
 }
 
 /** How much of `from..to` a kind already covers. */

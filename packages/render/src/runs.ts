@@ -31,8 +31,12 @@ export interface RunMarks {
   /** This run's letters replaced something; the value is what they replaced. */
   was?: string;
   cj?: string;
+  /** A superscript after this run — the upadhmānīya `f`, and its kin. */
+  sup?: string;
   /** Prose rather than recited text. `fill` when the reciter supplies it. */
   plain?: string | true;
+  /** The name of the variable slot this run belongs to. */
+  slot?: string;
 }
 
 export interface Run {
@@ -50,7 +54,7 @@ export interface Run {
 
 /** The kinds that describe a stretch rather than a position. */
 const SPAN_KINDS: ReadonlySet<MarkKind> =
-  new Set<MarkKind>(['hold', 'svara', 'candra', 'was', 'cj', 'plain']);
+  new Set<MarkKind>(['hold', 'svara', 'candra', 'was', 'cj', 'sup', 'plain', 'slot']);
 
 /**
  * The kinds where two equal neighbours are still two things.
@@ -62,7 +66,7 @@ const SPAN_KINDS: ReadonlySet<MarkKind> =
  * this. `MERGING_KINDS` in the model draws the same line for the same reason;
  * this is its half of it.
  */
-const NEVER_FUSED: ReadonlySet<MarkKind> = new Set<MarkKind>(['was', 'cj', 'plain']);
+const NEVER_FUSED: ReadonlySet<MarkKind> = new Set<MarkKind>(['was', 'cj', 'sup', 'plain']);
 
 /**
  * Where the drawing changes.
@@ -94,14 +98,16 @@ function marksAtPosition(marks: readonly Mark[], at: number): RunMarks {
     else if (m.k === 'candra') out.candra = true;
     else if (m.k === 'was') out.was = m.v;
     else if (m.k === 'cj') out.cj = m.v;
+    else if (m.k === 'sup') out.sup = m.v;
     else if (m.k === 'plain') out.plain = m.v ?? true;
+    else if (m.k === 'slot') out.slot = m.v;
   }
   return out;
 }
 
 const sameMarks = (a: RunMarks, b: RunMarks): boolean =>
   a.hold === b.hold && a.svara === b.svara && a.candra === b.candra
-  && a.was === b.was && a.cj === b.cj && a.plain === b.plain;
+  && a.was === b.was && a.cj === b.cj && a.sup === b.sup && a.plain === b.plain && a.slot === b.slot;
 
 /**
  * A verse's text and markings, as the runs that draw it.
