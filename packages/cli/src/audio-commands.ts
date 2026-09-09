@@ -26,7 +26,7 @@ import {
   checkMapping, confidence, decodeWav, detectSilences, mapPadas, padasOf, writeMapping,
   type Decoded, type MappedPada,
 } from '@siksamitra/audio';
-import { canonicalJson, type ChantDoc } from '@siksamitra/format';
+import { writeChantFile, type ChantDoc } from '@siksamitra/format';
 import type { EditContext } from './edit-shared.js';
 
 export const AUDIO_HELP = `Audio
@@ -184,7 +184,7 @@ function save(ctx: EditContext, next: ChantDoc): void {
     ctx.say('  not saved — add --write to save it, or --out <path>.');
     return;
   }
-  writeFileSync(out, `${canonicalJson(next)}\n`, 'utf8');
+  writeFileSync(out, `${writeChantFile(next)}\n`, 'utf8');
   ctx.say(`  -> ${out}`);
 }
 

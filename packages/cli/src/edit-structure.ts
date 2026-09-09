@@ -10,7 +10,7 @@
  * so it goes through `apply` like every other one.
  */
 import { newState, sourcesOf, verseExtents } from '@siksamitra/edit';
-import type { ChantDoc } from '@siksamitra/format';
+import { withVerses, type ChantDoc } from '@siksamitra/format';
 import {
   finish, findVerse, lines, requireFlag, run, type EditContext,
 } from './edit-shared.js';
@@ -49,7 +49,7 @@ export function setField(ctx: EditContext, doc: ChantDoc): void {
     }
     put(section as unknown as Record<string, unknown>, parts[2]);
   } else if (parts[0] === 'verse' && parts.length === 3) {
-    const { verse } = findVerse(ctx, next, parts[1] as string);
+    const { section, verse } = findVerse(ctx, next, parts[1] as string);
     const field = parts[2] as string;
     if (field === 'translation') {
       if (clear) delete (verse as unknown as Record<string, unknown>).translation;
@@ -59,6 +59,16 @@ export function setField(ctx: EditContext, doc: ChantDoc): void {
     } else {
       ctx.die(2, `a verse's "${field}" is not editable here — n, translation or source`);
     }
+    /*
+     * THROUGH `withVerses`, because a composed section keeps its verses in
+     * `items` as well and `normalizeChantDoc` rebuilds `verses` from THAT.
+     * Mutating the verse in place changed only the derived copy, so on ten of
+     * the eleven corpus documents `set-field` did nothing at all — the value
+     * was written to disk and thrown away by the next load. The test did not
+     * see it because it read the raw file rather than the loaded document.
+     */
+    next.sections = next.sections.map((s2) => (
+      s2.id === section.id ? withVerses(s2, s2.verses) : s2));
   } else {
     ctx.die(2, `--path "${path}" is not one this command may set; see --help`);
   }

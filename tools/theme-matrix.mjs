@@ -12,17 +12,16 @@
  */
 import puppeteer from 'puppeteer-core';
 import { browserPath } from './_browser.mjs';
-import { UI, openApp } from './_ui.mjs';
+import { APP_URL, UI, openApp  } from './_ui.mjs';
 
 /* Both from the environment, like every other gate: a hard-coded port works
    until somebody serves the built bundle on a different one, and then reports
    a connection refused against a server that is plainly running. */
-const URL = process.env.URL ?? 'http://localhost:5273/';
 
 const b = await puppeteer.launch({ executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'], });
 const p = await b.newPage();
 await p.setViewport({ width: 1400, height: 900 });
-await openApp(p, URL, { selector: '[data-block-id]' });
+await openApp(p, APP_URL, { selector: '[data-block-id]' });
 
 const lum = (rgb) => {
   const [r, g, bl] = rgb.match(/\d+/g).slice(0, 3).map(Number);

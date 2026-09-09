@@ -1,13 +1,13 @@
 import puppeteer from 'puppeteer-core';
 import { browserPath } from './_browser.mjs';
-import { setView } from './_ui.mjs';
+import { APP_URL, setView  } from './_ui.mjs';
 const b = await puppeteer.launch({ executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'], });
 const p = await b.newPage();
 const errs = [];
 p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
 p.on('pageerror', (e) => errs.push(String(e)));
 await p.setViewport({ width: 1400, height: 900 });
-await p.goto('http://localhost:5273/', { waitUntil: 'networkidle0' });
+await p.goto(APP_URL, { waitUntil: 'networkidle0' });
 await p.waitForSelector('[data-block-id]', { timeout: 15000 });
 
 const flow = await p.evaluate(() => ({

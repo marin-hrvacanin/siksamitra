@@ -26,6 +26,7 @@ import {
   ZWJ, ZWNJ, registeredScripts, toIast, transliterateSyllable,
   type ScriptKey, type ScriptUnit,
 } from '@siksamitra/engine';
+import { normalizeChantDoc, type ChantDoc } from '@siksamitra/format';
 
 const CORPUS = 'corpus/chants';
 const BASELINE = 'corpus/lossless-baseline.json';
@@ -48,10 +49,13 @@ function corpusSyllables(): Syl[] {
     }
   };
   for (const file of readdirSync(CORPUS).filter((f) => f.endsWith('.json')).sort()) {
-    const doc = JSON.parse(readFileSync(join(CORPUS, file), 'utf8')) as {
-      sections?: { verses?: { tokens?: unknown[] }[] }[];
-    };
-    for (const s of doc.sections ?? []) for (const v of s.verses ?? []) walk(v.tokens ?? []);
+    /* NORMALISED, not raw. A composed section stores its verses in `items`
+       and no longer repeats them in `verses` on disk, so a raw read sees an
+       empty section and this gate would silently measure nothing. */
+    const doc = normalizeChantDoc(
+      JSON.parse(readFileSync(join(CORPUS, file), 'utf8')) as ChantDoc,
+    );
+    for (const s of doc.sections) for (const v of s.verses) walk(v.tokens ?? []);
   }
   return out;
 }

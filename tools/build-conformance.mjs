@@ -38,6 +38,7 @@ import { join } from 'node:path';
 import {
   holdingSpans, isAttested, recitationText, resolveSource, syllableCount,
 } from '../packages/format/src/text.ts';
+import { normalizeChantDoc } from '../packages/format/src/chant-select.ts';
 
 const CORPUS = 'corpus/chants';
 const OUT = 'corpus/conformance';
@@ -105,7 +106,12 @@ const CONSTRUCTS = [
 ];
 
 const docs = readdirSync(CORPUS).filter((f) => f.endsWith('.json')).sort()
-  .map((f) => ({ slug: f.replace(/\.json$/, ''), doc: JSON.parse(readFileSync(join(CORPUS, f), 'utf8')) }));
+  .map((f) => ({
+    slug: f.replace(/\.json$/, ''),
+    /* NORMALISED: `verses` is rebuilt from `items`, which is where a composed
+       section stores them — a raw read would see empty sections. */
+    doc: normalizeChantDoc(JSON.parse(readFileSync(join(CORPUS, f), 'utf8'))),
+  }));
 
 /**
  * Keep the document, delete the siblings.

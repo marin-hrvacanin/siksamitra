@@ -33,7 +33,7 @@ import {
 import { AUDIO_HELP, runAudioVerb } from './audio-commands.js';
 import { divergenceRows, score, verses } from './score.js';
 import {
-  canonicalJson, normalizeChantDoc,
+  normalizeChantDoc, writeChantFile,
   type ChantDoc, type ChantVerse,
 } from '@siksamitra/format';
 
@@ -249,7 +249,7 @@ switch (cmd) {
     const out = flag('out');
     if (out !== undefined) {
       mkdirSync(dirname(out), { recursive: true });
-      writeFileSync(out, `${JSON.stringify(doc)}\n`, 'utf8');
+      writeFileSync(out, `${writeChantFile(doc)}\n`, 'utf8');
       say(`  → ${out}`);
     }
     emit({ derived, frozen, warnings });
@@ -379,7 +379,7 @@ switch (cmd) {
     }
 
     if (argv.includes('--write')) {
-      writeFileSync(path!, `${canonicalJson(next)}\n`, 'utf8');
+      writeFileSync(path!, `${writeChantFile(next)}\n`, 'utf8');
       say(`\n  written: ${path!}`);
     } else {
       say('\n  nothing written — pass --write');
@@ -482,7 +482,7 @@ switch (cmd) {
       say(`  ! ${n}× ${k}`);
     }
     const out = flag('out') ?? path!;
-    writeFileSync(out, `${canonicalJson(doc)}\n`, 'utf8');
+    writeFileSync(out, `${writeChantFile(doc)}\n`, 'utf8');
     say(`  → ${out}`);
     emit({ filled, kept, problems: Object.fromEntries(problems), out });
     break;
@@ -766,7 +766,7 @@ switch (cmd) {
           }
         }
       }
-      writeFileSync(out, `${canonicalJson(doc)}
+      writeFileSync(out, `${writeChantFile(doc)}
 `, 'utf8');
       say(`  ${filled} script forms filled by the engine`);
       say(`  → ${out}`);
@@ -790,7 +790,7 @@ switch (cmd) {
     const out = flag('out');
     if (out !== undefined) {
       mkdirSync(dirname(out), { recursive: true });
-      writeFileSync(out, `${canonicalJson(doc)}\n`, 'utf8');
+      writeFileSync(out, `${writeChantFile(doc)}\n`, 'utf8');
       say(`  → ${out}`);
     }
     emit({ report, ...(flag('out') === undefined ? { doc } : {}) });

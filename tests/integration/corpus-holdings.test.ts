@@ -13,7 +13,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { ChantDoc } from '@siksamitra/format';
+import { normalizeChantDoc, type ChantDoc } from '@siksamitra/format';
 import { holdingProblems, normaliseHoldings } from '@siksamitra/edit';
 
 /**
@@ -32,10 +32,15 @@ describe('the eleven shipped documents', () => {
 
   for (const file of files) {
     it(`${file} satisfies the invariants, and the repair is a no-op`, () => {
-      const parsed = JSON.parse(readFileSync(join(dir, file), 'utf8')) as ChantDoc;
+      /* NORMALISED. A composed section stores its verses in `items` and no
+         longer repeats them in `verses` on disk, so a raw read walks nothing —
+         which the "there are verses" assertion below is what caught. */
+      const parsed = normalizeChantDoc(
+        JSON.parse(readFileSync(join(dir, file), 'utf8')) as ChantDoc,
+      );
       let verses = 0;
       for (const section of parsed.sections) {
-        for (const verse of section.verses ?? []) {
+        for (const verse of section.verses) {
           verses += 1;
           const problems = holdingProblems(verse.tokens);
           expect(problems, `${file} ${verse.id}: ${problems.map((p) => p.message).join('; ')}`)

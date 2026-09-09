@@ -37,9 +37,50 @@ export const CHANT_FILE_FORMAT = 'vedaunion.chant';
  * same document two byte sequences and make every one of those hashes depend
  * on which program last wrote the file.
  *
+ * EVERY VERSE WAS WRITTEN TWICE. A composed section holds its verses in
+ * `items`, interleaved with instructions and figures, and again in `verses`.
+ * In memory that is deliberate and `normalizeChantDoc` keeps the two in step —
+ * `items` is authoritative and `verses` is rebuilt from it on every load. On
+ * disk it was pure duplication: Śrī Rudram is 1618.8 kB, of which `items` is
+ * 798.9 kB and `verses` 794.1 kB, byte-identical. Half of every corpus file
+ * was a copy of the other half.
+ *
+ * It went unseen because the one tool that asked where the bytes go,
+ * `tools/size-study.mjs`, counts `s.items ?? s.verses` — one copy, never both.
+ *
+ * So the derived array is not written. Reading rebuilds it, which is the same
+ * path a composed document has always taken.
+ *
  * The trailing newline is not part of the canonical bytes and is not written.
  */
-export const writeChantFile = (doc: ChantDoc): string => canonicalJson(doc);
+export const writeChantFile = (doc: ChantDoc): string => canonicalJson(stored(doc));
+
+/**
+ * A section as it is stored: `verses` is absent when `items` carries them.
+ *
+ * A separate type rather than a cast, because the difference is real — this
+ * shape is not one a consumer may read. Everything in the program reads a
+ * NORMALISED document, where `verses` is always there.
+ */
+type StoredSection = Omit<ChantSection, 'verses'> & { verses?: ChantVerse[] };
+type StoredDoc = Omit<ChantDoc, 'sections'> & { sections: StoredSection[] };
+
+/**
+ * The document as it goes to disk: nothing that reading will rebuild.
+ *
+ * A section with no `items` keeps its `verses` — there they are the only copy,
+ * and a v2 document must still be writable by a build that has not migrated
+ * it. `normalizeChantDoc` gives every section `items`, so in practice this is
+ * "write the ordered content once".
+ */
+const stored = (doc: ChantDoc): StoredDoc => ({
+  ...doc,
+  sections: doc.sections.map((s): StoredSection => {
+    if (s.items === undefined) return s;
+    const { verses: _derived, ...rest } = s;
+    return rest;
+  }),
+});
 
 /** A document that opened, or the sentence to show instead. */
 export type ChantFileRead =

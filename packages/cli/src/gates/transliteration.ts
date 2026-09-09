@@ -11,6 +11,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { transliterateSyllable } from '@siksamitra/engine';
+import { normalizeChantDoc, type ChantDoc } from '@siksamitra/format';
 import type { ScriptUnit } from '@siksamitra/engine';
 
 const DIR = 'corpus/chants';
@@ -58,11 +59,10 @@ function walk(tokens: Syl[]): void {
 }
 
 for (const f of readdirSync(DIR).filter((n) => n.endsWith('.json'))) {
-  const doc = JSON.parse(readFileSync(join(DIR, f), 'utf8')) as {
-    sections?: { verses?: { tokens?: Syl[] }[] }[];
-  };
-  for (const s of doc.sections ?? []) {
-    for (const v of s.verses ?? []) walk(v.tokens ?? []);
+  /* NORMALISED: a composed section keeps its verses in `items` on disk. */
+  const doc = normalizeChantDoc(JSON.parse(readFileSync(join(DIR, f), 'utf8')) as ChantDoc);
+  for (const s of doc.sections) {
+    for (const v of s.verses) walk((v.tokens ?? []) as Syl[]);
   }
 }
 

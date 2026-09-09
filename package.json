@@ -38,7 +38,7 @@
     "test": "vitest run",
     "test:watch": "vitest --project unit --project component",
     "sm": "tsx packages/cli/src/main.ts",
-    "check": "npm-run-all --serial typecheck check:web check:word-addin test check:icons check:authoring check:modules check:tokens check:literals check:fixtures check:conformance check:marking check:migrate check:source check:transliteration check:lossless check:engine check:export:html check:export:image check:export:figures check:export:word check:export:pdf",
+    "check": "npm-run-all --serial typecheck check:web check:word-addin test check:icons check:authoring check:modules check:tokens check:literals check:fixtures check:conformance check:marking check:migrate check:size check:source check:transliteration check:lossless check:engine check:export:html check:export:image check:export:figures check:export:word check:export:pdf",
     "check:transliteration": "tsx packages/cli/src/gates/transliteration.ts",
     "check:engine": "tsx packages/cli/src/gates/corpus.ts",
     "spec": "openspec",
@@ -91,7 +91,8 @@
     "check:export:image": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-image.mjs",
     "check:export:figures": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-figures.mjs",
     "check:export:word": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-word.mjs",
-    "check:export:pdf": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-pdf.mjs"
+    "check:export:pdf": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-pdf.mjs",
+    "check:size": "node tools/size.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

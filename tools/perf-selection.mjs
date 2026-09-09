@@ -26,8 +26,8 @@
  */
 import puppeteer from 'puppeteer-core';
 import { browserPath } from './_browser.mjs';
+import { APP_URL } from './_ui.mjs';
 
-const URL = process.env.URL ?? 'http://localhost:5273/';
 const MOVES = 40;
 
 const browser = await puppeteer.launch({
@@ -37,7 +37,7 @@ const page = await browser.newPage();
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 await page.setViewport({ width: 1360, height: 880, deviceScaleFactor: 1 });
-await page.goto(`${URL}?chrome=native&os=windows`, { waitUntil: 'networkidle0' });
+await page.goto(`${APP_URL}?chrome=native&os=windows`, { waitUntil: 'networkidle0' });
 await page.waitForSelector('[data-block-id]');
 await page.evaluate(() => document.fonts.ready);
 await wait(800);

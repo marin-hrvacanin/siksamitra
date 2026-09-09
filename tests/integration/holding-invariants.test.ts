@@ -18,7 +18,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { holdingSpans, syllablesOf, type ChantToken } from '@siksamitra/format';
+import { normalizeChantDoc, type ChantDoc, holdingSpans, syllablesOf, type ChantToken } from '@siksamitra/format';
 import { DEFAULT_PROFILE, derive, resolveProfile } from '@siksamitra/engine';
 
 const CORPUS = 'corpus/chants';
@@ -30,11 +30,12 @@ interface Unit { c: string; hold?: 'short' | 'long'; hg?: number }
 function corpusVerses(): { where: string; tokens: ChantToken[] }[] {
   const out: { where: string; tokens: ChantToken[] }[] = [];
   for (const file of readdirSync(CORPUS).filter((f) => f.endsWith('.json')).sort()) {
-    const doc = JSON.parse(readFileSync(join(CORPUS, file), 'utf8')) as {
-      sections?: { id: string; verses?: { id: string; tokens: ChantToken[] }[] }[];
-    };
-    for (const s of doc.sections ?? []) {
-      for (const v of s.verses ?? []) {
+    /* NORMALISED: a composed section keeps its verses in `items` on disk. */
+    const doc = normalizeChantDoc(
+      JSON.parse(readFileSync(join(CORPUS, file), 'utf8')) as ChantDoc,
+    );
+    for (const s of doc.sections) {
+      for (const v of s.verses) {
         out.push({ where: `${file.replace('.json', '')}/${s.id}/${v.id}`, tokens: v.tokens });
       }
     }

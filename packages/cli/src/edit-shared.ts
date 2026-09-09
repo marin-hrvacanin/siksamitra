@@ -14,7 +14,7 @@ import {
   type EditCommand, type EditState,
 } from '@siksamitra/edit';
 import {
-  canonicalJson, type ChantDoc, type ChantSection, type ChantVerse,
+  canonicalJson, writeChantFile, type ChantDoc, type ChantSection, type ChantVerse,
 } from '@siksamitra/format';
 
 export interface EditContext {
@@ -160,7 +160,7 @@ export function finish(ctx: EditContext, before: ChantDoc, state: EditState, wha
     ctx.say('  not saved — add --write to save it, or --out <path>.');
     return;
   }
-  writeFileSync(out, `${canonicalJson(state.doc)}
+  writeFileSync(out, `${writeChantFile(state.doc)}
 `, 'utf8');
   ctx.say(`  -> ${out}`);
 }

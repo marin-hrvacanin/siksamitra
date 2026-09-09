@@ -28,7 +28,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { canonicalJson, readChantFile } from '@siksamitra/format';
+import { readChantFile, writeChantFile } from '@siksamitra/format';
 import type { FileAccess, OpenedDoc } from '../../apps/web/src/shell/file-host.js';
 import { useDocFile, type DocFile } from '../../apps/web/src/shell/useDocFile.js';
 
@@ -179,13 +179,18 @@ describe('dirty, and what a save does to it', () => {
      * The bytes, not merely "a file appeared". Canonical JSON is what
      * `docHash` and the `.vuchant` manifest are taken over, so a save that
      * wrote `JSON.stringify` output would give the same document two
-     * identities. Compared against `canonicalJson` of what was read back,
-     * which the writer does not call on the way out.
+     * identities.
+     *
+     * READ IT BACK AND WRITE IT AGAIN. Comparing against `canonicalJson` of
+     * the read-back document was wrong once the writer stopped emitting the
+     * derived `verses` array: reading rebuilds it, so the two could not agree
+     * and never should have. Writing what was read is the round trip that
+     * actually matters — save, open, save gives the same bytes.
      */
     const back = readChantFile(written!);
     expect(back.ok).toBe(true);
-    expect(written).toBe(canonicalJson(back.ok ? back.doc : null));
-    expect(written).toBe(canonicalJson(api.doc));
+    expect(written).toBe(back.ok ? writeChantFile(back.doc) : null);
+    expect(written).toBe(writeChantFile(api.doc));
   });
 
   it('Save afterwards writes back to the same place, without asking', async () => {

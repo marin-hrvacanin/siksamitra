@@ -1,13 +1,13 @@
 import puppeteer from 'puppeteer-core';
 import { browserPath } from './_browser.mjs';
-import { press, setView } from './_ui.mjs';
+import { APP_URL, press, setView  } from './_ui.mjs';
 import { mkdirSync } from 'node:fs';
 const out = process.argv[2] ?? 'shots';
 mkdirSync(out, { recursive: true });
 const b = await puppeteer.launch({ executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'], });
 const p = await b.newPage();
 await p.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
-await p.goto('http://localhost:5273/', { waitUntil: 'networkidle0' });
+await p.goto(APP_URL, { waitUntil: 'networkidle0' });
 await p.waitForSelector('[data-block-id]');
 const click = (label) => setView(p, label);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));

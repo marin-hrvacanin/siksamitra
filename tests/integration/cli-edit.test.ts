@@ -82,7 +82,10 @@ function sm(verb: EditVerb, args: string[]): Ran {
   } finally {
     (process as unknown as { exit: typeof realExit }).exit = realExit;
   }
-  out.doc = JSON.parse(readFileSync(path, 'utf8')) as ChantDoc;
+  /* Read back the way the program reads: a composed section stores its
+     verses in `items` and `normalizeChantDoc` rebuilds `verses` from them.
+     A raw parse here saw sections with no verses at all. */
+  out.doc = normalizeChantDoc(JSON.parse(readFileSync(path, 'utf8')) as ChantDoc);
   return out;
 }
 

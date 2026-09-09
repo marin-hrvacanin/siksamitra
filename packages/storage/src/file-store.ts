@@ -13,7 +13,7 @@
  */
 
 import type { ChantDoc, ChantSection } from '@siksamitra/format';
-import { canonicalJson } from '@siksamitra/format';
+import { canonicalJson, writeChantFile } from '@siksamitra/format';
 import { pack, unpack } from '@siksamitra/interop';
 import {
   ConflictError, type ChantStore, type DocumentHead, type DocumentRef,
@@ -205,7 +205,7 @@ export class FileStore implements ChantStore {
       // Hand `pack` the exact bytes rather than letting it re-serialise: the
       // hash in the manifest is taken over these, and "the same bytes the
       // document is served as" is the format's own requirement.
-      documentBytes: new TextEncoder().encode(canonicalJson(doc)),
+      documentBytes: new TextEncoder().encode(writeChantFile(doc)),
     });
     await this.fs.writeAtomic(ref, bytes);
     this.#open = { ref, doc, modifiedAt: (await this.fs.stat(ref)).modifiedAt };

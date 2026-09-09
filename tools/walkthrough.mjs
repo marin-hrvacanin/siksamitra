@@ -17,9 +17,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { browserPath } from './_browser.mjs';
-import { mark, openApp, openTab, setMode, setView } from './_ui.mjs';
+import { APP_URL, mark, openApp, openTab, setMode, setView  } from './_ui.mjs';
 
-const URL = process.env.URL ?? 'http://localhost:5273/';
 const out = process.argv.includes('--out')
   ? process.argv[process.argv.indexOf('--out') + 1]
   : 'shots';
@@ -80,7 +79,7 @@ async function shot(name, what) {
 }
 
 await page.setViewport({ width: 1500, height: 950, deviceScaleFactor: 2 });
-await openApp(page, URL, { selector: '[data-block-id]' });
+await openApp(page, APP_URL, { selector: '[data-block-id]' });
 await wait(400);
 
 /* ── 1. the document, read-only ─────────────────────────────────────────── */
