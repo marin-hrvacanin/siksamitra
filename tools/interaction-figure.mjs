@@ -31,20 +31,25 @@
  *   npm run dev
  *   node tools/interaction-figure.mjs
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { PNG } from 'pngjs';
 import { browser, page, errors, wait, check, passed, failures } from './_editor-probe.mjs';
+import { DRAWN, figureProbe, probePicture } from './_figure-probe.mjs';
+
+const {
+  visibleFig, countVisible, centre, blockOrder, selectedCount, figureWidth,
+} = figureProbe(page);
+
+/** One Ctrl+Z, and time for the document to be rebuilt from it. */
+const undoOnce = async () => {
+  await page.keyboard.down('Control');
+  await page.keyboard.press('KeyZ');
+  await page.keyboard.up('Control');
+  await wait(450);
+};
 
 console.log('\n── a picture, driven the way a person drives one\n');
 
 /* A picture to insert: a solid colour, so it is unmistakable on the page. */
-mkdirSync('artifacts', { recursive: true });
-const PROBE = 'artifacts/figure-gate.png';
-const png = new PNG({ width: 240, height: 160 });
-for (let i = 0; i < png.data.length; i += 4) {
-  png.data[i] = 210; png.data[i + 1] = 120; png.data[i + 2] = 60; png.data[i + 3] = 255;
-}
-writeFileSync(PROBE, PNG.sync.write(png));
+const PROBE = probePicture('artifacts/figure-gate.png');
 
 const tabs = () => page.$$eval('.rbn__tab', (bs) => bs.map((b) => b.textContent.trim()));
 const activeTab = () => page.$eval('.rbn__tab.is-on', (e) => e.textContent.trim()).catch(() => '');
@@ -54,71 +59,11 @@ const pressTab = (label) => page.evaluate((want) => {
 const pressButton = (label) => page.evaluate((want) => {
   [...document.querySelectorAll('.rbb')].find((b) => b.textContent.trim() === want)?.click();
 }, label);
-/*
- * THE PICTURE A PERSON CAN SEE, and not the other one.
- *
- * The paged view lays the whole document out a SECOND time, off-screen under
- * `visibility: hidden`, to measure where the pages break — so `.fig` matches
- * the probe's copy first and every measurement here was of an element nobody
- * can click. `checkVisibility` is the browser's own answer, and it is the same
- * test `figure-drag.ts` uses to decide what a drop may land on.
- */
-const DRAWN = 'el => el.checkVisibility({ visibilityProperty: true })';
-const visibleFig = (extra = '') => page.evaluateHandle((args) => {
-  const [sel, drawn] = args;
-  // eslint-disable-next-line no-eval
-  const ok = eval(drawn);
-  return [...document.querySelectorAll(sel)].find(ok) ?? null;
-}, [`.fig${extra}`, DRAWN]);
-const countVisible = (sel) => page.evaluate((args) => {
-  const [s, drawn] = args;
-  // eslint-disable-next-line no-eval
-  const ok = eval(drawn);
-  return [...document.querySelectorAll(s)].filter(ok).length;
-}, [sel, DRAWN]);
-const selectedCount = () => countVisible('.fig.is-selected');
-const figureWidth = async () => {
-  const h = await visibleFig();
-  return h.evaluate((f) => (f === null ? 0 : f.getBoundingClientRect().width));
-};
-const undoOnce = async () => {
-  await page.keyboard.down('Control');
-  await page.keyboard.press('KeyZ');
-  await page.keyboard.up('Control');
-  await wait(450);
-};
-
-/** The middle of a DRAWN element, in viewport coordinates, scrolled to. */
-const centre = (selector) => page.evaluate((args) => {
-  const [sel, drawn] = args;
-  // eslint-disable-next-line no-eval
-  const el = [...document.querySelectorAll(sel)].find(eval(drawn));
-  if (el === undefined) return null;
-  el.scrollIntoView({ block: 'center' });
-  const r = el.getBoundingClientRect();
-  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-}, [selector, DRAWN]);
-
-/**
- * The order of the document's blocks, as the DOM has them.
- *
- * Verses keep their own id — which does NOT change when a picture moves past
- * them — and everything else is reduced to its kind. So a picture moving is
- * visible as `F` changing place in a sequence whose other entries must not.
- */
-const blockOrder = () => page.evaluate((drawn) => [...document.querySelectorAll('[data-block-id]')]
-  // eslint-disable-next-line no-eval
-  .filter(eval(drawn))
-  .map((el) => {
-    const id = el.dataset.blockId;
-    return id.startsWith('v:') ? id : id.slice(0, 1).toUpperCase();
-  }), DRAWN);
-
 /* ── put one in ──────────────────────────────────────────────────────────── */
 await pressButton('Write');
 await wait(300);
-/* The caret goes in a verse first: a new picture lands after the verse the
-   caret is in, and a caret nowhere puts it at the end of the step. */
+/* The caret goes in a verse first — its FIRST letter, so the picture belongs
+   above it. A caret nowhere puts a picture at the end of the step. */
 const letter = await page.evaluate(() => {
   const u = document.querySelector('[data-verse="v-2"] [data-u]') ?? document.querySelector('[data-u]');
   u.scrollIntoView({ block: 'center' });
@@ -140,6 +85,23 @@ await picker.uploadFile(PROBE);
 await wait(1200);
 
 check('the picture is on the page', (await countVisible('.fig')) > 0);
+/*
+ * AND IT LANDED ON THE SIDE OF THE VERSE THE CARET WAS ON.
+ *
+ * The owner's report: "the picture doesn't get inserted where my cursor is,
+ * but below that shloka." The caret was put in the FIRST letter of v-2 above,
+ * so the picture belongs ABOVE v-2 — it always went below, whatever the caret
+ * was doing. Read as the order of the drawn blocks, which is what a person
+ * sees; the document is never asked where it put it.
+ */
+const orderAtInsert = await blockOrder();
+const figAt = orderAtInsert.indexOf('F');
+const v2At = orderAtInsert.indexOf('v:sec-1:v-2');
+check('a picture goes ABOVE the verse when the caret is in its first half',
+  figAt >= 0 && v2At >= 0 && figAt < v2At,
+  `picture at ${figAt}, v-2 at ${v2At}`);
+
+
 check('and it is selected, without being clicked', (await selectedCount()) === 1);
 const tabsNow = await tabs();
 check('the Picture tab has appeared', tabsNow.includes('Picture'), tabsNow.join(' · '));

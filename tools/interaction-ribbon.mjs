@@ -30,9 +30,8 @@
  *   npm run dev
  *   node tools/interaction-ribbon.mjs
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { PNG } from 'pngjs';
 import { browser, page, errors, wait, check, passed, failures } from './_editor-probe.mjs';
+import { probePicture } from './_figure-probe.mjs';
 
 console.log('\n── the ribbon\'s controls, measured\n');
 
@@ -91,13 +90,7 @@ async function sweep() {
 }
 
 /* ── a picture, so the contextual Picture tab and its two dropdowns exist ── */
-mkdirSync('artifacts', { recursive: true });
-const PROBE = 'artifacts/ribbon-gate.png';
-const png = new PNG({ width: 240, height: 160 });
-for (let i = 0; i < png.data.length; i += 4) {
-  png.data[i] = 90; png.data[i + 1] = 140; png.data[i + 2] = 200; png.data[i + 3] = 255;
-}
-writeFileSync(PROBE, PNG.sync.write(png));
+const PROBE = probePicture('artifacts/ribbon-gate.png', [90, 140, 200]);
 
 await pressButton('Write');
 await wait(300);

@@ -17,7 +17,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FIGURE_MAX_BYTES, FIGURE_MEDIA_TYPES, figureBytes, imageDataUri,
+  FIGURE_MAX_BYTES, FIGURE_MEDIA_TYPES, figureBytes, imageDataUri, toTextAndMarks,
   type ChantFigure, type ChantFigureFlow, type ChantFigureSize, type ChantSection,
 } from '@siksamitra/format';
 import {
@@ -165,21 +165,64 @@ function siteOf(
   return null;
 }
 
-/** Where a new picture goes: after the verse the caret is in, else at the end. */
-function insertionPoint(section: ChantSection | undefined, verseId: string | undefined): number {
+/** Where the caret is, when a picture is being put in. */
+export interface CaretIn {
+  readonly verseId: string;
+  readonly line: number;
+  readonly column: number;
+}
+
+/**
+ * WHERE A NEW PICTURE GOES — the nearest place to the caret, not always below.
+ *
+ * The owner's report: "the picture doesn't get inserted where my cursor is,
+ * but below that shloka." It always went below, because this returned the
+ * verse's index PLUS ONE whatever the caret was doing inside it.
+ *
+ * A picture is a section ITEM, so it cannot go inside a verse at all — the
+ * nearest legal positions are immediately before that verse and immediately
+ * after it, and the honest answer is whichever of the two the caret is nearer
+ * to. So: how far through the verse is the caret, as a fraction of its text?
+ * Before the halfway point the picture goes above the verse, after it below.
+ *
+ * SPLITTING THE VERSE AT THE CARET was the other candidate and is refused. It
+ * would divide a mantra in two at a point chosen by where somebody happened to
+ * click, mint a verse id that a recording, a translation and a word analysis
+ * know nothing about, and do it in response to "insert a picture" — a
+ * destructive answer to a request that was not about the text.
+ */
+export function insertionPoint(
+  section: ChantSection | undefined,
+  caret: CaretIn | undefined,
+): number {
   const items = section?.items ?? [];
-  if (verseId === undefined) return items.length;
-  const at = items.findIndex((it) => it.t === 'verse' && it.id === verseId);
-  return at === -1 ? items.length : at + 1;
+  if (caret === undefined) return items.length;
+  const at = items.findIndex((it) => it.t === 'verse' && it.id === caret.verseId);
+  if (at === -1) return items.length;
+
+  const verse = section?.verses.find((v) => v.id === caret.verseId);
+  if (verse === undefined) return at + 1;
+  const lines = toTextAndMarks(verse).text.split('\n');
+  const total = lines.reduce((n, l) => n + l.length, 0) + Math.max(0, lines.length - 1);
+  if (total === 0) return at + 1;
+
+  /* The caret's offset within the verse: every earlier line, its break, and
+     the column reached in the line it is on. */
+  const before = lines
+    .slice(0, Math.max(0, caret.line))
+    .reduce((n, l) => n + l.length + 1, 0);
+  const through = (before + Math.min(caret.column, lines[caret.line]?.length ?? 0)) / total;
+  return through < 0.5 ? at : at + 1;
 }
 
 export function useFigures(
-  { run, doc, sectionId, verseId }: {
+  { run, doc, sectionId, caret }: {
     run: (command: EditCommand) => void;
     doc: { sections: readonly ChantSection[]; figures?: readonly ChantFigure[] };
     sectionId: string;
-    /** The verse the caret is in, which is where a new picture lands. */
-    verseId: string | undefined;
+    /** Where the caret is — which decides whether a new picture goes above the
+     *  verse it is in or below it. See `insertionPoint`. */
+    caret: CaretIn | undefined;
   },
 ): Figures {
   const [selected, setSelected] = useState<FigureSite | null>(null);
@@ -229,7 +272,7 @@ export function useFigures(
        of picking a free id are two ways of picking the same one twice, and a
        duplicate makes a `ref` ambiguous. */
     const id = nextFigureId(figureIdsIn(doc.sections, doc.figures ?? []));
-    const at = insertionPoint(section, verseId);
+    const at = insertionPoint(section, caret);
     run({
       k: 'figure',
       sectionId,
@@ -249,7 +292,7 @@ export function useFigures(
     /* Select what was just put in, so the size and alignment controls are
        about the picture the person is looking at rather than about nothing. */
     setSelected({ blockId: blockId.figure(sectionId, at), sectionId, at, figureId: id });
-  }, [doc, run, sectionId, verseId]);
+  }, [doc, run, sectionId, caret]);
 
   /*
    * The resize, behind a ref.

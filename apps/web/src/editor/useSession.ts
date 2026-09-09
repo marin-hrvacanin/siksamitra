@@ -331,7 +331,7 @@ export function useSession(doc: ChantDoc): Session {
     run,
     doc: live,
     sectionId: section?.id ?? '',
-    verseId: state.selection?.head.verseId,
+    caret: state.selection?.head,
   });
 
   /**
