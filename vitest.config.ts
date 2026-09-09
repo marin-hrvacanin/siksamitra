@@ -26,6 +26,12 @@ const alias = {
   '@siksamitra/tokens/word': pkg('tokens', 'src/word.ts'),
   '@siksamitra/tokens/document-themes': pkg('tokens', 'src/document-themes.ts'),
   '@siksamitra/tokens/document-type': pkg('tokens', 'src/document-type.ts'),
+  /* The Word exporter reads the export styles and the mark geometry; without
+     these two entries every test that touches `@siksamitra/interop` fails to
+     resolve, which says nothing about the test. */
+  '@siksamitra/tokens/export-styles': pkg('tokens', 'src/export-styles.ts'),
+  '@siksamitra/tokens/source': pkg('tokens', 'src/source.ts'),
+  '@siksamitra/tokens/fonts': pkg('tokens', 'src/fonts.ts'),
   '@siksamitra/tokens': pkg('tokens', 'generated/tokens.ts'),
   '@siksamitra/render/theme': pkg('render', 'src/theme/marks.ts'),
   '@siksamitra/render': pkg('render'),

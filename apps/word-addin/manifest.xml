@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  śikṣāmitra for Microsoft Word.
+
+  THE XML MANIFEST, NOT THE UNIFIED ONE. The unified manifest for Microsoft 365
+  reached general availability for Word in July 2026, and it excludes perpetual
+  Office on Windows (2019 / 2021 / 2024 / LTSC) and Office on mobile entirely,
+  and needs Word 2501 on Windows or 16.103 on Mac. Microsoft's own tooling docs
+  still label the Word path preview. The XML manifest runs everywhere Word does,
+  including Word 2016, and nothing here needs Teams or Copilot bundling.
+
+  THE ELEMENT ORDER IS ENFORCED BY THE SCHEMA. An element out of order is not a
+  warning, it is a sideload that silently fails. See
+  learn.microsoft.com/office/dev/add-ins/develop/manifest-element-ordering.
+
+  `<Host Name="Document"/>` is Word. `Document` is the host name; `Word` is not
+  a value the schema knows.
+
+  THE URLS MUST BE HTTPS, including in development, which is what
+  `office-addin-dev-certs` is for. They point at the dev server here; a
+  published build replaces the host and nothing else.
+-->
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+
+  <Id>3f2b7c14-9d6a-4e8b-b0a5-51c7e2d4a930</Id>
+  <Version>2.0.0.0</Version>
+  <ProviderName>Veda Union</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="śikṣāmitra"/>
+  <Description DefaultValue="Mark Vedic recitation text in Word: holdings, svaras, reading aids and pauses, in the same notation and the same styles as the śikṣāmitra editor."/>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="https://vedaunion.org/"/>
+
+  <AppDomains>
+    <AppDomain>https://vedaunion.org</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Document"/>
+  </Hosts>
+
+  <!--
+    WordApi 1.3 is the floor, and it is chosen rather than inherited:
+    `Range.expandTo` and `Range.getRange` are what measure where the selection
+    starts inside its paragraph, and they arrived in 1.3. Everything else the
+    add-in uses — `getOoxml`, `insertOoxml` — is 1.1. 1.3 is Word 2019 on the
+    desktop, Word for Mac 15.32, and every version of Word on the web.
+  -->
+  <Requirements>
+    <Sets DefaultMinVersion="1.3">
+      <Set Name="WordApi" MinVersion="1.3"/>
+    </Sets>
+  </Requirements>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:3000/taskpane.html"/>
+  </DefaultSettings>
+
+  <!-- The add-in writes the paragraph the caret is in. Nothing less will do. -->
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides
+    xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+    xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="sm.GetStarted.Title"/>
+            <Description resid="sm.GetStarted.Description"/>
+            <LearnMoreUrl resid="sm.Support.Url"/>
+          </GetStarted>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="sm.Group">
+                <Label resid="sm.Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="sm.Icon.16"/>
+                  <bt:Image size="32" resid="sm.Icon.32"/>
+                  <bt:Image size="80" resid="sm.Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="sm.Open">
+                  <Label resid="sm.Open.Label"/>
+                  <Supertip>
+                    <Title resid="sm.Open.Label"/>
+                    <Description resid="sm.Open.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.Icon.16"/>
+                    <bt:Image size="32" resid="sm.Icon.32"/>
+                    <bt:Image size="80" resid="sm.Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>sm.Taskpane</TaskpaneId>
+                    <SourceLocation resid="sm.Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="sm.Icon.16" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
+        <bt:Image id="sm.Icon.32" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+        <bt:Image id="sm.Icon.80" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="sm.Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
+        <bt:Url id="sm.Support.Url" DefaultValue="https://vedaunion.org/"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="sm.Group.Label" DefaultValue="śikṣāmitra"/>
+        <bt:String id="sm.Open.Label" DefaultValue="Marking"/>
+        <bt:String id="sm.GetStarted.Title" DefaultValue="śikṣāmitra is ready"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="sm.Open.Tip" DefaultValue="Open the marking pane: holdings, svaras, reading aids, pauses, and the rules."/>
+        <bt:String id="sm.GetStarted.Description" DefaultValue="Select some text and press Short or Long on the Home tab to mark a holding."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

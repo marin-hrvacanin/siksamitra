@@ -21,7 +21,8 @@
     "packages/storage",
     "packages/cli",
     "apps/web",
-    "apps/desktop"
+    "apps/desktop",
+    "apps/word-addin"
   ],
   "scripts": {
     "build": "npm-run-all --serial build:format build:engine build:edit build:interop build:layout build:audio build:account build:storage build:render build:cli",
@@ -37,7 +38,7 @@
     "test": "vitest run",
     "test:watch": "vitest --project unit --project component",
     "sm": "tsx packages/cli/src/main.ts",
-    "check": "npm-run-all --serial typecheck check:web test check:icons check:authoring check:modules check:tokens check:literals check:fixtures check:conformance check:marking check:migrate check:source check:transliteration check:lossless check:engine check:export:html check:export:image",
+    "check": "npm-run-all --serial typecheck check:web check:word-addin test check:icons check:authoring check:modules check:tokens check:literals check:fixtures check:conformance check:marking check:migrate check:source check:transliteration check:lossless check:engine check:export:html check:export:image check:export:word check:export:pdf",
     "check:transliteration": "tsx packages/cli/src/gates/transliteration.ts",
     "check:engine": "tsx packages/cli/src/gates/corpus.ts",
     "spec": "openspec",
@@ -66,6 +67,7 @@
     "desktop:icons": "npm run -w @siksamitra/desktop icons",
     "build:edit": "npm run -w @siksamitra/edit build",
     "check:web": "npm run -w @siksamitra/web typecheck",
+    "check:word-addin": "npm run -w @siksamitra/word-addin typecheck",
     "check:edit": "npm-run-all --serial check:edit:gestures check:edit:views check:reflow",
     "check:reflow": "node tools/no-reflow.mjs",
     "check:marking": "tsx tools/adopt-safety.mjs",
@@ -85,7 +87,9 @@
     "check:edit:views": "node tools/interaction-views.mjs",
     "export": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/cli.mjs",
     "check:export:html": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-html.mjs",
-    "check:export:image": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-image.mjs"
+    "check:export:image": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-image.mjs",
+    "check:export:word": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-word.mjs",
+    "check:export:pdf": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-pdf.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

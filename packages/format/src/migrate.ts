@@ -24,7 +24,8 @@
  */
 import type { ChantSyllable, ChantToken, ChantUnit } from './chant-tokens.js';
 import type { ChantVerse } from './chant-verse.js';
-import { mark, normalise, type Mark } from './mark.js';
+import { mark, type Mark } from './mark.js';
+import { normalise } from './mark-ops.js';
 
 /** What a verse looks like in the new model. */
 export interface TextAndMarks {

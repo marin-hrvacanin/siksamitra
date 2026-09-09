@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "paths": {
+      "@siksamitra/engine": ["../../packages/engine/src/index.ts"],
+      "@siksamitra/format": ["../../packages/format/src/index.ts"],
+      "@siksamitra/interop": ["../../packages/interop/src/index.ts"],
+      "@siksamitra/tokens": ["../../packages/tokens/generated/tokens.ts"],
+      "@siksamitra/tokens/word": ["../../packages/tokens/src/word.ts"]
+    },
+    /* `node` because `@siksamitra/interop` reaches for `Buffer` where a
+       browser has no `atob` — an isomorphic fallback, never taken here, but
+       the name still has to resolve. The add-in itself uses no Node API. */
+    "types": ["office-js", "vite/client", "node"],
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["src/**/*", "vite.config.ts"]
+}

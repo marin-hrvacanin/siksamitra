@@ -1,0 +1,32 @@
+{
+  "name": "@siksamitra/word-addin",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "description": "śikṣāmitra inside Microsoft Word — the same marking engine, the same styles, in a task pane.",
+  "scripts": {
+    "dev": "vite",
+    "//dev-server": "office-addin-debugging starts the server by running THIS script name, not `dev`.",
+    "dev-server": "vite",
+    "certs": "office-addin-dev-certs install",
+    "build": "tsc -p tsconfig.json && vite build",
+    "typecheck": "tsc -p tsconfig.json",
+    "validate": "office-addin-manifest validate manifest.xml",
+    "start": "office-addin-debugging start manifest.xml desktop --app word --dev-server-port 3000",
+    "stop": "office-addin-debugging stop manifest.xml"
+  },
+  "dependencies": {
+    "@siksamitra/engine": "2.0.0-alpha.0",
+    "@siksamitra/format": "2.0.0-alpha.0",
+    "@siksamitra/interop": "2.0.0-alpha.0",
+    "@siksamitra/tokens": "2.0.0-alpha.0"
+  },
+  "devDependencies": {
+    "@types/office-js": "^1.0.377",
+    "office-addin-debugging": "^6.0.4",
+    "office-addin-dev-certs": "^2.0.4",
+    "office-addin-manifest": "^2.1.6",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5"
+  }
+}

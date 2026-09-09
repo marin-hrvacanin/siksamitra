@@ -14,10 +14,10 @@
  * naive per-character scan computed a different way.
  */
 import { describe, expect, it } from 'vitest';
+import { assertMarks, compareMarks, mark, markFaults, type Mark } from '../mark.js';
 import {
-  applyMark, assertMarks, compareMarks, coverage, mark, markFaults, marksIn,
-  normalise, removeMark, shiftForEdit, toggleMark, type Mark,
-} from '../mark.js';
+  applyMark, coverage, marksIn, normalise, removeMark, shiftForEdit, toggleMark,
+} from '../mark-ops.js';
 
 const TEXT = 'agnim īḷe purohitaṁ yajñasya devam';
 

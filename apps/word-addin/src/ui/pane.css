@@ -1,0 +1,159 @@
+/*
+ * The task pane.
+ *
+ * NOT ONE DESIGN VALUE IS WRITTEN HERE. Every colour, size, radius and gap is a
+ * custom property out of `@siksamitra/tokens/tokens.css`, which is the same
+ * file the editor and vedaunion.org load — so the green of the Short button is
+ * literally the green Word will draw the box in, and it stays that way when the
+ * token changes. `taskpane.html` sets `data-chrome` and `data-doc`, which is
+ * what selects the palette.
+ *
+ * A TASK PANE IS NARROW — around 320 px, and the reader can drag it narrower.
+ * So there is one column, the controls wrap, and nothing assumes a width.
+ */
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  color: var(--chrome-ink);
+  background: var(--chrome-bg);
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6);
+}
+
+/* ── what the selection is ─────────────────────────────────────────────── */
+
+.where {
+  padding: var(--space-4);
+  border: 1px solid var(--chrome-line); /* token-exempt: a hairline is 1 device pixel, not a scale step */
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink-soft);
+  line-height: var(--doc-leading);
+  overflow-wrap: anywhere;
+}
+
+.where strong {
+  color: var(--chrome-ink);
+  font-weight: 600;
+}
+
+.where[data-state='none'] {
+  color: var(--chrome-ink-mute);
+}
+
+/* ── a group of buttons ────────────────────────────────────────────────── */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.group > h2 {
+  margin: 0;
+  font-size: var(--text-ui-sm);
+  font-weight: 600;
+  letter-spacing: var(--tracking-eyebrow, normal);
+  text-transform: uppercase;
+  color: var(--chrome-ink-mute);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--chrome-gap);
+}
+
+button {
+  min-height: var(--control-h);
+  padding: var(--space-2) var(--space-5);
+  font: inherit;
+  color: var(--chrome-ink);
+  background: var(--chrome-raise);
+  border: 1px solid var(--chrome-line); /* token-exempt: a hairline is 1 device pixel, not a scale step */
+  border-radius: var(--chrome-radius);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--chrome-sunk);
+}
+
+button:disabled {
+  color: var(--chrome-ink-mute);
+  cursor: default;
+}
+
+/*
+ * A pressed button carries the mark's OWN colour, because the thing it turns on
+ * is that colour on the page. A generic accent would make Short and Long look
+ * like the same control at two settings, which is what they are not: the only
+ * difference between the two boxes Word draws is the stroke weight, so the
+ * button has to carry the difference somewhere a person can see it.
+ */
+button[aria-pressed='true'] {
+  border-color: currentcolor;
+  background: var(--chrome-sunk);
+}
+
+button[data-mark='hold-short'] { color: var(--color-hold); }
+button[data-mark='hold-long'] { color: var(--color-hold-long); }
+button[data-mark='svara'] { color: var(--color-svara); }
+button[data-mark='aid'] { color: var(--color-change); }
+button[data-mark='pause'] { color: var(--color-pause-short); }
+
+/* The two holding weights, as the page and the .docx draw them. */
+button[data-mark='hold-short'][aria-pressed='true'] {
+  border-width: calc(var(--mark-holdStroke-short) * 1em);
+}
+
+button[data-mark='hold-long'][aria-pressed='true'] {
+  border-width: calc(var(--mark-holdStroke-long) * 1em);
+}
+
+/* ── the rules ─────────────────────────────────────────────────────────── */
+
+label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--chrome-ink-soft);
+}
+
+select {
+  width: 100%;
+  min-height: var(--control-h);
+  font: inherit;
+  color: var(--chrome-ink);
+  background: var(--chrome-raise);
+  border: 1px solid var(--chrome-line); /* token-exempt: a hairline is 1 device pixel, not a scale step */
+  border-radius: var(--chrome-radius);
+}
+
+.stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+}
+
+.note {
+  color: var(--chrome-ink-soft);
+  line-height: var(--doc-leading);
+  overflow-wrap: anywhere;
+}
+
+.note[data-kind='warn'] {
+  color: var(--chrome-danger);
+}
+
+.note ul {
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-6);
+}

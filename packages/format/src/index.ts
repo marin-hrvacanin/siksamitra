@@ -42,11 +42,20 @@ export * from './chant-vars.js';
  * that compares the two and the comparison needs both.
  */
 export {
-  applyMark, assertMarks, compareMarks, coverage, mark, markFaults, marksAt,
-  marksIn, normalise, POINT_KINDS, removeMark, shiftForEdit, STAGE_OF, toggleMark,
+  assertMarks, compareMarks, mark, markFaults,
+  MERGING_KINDS, POINT_KINDS, sameValue, STAGE_OF,
 } from './mark.js';
-export type { Mark, MarkFault, MarkInput, MarkKind, Stage, TextEdit } from './mark.js';
+export type { Mark, MarkFault, MarkInput, MarkKind, Stage } from './mark.js';
+export {
+  applyMark, coverage, marksAt, marksIn, normalise, removeMark, shiftForEdit, toggleMark,
+} from './mark-ops.js';
+export type { TextEdit } from './mark-ops.js';
 
 /* Tokens ⇄ text and markings, and the round trip that proves it loses nothing. */
 export { toTextAndMarks, toTokens } from './migrate.js';
-export type { TextAndMarks } from './migrate.js';
+/* `TokenHelp` is on the surface because `toTokens` cannot be called without
+   it: a caller has to supply the letter division and the other scripts, and
+   both belong to the engine, which sits above this package. It was internal,
+   so the conversion was reachable only from code that could re-declare the
+   type — the audit tool and nothing else. */
+export type { TextAndMarks, TokenHelp } from './migrate.js';

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-mode="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>śikṣāmitra</title>
+    <!--
+      office.js from the CDN, not from npm. Microsoft ships fixes to the host
+      bridge continuously and a pinned copy goes out of step with the Word it is
+      running inside; the requirement-set documentation says to reference the
+      production library for exactly this reason. `@types/office-js` supplies
+      the typings at build time and nothing at run time.
+    -->
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  </head>
+  <!--
+    `data-chrome` and `data-doc` are what select a palette out of
+    `tokens.css` — the same two attributes the editor sets on its shell and its
+    page. `word` is his own document, so the Short button is the green Word will
+    draw the box in rather than a colour chosen to look like it.
+  -->
+  <body data-chrome="palladio" data-doc="word">
+    <div id="root"></div>
+    <script type="module" src="/src/taskpane.ts"></script>
+  </body>
+</html>
