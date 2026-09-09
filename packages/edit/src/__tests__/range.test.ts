@@ -31,24 +31,24 @@ describe('typing', () => {
     expect(result.removed).toEqual([]);
   });
 
-  it('normalises what it inserts', () => {
+  it('normalises what it inserts, without rewriting the spacing', () => {
     const vs = verses();
     const result = replaceRange(vs, { from: 0, to: 0, insert: 'OṂ  ' });
-    expect(result.verses[0]!.lines[0]).toBe('oṁ agnim īḷe');
+    /* Case and the ṃ/ṁ spelling are folded. The two spaces typed are two
+       spaces: collapsing them rewrote text nobody had touched. */
+    expect(result.verses[0]!.lines[0]).toBe('oṁ  agnim īḷe');
   });
 
   it('puts the caret after what was actually inserted', () => {
     const vs = verses();
     const start = at(vs, 'v-1', 0, 5);
     /*
-     * A space typed next to a space adds no character — two spaces are one in
-     * this notation — and the caret steps over the space that is already
-     * there, which is what typing over an absorbed character does everywhere
-     * else. What matters is that it lands on a real position: the text is
-     * unchanged, and the caret is inside it.
+     * A space typed next to a space IS a second space, and the caret lands
+     * after it. It used to be absorbed — which is the same defect as the
+     * trailing space the owner reported, one position further in.
      */
     const result = replaceRange(vs, { from: start, to: start, insert: ' ' });
-    expect(result.verses[0]!.lines[0]).toBe('agnim īḷe');
+    expect(result.verses[0]!.lines[0]).toBe('agnim  īḷe');
     expect(result.caret).toBe(start + 1);
     expect(result.caret).toBeLessThanOrEqual(result.verses[0]!.lines[0]!.length);
   });
@@ -270,6 +270,8 @@ describe('robustness', () => {
   it('carriage returns and tabs do not become letters', () => {
     const vs = verses();
     const result = replaceRange(vs, { from: 0, to: 0, insert: 'oṁ\t\r' });
-    expect(result.verses[0]!.lines[0]).toBe('oṁ agnim īḷe');
+    /* A tab and a carriage return each become a space — one KIND of space
+       character is normalisation; how many there are is text. */
+    expect(result.verses[0]!.lines[0]).toBe('oṁ  agnim īḷe');
   });
 });

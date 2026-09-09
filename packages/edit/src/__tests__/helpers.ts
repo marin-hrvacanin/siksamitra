@@ -5,6 +5,7 @@
  * the accessors that keep the tests readable — a hand-written token tree would
  * be a second implementation of `emit`.
  */
+import { toTextAndMarks } from '@siksamitra/format';
 import { flatten } from '../caret.js';
 import { emptyHistory } from '../history.js';
 import { sourcesOf } from '../sync.js';
@@ -14,8 +15,16 @@ import type { ChantSection } from '@siksamitra/format';
 
 export const section1 = (s: EditState): ChantSection => s.doc.sections[0]!;
 export const versesOf = (s: EditState): string[] => section1(s).verses.map((v) => v.id);
+/**
+ * What a verse SAYS, which is what the caret edits.
+ *
+ * It used to read `src.lines`, the letters as typed, because that is what an
+ * edit changed. The caret edits the text that is shown now, so `src` is no
+ * longer written and reading it showed the verse as it was before every
+ * keystroke.
+ */
 export const linesOf = (s: EditState, id: string): string[] =>
-  section1(s).verses.find((v) => v.id === id)!.src!.lines;
+  toTextAndMarks(section1(s).verses.find((v) => v.id === id)!).text.split('\n');
 
 export const flatOf = (s: EditState) => flatten(sourcesOf(section1(s)));
 export const at = (s: EditState, verseId: string, line: number, column: number): number =>

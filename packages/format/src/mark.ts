@@ -167,7 +167,7 @@ export interface MarkFault {
  * mark — `a` + U+0304 is one letter to a reader, and a marking that starts
  * between them would box a macron on its own.
  */
-function splitsCharacter(text: string, at: number): boolean {
+export function splitsCharacter(text: string, at: number): boolean {
   if (at <= 0 || at >= text.length) return false;
   const before = text.charCodeAt(at - 1);
   const here = text.charCodeAt(at);

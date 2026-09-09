@@ -54,9 +54,18 @@ describe('canonicalInsert', () => {
     expect(canonicalInsert('agnim', 5, 5, 'ṃ')).toBe('ṁ');
   });
 
-  it('refuses to create a double space', () => {
+  it('inserts a second space in the middle, because two spaces are two', () => {
+    /*
+     * IT USED TO REFUSE. `normLoose` collapsed every run of whitespace, so a
+     * space typed beside a space was swallowed — and worse, it rewrote text
+     * nobody had touched: a verse reading `oṁ  prātara`, which is a space, a
+     * pause and a space, came back a character shorter on every keystroke
+     * anywhere in the section, moving every marking after it.
+     */
+    expect(canonicalInsert('agnim īḷe', 5, 5, ' ')).toBe(' ');
+    /* At the END it still inserts nothing, because a stored line is trimmed —
+       that is `norm`, and it is the next test. */
     expect(canonicalInsert('agnim ', 6, 6, ' ')).toBe('');
-    expect(canonicalInsert('agnim īḷe', 5, 5, ' ')).toBe('');
   });
 
   it('refuses a space at either end, which a trim would remove anyway', () => {
@@ -71,15 +80,24 @@ describe('canonicalInsert', () => {
 
 describe('editLine', () => {
   it('reports where the caret lands, which is where the text landed', () => {
-    // A space that collapsed to nothing must not move the caret past it.
+    /* A space beside a space is a second space now, so the caret moves over
+       it. What this is really checking is that the two agree. */
     const result = editLine('agnim īḷe', 5, 5, ' ');
-    expect(result.line).toBe('agnim īḷe');
-    expect(result.insert).toBe('');
-    expect(result.caret).toBe(5);
+    expect(result.line).toBe('agnim  īḷe');
+    expect(result.insert).toBe(' ');
+    expect(result.caret).toBe(6);
+
+    /* And where something IS still removed — a space at the end, which a
+       stored line is trimmed of — the caret does not move past it. */
+    const end = editLine('agnim', 5, 5, ' ');
+    expect(end.insert).toBe('');
+    expect(end.caret).toBe(5);
   });
 
   it('produces a canonical line for any input', () => {
-    expect(editLine('agnim', 5, 5, '  PUROHITAṃ  ').line).toBe('agnim purohitaṁ');
+    /* Case, the ṃ/ṁ spelling and the ends are still folded; the run of
+       spaces between the words is not, because it is text. */
+    expect(editLine('agnim', 5, 5, '  PUROHITAṃ  ').line).toBe('agnim  purohitaṁ');
   });
 
   it('clamps a backwards or out-of-range span', () => {

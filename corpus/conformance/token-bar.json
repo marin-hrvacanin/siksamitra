@@ -349,191 +349,202 @@
               ],
               [
                 "svara",
-                45,
+                44,
                 1,
                 "anudatta"
               ],
               [
                 "syl",
-                46,
+                45,
                 0
               ],
               [
                 "sup",
-                48,
+                47,
                 1,
                 "i"
               ],
               [
                 "was",
-                48,
+                47,
                 1,
                 "ṁ"
               ],
               [
                 "syl",
-                49,
+                48,
                 0
               ],
               [
                 "hold",
-                50,
+                49,
                 1,
                 "short"
               ],
               [
                 "svara",
-                51,
+                50,
                 1,
                 "anudatta"
               ],
               [
                 "syl",
-                52,
+                51,
                 0
               ],
               [
                 "hold",
-                52,
+                51,
                 1,
                 "short"
               ],
               [
                 "sup",
-                52,
+                51,
                 1,
                 "g"
               ],
               [
                 "syl",
-                55,
+                54,
                 0
               ],
               [
                 "svara",
-                57,
+                56,
                 1,
                 "svarita"
               ],
               [
                 "syl",
-                58,
+                57,
                 0
               ],
               [
                 "syl",
-                60,
+                59,
                 0
               ],
               [
                 "syl",
-                62,
+                61,
                 0
               ],
               [
                 "pause",
-                63,
+                62,
                 0,
                 "short"
               ],
               [
                 "syl",
-                67,
+                66,
                 0
               ],
               [
                 "svara",
-                68,
+                67,
                 1,
                 "dirgha-svarita"
               ],
               [
                 "syl",
-                69,
+                68,
                 0
               ],
               [
                 "hold",
-                70,
+                69,
                 1,
                 "long"
               ],
               [
                 "svara",
-                72,
+                71,
                 1,
                 "anudatta"
               ],
               [
                 "syl",
-                73,
+                72,
                 0
               ],
               [
                 "hold",
-                74,
+                73,
                 1,
                 "short"
               ],
               [
                 "syl",
-                76,
+                75,
                 0
               ],
               [
                 "svara",
-                77,
+                76,
                 1,
                 "svarita"
               ],
               [
                 "syl",
-                79,
+                78,
                 0
               ],
               [
                 "hold",
-                80,
+                79,
                 1,
                 "short"
               ],
               [
                 "syl",
-                82,
+                81,
                 0
               ],
               [
                 "syl",
-                86,
+                85,
                 0
               ],
               [
                 "svara",
-                92,
+                90,
                 1,
                 "anudatta"
               ],
               [
                 "syl",
-                93,
+                91,
                 0
               ],
               [
                 "hold",
-                94,
+                92,
                 1,
                 "short"
               ],
               [
                 "syl",
-                97,
+                95,
                 0
               ],
               [
                 "hold",
-                98,
+                96,
                 1,
                 "short"
+              ],
+              [
+                "syl",
+                98,
+                0
+              ],
+              [
+                "svara",
+                99,
+                1,
+                "svarita"
               ],
               [
                 "syl",
@@ -541,71 +552,65 @@
                 0
               ],
               [
-                "svara",
-                101,
-                1,
-                "svarita"
-              ],
-              [
                 "syl",
                 102,
                 0
               ],
               [
-                "syl",
-                104,
-                0
-              ],
-              [
                 "hold",
-                104,
+                102,
                 2,
                 "long"
               ],
               [
                 "syl",
-                109,
+                107,
                 0
               ],
               [
                 "svara",
-                112,
+                110,
                 1,
                 "anudatta"
               ],
               [
                 "syl",
-                113,
+                111,
                 0
               ],
               [
                 "hold",
-                114,
+                112,
                 2,
                 "long"
               ],
               [
                 "was",
-                118,
+                116,
                 1,
                 "ṁ"
               ],
               [
                 "syl",
-                119,
+                117,
                 0
               ],
               [
                 "hold",
-                120,
+                118,
                 1,
                 "short"
               ],
               [
                 "svara",
-                121,
+                119,
                 1,
                 "svarita"
+              ],
+              [
+                "syl",
+                120,
+                0
               ],
               [
                 "syl",
@@ -619,8 +624,14 @@
               ],
               [
                 "syl",
-                126,
+                128,
                 0
+              ],
+              [
+                "svara",
+                129,
+                1,
+                "anudatta"
               ],
               [
                 "syl",
@@ -628,26 +639,32 @@
                 0
               ],
               [
-                "svara",
-                131,
-                1,
-                "anudatta"
-              ],
-              [
                 "syl",
-                132,
-                0
-              ],
-              [
-                "syl",
-                135,
+                133,
                 0
               ],
               [
                 "was",
-                141,
+                138,
                 1,
                 "ṁ"
+              ],
+              [
+                "syl",
+                139,
+                0
+              ],
+              [
+                "hold",
+                140,
+                1,
+                "short"
+              ],
+              [
+                "svara",
+                141,
+                1,
+                "svarita"
               ],
               [
                 "syl",
@@ -655,21 +672,15 @@
                 0
               ],
               [
+                "syl",
+                146,
+                0
+              ],
+              [
                 "hold",
-                143,
+                147,
                 1,
                 "short"
-              ],
-              [
-                "svara",
-                144,
-                1,
-                "svarita"
-              ],
-              [
-                "syl",
-                145,
-                0
               ],
               [
                 "syl",
@@ -683,21 +694,15 @@
                 "short"
               ],
               [
-                "syl",
-                152,
-                0
-              ],
-              [
-                "hold",
-                153,
-                1,
-                "short"
-              ],
-              [
                 "svara",
-                155,
+                152,
                 1,
                 "anudatta"
+              ],
+              [
+                "syl",
+                153,
+                0
               ],
               [
                 "syl",
@@ -705,32 +710,38 @@
                 0
               ],
               [
-                "syl",
-                159,
-                0
-              ],
-              [
                 "svara",
-                160,
+                157,
                 1,
                 "dirgha-svarita"
               ],
               [
                 "syl",
-                161,
+                158,
                 0
               ],
               [
                 "pause",
-                162,
+                159,
                 0,
                 "short"
               ],
               [
                 "was",
-                165,
+                162,
                 1,
                 "ṁ"
+              ],
+              [
+                "syl",
+                163,
+                0
+              ],
+              [
+                "hold",
+                164,
+                1,
+                "short"
               ],
               [
                 "syl",
@@ -738,10 +749,10 @@
                 0
               ],
               [
-                "hold",
+                "svara",
                 167,
                 1,
-                "short"
+                "svarita"
               ],
               [
                 "syl",
@@ -749,10 +760,10 @@
                 0
               ],
               [
-                "svara",
+                "hold",
                 170,
                 1,
-                "svarita"
+                "short"
               ],
               [
                 "syl",
@@ -760,20 +771,26 @@
                 0
               ],
               [
-                "hold",
-                173,
-                1,
+                "syl",
+                174,
+                0
+              ],
+              [
+                "syl",
+                179,
+                0
+              ],
+              [
+                "pause",
+                180,
+                0,
                 "short"
               ],
               [
-                "syl",
-                175,
-                0
-              ],
-              [
-                "syl",
-                177,
-                0
+                "hold",
+                180,
+                1,
+                "long"
               ],
               [
                 "syl",
@@ -781,12 +798,6 @@
                 0
               ],
               [
-                "pause",
-                183,
-                0,
-                "short"
-              ],
-              [
                 "hold",
                 183,
                 1,
@@ -794,14 +805,14 @@
               ],
               [
                 "syl",
-                185,
+                186,
                 0
               ],
               [
                 "hold",
-                186,
+                187,
                 1,
-                "long"
+                "short"
               ],
               [
                 "syl",
@@ -812,24 +823,24 @@
                 "hold",
                 190,
                 1,
-                "short"
-              ],
-              [
-                "syl",
-                192,
-                0
-              ],
-              [
-                "hold",
-                193,
-                1,
                 "long"
               ],
               [
                 "was",
-                195,
+                192,
                 1,
                 "ḥ"
+              ],
+              [
+                "syl",
+                193,
+                0
+              ],
+              [
+                "hold",
+                194,
+                1,
+                "short"
               ],
               [
                 "syl",
@@ -840,34 +851,23 @@
                 "hold",
                 197,
                 1,
-                "short"
-              ],
-              [
-                "syl",
-                199,
-                0
-              ],
-              [
-                "hold",
-                200,
-                1,
                 "long"
               ],
               [
                 "svara",
-                201,
+                198,
                 1,
                 "svarita"
               ],
               [
                 "syl",
-                203,
+                200,
                 0
               ]
             ],
             "n": null,
             "t": "verse",
-            "text": "oṁ tac chaṁyorā-vṛṇīmahe ¦ gātuṁ yajñāya । \ngātuṁ yajña pataye  daivī svastira-stu naḥ । \nsvastir mānuṣebhyaḥ ¦ ūrdhvañ jigātu bheṣajam । \nśan no ¦ astu dvi pade  śañ catuṣ pade ॥\noṁ śāntiś śāntiś śāntiḥ ॥",
+            "text": "oṁ tac chaṁyorā-vṛṇīmahe ¦ gātuṁ yajñāya ।\ngātuṁ yajña pataye  daivī svastira-stu naḥ ।\nsvastir mānuṣebhyaḥ ¦ ūrdhvañ jigātu bheṣajam ।\nśan no ¦ astu dvi pade  śañ catuṣ pade ॥\noṁ śāntiś śāntiś śāntiḥ ॥",
             "translation": {
               "en": "Oṁ, we crave that peace and well-being. Good for the offering. Good for the offeror. Divine prosperity to us all. Prosperity to mankind. May there be rise in healing. Peace among the bipeds (humans). Peace among the quadrupeds (animals). Oṁ, peace, peace, peace."
             },
@@ -1449,10 +1449,10 @@
     "attested": true,
     "syllables": 61,
     "recitation": {
-      "iast": "oṁ |tac chaṁyorā-vṛṇīmahe  gātuṁ yajñāya । \ngātuṁ yajña pataye | daivī svastira-stu naḥ । \nsvastir mānuṣebhyaḥ  ūrdhvañ jigātu bheṣajam । \nśan no  astu dvi pade | śañ catuṣ pade ॥\noṁ |śāntiś śāntiś śāntiḥ ॥",
-      "deva": "ॐ |तच् छंयोरा-वृणीमहे  गातुं यज्ञाय । \nगातुं यज्ञ पतये | दैवी स्वस्तिर-स्तु नः । \nस्वस्तिर् मानुषेभ्यः  ऊर्ध्वञ् जिगातु भेषजम् । \nशन् नो  अस्तु द्वि पदे | शञ् चतुष् पदे ॥\nॐ |शान्तिश् शान्तिश् शान्तिः ॥",
-      "tel": "ఓం |తచ్ ఛంయోరా-వృణీమహే  గాతుం యజ్ఞాయ । \nగాతుం యజ్ఞ పతయే | దైవీ స్వస్తిర-స్తు నః । \nస్వస్తిర్ మానుషేభ్యః  ఊర్ధ్వఞ్ జిగాతు భేషజమ్ । \nశన్ నో  అస్తు ద్వి పదే | శఞ్ చతుష్ పదే ॥\nఓం |శాన్తిశ్ శాన్తిశ్ శాన్తిః ॥",
-      "tam": "ௐ |தச் சஂ²யோரா-வ்ரு'ணீமஹே  கா³துஂ யஜ்ஞாய । \nகா³துஂ யஜ்ஞ பதயே | தை³வீ ஸ்வஸ்திர-ஸ்து நஃ । \nஸ்வஸ்திர் மாநுஷேப்⁴யஃ  ஊர்த்⁴வஞ் ஜிகா³து பே⁴ஷஜம் । \nஶந் நோ  அஸ்து த்³வி பதே³ | ஶஞ் சதுஷ் பதே³ ॥\nௐ |ஶாந்திஶ் ஶாந்திஶ் ஶாந்திஃ ॥"
+      "iast": "oṁ |tac chaṁyorā-vṛṇīmahe  gātuṁ yajñāya ।\ngātuṁ yajña pataye | daivī svastira-stu naḥ ।\nsvastir mānuṣebhyaḥ  ūrdhvañ jigātu bheṣajam ।\nśan no  astu dvi pade | śañ catuṣ pade ॥\noṁ |śāntiś śāntiś śāntiḥ ॥",
+      "deva": "ॐ |तच् छंयोरा-वृणीमहे  गातुं यज्ञाय ।\nगातुं यज्ञ पतये | दैवी स्वस्तिर-स्तु नः ।\nस्वस्तिर् मानुषेभ्यः  ऊर्ध्वञ् जिगातु भेषजम् ।\nशन् नो  अस्तु द्वि पदे | शञ् चतुष् पदे ॥\nॐ |शान्तिश् शान्तिश् शान्तिः ॥",
+      "tel": "ఓం |తచ్ ఛంయోరా-వృణీమహే  గాతుం యజ్ఞాయ ।\nగాతుం యజ్ఞ పతయే | దైవీ స్వస్తిర-స్తు నః ।\nస్వస్తిర్ మానుషేభ్యః  ఊర్ధ్వఞ్ జిగాతు భేషజమ్ ।\nశన్ నో  అస్తు ద్వి పదే | శఞ్ చతుష్ పదే ॥\nఓం |శాన్తిశ్ శాన్తిశ్ శాన్తిః ॥",
+      "tam": "ௐ |தச் சஂ²யோரா-வ்ரு'ணீமஹே  கா³துஂ யஜ்ஞாய ।\nகா³துஂ யஜ்ஞ பதயே | தை³வீ ஸ்வஸ்திர-ஸ்து நஃ ।\nஸ்வஸ்திர் மாநுஷேப்⁴யஃ  ஊர்த்⁴வஞ் ஜிகா³து பே⁴ஷஜம் ।\nஶந் நோ  அஸ்து த்³வி பதே³ | ஶஞ் சதுஷ் பதே³ ॥\nௐ |ஶாந்திஶ் ஶாந்திஶ் ஶாந்திஃ ॥"
     },
     "holdings": [
       {

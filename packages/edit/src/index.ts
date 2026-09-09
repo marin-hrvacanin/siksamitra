@@ -89,3 +89,13 @@ export {
    The rules themselves are `rerun` in `@siksamitra/engine`. */
 export { recompute } from './recompute.js';
 export type { Recomputed, RecomputeReport } from './recompute.js';
+
+/* A text edit that runs no rule: the markings are carried across it and the
+   syllables rebuilt. See `retext.ts`. */
+export { retext } from './retext.js';
+export type { Retexted } from './retext.js';
+
+/* Placing a marking by hand, straight onto the text — bold's behaviour, over a
+   range, on every verse alike. See `mark-text.ts`. */
+export { clearText, markText, patchToMark, toggleText } from './mark-text.js';
+export type { MarkPatchText, MarkTextResult } from './mark-text.js';

@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { holdingProblems } from '../holdings.js';
 import { emptyHistory } from '../history.js';
 import { apply, newState, srcMapFor, undo } from '../session.js';
+import { toTextAndMarks } from '@siksamitra/format';
 import { attested, doc, sample, section, verse } from './fixture.js';
 import { at, flatOf, linesOf, section1, type, versesOf } from './helpers.js';
 
@@ -26,8 +27,14 @@ describe('marks by hand', () => {
       note: 'the owner said so',
     });
 
-    expect(state.doc.overrides).toHaveLength(1);
-    expect(state.doc.overrides![0]!.ch).toBe('a');
+    /*
+     * NOT IN `overrides`. A marking used to be stored as an override — an
+     * address into the verse's source plus the value the rules should be
+     * overruled with — and it reached the page only when the verse was next
+     * derived. It is a range over the verse's text now, so the document's
+     * override list stays empty and the token carries the box directly.
+     */
+    expect(state.doc.overrides ?? []).toEqual([]);
     const first = section1(state).verses[0]!.tokens.find((t) => t.t === 'syl');
     expect(first!.t === 'syl' && first.units[0]!.hold).toBe('long');
     expect(holdingProblems(section1(state).verses[0]!.tokens)).toEqual([]);
@@ -42,15 +49,19 @@ describe('marks by hand', () => {
       patch: { hold: 'long' },
       why: 'owner-hand',
     });
-    const letter = marked.state.doc.overrides![0]!.ch;
+    const holdAt = (s: typeof marked.state): number[] =>
+      toTextAndMarks(section1(s).verses[0]!).marks
+        .filter((m) => m.k === 'hold').map((m) => m.from);
+    const before = holdAt(marked.state);
+    expect(before.length).toBeGreaterThan(0);
+
     const moved = apply(marked.state, marked.history, {
       k: 'replace', sectionId: 's1', from: at(marked.state, 'v-1', 0, 0), to: at(marked.state, 'v-1', 0, 0), insert: 'oṁ ',
     });
 
     expect(moved.state.lostMarks).toEqual([]);
-    // Still on the same letter, three characters further along.
-    expect(moved.state.doc.overrides![0]!.ch).toBe(letter);
-    expect(moved.state.doc.overrides![0]!.at.letter).toBe(marked.state.doc.overrides![0]!.at.letter + 3);
+    // Every box three characters further along, and none lost.
+    expect(holdAt(moved.state)).toEqual(before.map((n) => n + 3));
   });
 
   it('reports a hand mark whose letter was deleted', () => {
@@ -69,7 +80,9 @@ describe('marks by hand', () => {
       to: at(marked.state, 'v-1', 0, 9),
       insert: '',
     });
-    expect(killed.state.lostMarks).toHaveLength(1);
+    /* The letters the marking was on are gone, so the marking is too — and it
+       is REPORTED rather than dropped in silence. */
+    expect(killed.state.refusals.some((r) => r.includes('marking'))).toBe(true);
     expect(killed.state.doc.overrides).toBeUndefined();
   });
 
@@ -88,8 +101,12 @@ describe('marks by hand', () => {
     // Absent, not empty: writing `"overrides": []` onto a document that had no
     // such key changes its canonical bytes and therefore its `docHash`.
     expect(cleared.state.doc.overrides).toBeUndefined();
-    expect(section1(cleared.state).verses[0]!.tokens)
-      .toEqual(section1(start).verses[0]!.tokens);
+    /* The holding placed by hand is gone. `unmark` withdraws the marking; it
+       does NOT ask the rules what they would have put there, which is what
+       `recompute` is for. */
+    const held = toTextAndMarks(section1(cleared.state).verses[0]!).marks
+      .filter((m) => m.k === 'hold' && m.from === 0);
+    expect(held).toEqual([]);
   });
 
   it('a suppression is not the same as no opinion', () => {
@@ -121,33 +138,37 @@ describe('marks by hand', () => {
     expect(holdingProblems(after)).toEqual([]);
   });
 
-  it('auto-holdings in keep mode leaves the hand-placed box alone', () => {
+  it('recompute in keep-hand mode leaves the hand-placed box alone', () => {
     const start = newState(sample());
     const marked = apply(start, emptyHistory(), {
       k: 'mark', sectionId: 's1', targets: [{ verseId: 'v-1', unit: 0 }], patch: { hold: 'long' }, why: 'owner-hand',
     });
     const auto = apply(marked.state, marked.history, {
-      k: 'auto-holdings', sectionId: 's1', verseIds: ['v-1'], mode: 'keep',
+      k: 'recompute', sectionId: 's1', verseIds: ['v-1'], stages: ['holdings'], mode: 'keep-hand',
     });
-    expect(auto.state.doc.overrides).toHaveLength(1);
     const first = section1(auto.state).verses[0]!.tokens.find((t) => t.t === 'syl');
     expect(first!.t === 'syl' && first.units[0]!.hold).toBe('long');
   });
 
-  it('auto-holdings in replace mode hands the boxes back to the rules', () => {
+  it('recompute in replace-all mode hands the boxes back to the rules', () => {
     const start = newState(sample());
     const marked = apply(start, emptyHistory(), {
       k: 'mark', sectionId: 's1', targets: [{ verseId: 'v-1', unit: 0 }], patch: { hold: 'long' }, why: 'owner-hand',
     });
+    const held = (s: typeof start): (string | undefined)[] =>
+      toTextAndMarks(section1(s).verses[0]!).marks
+        .filter((m) => m.k === 'hold' && m.from === 0).map((m) => m.v);
+    expect(held(marked.state)).toEqual(['long']);
+
     const auto = apply(marked.state, marked.history, {
-      k: 'auto-holdings', sectionId: 's1', verseIds: ['v-1'], mode: 'replace',
+      k: 'recompute', sectionId: 's1', verseIds: ['v-1'], stages: ['holdings'], mode: 'replace-all',
     });
-    expect(auto.state.doc.overrides).toBeUndefined();
-    expect(section1(auto.state).verses[0]!.tokens)
-      .toEqual(section1(start).verses[0]!.tokens);
+    /* The hand box is gone: `replace-all` says the rules decide. Whether they
+       put one back on that letter is theirs to say, and it is not `long`. */
+    expect(held(auto.state)).not.toEqual(['long']);
   });
 
-  it('auto-holdings never touches a svara the author placed', () => {
+  it('recompute in keep-hand mode never touches a svara the author placed', () => {
     const start = newState(sample());
     const marked = apply(start, emptyHistory(), {
       k: 'mark',
@@ -157,10 +178,13 @@ describe('marks by hand', () => {
       why: 'owner-hand',
     });
     const auto = apply(marked.state, marked.history, {
-      k: 'auto-holdings', sectionId: 's1', verseIds: ['v-1'], mode: 'replace',
+      k: 'recompute', sectionId: 's1', verseIds: ['v-1'], stages: ['holdings'], mode: 'replace-all',
     });
-    expect(auto.state.doc.overrides).toHaveLength(1);
-    expect(auto.state.doc.overrides![0]!.set).toEqual({ svara: 'anudatta' });
+    /* The svara was not among the stages asked for, so it stands whatever the
+       mode says about the holdings. */
+    const svara = toTextAndMarks(section1(auto.state).verses[0]!).marks
+      .find((m) => m.k === 'svara' && m.from === 0);
+    expect(svara?.v).toBe('anudatta');
   });
 });
 
@@ -177,7 +201,10 @@ describe('structure', () => {
       newIds: ['v-4', 'v-5'],
     });
     expect(versesOf(state)).toEqual(['v-1', 'v-2', 'v-3', 'v-4', 'v-5']);
-    expect(state.reports.map((r) => r.verseId).sort()).toEqual(['v-4', 'v-5']);
+    /* NO REPORTS: a paste is a text edit and derives nothing. The two new
+       verses have their letters and their syllables; what they do NOT have is
+       markings nobody asked for. */
+    expect(state.reports).toEqual([]);
     for (const v of section1(state).verses) {
       expect(v.tokens.length, v.id).toBeGreaterThan(0);
       expect(holdingProblems(v.tokens), v.id).toEqual([]);

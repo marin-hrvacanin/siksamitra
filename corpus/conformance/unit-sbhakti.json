@@ -461,172 +461,172 @@
               ],
               [
                 "syl",
-                53,
+                52,
                 0
               ],
               [
                 "svara",
-                55,
+                54,
                 1,
                 "anudatta"
               ],
               [
                 "syl",
-                56,
+                55,
                 0
               ],
               [
                 "syl",
-                58,
+                57,
                 0
               ],
               [
                 "svara",
-                59,
+                58,
                 1,
                 "svarita"
               ],
               [
                 "syl",
-                61,
+                60,
                 0
               ],
               [
                 "hold",
-                61,
+                60,
                 1,
                 "short"
               ],
               [
                 "svara",
-                63,
+                62,
                 1,
                 "anudatta"
               ],
               [
                 "syl",
-                64,
+                63,
                 0
               ],
               [
                 "was",
-                67,
+                66,
                 1,
                 "ṁ"
               ],
               [
                 "syl",
-                68,
+                67,
                 0
               ],
               [
                 "hold",
+                68,
+                1,
+                "short"
+              ],
+              [
+                "svara",
                 69,
                 1,
-                "short"
-              ],
-              [
-                "svara",
-                70,
-                1,
                 "svarita"
               ],
               [
                 "syl",
-                71,
+                70,
                 0
               ],
               [
                 "svara",
-                72,
+                71,
                 1,
                 "anudatta"
               ],
               [
                 "syl",
-                73,
+                72,
                 0
               ],
               [
                 "syl",
-                76,
+                75,
                 0
               ],
               [
                 "svara",
-                77,
+                76,
                 1,
                 "svarita"
               ],
               [
                 "syl",
-                79,
+                78,
                 0
               ],
               [
                 "hold",
-                79,
+                78,
                 1,
                 "short"
               ],
               [
                 "syl",
-                82,
+                81,
                 0
               ],
               [
                 "svara",
-                85,
+                84,
                 1,
                 "anudatta"
               ],
               [
                 "syl",
-                86,
+                85,
                 0
               ],
               [
                 "syl",
-                88,
+                87,
                 0
               ],
               [
                 "svara",
-                89,
+                88,
                 1,
                 "svarita"
               ],
               [
                 "was",
-                90,
+                89,
                 1,
                 "ṁ"
               ],
               [
                 "syl",
-                91,
+                90,
                 0
               ],
               [
                 "hold",
-                92,
+                91,
                 1,
                 "short"
               ],
               [
                 "syl",
-                94,
+                93,
                 0
               ],
               [
                 "syl",
-                96,
+                95,
                 0
               ]
             ],
             "n": "8",
             "t": "verse",
-            "text": "yo mā'gne bhāginam̐ santama-thā-bhāgañ cikīrṣati । \nabhāgama-gne taṅ kuru māma-gne bhāginaṅ kuru ॥8॥",
+            "text": "yo mā'gne bhāginam̐ santama-thā-bhāgañ cikīrṣati ।\nabhāgama-gne taṅ kuru māma-gne bhāginaṅ kuru ॥8॥",
             "translation": {
               "en": "O Agni, whoever wishes to deprive me, the fortunate one, make him dispossessed, o Agni! Make me fortunate, o Agni!"
             },
@@ -933,10 +933,10 @@
     "attested": true,
     "syllables": 33,
     "recitation": {
-      "iast": "yo mā'gne bhāginam santama-thā-bhāgañ cikīrṣati । \nabhāgama-gne taṅ kuru māma-gne bhāginaṅ kuru ॥॥",
-      "deva": "यो माऽग्ने भागिनम् सन्तम-था-भागञ् चिकीर्षति । \nअभागम-ग्ने तङ् कुरु माम-ग्ने भागिनङ् कुरु ॥॥",
-      "tel": "యో మాఽగ్నే భాగినమ్ సన్తమ-థా-భాగఞ్ చికీర్షతి । \nఅభాగమ-గ్నే తఙ్ కురు మామ-గ్నే భాగినఙ్ కురు ॥॥",
-      "tam": "யோ மாऽக்³நே பா⁴கி³நம் ஸந்தம-தா²-பா⁴க³ஞ் சிகீர்ஷதி । \nஅபா⁴க³ம-க்³நே தங் குரு மாம-க்³நே பா⁴கி³நங் குரு ॥॥"
+      "iast": "yo mā'gne bhāginam santama-thā-bhāgañ cikīrṣati ।\nabhāgama-gne taṅ kuru māma-gne bhāginaṅ kuru ॥॥",
+      "deva": "यो माऽग्ने भागिनम् सन्तम-था-भागञ् चिकीर्षति ।\nअभागम-ग्ने तङ् कुरु माम-ग्ने भागिनङ् कुरु ॥॥",
+      "tel": "యో మాఽగ్నే భాగినమ్ సన్తమ-థా-భాగఞ్ చికీర్షతి ।\nఅభాగమ-గ్నే తఙ్ కురు మామ-గ్నే భాగినఙ్ కురు ॥॥",
+      "tam": "யோ மாऽக்³நே பா⁴கி³நம் ஸந்தம-தா²-பா⁴க³ஞ் சிகீர்ஷதி ।\nஅபா⁴க³ம-க்³நே தங் குரு மாம-க்³நே பா⁴கி³நங் குரு ॥॥"
     },
     "holdings": [
       {

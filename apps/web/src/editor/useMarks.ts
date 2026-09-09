@@ -35,7 +35,6 @@ export type HoldState = 'short' | 'long' | 'none' | 'mixed' | null;
 export interface Marks {
   mark: (patch: Record<string, unknown>, note?: string) => void;
   unmark: (fields: readonly MarkField[]) => void;
-  autoHoldings: (mode: 'keep' | 'replace') => void;
   /** Run the marking rules over the selection, or the whole step. */
   reapplyRules: (mode: ReRunMode) => void;
   /** The holding on the selection: one value, `mixed`, or null for nothing. */
@@ -137,22 +136,6 @@ export function useMarks(
   }, [run, refuse, nothingToMark, section, targets]);
 
   /**
-   * Re-run the holding rules.
-   *
-   * Over the SELECTED verses, or over every derivable verse in the section
-   * when nothing is selected. Never over a transcribed one: it has no source
-   * to derive from, and the session refuses it anyway — filtering here means
-   * the command does not arrive carrying a refusal it could have avoided.
-   */
-  const autoHoldings = useCallback((mode: 'keep' | 'replace') => {
-    if (section === undefined) return;
-    const verseIds = selected.length > 0
-      ? [...new Set(selected.map((r) => r.verseId))]
-      : section.verses.filter((v) => v.src !== undefined).map((v) => v.id);
-    run({ k: 'auto-holdings', sectionId: section.id, verseIds, mode });
-  }, [run, section, selected]);
-
-  /**
    * RE-APPLY THE RULES — the only thing in the window that runs the engine.
    *
    * Over the SELECTED verses, or over every verse of the step when nothing is
@@ -182,15 +165,15 @@ export function useMarks(
    * toggling each letter separately, so one press always has one visible
    * meaning.
    *
-   * Off is `hold: null`, not `unmark`. `unmark` withdraws the opinion and lets
-   * the rules decide, which for a letter the rules want to hold puts the box
-   * straight back — a toggle that visibly does nothing. `null` says there is
-   * no holding here. Handing the decision back to the rules is what `Clear`
-   * is for, and the two stay different on purpose.
+   * Off is `hold: null`, which now simply takes the marking off the range.
+   * It used to mean something else — "there IS no holding here, overruling the
+   * rules" — because the rules ran on every keystroke and would otherwise put
+   * the box straight back. Nothing runs them unless somebody presses Re-apply,
+   * so off is off, and the `None` button that said it explicitly is gone.
    */
   const toggleHold = useCallback((value: 'short' | 'long') => {
     mark({ hold: holdState === value ? null : value });
   }, [mark, holdState]);
 
-  return { mark, unmark, autoHoldings, reapplyRules, holdState, toggleHold };
+  return { mark, unmark, reapplyRules, holdState, toggleHold };
 }

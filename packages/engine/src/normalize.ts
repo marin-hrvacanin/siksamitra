@@ -156,7 +156,19 @@ export function normLoose(s: string): string {
     .toLowerCase()
     .replace(/ṃ/g, ANU)
     .replace(/,/g, ' ')
-    .replace(/\s+/g, ' ');
+    /*
+     * TABS AND THE ODD WHITESPACE BECOME A SPACE; A RUN OF SPACES STAYS A RUN.
+     *
+     * It used to be `\s+` → one space, which rewrites text nobody touched: a
+     * verse whose text reads `oṁ  prātara` — a space, a pause, a space, which
+     * is what the marking means — came back one character shorter on every
+     * keystroke ANYWHERE in the section, and every marking after it moved.
+     * A no-op edit changed 56 976 bytes of Bhāgya Sūktam.
+     *
+     * Collapsing is a tidy, and a tidy belongs to saving. What is left here is
+     * the part that is really normalisation: one KIND of space character.
+     */
+    .replace(/[^\S\n]/g, ' ');
 }
 
 /**

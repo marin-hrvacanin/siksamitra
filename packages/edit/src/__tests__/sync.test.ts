@@ -16,6 +16,7 @@
  *     replaced.
  */
 import { describe, expect, it } from 'vitest';
+import { toTextAndMarks } from '@siksamitra/format';
 import { derive, norm } from '@siksamitra/engine';
 import type { ChantSection, ChantVerse } from '@siksamitra/format';
 import { changedVerses, linesFromTokens, sourcesOf, writeSources } from '../sync.js';
@@ -99,7 +100,9 @@ describe('writing sources back', () => {
     expect(out.n).toBe('7');
     expect(out.translation).toEqual({ en: 'to Agni' });
     expect(out.audioId).toBe('a1');
-    expect(out.src!.lines).toEqual(['agnim īḷe hotā']);
+    /* The TEXT, not `src.lines`: the caret edits what is shown, and `src` is
+       the accented witness underneath rather than the thing being written. */
+    expect(toTextAndMarks(out).text).toBe('agnim īḷe hotā');
   });
 
   it('takes the ORDER from the sources, not from the old section', () => {
@@ -120,20 +123,22 @@ describe('writing sources back', () => {
     expect(written.refused).toEqual([]);
   });
 
-  it('REFUSES text merged into an attested verse, and names it', () => {
+  it('takes text merged into a verse that has no source layer', () => {
     /*
-     * THE BUG. A single Backspace at the start of the verse after a
-     * transcribed one merged the two, and the merged text — a whole verse of
-     * words — vanished with no refusal and no mention.
+     * THIS USED TO ASSERT A REFUSAL. A single Backspace at the start of the
+     * verse after a transcribed one merged the two, and the merged text — a
+     * whole verse of words — vanished with no refusal and no mention; the fix
+     * at the time was to decline the edit and say so. A verse holds its own
+     * text now, so the merge is an ordinary write and nothing is declined.
      */
-    const s = section([verse('v-1', ['agnim īḷe'], true)]);
-    const written = writeSources(s, [{ id: 'v-1', lines: ['agnim īḷe purohitaṁ yajñasya'] }]);
-    expect(written.refused).toHaveLength(1);
-    expect(written.refused[0]!.verseId).toBe('v-1');
-    expect(written.refused[0]!.lines.join(' ')).toContain('yajñasya');
-    // And the verse is untouched.
+    const s2 = section([verse('v-1', ['agnim īḷe'], true)]);
+    const written = writeSources(s2, [{ id: 'v-1', lines: ['agnim īḷe purohitaṁ yajñasya'] }]);
+    expect(written.refused).toEqual([]);
+    expect(toTextAndMarks(written.section.verses[0]!).text).toContain('yajñasya');
+    // And it still invents no source layer.
     expect(written.section.verses[0]!.src).toBeUndefined();
   });
+
 
   it('does not refuse an edit elsewhere in the section', () => {
     /*
@@ -146,30 +151,33 @@ describe('writing sources back', () => {
     expect(writeSources(s, sources).refused).toEqual([]);
   });
 
-  it('carries a transcribed accent across an edit, and counts what it cost', () => {
+  it('carries the markings across an edit, and counts what it cost', () => {
     /*
-     * THE BUG. `src.accented` is the same letters with the accents written in.
-     * Typing one character changed `src.lines` and left the witness behind, so
-     * the engine refused the whole line and every accent on it disappeared:
-     * 156 svaras became 151.
+     * THIS USED TO BE ABOUT `src.accented`, the accented witness, which an
+     * edit left behind — so the engine refused the line and 156 svaras became
+     * 151. Nothing derives from the witness now; what has to survive an edit
+     * is the verse’s own markings, and what has to be reported is the ones it
+     * could not carry.
      */
-    const withWitness: ChantVerse = {
-      ...verse('v-1', ['oṁ bhadraṁ karṇebhiḥ']),
-      src: {
-        lines: ['oṁ bhadraṁ karṇebhiḥ'],
-        accented: ['oṁ bha̱draṁ karṇe̍bhiḥ'],
-      },
-    };
-    const s = section([withWitness]);
+    const marked = verse('v-1', ['oṁ bhadraṁ karṇebhiḥ']);
+    /* The markings that address LETTERS. A syllable boundary is division, and
+       adding a letter legitimately adds one, so counting those would measure
+       the syllabifier rather than what survived. */
+    const held = (v: typeof marked): number =>
+      toTextAndMarks(v).marks.filter((m) => m.k !== 'syl').length;
+    const before = held(marked);
+    expect(before).toBeGreaterThan(0);
+    const s2 = section([marked]);
 
-    // An edit AFTER both accents keeps both.
-    const kept = writeSources(s, [{ id: 'v-1', lines: ['oṁ bhadraṁ karṇebhiḥx'] }]);
+    // An edit at the very end moves nothing and costs nothing.
+    const text = toTextAndMarks(marked).text;
+    const kept = writeSources(s2, [{ id: 'v-1', lines: [`${text}x`] }]);
     expect(kept.accentsLost).toEqual([]);
-    expect(kept.section.verses[0]!.src!.accented![0]).toContain('bha̱draṁ');
+    expect(held(kept.section.verses[0]!)).toBe(before);
 
-    // An edit that replaces an accented letter says what it cost.
-    const lost = writeSources(s, [{ id: 'v-1', lines: ['oṁ karṇebhiḥ'] }]);
-    expect(lost.accentsLost).toHaveLength(1);
-    expect(lost.accentsLost[0]).toMatchObject({ verseId: 'v-1', count: 1 });
+    // An edit that deletes the letters a marking is on says what it cost.
+    const lost = writeSources(s2, [{ id: 'v-1', lines: [text.slice(12)] }]);
+    expect(lost.accentsLost.length).toBeGreaterThan(0);
+    expect(lost.accentsLost[0]!.verseId).toBe('v-1');
   });
 });

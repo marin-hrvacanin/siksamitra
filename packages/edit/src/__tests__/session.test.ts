@@ -14,14 +14,21 @@ import { attested, doc, sample, section, verse } from './fixture.js';
 import { at, linesOf, section1, type } from './helpers.js';
 
 describe('typing', () => {
-  it('re-derives the verse it changed, and only that verse', () => {
+  it('changes the verse it touched, and DERIVES NOTHING', () => {
     const start = newState(sample());
     const before = section1(start).verses.map((v) => v.tokens);
     const { state } = type(start, at(start, 'v-2', 0, 0), 'oṁ ');
 
     expect(linesOf(state, 'v-2')).toEqual(['oṁ yajñasya devam ṛtvijam']);
-    expect(state.reports.map((r) => r.verseId)).toEqual(['v-2']);
-    // The neighbours are byte-identical: a keystroke costs one derivation.
+    /*
+     * NO REPORTS, because nothing was derived. This used to expect `['v-2']`
+     * — one derivation per keystroke — which is the whole defect: a
+     * derivation is the marking rules, so typing placed holdings nobody asked
+     * for. `tests/integration/recompute.test.ts` is where that is measured
+     * against the corpus.
+     */
+    expect(state.reports).toEqual([]);
+    // The neighbours are byte-identical: a keystroke touches one verse.
     expect(section1(state).verses[0]!.tokens).toEqual(before[0]);
     expect(section1(state).verses[2]!.tokens).toEqual(before[2]);
   });
@@ -52,41 +59,52 @@ describe('typing', () => {
         expect(holdingProblems(v.tokens), `after "${ch}"`).toEqual([]);
       }
     }
-    // Typed backwards one character at a time, so the line reads in reverse.
-    expect(linesOf(state, 'v-1')[0]).toBe('etsamanagnim īḷe purohitaṁ');
+    /*
+     * Typed backwards one character at a time, so the line reads in reverse —
+     * and the LAST character typed is a space, at column 0, so the line begins
+     * with one. It used to be trimmed away, which is the owner's "I can't type
+     * space": a space is a character, and typing one puts one there.
+     */
+    expect(linesOf(state, 'v-1')[0]).toBe(' etsamanagnim īḷe purohitaṁ');
     expect(history.past).toHaveLength(1);
   });
 });
 
-describe('rule zero', () => {
+describe('there are no layers: every verse takes an edit', () => {
+  /*
+   * THIS BLOCK USED TO BE CALLED "rule zero" AND ASSERTED THE OPPOSITE.
+   *
+   * A verse was either derived, and editable, or transcribed, and frozen —
+   * the second kind had no source layer, so an edit to it had nowhere to go
+   * and was declined by name. The owner's reply to that arrangement was "what
+   * are these layers you are talking about?", and the answer is that there are
+   * none any more: a verse is one text and a list of markings, and the caret
+   * edits the text that is shown.
+   *
+   * `attested()` still builds a verse with no `src`, because documents in the
+   * wild have them. It is no longer a different KIND of verse.
+   */
   const mixed = () => doc([section('s1', [
     verse('v-1', ['agnim īḷe']),
     attested('v-2', ['yajñasya devam']),
     verse('v-3', ['hotāraṁ']),
   ])]);
 
-  it('refuses a keystroke inside a transcribed verse, and names it', () => {
+  it('takes a keystroke inside a verse that has no source layer', () => {
     const start = newState(mixed());
     const { state } = type(start, at(start, 'v-2', 0, 3), 'x');
-    /* "Verse 2" — its number on the page, not its internal id. The reader
-       has never seen `v-2` and cannot find it; the number is beside the line. */
-    expect(state.refusals[0]).toContain('Verse 2');
-    expect(state.refusals[0]).toContain('copied from a marked source');
-    /* And in words: none of the program's own vocabulary. */
-    for (const jargon of ['evidence rather than output', 'source layer', 'attested']) {
-      expect(state.refusals[0]).not.toContain(jargon);
-    }
-    // Nothing changed.
-    expect(state.doc).toEqual(start.doc);
+    expect(state.refusals).toEqual([]);
+    expect(linesOf(state, 'v-2')[0]).toContain('x');
   });
 
-  it('refuses a keystroke at column 0 of a transcribed verse', () => {
+  it('takes one at column 0 of it, too', () => {
     const start = newState(mixed());
     const { state } = type(start, at(start, 'v-2', 0, 0), 'x');
-    expect(state.refusals).toHaveLength(1);
+    expect(state.refusals).toEqual([]);
+    expect(linesOf(state, 'v-2')[0]!.startsWith('x')).toBe(true);
   });
 
-  it('refuses a selection that merely REACHES a transcribed verse', () => {
+  it('takes a selection that runs across it', () => {
     const start = newState(mixed());
     const { state } = apply(start, emptyHistory(), {
       k: 'replace',
@@ -95,26 +113,30 @@ describe('rule zero', () => {
       to: at(start, 'v-3', 0, 2),
       insert: '',
     });
-    expect(state.refusals[0]).toContain('Verse 2');
-    expect(state.doc).toEqual(start.doc);
+    expect(state.doc).not.toEqual(start.doc);
   });
 
-  it('allows an edit that stays clear of it', () => {
+  it('says which markings an edit ran over, rather than refusing the edit', () => {
+    /* A marking on letters the edit replaced cannot follow them. That is a
+       cost, and it is reported by name — it is not a reason to decline the
+       keystroke. */
     const start = newState(mixed());
-    const { state } = type(start, at(start, 'v-3', 0, 0), 'oṁ ');
-    expect(state.refusals).toEqual([]);
-    expect(linesOf(state, 'v-3')).toEqual(['oṁ hotāraṁ']);
+    const { state } = apply(start, emptyHistory(), {
+      k: 'replace',
+      sectionId: 's1',
+      from: at(start, 'v-1', 0, 0),
+      to: at(start, 'v-1', 0, 5),
+      insert: '',
+    });
+    for (const r of state.refusals) expect(r).toContain('marking');
   });
 
-  it('MARKS a transcribed verse rather than refusing', () => {
+  it('MARKS a verse with no source layer', () => {
     /*
-     * THIS TEST USED TO ASSERT THE OPPOSITE, and the behaviour it locked in is
-     * the one the owner reported three times as a broken button: select
+     * This is the button the owner reported three times as broken: select
      * letters, press Long, read a paragraph about evidence, see nothing
-     * happen. Rule zero protects the marks from being REPLACED BY A GUESS, and
-     * a person placing a mark by hand is not a guess. The verse now takes the
-     * mark — see `adopt-source.test.ts` for the proof that its existing marks
-     * survive the operation unchanged.
+     * happen. A marking is a range over the text now, so every verse takes
+     * one.
      */
     const start = newState(mixed());
     const { state } = apply(start, emptyHistory(), {
@@ -129,11 +151,10 @@ describe('rule zero', () => {
     expect(marked!.t === 'syl' && marked.units[0]!.hold).toBe('long');
   });
 
-  it('never invents a source layer for a transcribed verse', () => {
+  it('still never invents a source layer', () => {
     const start = newState(mixed());
     const { state } = type(start, at(start, 'v-1', 0, 0), 'oṁ ');
     expect(section1(state).verses[1]!.src).toBeUndefined();
-    expect(section1(state).verses[1]!.tokens).toEqual(section1(start).verses[1]!.tokens);
   });
 });
 
@@ -198,10 +219,23 @@ describe('undo', () => {
   });
 
   it('a refused command records no undo step', () => {
-    const start = newState(doc([section('s1', [attested('v-1', ['agnim īḷe'])])]));
-    const { history } = apply(start, emptyHistory(), {
-      k: 'replace', sectionId: 's1', from: 0, to: 0, insert: 'x',
+    /*
+     * A text edit is never refused now, so the refusal this checks has to be
+     * one that still exists: naming a verse from another section. It used to
+     * be a keystroke in a transcribed verse.
+     */
+    const start = newState(doc([
+      section('s1', [verse('v-1', ['agnim īḷe'])]),
+      section('s2', [verse('v-2', ['hotāraṁ'])]),
+    ]));
+    const { state, history } = apply(start, emptyHistory(), {
+      k: 'recompute',
+      sectionId: 's1',
+      verseIds: ['v-2'],
+      stages: ['holdings'],
+      mode: 'keep-hand',
     });
+    expect(state.refusals.length).toBeGreaterThan(0);
     expect(history.past).toEqual([]);
   });
 });

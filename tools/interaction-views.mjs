@@ -40,9 +40,13 @@ console.log('\n── the editor, driven like a person drives it\n');
  *
  * It hid because the obvious test clicks the FIRST transcribed verse, which
  * has nothing before it to be clamped into. So this deliberately picks a
- * transcribed verse that HAS an editable one before it, and asserts three
- * things: the caret is in the verse clicked, the refusal names that verse, and
- * the document did not change.
+ * verse with no source layer that HAS one before it.
+ *
+ * WHAT IT ASSERTS HAS CHANGED, and the bug it was written for has not. There
+ * is no refusal any more — a verse holds its own text and its own markings,
+ * and every verse takes an edit. What still has to be true, and is the whole
+ * point, is that the letter lands WHERE IT WAS TYPED: in the verse clicked,
+ * not several lines away in the one before it.
  */
 const shape = await page.evaluate(() => [...document.querySelectorAll('[data-verse]')]
   .map((v) => ({ id: v.dataset['verse'], attested: v.dataset['attested'] === '1' })));
@@ -71,10 +75,18 @@ if (trap === undefined) {
 
   check(`a click in ${trap.id} puts the caret in ${trap.id}, not in the verse before it`,
     landed.startsWith(`${trap.id} ·`), landed);
-  check('and typing there is refused, naming that verse',
-    /copied from a marked source/.test(said) && said.includes(`Verse ${number}`),
-    said.slice(0, 58));
-  check('and the document is untouched', wholeAfter === wholeBefore);
+  check('and typing there is accepted, not refused',
+    !/copied from a marked source/.test(said), said.slice(0, 58));
+  /* The letter is IN THE VERSE THAT WAS CLICKED. Reading the verse's own text
+     rather than the page's, so a change anywhere else cannot satisfy it. */
+  const inVerse = await page.evaluate(
+    (id) => document.querySelector(`[data-verse="${id}"]`)?.textContent ?? '',
+    trap.id,
+  );
+  /* Lower case: `normLoose` folds what is typed, which for IAST is right. */
+  check(`and the letter landed in ${trap.id}`,
+    inVerse.toLowerCase().includes('x'), inVerse.slice(0, 40));
+  check('and the document did change', wholeAfter !== wholeBefore);
 }
 
 /* ── a selection that runs out of its section ───────────────────────────── */

@@ -190,7 +190,16 @@ function autoHold(ctx: EditContext, doc: ChantDoc): void {
   run(
     ctx,
     doc,
-    { k: 'auto-holdings', sectionId, verseIds, mode },
+    /* `recompute` over the holdings stage. `auto-holdings` was the same
+       request said a second way, and it edited the override list, which
+       nothing writes any more. */
+    {
+      k: 'recompute',
+      sectionId,
+      verseIds,
+      stages: ['holdings'],
+      mode: mode === 'keep' ? 'keep-hand' : 'replace-all',
+    },
     `${sectionId}: holdings re-run over ${verseIds.length} verse(s), ${mode}`,
   );
 }

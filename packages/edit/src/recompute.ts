@@ -62,30 +62,18 @@ function recomputeVerse(
   });
 
   /*
-   * A RE-RUN PLACES MARKINGS. IT DOES NOT REWRITE THE VERSE.
+   * A RE-RUN MAY REWRITE THE LETTERS, and that is what running the rules
+   * means: the substitutions are a stage. What it may NOT do is charge more
+   * for it than the change costs.
    *
-   * `rerun` will change the letters if the rules produce different ones, and
-   * when it does, nothing addressed at the old letters can follow: every
-   * marking in range is discarded. Pressing the button on Durgā Sūktam v-1
-   * threw away 75 of the owner's own holdings and shortened the verse, and the
-   * whole difference was two trailing spaces before a line break — an artefact
-   * of the token stream, which ends a line with a space token, against
-   * `derive`, which trims each line.
-   *
-   * Losing somebody's work to that is not a trade this command may make on its
-   * own. So it refuses the verse and says so. Re-running the letters
-   * themselves is a real operation and it needs its own answer — what the new
-   * text is, what it costs, and a person agreeing to it — which is
-   * `text-and-marks` §6.7, not a silent side effect of a button labelled
-   * "re-apply rules".
+   * This used to refuse any verse whose letters would move — 151 of 573 —
+   * because `rerun` treated the whole range as replaced and discarded every
+   * marking in it. Pressing the button on Durgā Sūktam took 75 of the owner's
+   * holdings and 112 syllables, over two spaces nobody could see. `rerun`
+   * shifts by the MINIMAL change now, so only markings on letters that
+   * actually moved are lost, and those are reported by name.
    */
-  if (out.text !== tm.text) {
-    return {
-      refused: `verse "${verse.id}": the rules would rewrite its letters, not just`
-        + ` its markings — ${out.lost.length} marking(s) placed by hand would go with`
-        + ' them, so nothing was changed',
-    };
-  }
+
   /* Through the codec, because `hydrateVerse` reads the STORED shape. One
      encoder and one decoder, wherever markings cross that boundary. */
   const next = hydrateVerse({ ...verse, text: out.text, marks: encodeMarks(out.marks) });

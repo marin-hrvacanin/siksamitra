@@ -29,7 +29,8 @@
  */
 import type { Mark, Stage, TextAndMarks } from '@siksamitra/format';
 import {
-  STAGE_OF, assertMarks, normalise, removeMark, shiftForEdit, toTextAndMarks,
+  STAGE_OF, assertMarks, markFaults, normalise, removeMark, shiftForEdit, textEdits,
+  toTextAndMarks,
 } from '@siksamitra/format';
 import type { ChantVerse } from '@siksamitra/format';
 import type { Profile } from './profile.js';
@@ -108,6 +109,46 @@ function yieldToHand(m: Mark, hand: readonly Mark[]): Mark[] {
   return pieces;
 }
 
+/**
+ * The markings that STAY when the rules are re-run over a range.
+ *
+ * Everything outside the range stays. Inside it, a marking of a stage nobody
+ * asked for stays, and a marking placed by hand stays in `keep-hand` mode —
+ * those two are the whole of the answer, and the mode is the only question.
+ *
+ * IT USED TO BE APPLIED ON ONE BRANCH ONLY. When the rules rewrote the letters
+ * the code kept every old marking and then added the new ones on top, so in
+ * `replace-all` two holdings covered the same letter and `assertMarks` threw —
+ * a crash, on a button press. Both branches ask the same question now.
+ */
+function withoutRerunStages(
+  marks: readonly Mark[],
+  req: ReRunRequest,
+  from: number,
+  to: number,
+): Mark[] {
+  const drop = new Set(req.stages);
+  return marks.filter((m) => {
+    /*
+     * A SYLLABLE BOUNDARY IS NEVER DROPPED.
+     *
+     * `syl` is division, not a rule's opinion, and `produced` deliberately
+     * excludes it from what a re-run places — carrying it would put 28 705
+     * markings where 12 635 belong. But it is filed under the `holdings`
+     * stage, so asking for the holdings DELETED the syllabification and put
+     * nothing back: Puruṣa Sūktam went from 973 syllables to 514, one whole
+     * line becoming one enormous syllable.
+     */
+    if (m.k === 'syl') return true;
+    const touches = m.from === m.to
+      ? m.from >= from && m.from <= to
+      : m.to > from && m.from < to;
+    if (!touches) return true;
+    if (!drop.has(STAGE_OF[m.k])) return true;
+    return req.mode === 'keep-hand' && m.by === 'hand';
+  });
+}
+
 export function rerun(tm: TextAndMarks, req: ReRunRequest): ReRun {
   const { from, to } = req;
   const slice = tm.text.slice(from, to);
@@ -125,24 +166,34 @@ export function rerun(tm: TextAndMarks, req: ReRunRequest): ReRun {
 
   if (changed) {
     /*
-     * The rules rewrote the letters, so nothing addressed at the old ones can
-     * follow. `shiftForEdit` moves what is outside the range and reports what
-     * was inside; a hand marking among them is a decision that has just been
-     * spent, and the caller is told rather than left to notice.
+     * THE MINIMAL CHANGE, not the whole range.
+     *
+     * This used to shift by `{ from, to, inserted: made.text.length }` — the
+     * entire re-run range replaced — so every marking inside it was dropped
+     * however little the rules had altered. Pressing Re-apply on Durgā Sūktam
+     * threw away 75 of the owner's holdings, and the difference between the
+     * old letters and the new was two spaces.
+     *
+     * The rules can change a letter here and a space three words away, so it
+     * is not one replacement and cannot be treated as one: from the first
+     * difference to the last covers the whole verse. `textEdits` finds each
+     * change separately and they are applied right to left, so only markings
+     * on letters that ACTUALLY moved are lost — and those are reported.
      */
-    const moved = shiftForEdit(tm.marks, { from, to, inserted: made.text.length });
-    kept = moved.marks;
+    let moving = tm.marks;
+    const dropped: Mark[] = [];
+    for (const e of [...textEdits(slice, made.text)].reverse()) {
+      const step = shiftForEdit(moving, {
+        from: from + e.from, to: from + e.to, inserted: e.inserted,
+      });
+      moving = step.marks;
+      dropped.push(...step.dropped);
+    }
+    const moved = { marks: moving, dropped };
+    kept = withoutRerunStages(moved.marks, req, from, from + made.text.length);
     lost.push(...moved.dropped.filter((m) => m.by === 'hand'));
   } else {
-    const drop = new Set(req.stages);
-    kept = tm.marks.filter((m) => {
-      const touches = m.from === m.to
-        ? m.from >= from && m.from <= to
-        : m.to > from && m.from < to;
-      if (!touches) return true;
-      if (!drop.has(STAGE_OF[m.k])) return true;
-      return req.mode === 'keep-hand' && m.by === 'hand';
-    });
+    kept = withoutRerunStages(tm.marks, req, from, to);
   }
 
   const hand = kept.filter((m) => m.by === 'hand');
@@ -152,7 +203,20 @@ export function rerun(tm: TextAndMarks, req: ReRunRequest): ReRun {
     : shifted;
 
   const text = tm.text.slice(0, from) + made.text + tm.text.slice(to);
-  const marks = normalise([...kept, ...admitted]);
+  /*
+   * A MARKING THAT CANNOT LEGALLY EXIST IS DROPPED, NOT THROWN OVER.
+   *
+   * `assertMarks` refuses a list whose offsets fall inside a character, and it
+   * threw — from a button press, which in the window means the action vanishes
+   * and the person is told nothing. The rules can move letters so that an
+   * offset which was between two characters is now inside one; that costs the
+   * marking on it, and a cost is reported, not raised.
+   */
+  const merged = normalise([...kept, ...admitted]);
+  const marks = merged.filter((m) => markFaults([m], text).length === 0);
+  for (const m of merged) {
+    if (!marks.includes(m) && m.by === 'hand') lost.push(m);
+  }
   assertMarks(marks, text, 'after a re-run');
 
   return {

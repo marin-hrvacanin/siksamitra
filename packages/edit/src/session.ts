@@ -9,10 +9,9 @@
  * Five commands, and every editing gesture is one of them. Typing, deleting,
  * pasting three verses, splitting a line and joining two verses are all
  * `replace` — one range replacement — so they cannot disagree about what a
- * verse boundary is. A holding is `mark`; withdrawing an opinion is `unmark`;
- * handing the holdings back to the rules is `auto-holdings`; and everything
- * done to a picture — insert, replace, resize, align, caption, delete — is
- * `figure`.
+ * verse boundary is. A holding is `mark`; withdrawing one is `unmark`; running
+ * the rules is `recompute`, and nothing else runs them; and everything done to
+ * a picture — insert, replace, resize, align, caption, delete — is `figure`.
  *
  * Every branch ends the same way: change the marks, change the source,
  * re-derive what changed, and REPORT what happened — refusals, orphaned
@@ -25,16 +24,15 @@ import {
   addressAt, flatten, type Selection, type VerseSource,
 } from './caret.js';
 import { replaceRange } from './range.js';
-import { applyMark } from './apply-mark.js';
+import { clearText, markText, patchToMark } from './mark-text.js';
 import { tokenSrcMap } from './token-src-map.js';
 import {
-  attestedInRange, refusalForEdit, refusalForOutside,
+  refusalForOutside,
 } from './rule-zero.js';
-import { autoHoldings } from './marks.js';
 import { profileChain, verseSrcMap, type VerseReport } from './derive-verse.js';
 import { recompute } from './recompute.js';
 import {
-  changedVerses, rebaseSection, rederive, sourcesOf, writeSources, type LostMark,
+  changedVerses, rederive, sourcesOf, writeSources, type LostMark,
 } from './sync.js';
 import { record, restore, snapshot, type History, type Snapshot } from './history.js';
 import { setProfile } from './set-profile.js';
@@ -165,22 +163,13 @@ export function apply(state: EditState, history: History, command: EditCommand):
   let touched = new Set<string>();
 
   if (command.k === 'replace') {
-    const blocked = attestedInRange(section, sources, command.from, command.to);
-    if (blocked.length > 0) {
-      return refuse(
-        state,
-        history,
-        /*
-         * SAID PLAINLY. This read "whose marks are evidence rather than
-         * output — edit the transcription itself, or give the verse a source
-         * layer first", which is this program's private vocabulary and told
-         * the person nothing they could act on. What they need to know is
-         * what the verse IS and why the keystroke did nothing.
-         */
-        refusalForEdit(section, blocked),
-      );
-    }
-
+    /*
+     * NO VERSE REFUSES AN EDIT. A verse used to be either derived, and
+     * editable, or transcribed, and frozen — `attestedInRange` declined the
+     * keystroke by name. That distinction was the owner's "what are these
+     * layers you are talking about?", and it is gone: every verse is one text
+     * and a list of markings, and the caret edits the text that is shown.
+     */
     const result = replaceRange(sources, {
       from: command.from,
       to: command.to,
@@ -198,26 +187,55 @@ export function apply(state: EditState, history: History, command: EditCommand):
     nextSources = result.verses;
     orphaned.push(...result.removed);
 
-    const rebased = rebaseSection(overrides, sources, nextSources, {
-      from: command.from,
-      to: command.to,
-    });
-    overrides = rebased.overrides;
-    lostMarks.push(...rebased.lost);
-
+    /*
+     * THE OVERRIDES ARE NOT REBASED, because they are not in this coordinate
+     * system any more.
+     *
+     * An override addresses `{verse, line, letter}` in the verse's SOURCE, and
+     * the caret addresses the text that is shown. Rebasing one against the
+     * other reported a hand marking as lost on a no-op edit — an insert of the
+     * empty string, in a document nobody had touched.
+     *
+     * Nothing writes an override now: a marking placed by hand is a range over
+     * the text. What the corpus still carries is inert except when `recompute`
+     * hands it to the engine, and its effect is already in the markings the
+     * migration read off the tokens. They go with the rest of the old model in
+     * `text-and-marks` §10.1.
+     */
     touched = changedVerses(sources, nextSources);
     for (const id of result.added) touched.add(id);
 
     const at = addressAt(flatten(nextSources), result.caret);
     selection = at === null ? null : { anchor: at, head: at };
   } else if (command.k === 'mark' || command.k === 'unmark') {
-    /* The whole of it is `applyMark` — see there for why a transcribed verse
-       takes a mark rather than refusing one. */
-    const done = applyMark(working, state.doc.profile, overrides, command);
-    working = done.section;
-    overrides = done.overrides;
-    touched = done.touched;
-    blockedMarks.push(...done.refusals);
+    /*
+     * STRAIGHT ONTO THE TEXT — see `mark-text.ts`.
+     *
+     * A marking used to be an OVERRIDE addressed into the verse's source, and
+     * it reached the page only when the verse was next derived. So pressing a
+     * button ran the engine, and a verse with no source layer could not hold
+     * one at all — which is what made the holding button answer with a
+     * paragraph about evidence instead of drawing a box.
+     */
+    if (command.k === 'unmark') {
+      const kinds = command.fields
+        .map((f) => patchToMark(f, null))
+        .filter((m): m is NonNullable<typeof m> => m !== null)
+        .map((m) => m.k);
+      const done = clearText(working, command.targets, kinds);
+      working = done.section;
+      touched = done.touched;
+      blockedMarks.push(...done.refusals);
+    } else {
+      for (const [field, value] of Object.entries(command.patch)) {
+        const patch = patchToMark(field, value);
+        if (patch === null) continue;
+        const done = markText(working, command.targets, patch);
+        working = done.section;
+        for (const id of done.touched) touched.add(id);
+        blockedMarks.push(...done.refusals);
+      }
+    }
     /*
      * THE SOURCES, AS THE VERSES NOW HOLD THEM.
      *
@@ -262,57 +280,18 @@ export function apply(state: EditState, history: History, command: EditCommand):
       }
       for (const w of r.warnings) blockedMarks.push(`verse "${r.verseId}": ${w}`);
     }
-  } else {
-    /*
-     * The verses must be in the named section. `autoHoldings` in `replace` mode
-     * DELETES hold overrides for the ids it is given, and it was given them
-     * unchecked: naming another section's verse deleted an `owner-hand`
-     * decision there, silently, while that section's tokens — not being
-     * re-derived — went on drawing a box no override justified.
-     */
-    const here = new Set(section.verses.map((v) => v.id));
-    const outside = command.verseIds.filter((id) => !here.has(id));
-    if (outside.length > 0) {
-      return refuse(
-        state,
-        history,
-        refusalForOutside(section, outside),
-      );
-    }
-    overrides = autoHoldings(overrides, command.verseIds, command.mode);
-    touched = new Set(command.verseIds);
   }
 
   /*
-   * A transcribed verse is never derived, so it is never "touched".
-   *
-   * It has no source, so `sourcesOf` stands in its RECITED text — and
-   * `replaceRange` normalises every line it returns, which makes that stand-in
-   * differ from itself and look changed. The result was a refusal for every
-   * transcribed verse in the section on every keystroke anywhere in it: five
-   * warnings for an edit that was perfectly legal. The guard in `deriveVerse`
-   * stays; this stops asking it the question.
+   * The text, and the markings carried across it. NO RULE RUNS HERE — see
+   * `retext.ts`. Typing used to re-derive, and a derivation is the rules.
    */
-  const frozen = new Set(
-    working.verses.filter((v) => v.src === undefined).map((v) => v.id),
-  );
-  for (const id of frozen) touched.delete(id);
-
-  // Source first, then tokens: the derivation reads the source, so writing it
-  // second would derive the text as it was before the edit.
   const written = writeSources(working, nextSources);
   const withSource = written.section;
   for (const cost of written.accentsLost) {
     blockedMarks.push(
-      `${cost.count} transcribed accent(s) in verse "${cost.verseId}" were on `
-      + 'letters this edit replaced, and went with them',
-    );
-  }
-  for (const drop of written.refused) {
-    blockedMarks.push(
-      `verse "${drop.verseId}" is transcribed and cannot hold source text, so `
-      + `${drop.lines.join(' / ').slice(0, 60)}… was NOT written. The edit that `
-      + 'produced it should have been refused.',
+      `${cost.count} marking(s) in verse "${cost.verseId}" were on letters this `
+      + 'edit replaced, and went with them',
     );
   }
   /*
@@ -330,8 +309,16 @@ export function apply(state: EditState, history: History, command: EditCommand):
   if (overrides.length > 0) staged.overrides = [...overrides];
   else delete staged.overrides;
 
+  /*
+   * NOTHING IS RE-DERIVED. `touched` used to be handed to `rederive`, which
+   * ran the whole engine over every verse an edit had reached — so one
+   * keystroke put thirteen holdings back on a verse somebody had just
+   * cleared. The rules run from `recompute` and from nowhere else, which is
+   * why this is called with an empty set rather than not called: `rederive`
+   * still returns the section, and removing it is §10.1's business.
+   */
   const { section: derived, reports, refusals } = rederive(
-    staged, withSource, touched, overrides,
+    staged, withSource, new Set<string>(), overrides,
   );
   const doc: ChantDoc = {
     ...staged,

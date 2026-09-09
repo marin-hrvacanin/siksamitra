@@ -51,30 +51,19 @@ describe('the rules run only when asked', () => {
   });
 
   /**
-   * KNOWN BROKEN, AND THIS IS THE RECORD OF IT.
+   * THIS IS THE ONE THAT MATTERS.
    *
-   * `it.fails` asserts that this test does NOT pass. Typing one letter puts
-   * thirteen holdings back, because `apply`'s `replace` branch re-derives the
-   * verse and a derivation is the rules. The day that stops being true, this
-   * line fails and whoever fixed it deletes the `.fails`.
+   * It was `it.fails` for exactly as long as it took to fix: typing one letter
+   * put thirteen holdings back, because `apply`'s `replace` branch re-derived
+   * the verse and a derivation IS the rules.
    *
-   * WHY IT IS NOT FIXED HERE. The edit is addressed in the verse's SOURCE
-   * text and the rules are what turn that into what is shown, so there is no
-   * way to skip them and still display what was typed. The fix is to address
-   * the edit at the DISPLAYED text — `openspec/changes/text-and-marks` §4.3 —
-   * and the three things in the way are measured rather than guessed:
-   *
-   *   557 of 573 verses have a source text that differs from their displayed
-   *   text, so this is a real change of coordinates, not a rename;
-   *   the candrabindu is a character in the displayed text and absent from
-   *   `ChantSyllable.iast`, which is what the source stand-in is built from;
-   *   a pause between two spaces yields two spaces in the displayed text and
-   *   one in the source stand-in, which normalises.
-   *
-   * Each is a decision, and making all three silently while the editor is
-   * being switched is how a corpus loses a letter.
+   * What unblocked it was the owner saying what the text should show — "it
+   * should show anusvāra by default; only when I re-run the engine does it
+   * change and get the change style". So the caret edits the text that is
+   * SHOWN, a typed `ṁ` stays a `ṁ` until somebody asks for the rules, and
+   * nothing has to be derived to display a keystroke. See `retext.ts`.
    */
-  it.fails('typing does not place a marking', () => {
+  it('typing does not place a marking', () => {
     let checked = 0;
     for (const file of files) {
       const doc = open(file);

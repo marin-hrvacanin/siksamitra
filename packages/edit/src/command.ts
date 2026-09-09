@@ -5,9 +5,15 @@
  * pasting three verses, splitting a line and joining two verses are all
  * `replace` — one range replacement — so they cannot disagree about what a
  * verse boundary is. A holding is `mark`; withdrawing an opinion is `unmark`;
- * `recompute` is the one command that runs the engine; `auto-holdings` hands
- * the holdings back to the rules; and everything done to a picture is
- * `figure`.
+ * `recompute` is the one command that runs the engine — over the stages named,
+ * keeping or replacing what was placed by hand; and everything done to a
+ * picture is `figure`.
+ *
+ * There used to be an `auto-holdings` alongside it, which handed the holdings
+ * back to the rules by editing the OVERRIDE list. Nothing writes overrides any
+ * more — a marking is a range over the verse's text — so it acted on a store
+ * that was always empty. `recompute` with `stages: ['holdings']` is the same
+ * request, said once.
  *
  * Split from `session.ts` at the 400-line module gate. The machinery that
  * applies them is there; what they ARE is here, because the list is what a
@@ -47,13 +53,6 @@ export type EditCommand =
     sectionId: string;
     targets: readonly UnitAddress[];
     fields: readonly OverrideField[];
-  }
-  /** Re-run the holding rules over verses that already carry marks. */
-  | {
-    k: 'auto-holdings';
-    sectionId: string;
-    verseIds: readonly string[];
-    mode: 'keep' | 'replace';
   }
   /**
    * RUN THE RULES, because a person asked.

@@ -7,6 +7,7 @@
  * failure: a rule that was stated in a docstring and not enforced in the code.
  */
 import { describe, expect, it } from 'vitest';
+import { toTextAndMarks } from '@siksamitra/format';
 import { apply, newState } from '../session.js';
 import { emptyHistory, record, restore, snapshot } from '../history.js';
 import { flatten } from '../caret.js';
@@ -17,11 +18,16 @@ import type { ChantDoc } from '@siksamitra/format';
 const flatOf = (d: ChantDoc, id = 's1') =>
   flatten(sourcesOf(d.sections.find((s) => s.id === id)!));
 
-describe('a transcribed verse is an atomic barrier', () => {
+describe('a verse boundary is a boundary, not a wall', () => {
   /*
-   * Three gestures that each destroyed a transcribed verse with `refusals: []`.
-   * All three are exactly what Backspace and Delete produce at those
-   * positions, so all three were one keystroke away.
+   * THIS USED TO BE "a transcribed verse is an atomic barrier".
+   *
+   * Three gestures — Delete at the end of the verse before, Backspace at the
+   * start of the transcribed verse, Backspace at the start of the verse after
+   * — each destroyed a verse with `refusals: []`, so the block was written to
+   * refuse all three. The refusal was never the point; not losing the verse
+   * was. A verse holds its own text and its own markings now, and joining two
+   * of them is an ordinary edit that reports what it cost.
    */
   const mixed = (): ChantDoc => doc([section('s1', [
     verse('v-1', ['agnim']),
@@ -36,12 +42,10 @@ describe('a transcribed verse is an atomic barrier', () => {
   ] as const;
 
   for (const [name, which] of gestures) {
-    it(`refuses ${name}`, () => {
+    it(`takes ${name}, losing no words`, () => {
       const start = newState(mixed());
       const flat = flatOf(start.doc);
       const lines = flat.lineStarts;
-      // The three deletions, in flat coordinates: one character out of the
-      // separator on each side, and one at the transcribed verse's own start.
       const at = which === 0
         ? { from: lines[0]!.at + lines[0]!.length, to: lines[0]!.at + lines[0]!.length + 1 }
         : which === 1
@@ -51,21 +55,33 @@ describe('a transcribed verse is an atomic barrier', () => {
       const { state } = apply(start, emptyHistory(), {
         k: 'replace', sectionId: 's1', from: at.from, to: at.to, insert: '',
       });
-      expect(state.refusals[0], name).toContain('Verse 2');
-      expect(state.doc, name).toEqual(start.doc);
+
+      /*
+       * THE WORDS SURVIVE, which is what the refusal was protecting. Joining
+       * two verses puts one text where there were two; every letter of both is
+       * still in the section.
+       */
+      const before = flatOf(start.doc).text.replace(/\s+/gu, '');
+      const after = flatOf(state.doc).text.replace(/\s+/gu, '');
+      expect(after.length, name).toBeGreaterThanOrEqual(before.length - 2);
+      /* `hotāraṁ` reads `hotāram̐` because the fixture was BUILT by running
+         the engine, which writes the anusvāra as `m` plus a candrabindu.
+         Freshly typed text keeps the `ṁ` until somebody asks for the rules. */
+      for (const word of ['agnim', 'mile', 'hotāram̐']) {
+        expect(after, `${name}: ${word}`).toContain(word.replace(/\s+/gu, ''));
+      }
     });
   }
 
-  it('still allows typing at the start of the verse after it', () => {
-    // An INSERTION at that point prepends to the following verse and touches
-    // the transcription not at all. Refusing it would make the barrier a wall.
+  it('and typing at the start of the verse after it still just types', () => {
     const start = newState(mixed());
     const at = flatOf(start.doc).lineStarts[2]!.at;
     const { state } = apply(start, emptyHistory(), {
       k: 'replace', sectionId: 's1', from: at, to: at, insert: 'oṁ ',
     });
     expect(state.refusals).toEqual([]);
-    expect(state.doc.sections[0]!.verses[2]!.src!.lines[0]).toBe('oṁ hotāraṁ ratnadhātamam');
+    expect(toTextAndMarks(state.doc.sections[0]!.verses[2]!).text)
+      .toBe('oṁ hotāram̐ ratnadhātamam');
   });
 });
 
@@ -75,7 +91,7 @@ describe('a command may only touch the section it names', () => {
     section('s2', [verse('v-2', ['mile'])]),
   ]);
 
-  it('auto-holdings refuses a verse from another section', () => {
+  it('recompute refuses a verse from another section', () => {
     /*
      * In `replace` mode this DELETES the hold overrides for the ids it is
      * given. Unchecked, naming another section's verse deleted an `owner-hand`
@@ -84,7 +100,8 @@ describe('a command may only touch the section it names', () => {
      */
     const start = newState(two());
     const { state } = apply(start, emptyHistory(), {
-      k: 'auto-holdings', sectionId: 's1', verseIds: ['v-2'], mode: 'replace',
+      k: 'recompute',
+      stages: ['holdings'], sectionId: 's1', verseIds: ['v-2'], mode: 'replace',
     });
     /* A verse that is not in the section has no number IN it, so the refusal
        falls back to "This verse" rather than inventing a position. */

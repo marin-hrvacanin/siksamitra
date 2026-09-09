@@ -233,21 +233,13 @@ function DocumentBlocksInner(
                   key={item.id}
                 >
                   {/*
-                    A COPIED VERSE SAYS SO, where it is.
-                    The lock in the margin was a mystery — "what are those
-                    little lock symbols?" — because a shape alone teaches
-                    nothing. It is a real element now, so hovering it explains,
-                    and a screen reader reads it.
+                    THE LOCK IS GONE, and so is the thing it was about.
+                    A verse with no source layer used to be uneditable — its
+                    marks were a record and there was nowhere for an edit to
+                    go — so it wore a lock, and hovering it explained why. A
+                    verse is one text and a list of markings now; every one of
+                    them takes an edit, and there is nothing left to say.
                   */}
-                  {addressable && item.src === undefined && (
-                    <span
-                      className="verse__locked"
-                      title={'Copied from a marked source. Its marks record what someone '
-                        + 'wrote by hand, so the text under them cannot be edited here.'}
-                    >
-                      <span className="u-only-read">Copied from a marked source</span>
-                    </span>
-                  )}
                   <VerseLines
                     verse={item}
                     script={script}

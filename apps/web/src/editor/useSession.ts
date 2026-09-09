@@ -101,7 +101,6 @@ export interface Session {
 
   mark: (patch: Record<string, unknown>, note?: string) => void;
   unmark: (fields: readonly MarkField[]) => void;
-  autoHoldings: (mode: 'keep' | 'replace') => void;
   /**
    * Run the marking rules over the selection, or the whole step.
    *
@@ -309,7 +308,7 @@ export function useSession(doc: ChantDoc): Session {
      one part of this hook that is about the MARKING rather than about the
      text, and it is the part a reader comes looking for. */
   const {
-    mark, unmark, autoHoldings, reapplyRules, holdState, toggleHold,
+    mark, unmark, reapplyRules, holdState, toggleHold,
   } = useMarks({
     run, refuse, section, selected, selection: state.selection, srcMapOf,
   });
@@ -357,7 +356,6 @@ export function useSession(doc: ChantDoc): Session {
     newLine,
     mark,
     unmark,
-    autoHoldings,
     reapplyRules,
     holdState,
     toggleHold,

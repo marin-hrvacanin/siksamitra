@@ -217,11 +217,20 @@ for (const file of files) {
 }
 
 /*
- * A RATCHET, like `check:modules` and `check:literals`. 108 is what the two
- * re-derivation heuristics cost today over all 573 corpus verses; it may fall
- * and it may not rise.
+ * A RATCHET, like `check:modules` and `check:literals`. It may fall, and it
+ * may rise only for a reason written down here.
+ *
+ * 108 was what the two re-derivation heuristics cost over all 573 corpus
+ * verses. It is 145 since the text stopped collapsing runs of spaces: a pause
+ * is a space, the mark, and a space, and the body renders the mark as a glyph
+ * while the document carries it as a point marking with the two spaces around
+ * it. Śrī Rudram has 148 such runs and accounts for 136 of the difference.
+ *
+ * It does not touch losslessness — every document still round-trips EXACT, and
+ * `separatorDrift` measures a heuristic that re-derives from a RENDERING,
+ * which the document never travels in.
  */
-const SEPARATOR_DRIFT = 108;
+const SEPARATOR_DRIFT = 145;
 if (drift > SEPARATOR_DRIFT) {
   fail('body separators', `${drift} against a ceiling of ${SEPARATOR_DRIFT}`);
 }

@@ -142,22 +142,23 @@ export const EDIT_KEYS: readonly Binding[] = [
     run: (s) => s.toggleHold('long'),
   },
   {
-    key: 'j',
-    ctrl: true,
-    label: 'None',
-    ribbon: 'marks',
-    icon: 'hold-none',
-    hint: 'There is NO holding here — overrules the rules',
-    pressed: (s) => s.holdState === 'none',
-    run: (s) => s.mark({ hold: null }),
-  },
-  {
     key: 'k',
     ctrl: true,
     label: 'Clear',
     ribbon: 'marks',
     icon: 'marks-clear',
-    hint: 'Withdraw your decision and let the rules decide again',
+    /*
+     * NONE IS GONE, and Clear is what is left.
+     *
+     * There used to be a third button — `None`, "there is NO holding here,
+     * overruling the rules" — and the owner asked what it was even for. It was
+     * for a program whose rules ran unasked: with a derivation on every
+     * keystroke, taking a box off was useless because the next keystroke put
+     * it back, so "suppress it" had to be a thing you could say. Nothing runs
+     * the rules now unless somebody presses Re-apply, so taking the box off
+     * takes the box off, and that is Clear.
+     */
+    hint: 'Take the holding off these letters',
     run: (s) => s.unmark(['hold', 'hg']),
   },
 
@@ -215,23 +216,6 @@ export const EDIT_KEYS: readonly Binding[] = [
     run: (s) => s.reapplyRules('replace-all'),
   },
 
-  // ── the holdings, back to the rules ───────────────────────────────────────
-  {
-    key: '',
-    label: 'Auto holdings',
-    ribbon: 'auto',
-    icon: 'auto-keep',
-    hint: 'Re-run the holding rules, keeping the boxes you placed by hand',
-    run: (s) => s.autoHoldings('keep'),
-  },
-  {
-    key: '',
-    label: 'Auto, mine out',
-    ribbon: 'auto',
-    icon: 'auto-replace',
-    hint: 'Re-run the holding rules and DROP the boxes you placed by hand',
-    run: (s) => s.autoHoldings('replace'),
-  },
 ];
 
 /** The accelerator, written the way the rest of the UI writes them. */

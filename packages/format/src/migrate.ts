@@ -26,11 +26,30 @@ import type { ChantSyllable, ChantToken, ChantUnit } from './chant-tokens.js';
 import type { ChantVerse } from './chant-verse.js';
 import { mark, type Mark } from './mark.js';
 import { normalise } from './mark-ops.js';
+import { trimLineEnds } from './trim-lines.js';
 
 /** What a verse looks like in the new model. */
 export interface TextAndMarks {
   text: string;
   marks: Mark[];
+  /**
+   * Where each LETTER of the verse sits in the text, in token order.
+   *
+   * A letter is a syllable's unit — the thing `UnitAddress.unit` counts and
+   * the thing a marking button addresses. Spaces, daṇḍas and numbers are not
+   * letters and take no place in this list, though they do take space in the
+   * text, so the spans are not contiguous.
+   *
+   * Returned from HERE rather than computed by a second walk, because a second
+   * walk is a second answer to "where is letter 12", and the first time the
+   * two disagreed a holding would land one letter to the left.
+   *
+   * OPTIONAL on the type, present on everything `toTextAndMarks` returns. A
+   * caller that builds a text and its markings from somewhere else — the
+   * re-run, which gets them from the engine — has no letters to report and
+   * should not have to invent an empty list.
+   */
+  units?: { from: number; to: number }[];
 }
 
 /**
@@ -80,6 +99,7 @@ function structuralText(t: ChantToken): string | null {
 export function toTextAndMarks(verse: ChantVerse): TextAndMarks {
   let text = '';
   const marks: Mark[] = [];
+  const units: { from: number; to: number }[] = [];
 
   /** An open run per kind, so equal adjacent values become ONE marking. */
   const open = new Map<string, Mark>();
@@ -117,6 +137,7 @@ export function toTextAndMarks(verse: ChantVerse): TextAndMarks {
            */
           if (u.candra === true) text += CANDRA;
           const end = text.length;
+          units.push({ from: at, to: end });
 
           if (u.change === true) marks.push(mark({ k: 'was', from: at, to: end, v: typedAs(u) }));
           if (u.hold !== undefined) put('hold', u.hold, at, end); else close('hold');
@@ -168,7 +189,7 @@ export function toTextAndMarks(verse: ChantVerse): TextAndMarks {
 
   walk(verse.tokens);
   closeAll();
-  return { text, marks: normalise(marks) };
+  return trimLineEnds({ text, marks: normalise(marks), units });
 }
 
 /* ── and back ─────────────────────────────────────────────────────────────── */

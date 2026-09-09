@@ -9,6 +9,7 @@
  * puts back both the register and the marks it moved.
  */
 import { describe, expect, it } from 'vitest';
+import { toTextAndMarks } from '@siksamitra/format';
 import { CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES } from '@siksamitra/format';
 import { emptyHistory } from '../history.js';
 import { apply, newState, undo } from '../session.js';
@@ -51,15 +52,29 @@ describe('the register', () => {
     )).toBe('prose');
   });
 
-  it('changes the marks on the page, not just the label', () => {
+  it('records the register and CHANGES NOTHING ON THE PAGE until asked', () => {
+    /*
+     * THIS USED TO ASSERT THE OPPOSITE — that the marks changed at once, and
+     * that two verses were re-derived. Changing a setting is not a request to
+     * remark the document, and doing it silently wiped whatever anybody had
+     * placed by hand. The register takes effect at the next Re-apply, where a
+     * person can see what it did and undo it in one step.
+     */
     const start = newState(gummable());
     const was = svaras(start);
-    const { state } = apply(start, emptyHistory(), {
+    const { state, history } = apply(start, emptyHistory(), {
       k: 'profile', scope: 'document', preset: 'prose',
     });
     expect(state.doc.profile?.preset).toBe('prose');
-    expect(svaras(state)).not.toBe(was);
-    expect(state.reports).toHaveLength(2);
+    expect(svaras(state)).toBe(was);
+    expect(state.reports).toEqual([]);
+
+    /* And it IS in force: asking for the rules now marks by the new register. */
+    const ids = state.doc.sections[0]!.verses.map((v) => v.id);
+    const { state: run } = apply(state, history, {
+      k: 'recompute', sectionId: 's1', verseIds: ids, stages: ['svara'], mode: 'replace-all',
+    });
+    expect(svaras(run)).not.toBe(was);
   });
 
   it('never re-derives a verse copied from a marked source', () => {
@@ -71,8 +86,10 @@ describe('the register', () => {
     const { state } = apply(start, emptyHistory(), {
       k: 'profile', scope: 'document', preset: 'prose',
     });
+    /* Every verse is untouched now, not just this one — the register change
+       derives nothing at all. */
     expect(JSON.stringify(section1(state).verses[1]!.tokens)).toBe(frozen);
-    expect(state.reports.map((r) => r.verseId)).toEqual(['v-1']);
+    expect(state.reports).toEqual([]);
   });
 
   it('keeps a hand-placed mark across the change', () => {
@@ -83,13 +100,22 @@ describe('the register', () => {
       patch: { hold: 'long' },
       why: 'owner-hand',
     });
-    expect(state.doc.overrides).toHaveLength(1);
-    const hand = JSON.stringify(state.doc.overrides);
+    /*
+     * THE MARKING ITSELF, not an override. A hand marking used to be stored in
+     * `doc.overrides` and applied when the verse was next derived; it is a
+     * range over the verse's text now, so what has to survive a register
+     * change is the range.
+     */
+    const held = (): unknown => JSON.stringify(
+      toTextAndMarks(state.doc.sections[0]!.verses[0]!).marks.filter((m) => m.k === 'hold'),
+    );
+    const hand = held();
+    expect(hand).toContain('long');
 
     ({ state } = apply(state, history, { k: 'profile', scope: 'document', preset: 'prose' }));
-    /* The override addresses a letter in the SOURCE, and the source did not
-       change — so it is still there, and still applied. */
-    expect(JSON.stringify(state.doc.overrides)).toBe(hand);
+    /* Changing the register does not run the rules over anything, so the
+       marking is exactly where it was. */
+    expect(held()).toBe(hand);
   });
 
   it('one Ctrl+Z puts back the register and the marks together', () => {
@@ -114,8 +140,8 @@ describe('the register', () => {
     expect(state.doc.profile).toBeUndefined();
     expect(state.doc.sections[0]!.profile).toBeUndefined();
     expect(state.doc.sections[1]!.profile?.preset).toBe('prose');
-    /* Only the section it named was re-derived. */
-    expect(state.reports.map((r) => r.verseId)).toEqual(['v-2']);
+    /* Nothing is re-derived; the section simply carries its own register. */
+    expect(state.reports).toEqual([]);
   });
 
   it('refuses a section it cannot find rather than changing the document', () => {

@@ -73,3 +73,9 @@ export { toTextAndMarks, toTokens } from './migrate.js';
    so the conversion was reachable only from code that could re-declare the
    type — the audit tool and nothing else. */
 export type { TextAndMarks, TokenHelp } from './migrate.js';
+
+/* The edits between two texts, so markings can be moved across a change that
+   is not one contiguous replacement. See `text-diff.ts`. */
+export { textEdits } from './text-diff.js';
+export type { TextEdit3 } from './text-diff.js';
+export { splitsCharacter } from './mark.js';

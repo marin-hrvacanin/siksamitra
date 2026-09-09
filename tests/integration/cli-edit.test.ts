@@ -14,7 +14,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { normalizeChantDoc, type ChantDoc } from '@siksamitra/format';
+import { toTextAndMarks, type ChantDoc } from '@siksamitra/format';
 import { openChantDoc } from '@siksamitra/engine';
 import {
   EDIT_VERBS, runEditVerb, type EditContext, type EditVerb,
@@ -105,10 +105,12 @@ describe('the headless editor', () => {
     }
   });
 
-  it('changes the register, and says how much moved', () => {
+  it('changes the register, and re-marks nothing until asked', () => {
+    /* It used to re-derive every derivable verse, which wiped whatever had
+       been marked by hand. A register is a setting; `re-run` applies it. */
     const ran = sm('set-register', ['--preset', 'rigveda', '--write']);
     expect(ran.doc.profile?.preset).toBe('rigveda');
-    expect((ran.emitted as { rederived: string[] }).rederived.length).toBeGreaterThan(0);
+    expect((ran.emitted as { rederived: string[] }).rederived).toEqual([]);
     expect(ran.said).toContain('Ṛgveda');
   });
 
@@ -152,32 +154,37 @@ describe('the headless editor', () => {
     expect(readFileSync(path, 'utf8')).toBe(before);
   });
 
-  it('replaces a derived verse, keeps its identity, and re-derives only it', () => {
+  it('replaces a verse text and keeps its identity', () => {
     const ran = sm('set-text', [
       '--verse', 'v-2', '--text', 'tāmagniṁ varṇāṁ tapasā / jvalantīṁ',
       '--accept-loss', '--write',
     ]);
     expect(ran.died).toBeNull();
-    expect((ran.emitted as { rederived: string[] }).rederived).toEqual(['v-2']);
+    /* Nothing is re-derived: setting a verse's text is a text edit. */
+    expect((ran.emitted as { rederived: string[] }).rederived).toEqual([]);
     const verse = ran.doc.sections.flatMap((s) => s.verses).find((v) => v.id === 'v-2');
     /* STILL v-2. Replacing every letter of a verse looks, to a text
        comparison, exactly like deleting it and typing another — and the
        recording, the translation and the word grammar all hang off the id. */
     expect(verse).toBeDefined();
-    /* Both pādas: " / " is a line break, the way the marking documents write one. */
-    expect(verse?.src?.lines).toHaveLength(2);
+    /* Both pādas: " / " is a line break, the way the marking documents write
+       one. Read off the TEXT, which is what the caret edits; `src` is the
+       accented witness underneath and is no longer written. */
+    expect(toTextAndMarks(verse!).text.split('\n')).toHaveLength(2);
     expect((ran.emitted as { orphaned: string[] }).orphaned).toEqual([]);
   });
 
-  it('will not spend a transcribed accent without being told to', () => {
+  it('will not spend a marking without being told to', () => {
     const before = readFileSync(path, 'utf8');
-    /* The edit is legal — v-2 is derived — but its accents were transcribed
-       onto the letters this replaces, and they cannot be rebuilt. */
+    /* Replacing a verse's whole text takes its markings with it. The cost is
+       named and the write is declined until `--accept-loss` says otherwise —
+       which is the guard, and it is about MARKINGS now rather than about the
+       accented witness that used to be the only thing at risk. */
     const ran = sm('set-text', ['--verse', 'v-2', '--text', 'oṁ namaḥ', '--write']);
     expect(ran.exited).toBe(3);
     expect(readFileSync(path, 'utf8')).toBe(before);
     expect(ran.said).toContain('--accept-loss');
-    expect((ran.emitted as { cost: string[] }).cost.join(' ')).toContain('accent');
+    expect((ran.emitted as { cost: string[] }).cost.join(' ')).toContain('marking');
   });
 
   it('adds a verse with the id it was given, and takes it out again cleanly', () => {
@@ -226,7 +233,10 @@ describe('the headless editor', () => {
   it('re-runs the holding rules over a whole section', () => {
     const ran = sm('auto-hold', ['--section', 'sec-1', '--mode', 'keep', '--write']);
     expect(ran.died).toBeNull();
-    expect(ran.exited).not.toBe(3);
+    /* Exit 3 is "a cost was declined". A re-run over a whole section reports
+       the verses whose letters the rules would rewrite and leaves them alone,
+       which is not a refusal of the command. */
+    expect(ran.exited).toBeNull();
   });
 
   it('names the section it cannot find rather than guessing one', () => {

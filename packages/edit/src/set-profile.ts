@@ -27,7 +27,6 @@
  */
 import type { ChantDoc, ChantProfileKey, ChantProfileRef, ChantSection } from '@siksamitra/format';
 import { CHANT_PROFILE_NOTES } from '@siksamitra/format';
-import { rederive } from './sync.js';
 import { record, snapshot, type History } from './history.js';
 import type { VerseReport } from './derive-verse.js';
 
@@ -97,45 +96,36 @@ export function setProfile(
     };
   if (command.scope === 'document' && next.profile === undefined) delete next.profile;
 
-  const overrides = next.overrides ?? [];
+  /*
+   * CHANGING THE REGISTER DOES NOT RUN THE RULES.
+   *
+   * It used to re-derive every derivable verse of the scope, which wiped
+   * whatever anybody had marked by hand — the register is a setting, and
+   * changing a setting is not a request to remark the document. The owner's
+   * requirement is that the rules run "only on selection or the entire
+   * document, with user action", and this was one of the incidental
+   * invocations named in `text-and-marks` §4.3.
+   *
+   * The new register takes effect the next time somebody presses Re-apply
+   * rules, which is where a person can see what it did and undo it in one
+   * step.
+   */
   const reports: VerseReport[] = [];
   const refusals: string[] = [];
-  const sections = next.sections.map((section) => {
-    if (target !== undefined && section.id !== target.id) return section;
-    /* Only what CAN be derived: a transcribed verse has no source to derive
-       from, and its marks are the record. Rule zero, here as everywhere. */
-    const derivable = new Set(
-      section.verses.filter((v) => v.src !== undefined).map((v) => v.id),
-    );
-    if (derivable.size === 0) return section;
-    const done = rederive(next, section, derivable, overrides);
-    reports.push(...done.reports);
-    refusals.push(...done.refusals);
-    return done.section;
-  });
-  next = { ...next, sections };
 
-  const transcribed = scoped.reduce(
-    (n, s) => n + s.verses.filter((v) => v.src === undefined).length,
-    0,
-  );
   const where = target === undefined ? 'the document' : `"${target.title ?? target.id}"`;
   /* Its NAME, not its key: `sukla-yajurveda` is what the file says and
      ‚Śukla Yajurveda’ is what a person says. */
   const named = command.preset === null
     ? 'no register of its own'
     : CHANT_PROFILE_NOTES[command.preset].name;
-  const kept = transcribed === 0
-    ? ''
-    : ` ${transcribed} verse${transcribed === 1 ? '' : 's'} copied from a marked `
-      + `source ${transcribed === 1 ? 'was' : 'were'} left as ${transcribed === 1 ? 'it is' : 'they are'}.`;
 
   return {
     doc: next,
     reports,
     refusals,
-    note: `${where} now follows ${named}; ${reports.length} verse`
-      + `${reports.length === 1 ? '' : 's'} re-derived.${kept}`,
+    note: `${where} now follows ${named}. Nothing was re-marked — press `
+      + 'Re-apply rules where you want it to take effect.',
     history: record(history, {
       before,
       after: snapshot(next, scoped.map((s) => s.id), null),
