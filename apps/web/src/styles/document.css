@@ -39,11 +39,26 @@
  * that prints; the probe was left out once, and every page held three verses
  * where it should have held five.
  *
- * The column's `font-size` is the document's BODY size, and zoom is not in it:
- * zoom is `--doc-zoom`, a multiplier inside every token (see the generator).
+ * The column's `font-size` is the document's BODY size, and zoom is not in it.
  * Zoom as a column font-size scaled only what happened to be in `em`, so the
  * paper grew while the mantra line stayed 19.44 pt; and a margin in `em`
  * resolved against its own element, putting a 14.2 pt indent at 18.93 pt.
+ *
+ * HOW ZOOM ACTUALLY REACHES THE TYPE — and it is not what this used to say.
+ * It said "zoom is `--doc-zoom`, a multiplier inside every token (see the
+ * generator)". The generator does write `calc(x * var(--doc-zoom))`, and it is
+ * INERT: those tokens are declared on `:root`, where a custom property's
+ * `var()` is substituted at computed-value time, so `--doc-verse-size`
+ * computes once against the root's zoom of 1 and setting `--doc-zoom` on a
+ * descendant cannot re-evaluate it. Measured in the running program: the
+ * rendered `.pada` is 25.92 px at 100% and 25.92 px at 110%.
+ *
+ * What scales the text is `container-type: inline-size` below and the `cqi`
+ * unit in each size's clamp: the view widens this column by the zoom, the
+ * container grows, and the type follows. That is why the web shape had to
+ * multiply its own measure by `--doc-zoom` to zoom at all
+ * (`canvas.css .web__column`), and why `tools/interaction-zoom.mjs` measures
+ * the COLUMN'S WIDTH rather than a font size.
  */
 .doc {
   container-type: inline-size;

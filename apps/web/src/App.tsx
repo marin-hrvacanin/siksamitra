@@ -34,7 +34,7 @@ import { AudioDock } from './audio/AudioDock.js';
 import { useViewState } from './state/useViewState.js';
 import { useViewport } from './state/useViewport.js';
 import { useScrollAnchor } from './state/useScrollAnchor.js';
-import { useElementWidth } from './state/useElementWidth.js';
+import { useElementSize } from './state/useElementWidth.js';
 import { useAppearance } from './state/useAppearance.js';
 
 export function App() {
@@ -46,13 +46,21 @@ export function App() {
    * panel open the two differ by its width, and fitting to the window put a
    * 793px page into a 676px column with its right margin off the edge.
    */
-  const canvasWidth = useElementWidth(scroller);
+  const canvas = useElementSize(scroller);
   const documentViewport = useMemo(
     () => ({
-      width: canvasWidth > 0 ? canvasWidth : viewport.width,
-      height: viewport.height,
+      width: canvas.width > 0 ? canvas.width : viewport.width,
+      /*
+       * THE CANVAS'S HEIGHT, not the window's — this was `viewport.height`.
+       * The comment above says the zoom fits the document's column rather than
+       * the window, and the width did; the height fitted a page to the whole
+       * window, ignoring the title bar, the tab strip, the ribbon and the
+       * status bar above and below it. Measured at a 900px window: the canvas
+       * is 693px and "Fit page" produced an 804px page. It never fitted.
+       */
+      height: canvas.height > 0 ? canvas.height : viewport.height,
     }),
-    [canvasWidth, viewport],
+    [canvas, viewport],
   );
   const state = useViewState(documentViewport, look.mode);
   const [note, setNote] = useState<string | null>(null);
