@@ -37,6 +37,45 @@
   min-height: 100%;
 }
 
+/*
+ * BEING PHOTOGRAPHED rather than read.
+ *
+ * The rasteriser clips the image to the frame element, so while it works the
+ * frame has to be exactly as tall as its contents. `min-height: 100%` is for a
+ * page someone opens in a browser; left on during a capture it made a
+ * one-verse card 900 px tall with 700 px of empty ground under the text,
+ * because the viewport was 900 px. The attribute goes on the root element and
+ * comes off nothing — an exported file never carries it.
+ */
+[data-raster] .export--page,
+[data-raster] .export--web,
+[data-raster] .export--card {
+  min-height: 0;
+}
+[data-raster],
+[data-raster] body {
+  height: auto;
+}
+/*
+ * And the card shrinks to the card, in both directions.
+ *
+ * The mat is a block, so it is as wide as the window: clipping to it at a
+ * 1400 px working width gave a 2800 px picture of a 544 px card with 1100 px of
+ * empty band on either side. `fit-content` on the mat needs the card to have a
+ * DEFINITE width — under `max-width` alone the flex item and its shrink-to-fit
+ * container size each other in a circle and the mat stays full width.
+ *
+ * In CSS rather than in the rasteriser, so the window and the command line
+ * produce the same picture without each holding its own copy of the fitting.
+ */
+[data-raster] .export--card {
+  width: fit-content;
+  margin-inline: auto;
+}
+[data-raster] .export__card {
+  width: var(--x-card-measure);
+}
+
 /* ── the desk, under a sheet ────────────────────────────────────────────── */
 /*
  * The `page` frame draws a sheet, and a sheet needs something to lie on or its
@@ -93,6 +132,18 @@
   padding-left: 0;
   text-indent: 0;
 }
+/*
+ * THE GUTTER NUMBER GOES. A card is one mantra prepared for one person, and it
+ * has no margin for a folio to sit in — with the indents withdrawn above, the
+ * number stopped being in a gutter and started being the first thing on the
+ * line, pushing a centred pāda off centre by its own width. Nothing is lost:
+ * the documents that number their verses print the number inside the line
+ * between daṇḍas, which is where it shows on this card.
+ */
+.export__card .doc .verse__n {
+  display: none;
+}
+
 .export__card .doc .section__title,
 .export__card .doc .doc__part,
 .export__card .doc .doc__name,
@@ -106,14 +157,19 @@
 /* ── bare ───────────────────────────────────────────────────────────────── */
 /*
  * No ground at all, and no wider than the text: a rasteriser clips to this
- * element, and a frame that filled the viewport would put a field of alpha
- * around every PNG. `fit-content` rather than `max-content` so a document with
- * one very long instruction still wraps at the reading measure instead of
- * producing an image several thousand pixels wide.
+ * element, and a frame that filled the window would put a field of alpha
+ * around every PNG.
+ *
+ * THE WIDTH IS DEFINITE AND THE RASTERISER NARROWS IT, rather than
+ * `fit-content` here. `.doc` carries `container-type: inline-size` so the
+ * mantra can size itself against its own column, and a size container
+ * contributes NOTHING to its parent's shrink-to-fit width — the frame measured
+ * zero and puppeteer refused the screenshot with "Node has 0 width". So the
+ * frame lays the text out at the reading measure and `fitBare` in
+ * `raster.mjs` pulls it in to the widest line that actually rendered.
  */
 .export--bare {
   display: block;
-  width: fit-content;
-  max-width: var(--measure-web);
+  width: var(--measure-web);
   background: transparent;
 }

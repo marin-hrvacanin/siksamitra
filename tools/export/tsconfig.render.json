@@ -1,0 +1,40 @@
+{
+  /*
+   * The compiler settings the export tools run the app's components under.
+   *
+   * `tsx` reads ONE tsconfig for a whole run, and the repository root's has no
+   * `compilerOptions` at all — it is a solution file that only lists project
+   * references. Two things are missing from it that rendering React on the
+   * command line needs, and both fail in a way that looks like a bug in the
+   * component rather than in the build:
+   *
+   *   `jsx`    without it every .tsx compiles to the CLASSIC transform and the
+   *            first component to render throws "React is not defined" — from
+   *            inside `ChantReader.tsx`, which the export never even uses.
+   *   `paths`  the workspace packages' `main` points at `dist`, and `dist` is
+   *            whatever was last built. The web app resolves them to SOURCE
+   *            through `vite.config.ts`'s alias list, so an export that read
+   *            `dist` would be rendering a different program from the one on
+   *            screen. This is that alias list, in tsconfig's spelling.
+   *
+   * Paired with `no-css.mjs`, which handles the other thing Node cannot do
+   * with these files.
+   */
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {
+      "@siksamitra/format": ["../../packages/format/src/index.ts"],
+      "@siksamitra/engine": ["../../packages/engine/src/index.ts"],
+      "@siksamitra/edit": ["../../packages/edit/src/index.ts"],
+      "@siksamitra/layout": ["../../packages/layout/src/index.ts"],
+      "@siksamitra/audio": ["../../packages/audio/src/index.ts"],
+      "@siksamitra/account": ["../../packages/account/src/index.ts"],
+      "@siksamitra/storage": ["../../packages/storage/src/index.ts"],
+      "@siksamitra/interop": ["../../packages/interop/src/index.ts"],
+      "@siksamitra/render": ["../../packages/render/src/index.ts"],
+      "@siksamitra/render/theme": ["../../packages/render/src/theme/marks.ts"],
+      "@siksamitra/tokens": ["../../packages/tokens/generated/tokens.ts"]
+    }
+  },
+  "include": ["../../**/*"]
+}

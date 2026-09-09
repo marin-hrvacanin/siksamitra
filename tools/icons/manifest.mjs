@@ -39,6 +39,8 @@ export const SYMBOL = {
   export: 'download',
   import: 'upload',
   pdf: 'picture_as_pdf',
+  html: 'code_blocks',
+  image: 'image',
   'new-document': 'note_add',
 
   /* mode */

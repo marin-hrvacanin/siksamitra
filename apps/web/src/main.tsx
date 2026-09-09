@@ -18,6 +18,18 @@ import '@siksamitra/tokens/tokens.css';
 import '@siksamitra/render/mark-geometry.css';
 import '@siksamitra/render/chant.css';
 import '@siksamitra/render/hold-join.css';
+/*
+ * THE EXPORT FRAMES, loaded by the editor that never draws one.
+ *
+ * An exported page carries the app's own stylesheets — that is what makes it
+ * look like the page it came from — and both halves of the export read the list
+ * from THIS FILE: the window walks `document.styleSheets`, and the command
+ * walks these import lines (`tools/export/css.mjs`). A frame sheet reached only
+ * by one of them would be a page that differed depending on who exported it, so
+ * it is loaded here with everything else. It is about a kilobyte, all of it
+ * under `.export`, and nothing in the editor matches.
+ */
+import '@siksamitra/render/export.css';
 import './app.css';
 
 const root = document.getElementById('root');

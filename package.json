@@ -37,7 +37,7 @@
     "test": "vitest run",
     "test:watch": "vitest --project unit --project component",
     "sm": "tsx packages/cli/src/main.ts",
-    "check": "npm-run-all --serial typecheck check:web test check:icons check:authoring check:modules check:tokens check:literals check:fixtures check:conformance check:marking check:migrate check:source check:transliteration check:lossless check:engine",
+    "check": "npm-run-all --serial typecheck check:web test check:icons check:authoring check:modules check:tokens check:literals check:fixtures check:conformance check:marking check:migrate check:source check:transliteration check:lossless check:engine check:export:html check:export:image",
     "check:transliteration": "tsx packages/cli/src/gates/transliteration.ts",
     "check:engine": "tsx packages/cli/src/gates/corpus.ts",
     "spec": "openspec",
@@ -82,7 +82,10 @@
     "build:account": "npm run -w @siksamitra/account build",
     "perf:selection": "node tools/perf-selection.mjs",
     "check:edit:gestures": "node tools/interaction.mjs",
-    "check:edit:views": "node tools/interaction-views.mjs"
+    "check:edit:views": "node tools/interaction-views.mjs",
+    "export": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/cli.mjs",
+    "check:export:html": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-html.mjs",
+    "check:export:image": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-image.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

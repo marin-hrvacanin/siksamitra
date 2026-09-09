@@ -57,6 +57,34 @@ sm diff durga.json                                  # engine's marks vs the file
 sm export durga.json --out durga-out.docx           # back to Word
 ```
 
+## Sending someone a mantra
+
+```bash
+npm run export -- --styles                                  # what the styles are
+npm run export -- durga.json                                # one .html, lossless
+npm run export -- durga.json --style card --png             # a card for a chat
+npm run export -- durga.json --style card --png --select '#sec-1/v-1'
+```
+
+The **`.html` is the lossless one**, and it is the only export that is also an
+import. It is one file with nothing to fetch — the page, its stylesheets, the
+font files it needs and any recordings, all inline — and the document itself
+rides inside it in a `<script type="application/json">` block, so the same file
+opens again with nothing lost. `npm run check:export:html` proves that over all
+eleven corpus documents by comparing the document that comes back with the one
+that went in, field for field.
+
+The **image** is that same file, photographed: `--png`, or `--svg` for a
+`foreignObject` SVG that scales (it opens in a browser; a vector editor will
+show it empty). `--scale 3` for a bigger one. The `card` style is built to be
+sent in a chat — the mantra centred on a rounded ground, 1 184 px at 2×.
+
+A style is one entry in `packages/tokens/src/export-styles.ts` and it names a
+document theme, so `veda-union` is his own Word page — 16 pt Arial on 24 pt
+exact leading, his holding green — and not a lookalike. Both exports take the
+same list, and so does the window: **File ▸ Export HTML** and **Export image**,
+with the style beside them.
+
 ## Nothing is written without `--write`
 
 Every editing verb prints what it *would* do and stops. `--write` saves over

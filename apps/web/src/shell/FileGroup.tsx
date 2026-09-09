@@ -27,6 +27,7 @@
  */
 import { useRef, useState, type ReactNode } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
+import { DEFAULT_EXPORT_STYLE, EXPORT_STYLES } from '@siksamitra/tokens/export-styles';
 import { CommandButtons } from './CommandButtons.js';
 import { RibbonButton, RibbonStack } from './RibbonButton.js';
 import { fileNameFor } from './doc-file.js';
@@ -37,8 +38,8 @@ import type { CommandContext } from './commands.js';
 const ENGINE = 'siksamitra-web';
 
 /** Hand the browser some bytes to save. */
-function download(name: string, bytes: Uint8Array | string, type: string): void {
-  const blob = new Blob([bytes as BlobPart], { type });
+function download(name: string, bytes: Uint8Array | string | Blob, type: string): void {
+  const blob = bytes instanceof Blob ? bytes : new Blob([bytes as BlobPart], { type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -62,6 +63,10 @@ export function FileGroup(
 ): ReactNode {
   const picker = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  /* Which style the next export is set in. One choice for both exports,
+     because "send me that mantra as a card" is one decision and asking twice
+     would let the page and the picture disagree. */
+  const [style, setStyle] = useState(DEFAULT_EXPORT_STYLE);
 
   const importFrom = async (file: File): Promise<void> => {
     setBusy(true);
@@ -144,6 +149,54 @@ export function FileGroup(
     }
   };
 
+  /*
+   * HTML AND IMAGE, both through `views/export-page.tsx` and both taking a
+   * style from `EXPORT_STYLES`.
+   *
+   * The HTML is the LOSSLESS export and the only one that is also an import:
+   * the page is what you send someone, and the document itself rides inside it
+   * in a `<script type="application/json">` block, so the same file reopens
+   * with nothing lost. `.docx` above cannot do that — it has nowhere to put the
+   * source layer, the overrides or the register — which is why Import and
+   * Export Word are separate verbs and this one is not.
+   *
+   * The PNG is that same file, photographed. See `export-doc.ts`.
+   */
+  const exportHtmlFile = async (): Promise<void> => {
+    if (doc === null) return;
+    setBusy(true);
+    try {
+      const { exportDocumentHtml } = await import('./export-doc.js');
+      const page = await exportDocumentHtml(doc, { style });
+      download(fileNameFor(doc.title, 'html'), page.html, 'text/html;charset=utf-8');
+      onNote(`Exported as ${page.style.name} — the document travels inside the page, `
+        + `with ${page.fonts.faces} font file(s) and nothing to fetch.`);
+    } catch (e) {
+      onNote(`Could not export: ${e instanceof Error ? e.message : 'unknown error'}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const exportImage = async (): Promise<void> => {
+    if (doc === null) return;
+    setBusy(true);
+    try {
+      const { exportDocumentHtml, exportDocumentPng } = await import('./export-doc.js');
+      const page = await exportDocumentHtml(doc, { style });
+      /* Twice the size it is laid out at: a card is read on a phone, where the
+         screen has two device pixels to a CSS one, and a 1x image of a mantra
+         is soft exactly where the marks are. */
+      const png = await exportDocumentPng(page.html, page.style, 2);
+      download(fileNameFor(doc.title, 'png'), png.blob, 'image/png');
+      onNote(`Exported as ${page.style.name} — ${png.width}x${png.height} pixels.`);
+    } catch (e) {
+      onNote(`Could not export: ${e instanceof Error ? e.message : 'unknown error'}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const exportWord = async (): Promise<void> => {
     if (doc === null) return;
     setBusy(true);
@@ -208,6 +261,20 @@ export function FileGroup(
             onClick={() => void exportWord()}
           />
           <RibbonButton
+            icon="html"
+            label="Export HTML"
+            title="Write one self-contained .html — the page to send, and the document to reopen"
+            disabled={doc === null || busy}
+            onClick={() => void exportHtmlFile()}
+          />
+          <RibbonButton
+            icon="image"
+            label="Export image"
+            title="Write a .png of the document in the chosen style, at twice its size"
+            disabled={doc === null || busy}
+            onClick={() => void exportImage()}
+          />
+          <RibbonButton
             icon="print"
             label="Print / PDF"
             accel="Ctrl+P"
@@ -223,6 +290,20 @@ export function FileGroup(
             onClick={() => void exportPackage()}
           />
         </RibbonStack>
+        <label className="rbf">
+          <span className="rbf__l">Style</span>
+          <select
+            className="tb__sel"
+            value={style}
+            onChange={(e) => setStyle(e.target.value)}
+            aria-label="Export style"
+            title={EXPORT_STYLES.find((s) => s.id === style)?.note}
+          >
+            {EXPORT_STYLES.map((s) => (
+              <option key={s.id} value={s.id} title={s.note}>{s.name}</option>
+            ))}
+          </select>
+        </label>
       </div>
     </>
   );

@@ -47,6 +47,23 @@ export {
 } from './document.js';
 export type { DocumentFile, DocumentManifest, SaveOptions } from './document.js';
 
+/*
+ * ── the self-contained page: `.html` ────────────────────────────────────────
+ *
+ * The only export that is also an import. A `.docx` looks the same and cannot
+ * be read back without loss; this carries the document itself alongside the
+ * page, so one file is both what you send someone and what you open tomorrow.
+ */
+export {
+  CLIP_SELECTOR, FONT_BACKSTOP, HTML_FORMAT, HTML_SLOTS, HTML_VERSION, HtmlError,
+  RASTER_ATTR, chooseFaces, codepointsIn, exportHtml, faceRule, facesNeeded,
+  fromBase64, importHtml, isSiksamitraHtml, parseFaceCss, svgDocument, toBase64,
+} from './html/index.js';
+export type {
+  DeclaredFace, FaceChoice, FaceStack, HtmlExportInput, HtmlImport, HtmlManifest,
+  SvgParts,
+} from './html/index.js';
+
 export {
   CHAR_STYLE_BY_ID, PARA_STYLE_BY_ID, REFERENCE_COUNTS, SVARA_BY_CHAR, SVARA_CHAR,
   WORD_CHAR_STYLES, WORD_PARA_STYLES, paraRoleOf, roleOf,
