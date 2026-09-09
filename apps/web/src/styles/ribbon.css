@@ -352,4 +352,7 @@
   align-self: center;
 }
 .rbf__l { color: var(--chrome-ink-mute); }
-.tb__sel--wide { max-width: var(--panel-min); }
+/* `.tb__sel--wide` was here: it lifted the 48 px cap to `--panel-min` for a
+   select that needed it. Nothing ever used it — every dropdown in the program
+   needed it — so the cap moved to `.tb__sel` itself and this modifier had
+   nothing left to say. See `controls.css`. */

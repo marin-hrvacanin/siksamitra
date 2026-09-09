@@ -32,12 +32,17 @@ import type { Session } from '../editor/useSession.js';
 /**
  * The five widths, each with the fraction of the column it is.
  *
- * The fraction is IN the label rather than in a tooltip, and short enough to
- * fit: "Medium — a half" was clipped to "Me" in a ribbon group at 1400 px,
- * which is a size list nobody can read. A `<select>` is as wide as its widest
- * option and the ribbon has no room to spare.
+ * The fraction is IN the label rather than in a tooltip, because a size list
+ * that says only "Medium" does not say medium of WHAT.
+ *
+ * These were once cut down to two words because "Medium — a half" clipped to
+ * "Me" at 1400 px. That was never the labels' fault: `.tb__sel` capped every
+ * dropdown in the program at 48 px, so the list was being trimmed to fit a
+ * bug. The cap is now `--panel-min` and a `<select>` sizes to its widest
+ * option again — so if a clearer label is wanted here, there is now room for
+ * it. `tools/interaction-ribbon.mjs` measures that there is.
  */
-const SIZES: readonly { id: ChantFigureSize; label: string }[] = [
+export const SIZES: readonly { id: ChantFigureSize; label: string }[] = [
   { id: 'thumb', label: 'Thumb' },
   { id: 'small', label: 'Small ¼' },
   { id: 'medium', label: 'Medium ½' },
@@ -48,7 +53,7 @@ const SIZES: readonly { id: ChantFigureSize; label: string }[] = [
 /** Word's wrap, as the three this program has. `aside` is a document's own
  *  choice and is not offered, because the margin rail it names does not
  *  exist yet and a control that draws `block` while saying `aside` lies. */
-const FLOWS: readonly { id: ChantFigureFlow; label: string; hint: string }[] = [
+export const FLOWS: readonly { id: ChantFigureFlow; label: string; hint: string }[] = [
   { id: 'start', label: 'Left', hint: 'Text beside it, on the right' },
   { id: 'block', label: 'Centre', hint: 'Its own line, centred' },
   { id: 'end', label: 'Right', hint: 'Text beside it, on the left' },
@@ -56,7 +61,7 @@ const FLOWS: readonly { id: ChantFigureFlow; label: string; hint: string }[] = [
 
 /* The label beside the control already says "Caption", so the options say only
    where it goes. */
-const CAPTION_AT = [
+export const CAPTION_AT = [
   { id: 'below', label: 'Below' },
   { id: 'above', label: 'Above' },
   { id: 'beside', label: 'Beside' },

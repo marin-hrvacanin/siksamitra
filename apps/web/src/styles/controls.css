@@ -23,6 +23,27 @@
   color: var(--chrome-accent);
 }
 
+/*
+ * A DROPDOWN IS AS WIDE AS THE WORD IN IT.
+ *
+ * This was capped at `--space-9`, which is 3rem — 48 px, of which 38 px is
+ * content box. Every `<select>` in the program is this class, so every one of
+ * them was 48 px wide whatever it had to say: the export style read "Ved" for
+ * "Veda Union / web" (104 px of text), and the picture size list was rewritten
+ * to fit the cap rather than the cap to the list. The owner's report was "all
+ * dropdowns seem to have too little width and so they look weird", and it was
+ * one declaration, at every window width, not only narrow ones.
+ *
+ * A `<select>` left alone sizes to its widest option, which is the behaviour
+ * wanted. What it needs is a CEILING, so one long option cannot push a ribbon
+ * group off the strip — `--panel-min` (13rem) is the width the shell already
+ * treats as "a panel's worth", and the widest option in the program needs 104
+ * px of it. Past that the label ellipsises rather than being cut mid-glyph.
+ *
+ * Measured, with the control, by `tools/interaction-ribbon.mjs`: the widest
+ * option's text is measured in a canvas with the select's OWN computed font
+ * and compared against the box the select was actually given.
+ */
 .tb__sel {
   font: inherit;
   color: var(--chrome-ink);
@@ -30,7 +51,8 @@
   border: var(--border-hair) solid var(--chrome-line);
   border-radius: var(--chrome-radius);
   padding: var(--space-1) var(--space-2);
-  max-width: var(--space-9);
+  max-width: var(--panel-min);
+  text-overflow: ellipsis;
 }
 
 /* A segmented control: three states, one click each, current one readable. */
