@@ -52,3 +52,10 @@ export type { ScriptKey } from './render/marks.js';
 
 // ── mark palettes, generated from the one token source ──────────────────────
 export * from './theme/marks.js';
+
+/*
+ * Text and markings, as the runs that draw them — the one shape the page and
+ * the editing surface share. See `openspec/changes/text-and-marks`.
+ */
+export { toLines, toRuns } from './runs.js';
+export type { Run, RunMarks } from './runs.js';
