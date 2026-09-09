@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { EXPORT_STYLES } from '@siksamitra/tokens/export-styles';
 import { PAGE_SIZES } from '@siksamitra/layout';
 import { BASE } from '@siksamitra/tokens/source';
-import { CAPTION_AT, FLOWS, SIZES } from '../PictureGroup.js';
+import { CAPTION_AT, CUSTOM_WIDTH, customSizeLabel, FLOWS, SIZES } from '../PictureGroup.js';
 
 /**
  * The widest label the ribbon can show, in characters.
@@ -53,6 +53,40 @@ describe('the ribbon\'s option lists', () => {
     expect(Number.isFinite(CAP_REM), 'panel-min is not a number').toBe(true);
     expect(CAP_REM).toBeGreaterThan(0);
     expect(MAX_CHARS).toBeGreaterThan(8);
+  });
+
+  /*
+   * THE SIXTH ROW OF THE SIZE LIST — the one a drag produces.
+   *
+   * `widthPct` beats `size`, so while one is set the list showing "Medium" is
+   * naming a size that is not in force. The extra row says what the width
+   * really is; it must never be storable as a size, and it must never collide
+   * with one.
+   */
+  describe('the custom width the size list shows after a drag', () => {
+    it('is not one of the five, so it can never be stored as a size', () => {
+      expect(SIZES.map((s) => s.id)).not.toContain(CUSTOM_WIDTH);
+    });
+
+    it('reads as the width the drag produced, to the nearest per cent', () => {
+      expect(customSizeLabel(57)).toBe('Custom 57%');
+      expect(customSizeLabel(57.4)).toBe('Custom 57%');
+      expect(customSizeLabel(56.5)).toBe('Custom 57%');
+      expect(customSizeLabel(100)).toBe('Custom 100%');
+      /* The drag floors at 5 %, and a label of "Custom 5%" is the narrowest
+         thing this row will ever have to say. */
+      expect(customSizeLabel(5)).toBe('Custom 5%');
+    });
+
+    it('fits the ribbon at its longest', () => {
+      expect(customSizeLabel(100).length).toBeLessThanOrEqual(MAX_CHARS);
+    });
+
+    it('never reads like one of the five', () => {
+      for (const pct of [5, 33, 50, 75, 100]) {
+        expect(SIZES.map((s) => s.label)).not.toContain(customSizeLabel(pct));
+      }
+    });
   });
 
   for (const { what, rows } of LISTS) {

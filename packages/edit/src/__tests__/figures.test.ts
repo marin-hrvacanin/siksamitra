@@ -105,6 +105,44 @@ describe('a picture as a section item', () => {
     expect(done.notes.join(' ')).toContain('no picture at position 0');
   });
 
+  /*
+   * CHOOSING A SIZE HAS TO TAKE A DRAGGED WIDTH OFF THE PICTURE.
+   *
+   * `widthPct` beats `size` in all three places that read them, so a picture
+   * that keeps both is a picture whose Size control does nothing — the fault
+   * the owner reported as "I resized it by pulling the edge and all of a
+   * sudden Size doesn't work at all". The fix rides entirely on `undefined`
+   * REMOVING the field rather than storing it, so that is what is asserted,
+   * and asserted on the KEYS: `widthPct: undefined` in the object would
+   * satisfy a value check and still be written into the document by a writer
+   * that spreads it.
+   */
+  it('a size chosen after a drag removes the dragged width, key and all', () => {
+    const dragged = fig('fig-1', { size: 'medium', widthPct: 57 });
+    const section = { ...doc().sections[0]!, items: [{ t: 'figure' as const, figure: dragged }] };
+
+    const done = updateFigure(
+      section, 0, { size: 'thumb', widthPct: undefined }, () => undefined, () => 'fig-9',
+    );
+    expect(done.changed).toBe(true);
+    const item = done.section.items?.[0];
+    const after = item?.t === 'figure' ? item.figure : undefined;
+    expect(after?.size).toBe('thumb');
+    expect(Object.keys(after ?? {})).not.toContain('widthPct');
+  });
+
+  it('and a drag after that puts one back, so the two are not one-way', () => {
+    const sized = fig('fig-1', { size: 'thumb' });
+    const section = { ...doc().sections[0]!, items: [{ t: 'figure' as const, figure: sized }] };
+    const done = updateFigure(section, 0, { widthPct: 42 }, () => undefined, () => 'fig-9');
+    const item = done.section.items?.[0];
+    const after = item?.t === 'figure' ? item.figure : undefined;
+    expect(after?.widthPct).toBe(42);
+    /* The size it had is KEPT, not cleared — it is what the picture goes back
+       to when the custom width is taken off again. */
+    expect(after?.size).toBe('thumb');
+  });
+
   it('picks an id nothing else is using', () => {
     expect(nextFigureId([])).toBe('fig-1');
     expect(nextFigureId(['fig-1', 'fig-3'])).toBe('fig-2');

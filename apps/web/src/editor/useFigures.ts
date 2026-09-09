@@ -304,7 +304,26 @@ export function useFigures(
       run({ k: 'figure', sectionId: selected.sectionId, at: selected.at, op: { kind: 'remove' } });
       setSelected(null);
     }, [run, selected]),
-    setSize: useCallback((size: ChantFigureSize) => patch({ size }), [patch]),
+    /*
+     * CHOOSING A SIZE TAKES THE CUSTOM WIDTH OFF.
+     *
+     * A corner drag writes `widthPct`, and a per cent BEATS a size wherever
+     * the two meet: the renderer applies it as an inline `style.width` over
+     * the `fig--medium` class, and `figureWidth()` returns it before it looks
+     * at `size` at all. So the Size list went on writing `size` faithfully
+     * into the document and nothing moved — the owner's report, exactly: "I
+     * resized it by pulling the edge and all of a sudden Size doesn't work at
+     * all." Every one of the five sizes was dead, permanently, after one drag.
+     *
+     * Patched to `undefined` rather than to a number, because `updateFigure`
+     * REMOVES a field patched to `undefined` — so the document goes back to
+     * having no custom width at all, which is a different thing from having
+     * one that happens to match a size.
+     */
+    setSize: useCallback(
+      (size: ChantFigureSize) => patch({ size, widthPct: undefined }),
+      [patch],
+    ),
     setFlow: useCallback((flow: ChantFigureFlow) => patch({ flow }), [patch]),
   };
 }

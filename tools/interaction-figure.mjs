@@ -279,6 +279,91 @@ await wait(400);
 check('and Centre puts it back on its own line',
   (await (await visibleFig()).evaluate((f) => getComputedStyle(f).float)) === 'none');
 
+/* ── the Size list, AFTER a drag ─────────────────────────────────────────── */
+/*
+ * THE FAULT THIS EXISTS FOR — the owner's words: "I resized it by pulling the
+ * edge and all of a sudden Size doesn't work at all."
+ *
+ * A corner drag writes `widthPct`, which the renderer applies as an INLINE
+ * `style.width`; the five sizes are CLASSES. An inline width beats a class, so
+ * the Size list went on writing `size` into the document, faithfully, and
+ * nothing on the screen moved — every one of the five dead, permanently, after
+ * one gesture.
+ *
+ * Nothing above could have caught it. The resize checks measure the drag, and
+ * they pass either way; a unit test on `setSize` sees the document get the
+ * size it asked for, which it always did. Only the picture's MEASURED WIDTH
+ * before and after choosing a size can tell you the control does anything, and
+ * that number comes from the browser's layout.
+ */
+const chooseSize = async (label) => {
+  const ok = await page.evaluate((want) => {
+    const sel = document.querySelector('select[aria-label="Picture size"]');
+    if (sel === null) return 'no size control';
+    const option = [...sel.options].find((o) => o.text === want);
+    if (option === undefined) return `no option "${want}"`;
+    sel.value = option.value;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    return 'chosen';
+  }, label);
+  if (ok !== 'chosen') throw new Error(`could not choose the size "${label}": ${ok}`);
+  await wait(450);
+};
+/** What the Size list is SHOWING — its selected option's text. */
+const sizeShown = () => page.evaluate(() => {
+  const sel = document.querySelector('select[aria-label="Picture size"]');
+  return sel === null ? null : sel.options[sel.selectedIndex]?.text ?? null;
+});
+
+await centre('.fig');
+await wait(200);
+await pressTab('Picture');
+await pressButton('Centre');
+await wait(400);
+await chooseSize('Medium ½');
+await wait(300);
+const atMedium = await figureWidth();
+
+const corner = await centre('.fig__handle--se');
+await page.mouse.move(corner.x, corner.y);
+await page.mouse.down();
+await page.mouse.move(corner.x + 170, corner.y + 100, { steps: 14 });
+await page.mouse.up();
+await wait(450);
+const dragged = await figureWidth();
+check('a corner drag widens it past its Medium width',
+  dragged > atMedium + 20, `${atMedium.toFixed(0)} → ${dragged.toFixed(0)} px`);
+check('and the Size list stops claiming one of the five',
+  /^Custom \d+%$/.test((await sizeShown()) ?? ''), await sizeShown());
+
+await chooseSize('Thumb');
+const atThumb = await figureWidth();
+check('choosing a Size after a drag actually resizes the picture',
+  atThumb < dragged - 20, `${dragged.toFixed(0)} → ${atThumb.toFixed(0)} px`);
+check('and the dragged width is gone from the element, not merely overridden',
+  (await (await visibleFig()).evaluate((f) => f.style.width)) === '',
+  await (await visibleFig()).evaluate((f) => f.style.width || '(none)'));
+check('and the list names the size that is now in force',
+  (await sizeShown()) === 'Thumb', await sizeShown());
+
+await chooseSize('Full');
+const atFull = await figureWidth();
+check('and every other size in the list works too',
+  atFull > atThumb + 40, `Thumb ${atThumb.toFixed(0)} → Full ${atFull.toFixed(0)} px`);
+
+/*
+ * THE CONTROL FOR THIS CHECK. Put the inline width back the way a drag does
+ * and require the measurement to see it: if choosing a size passed above
+ * because widths stopped being applied inline at all, this fails.
+ */
+await (await visibleFig()).evaluate((f) => { f.style.width = '30%'; });
+await wait(150);
+const forced = await figureWidth();
+check('the ruler sees an inline width beat a size class (else it measures nothing)',
+  forced < atFull - 40, `${atFull.toFixed(0)} → ${forced.toFixed(0)} px with an inline 30%`);
+await chooseSize('Medium ½');
+await wait(300);
+
 /* ── and on a page ───────────────────────────────────────────────────────── */
 await pressTab('View');
 await pressButton('Pages');
