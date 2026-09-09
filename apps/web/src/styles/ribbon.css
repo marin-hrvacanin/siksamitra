@@ -23,11 +23,21 @@
 }
 
 /* ── the tab strip ───────────────────────────────────────────────────────── */
+/*
+ * THE STRIP GROWS FOR A CAPTION, rather than the caption overflowing it.
+ *
+ * `height: var(--tabs-h)` was a ceiling, so a contextual slot — caption
+ * stacked over tab — was taller than the strip it stood in: the caption spilled
+ * up over the title bar and its tab sat a caption's height below every other
+ * tab's baseline. `min-height` lets the strip take the extra when there is a
+ * caption and change nothing when there is not, which is Word's own behaviour
+ * and the reason its contextual tabs stay level with the rest.
+ */
 .rbn__tabs {
   display: flex;
   align-items: stretch;
   gap: var(--space-1);
-  height: var(--tabs-h);
+  min-height: var(--tabs-h);
   padding-inline: var(--space-3);
   background: var(--chrome-bg);
   border-bottom: var(--border-hair) solid var(--chrome-line);
@@ -71,6 +81,9 @@
 .rbn__tab {
   font: inherit;
   font-size: var(--text-ui);
+  /* Fixed, so every tab sits on ONE baseline whether or not the slot above it
+     is carrying a caption. */
+  height: var(--tabs-h);
   color: var(--chrome-ink-soft);
   background: transparent;
   border: 0;

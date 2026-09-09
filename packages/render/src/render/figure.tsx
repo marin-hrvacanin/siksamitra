@@ -65,8 +65,22 @@ export interface FigureProps {
    *
    * The editor passes it; the reader and every export do not, so no handle is
    * drawn and nothing is draggable on a page meant to be read.
+   *
+   * Called ONCE, when the button comes up. It used to be called on every
+   * mousemove, which put forty figure commands into the history for one drag —
+   * so Ctrl+Z after resizing a picture gave back a width nobody had stopped
+   * at, forty times. What the person sees while dragging is the element's own
+   * inline width; the document hears about it when the gesture ends.
    */
   onResize?: (pct: number) => void;
+  /**
+   * The picture itself was pressed, and the pointer may be about to move.
+   *
+   * The renderer does not know where a picture MAY go — that is the document's
+   * item list and the page it is drawn on — so it reports the gesture and the
+   * editor runs it. See `figure-drag.ts`.
+   */
+  onGrab?: (e: MouseEvent) => void;
 }
 
 /**
@@ -97,15 +111,21 @@ function startResize(
   /* A west handle grows the picture when the pointer moves LEFT. */
   const sign = corner === 'nw' || corner === 'sw' ? -1 : 1;
 
+  let pct = Math.round((startW / columnW) * 100);
   const move = (ev: globalThis.MouseEvent): void => {
     const next = startW + sign * (ev.clientX - startX);
-    const pct = Math.round((next / columnW) * 100);
-    onResize(Math.max(FIGURE_MIN_PCT, Math.min(FIGURE_MAX_PCT, pct)));
+    pct = Math.max(
+      FIGURE_MIN_PCT, Math.min(FIGURE_MAX_PCT, Math.round((next / columnW) * 100)),
+    );
+    /* The preview is the element's own width. The DOCUMENT is told once, at
+       the end — see the note on `onResize`. */
+    figure.style.width = `${pct}%`;
   };
   const up = (): void => {
     window.removeEventListener('mousemove', move);
     window.removeEventListener('mouseup', up);
     document.body.classList.remove('is-resizing');
+    onResize(pct);
   };
   document.body.classList.add('is-resizing');
   window.addEventListener('mousemove', move);
@@ -182,7 +202,9 @@ function Picture({ fig, url }: { fig: ChantFigure; url: string | null }): ReactN
  * elements exist, and a screen reader reads the two as one thing.
  */
 export function Figure(
-  { fig, resolve = EMBEDDED_ONLY, blockId, selected = false, onSelect, onResize }: FigureProps,
+  {
+    fig, resolve = EMBEDDED_ONLY, blockId, selected = false, onSelect, onResize, onGrab,
+  }: FigureProps,
 ): ReactNode {
   const captionAt = fig.captionAt ?? FIGURE_DEFAULTS.captionAt;
   const caption = captionAt === 'none' ? undefined : fig.caption?.en;
@@ -210,8 +232,15 @@ export function Figure(
       {...(fig.widthPct === undefined ? {} : {
         style: { width: `${fig.widthPct}%` },
       })}
-      {...(onSelect === undefined ? {} : {
-        onMouseDown: (e: MouseEvent): void => { e.preventDefault(); onSelect(); },
+      {...(onSelect === undefined && onGrab === undefined ? {} : {
+        onMouseDown: (e: MouseEvent): void => {
+          e.preventDefault();
+          onSelect?.();
+          /* Selecting first, so the gesture that follows is about the picture
+             the person is holding rather than the one that was selected
+             before it. */
+          onGrab?.(e);
+        },
       })}
     >
       {captionAt === 'above' ? cap : null}

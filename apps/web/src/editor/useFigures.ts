@@ -15,7 +15,7 @@
  * `puja-vidhi.json` is in, naming 22 PNGs that live somewhere else. See
  * `packages/format/src/figure.ts`.
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FIGURE_MAX_BYTES, FIGURE_MEDIA_TYPES, figureBytes, imageDataUri,
   type ChantFigure, type ChantFigureFlow, type ChantFigureSize, type ChantSection,
@@ -23,12 +23,25 @@ import {
 import {
   figureIdsIn, nextFigureId, withFigureDefaults, type EditCommand,
 } from '@siksamitra/edit';
+import { blockId } from '../views/blocks.js';
+import {
+  dropLandsAt, startFigureDrag, type FigureDrop, type GrabPoint,
+} from './figure-drag.js';
 
 /** Where a picture is: the block the page map knows, and its item index. */
 export interface FigureSite {
   readonly blockId: string;
   readonly sectionId: string;
   readonly at: number;
+  /**
+   * WHICH PICTURE, as well as where.
+   *
+   * A site alone is not a selection: undo a move and the picture is back at
+   * index 3 while the selection still says index 1, which is now a verse — so
+   * the Picture tab went grey after every Ctrl+Z. The id is what the selection
+   * FOLLOWS; the index is where it was last seen.
+   */
+  readonly figureId: string;
 }
 
 /** A file, read and measured, ready to become a figure. */
@@ -45,9 +58,17 @@ export interface ReadImage {
  *  two, so a view knows nothing about pictures beyond passing them on. */
 export interface FigureViewProps {
   readonly selectedFigure?: string;
-  readonly onFigure: (blockId: string, sectionId: string, at: number) => void;
+  readonly onFigure: (blockId: string, sectionId: string, at: number, id: string) => void;
   /** A corner was dragged on the selected picture: its width in per cent. */
   readonly onFigureResize: (pct: number) => void;
+  /**
+   * A picture was PRESSED and the pointer may be about to move.
+   *
+   * Where it is passed from rather than read off the selection, because the
+   * click that selects and the press that starts the drag are the same event:
+   * `setSelected` has not landed yet when this runs.
+   */
+  readonly onFigureGrab: (e: GrabPoint, sectionId: string, at: number) => void;
 }
 
 export interface Figures {
@@ -118,6 +139,32 @@ export async function readImageFile(file: File): Promise<ReadImage | string> {
   return { src, width: size.width, height: size.height, bytes: figureBytes(src), name: file.name };
 }
 
+/** The figure an item draws, whether it carries one or points into the library. */
+function figureAt(
+  doc: { sections: readonly ChantSection[]; figures?: readonly ChantFigure[] },
+  sectionId: string,
+  at: number,
+): ChantFigure | null {
+  const item = doc.sections.find((s) => s.id === sectionId)?.items?.[at];
+  if (item === undefined || item.t !== 'figure') return null;
+  return item.figure
+    ?? (item.ref === undefined ? null : doc.figures?.find((f) => f.id === item.ref) ?? null);
+}
+
+/** Where a picture with this id IS, searched for rather than remembered. */
+function siteOf(
+  doc: { sections: readonly ChantSection[]; figures?: readonly ChantFigure[] },
+  figureId: string,
+): { sectionId: string; at: number } | null {
+  for (const section of doc.sections) {
+    const items = section.items ?? [];
+    for (let at = 0; at < items.length; at += 1) {
+      if (figureAt(doc, section.id, at)?.id === figureId) return { sectionId: section.id, at };
+    }
+  }
+  return null;
+}
+
 /** Where a new picture goes: after the verse the caret is in, else at the end. */
 function insertionPoint(section: ChantSection | undefined, verseId: string | undefined): number {
   const items = section?.items ?? [];
@@ -142,16 +189,31 @@ export function useFigures(
    * held beside the selection. Holding a copy is how a ribbon comes to show the
    * size a picture had before the last undo.
    */
-  const figure = useMemo<ChantFigure | null>(() => {
-    if (selected === null) return null;
-    const section = doc.sections.find((s) => s.id === selected.sectionId);
-    const item = section?.items?.[selected.at];
-    if (item === undefined || item.t !== 'figure') return null;
-    return item.figure
-      ?? (item.ref === undefined
-        ? null
-        : doc.figures?.find((f) => f.id === item.ref) ?? null);
-  }, [doc, selected]);
+  const figure = useMemo<ChantFigure | null>(
+    () => (selected === null ? null : figureAt(doc, selected.sectionId, selected.at)),
+    [doc, selected],
+  );
+
+  /*
+   * THE SELECTION FOLLOWS THE PICTURE, not the position.
+   *
+   * An undo, a redo, a picture inserted above this one — any of them changes
+   * which index the selected picture is at, and the site would then be
+   * addressing whatever slid into its place. Ctrl+Z after a drag left the
+   * Picture tab pointing at a verse, so every one of its controls went grey.
+   *
+   * So when the recorded site no longer holds the picture the selection is
+   * ABOUT, it is looked for by id and the site is corrected; a picture that is
+   * really gone — deleted, or the undo of an insert — clears the selection.
+   */
+  useEffect(() => {
+    if (selected === null) return;
+    if (figure?.id === selected.figureId) return;
+    const found = siteOf(doc, selected.figureId);
+    setSelected(found === null
+      ? null
+      : { ...found, blockId: blockId.figure(found.sectionId, found.at), figureId: selected.figureId });
+  }, [doc, figure, selected]);
 
   const patch = useCallback((next: Partial<ChantFigure>) => {
     if (selected === null) return;
@@ -186,7 +248,7 @@ export function useFigures(
     });
     /* Select what was just put in, so the size and alignment controls are
        about the picture the person is looking at rather than about nothing. */
-    setSelected({ blockId: `f:${sectionId}:${at}`, sectionId, at });
+    setSelected({ blockId: blockId.figure(sectionId, at), sectionId, at, figureId: id });
   }, [doc, run, sectionId, verseId]);
 
   /*
@@ -198,14 +260,34 @@ export function useFigures(
    * see the current figure without the memo depending on it.
    */
   const patchRef = useRef<(pct: number) => void>(() => {});
+  /** The drag, behind a ref for the same reason. */
+  const grabRef = useRef<(e: GrabPoint, sectionId: string, at: number) => void>(() => {});
 
   const viewProps = useMemo<FigureViewProps>(() => ({
     ...(selected === null ? {} : { selectedFigure: selected.blockId }),
-    onFigure: (blockId, sectionId, at) => setSelected({ blockId, sectionId, at }),
+    onFigure: (id, sectionId, at, figureId) =>
+      setSelected({ blockId: id, sectionId, at, figureId }),
     onFigureResize: (pct: number) => patchRef.current(pct),
+    onFigureGrab: (e, sectionId, at) => grabRef.current(e, sectionId, at),
   }), [selected]);
 
   patchRef.current = (pct: number) => { patch({ widthPct: pct }); };
+  grabRef.current = (e, fromSection, fromAt) => {
+    if (selected === null) return;
+    const from = { sectionId: fromSection, at: fromAt, figureId: selected.figureId };
+    startFigureDrag(e, doc.sections, (to: FigureDrop) => {
+      run({ k: 'figure', sectionId: from.sectionId, at: from.at, op: { kind: 'move', to } });
+      /* Follow the picture. The Picture tab is addressed by WHERE the picture
+         is, so a selection left behind would be pointing at whatever item slid
+         into the place it used to hold. */
+      const landed = dropLandsAt(from, to);
+      setSelected({
+        ...landed,
+        blockId: blockId.figure(landed.sectionId, landed.at),
+        figureId: from.figureId,
+      });
+    });
+  };
 
   return {
     selected,

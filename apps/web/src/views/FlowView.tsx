@@ -13,13 +13,15 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
 import { contentBox, px, type PageGeometry } from '@siksamitra/layout';
-import { DocumentBlocks } from './DocumentBlocks.js';
+import {
+  DocumentBlocks, figureBlockProps, type FigureBlockProps,
+} from './DocumentBlocks.js';
 
 export function FlowView(
   {
     doc, script, showMarks, page, zoom, addressable = false, web = false, rebuild = 0,
-    selectedFigure, onFigure, onFigureResize,
-  }: {
+    ...picture
+  }: FigureBlockProps & {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
@@ -46,18 +48,11 @@ export function FlowView(
      */
     web?: boolean;
 
-    /** The picture the editor has selected, and how one is chosen. Passed
-     *  through to `DocumentBlocks`; this view has no opinion about either. */
-    selectedFigure?: string;
-    onFigure?: (blockId: string, sectionId: string, at: number) => void;
-    onFigureResize?: (pct: number) => void;
   },
 ): ReactNode {
-  const picture = {
-    ...(selectedFigure === undefined ? {} : { selectedFigure }),
-    ...(onFigureResize === undefined ? {} : { onFigureResize }),
-    ...(onFigure === undefined ? {} : { onFigure }),
-  };
+  /* The picture props travel through untouched — this view has no opinion
+     about any of them. See `FigureBlockProps`. */
+  const pictureProps = figureBlockProps(picture);
   if (web) {
     return (
       <div className="flow flow--web">
@@ -82,7 +77,7 @@ export function FlowView(
             script={script}
             showMarks={showMarks}
             addressable={addressable}
-            {...picture}
+            {...pictureProps}
           />
         </div>
       </div>
@@ -140,7 +135,7 @@ export function FlowView(
           script={script}
           showMarks={showMarks}
           addressable={addressable}
-          {...picture}
+          {...pictureProps}
         />
       </div>
     </div>

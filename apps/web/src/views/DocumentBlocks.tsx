@@ -29,12 +29,13 @@
  * are tokens.
  */
 
-import { Fragment, memo, type ReactNode } from 'react';
+import { Fragment, memo, type MouseEvent, type ReactNode } from 'react';
 import type {
   ChantDoc, ChantScriptKey, ChantToken, ChantVerse,
 } from '@siksamitra/format';
 import { Figure, holdJoins } from '@siksamitra/render';
 import { blockId, figureOf, headingOf, itemsOf, sourceOf } from './blocks.js';
+import type { GrabPoint } from '../editor/figure-drag.js';
 import { renderToken, unitsBefore, type TokenContext } from './token-renderers.js';
 
 const FONT_STACK = 'var(--doc-verse-face)';
@@ -117,26 +118,49 @@ function VerseLines(
  * The props are all primitives or stable references, so this comparison is
  * exact rather than a guess.
  */
+/**
+ * THE PICTURE PROPS, declared once.
+ *
+ * Four props travel from `useFigures` through `FlowView` and `PagedView` to
+ * here, and they were spelled out in all three files: adding the drag meant
+ * three edits, and a view that forgot one dropped the gesture silently. The
+ * views have no opinion about any of them, so they take this and pass it on.
+ *
+ * `onFigure` is passed in rather than handled here because the SESSION owns
+ * what is selected — the ribbon's picture controls read it, and a second
+ * notion of selection living in the renderer would be a second thing to keep
+ * in step. All four are stable, so the memo below still holds.
+ */
+export interface FigureBlockProps {
+  /** The block id of the picture the editor has selected, if any. */
+  selectedFigure?: string;
+  /** Somebody pointed at a picture. */
+  onFigure?: (blockId: string, sectionId: string, at: number, figureId: string) => void;
+  /** A corner was dragged: the new width in per cent of the column. */
+  onFigureResize?: (pct: number) => void;
+  /** A picture was pressed: the editor decides whether it becomes a drag. */
+  onFigureGrab?: (e: GrabPoint, sectionId: string, at: number) => void;
+}
+
+/** The same four with the absent ones dropped, so a spread satisfies
+ *  `exactOptionalPropertyTypes`. One picker, for both views. */
+export const figureBlockProps = (p: FigureBlockProps): FigureBlockProps => ({
+  ...(p.selectedFigure === undefined ? {} : { selectedFigure: p.selectedFigure }),
+  ...(p.onFigure === undefined ? {} : { onFigure: p.onFigure }),
+  ...(p.onFigureResize === undefined ? {} : { onFigureResize: p.onFigureResize }),
+  ...(p.onFigureGrab === undefined ? {} : { onFigureGrab: p.onFigureGrab }),
+});
+
 function DocumentBlocksInner(
-  { doc, script, showMarks, only, addressable = false, selectedFigure, onFigure, onFigureResize }: {
+  {
+    doc, script, showMarks, only, addressable = false,
+    selectedFigure, onFigure, onFigureResize, onFigureGrab,
+  }: FigureBlockProps & {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
     /** Render only these block ids — how the paged view draws one page. */
     only?: ReadonlySet<string>;
-    /** The block id of the picture the editor has selected, if any. */
-    selectedFigure?: string;
-    /** A corner was dragged: the new width in per cent of the column. */
-    onFigureResize?: (pct: number) => void;
-    /**
-     * Somebody pointed at a picture.
-     *
-     * Passed in rather than handled here because the SESSION owns what is
-     * selected — the ribbon's picture controls read it, and a second notion of
-     * selection living in the renderer would be a second thing to keep in
-     * step. Stable, so the memo below still holds.
-     */
-    onFigure?: (blockId: string, sectionId: string, at: number) => void;
     /**
      * The editor is drawing: letters carry `data-u` and verses `data-verse`.
      *
@@ -205,7 +229,10 @@ function DocumentBlocksInner(
                       ? { onResize: onFigureResize }
                       : {})}
                     {...(addressable && onFigure !== undefined
-                      ? { onSelect: () => onFigure(id, section.id, at) }
+                      ? { onSelect: () => onFigure(id, section.id, at, fig.id) }
+                      : {})}
+                    {...(addressable && onFigureGrab !== undefined
+                      ? { onGrab: (e: MouseEvent) => onFigureGrab(e, section.id, at) }
                       : {})}
                   />
                 );

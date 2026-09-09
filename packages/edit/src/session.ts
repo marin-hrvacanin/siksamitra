@@ -36,7 +36,7 @@ import {
 } from './sync.js';
 import { record, restore, snapshot, type History, type Snapshot } from './history.js';
 import { setProfile } from './set-profile.js';
-import { applyFigureCommand } from './figures.js';
+import { applyFigureCommand, figureSectionsTouched } from './figures.js';
 
 import type { EditCommand } from './command.js';
 
@@ -135,7 +135,11 @@ export function apply(state: EditState, history: History, command: EditCommand):
      rule zero, the source writing and the re-derivation. See `figures.ts`. */
   if (command.k === 'figure') {
     const done = applyFigureCommand(state.doc, section, command);
-    const snap = (d: ChantDoc): Snapshot => snapshot(d, [section.id], state.selection);
+    /* A drag can move a picture into ANOTHER step, and an undo step that
+       snapshotted only the one it left would put the picture back without
+       taking it out of where it landed — two of it. */
+    const touched = figureSectionsTouched(command);
+    const snap = (d: ChantDoc): Snapshot => snapshot(d, touched, state.selection);
     const step = { before: snap(state.doc), after: snap(done.doc) };
     return {
       state: { ...quiet(state), doc: done.doc, refusals: [...done.notes] },

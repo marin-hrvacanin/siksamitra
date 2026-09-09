@@ -42,117 +42,19 @@
  */
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { deflateSync } from 'node:zlib';
 import { canonicalJson, documentFigureFaults, figuresOf } from '@siksamitra/format';
 import { importHtml } from '@siksamitra/interop';
 import { DEFAULT_PAGE, contentBox, pageGeometry } from '@siksamitra/layout';
 import { buildPage, loadDoc } from './page.mjs';
 import { toPng, withBrowser } from './raster.mjs';
 import { analyse } from './pixels.mjs';
-
-const CORPUS = 'corpus/chants';
-const FIXED = '2026-01-01T00:00:00.000Z';
+import {
+  ALT, CORPUS, FIXED, INK, MISSING_ALT, PICTURE, SRC, TALL_SRC,
+  withFloat, withPictures,
+} from './_figure-fixtures.mjs';
 
 const problems = [];
 const fail = (what, detail) => problems.push(`${what}: ${detail}`);
-
-/* ==========================================================================
-   A picture, made here rather than fetched
-   ========================================================================== */
-
-const CRC = (() => {
-  const table = new Int32Array(256);
-  for (let n = 0; n < 256; n += 1) {
-    let c = n;
-    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c;
-  }
-  return (bytes) => {
-    let c = -1;
-    for (const b of bytes) c = table[(c ^ b) & 0xff] ^ (c >>> 8);
-    return (c ^ -1) >>> 0;
-  };
-})();
-
-function chunk(name, body) {
-  const head = Buffer.alloc(8);
-  head.writeUInt32BE(body.length, 0);
-  head.write(name, 4, 'ascii');
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(CRC(Buffer.concat([Buffer.from(name, 'ascii'), body])), 0);
-  return Buffer.concat([head, body, crc]);
-}
-
-/**
- * A solid rectangle, as a real PNG.
- *
- * Written by hand rather than taken from a fixture file so that the gate's
- * input is a known quantity: the colour asserted against in check 4 is the one
- * put in here, and there is no chance of a fixture being replaced by something
- * that happens to be nearly the same colour.
- */
-function solidPng(width, height, [r, g, b]) {
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0);
-  ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8;   // bit depth
-  ihdr[9] = 2;   // colour type: truecolour
-  const raw = Buffer.alloc(height * (1 + width * 3));
-  for (let y = 0; y < height; y += 1) {
-    const row = y * (1 + width * 3);
-    for (let x = 0; x < width; x += 1) {
-      raw[row + 1 + x * 3] = r;
-      raw[row + 2 + x * 3] = g;
-      raw[row + 3 + x * 3] = b;
-    }
-  }
-  return Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    chunk('IHDR', ihdr),
-    chunk('IDAT', deflateSync(raw)),
-    chunk('IEND', Buffer.alloc(0)),
-  ]);
-}
-
-/** A colour nothing in any theme uses, so a pixel of it can only be the
- *  picture: full-strength magenta. */
-const INK = [255, 0, 255];
-const PICTURE = solidPng(400, 300, INK);
-/** Taller than any page this program prints — for check 6. */
-const TALL = solidPng(300, 4000, [0, 160, 90]);
-const TALL_SRC = `data:image/png;base64,${TALL.toString('base64')}`;
-const SRC = `data:image/png;base64,${PICTURE.toString('base64')}`;
-const ALT = 'A solid magenta rectangle, four hundred by three hundred.';
-const MISSING_ALT = 'A lit brass oil lamp on a tall stand.';
-
-/** One step, one embedded picture, one picture the document only names. */
-const withPictures = () => ({
-  title: 'A step with pictures',
-  titleForms: {},
-  version: 3,
-  sections: [{
-    id: 'sec-1',
-    title: 'Dīpa',
-    verses: [],
-    items: [
-      {
-        t: 'figure',
-        figure: {
-          id: 'fig-1', src: SRC, alt: ALT, width: 400, height: 300,
-          size: 'full', flow: 'block', captionAt: 'below', crop: 'auto',
-          frame: 'none', rounded: true, caption: { en: 'The test rectangle' },
-        },
-      },
-      {
-        t: 'figure',
-        figure: {
-          id: 'fig-2', src: '/figures/puja-vidhi/step-dipa.png?v=2be24db2',
-          alt: MISSING_ALT, width: 512, height: 512, size: 'small', crop: 'square',
-        },
-      },
-    ],
-  }],
-});
 
 /* ==========================================================================
    1-3 · the file
@@ -249,27 +151,6 @@ await withBrowser(async (browser) => {
    5 · a float, and the pada beside it
    ========================================================================== */
 
-/**
- * A real chant with a picture floated into it.
- *
- * Durgā Sūktam rather than a made-up verse, because the question is whether a
- * PĀDA fits, and only a real pāda has a real length.
- */
-function withFloat() {
-  const it = loadDoc(join(CORPUS, 'durga-suktam.json'));
-  const items = [...it.sections[0].items];
-  const at = items.findIndex((x, i) => i > 1 && x.t === 'verse');
-  items.splice(at, 0, {
-    t: 'figure',
-    figure: {
-      id: 'fig-float', src: SRC, alt: ALT, width: 400, height: 300,
-      size: 'medium', flow: 'start', captionAt: 'none', crop: 'portrait',
-      frame: 'thin', rounded: true,
-    },
-  });
-  return { ...it, sections: [{ ...it.sections[0], items }, ...it.sections.slice(1)] };
-}
-
 console.log('');
 await withBrowser(async (browser) => {
   const page = await browser.newPage();
@@ -322,6 +203,85 @@ await withBrowser(async (browser) => {
   console.log(`  a float never narrows a pāda             ${shipped.wrapped} wrapped, `
     + `${control.wrapped} of ${control.beside} with the clear off `
     + `(${control.room} px beside the picture)`);
+});
+
+/* ==========================================================================
+   5b · and the PROSE beside it does wrap
+   ========================================================================== */
+/*
+ * A RULE THAT ONLY EVER SAYS NO IS NOT A WRAP.
+ *
+ * Check 5 proves a float never narrows a pāda. On its own that is also what a
+ * float nothing flows around looks like, and the owner's report was precisely
+ * "setting the text wrap and all that … it should all be fully supported". So
+ * the same page is asked the opposite question about the item that IS allowed
+ * to flow: an instruction level with the picture must come out NARROWER than
+ * the column.
+ *
+ * MEASURED AS LINE BOXES, not as the paragraph. A block beside a float is
+ * still full width — what shortens is each line inside it, so the rectangles
+ * of a Range over the text are the only honest measurement.
+ *
+ * WITH THE CONTROL: the float is turned off and the same lines are measured
+ * again. If they do not get longer, the picture was not narrowing them and
+ * this check is reading something else.
+ */
+console.log('');
+await withBrowser(async (browser) => {
+  const page = await browser.newPage();
+  const built = await buildPage(withFloat(), { style: 'veda-union', savedAt: FIXED });
+  await page.setContent(built.html, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => document.fonts.ready);
+
+  const read = () => page.evaluate(() => {
+    const fig = document.querySelector('.fig--flow-start') ?? document.querySelector('.fig');
+    const box = fig.getBoundingClientRect();
+    const column = document.querySelector('.flow__column');
+    const pad = getComputedStyle(column);
+    const room = column.clientWidth - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight);
+    /* THE SAME PARAGRAPH BOTH TIMES. Found by standing level with the picture
+       on the first reading and TAGGED, because turning the float off moves it
+       out from beside the picture — which is the whole point — and a second
+       search by overlap would then find nothing and report a control that
+       measured itself. */
+    const para = document.querySelector('[data-wrap-probe]')
+      ?? [...document.querySelectorAll('.doc__instruction')].find((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top < box.bottom - 2 && r.bottom > box.top + 2;
+      });
+    if (para === undefined || para === null) return null;
+    para.dataset.wrapProbe = '1';
+    const range = document.createRange();
+    range.selectNodeContents(para);
+    const lines = [...range.getClientRects()].filter((r) => r.width > 1);
+    return {
+      room: Math.round(room),
+      first: Math.round(lines[0]?.width ?? 0),
+      lines: lines.length,
+    };
+  });
+
+  const shipped = await read();
+  await page.evaluate(() => {
+    const s = document.createElement('style');
+    s.textContent = '.fig--flow-start { float: none !important; }';
+    document.head.appendChild(s);
+  });
+  const control = await read();
+  await page.close();
+
+  if (shipped === null) {
+    fail('prose beside a float', 'no instruction is level with the picture');
+  } else if (shipped.first >= shipped.room - 20) {
+    fail('prose beside a float',
+      `its first line is ${shipped.first} px in a ${shipped.room} px column — nothing wrapped`);
+  } else if (control === null || control.first <= shipped.first + 20) {
+    fail('the control',
+      'the line did not get longer with the float off, so this measures nothing');
+  } else {
+    console.log(`  and prose beside it IS narrowed          ${shipped.first} px of `
+      + `${shipped.room}, ${control.first} px with the float off`);
+  }
 });
 
 /* ==========================================================================

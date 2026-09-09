@@ -20,7 +20,9 @@
 import { useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
 import { contentBox, paginate, px, type PageGeometry } from '@siksamitra/layout';
-import { DocumentBlocks } from './DocumentBlocks.js';
+import {
+  DocumentBlocks, figureBlockProps, type FigureBlockProps,
+} from './DocumentBlocks.js';
 import { KEEP_WITH_NEXT } from './blocks.js';
 import { useMeasuredBlocks } from './useMeasure.js';
 
@@ -36,8 +38,8 @@ const isHeading = (id: string): boolean => KEEP_WITH_NEXT.some((p) => id.startsW
 export function PagedView(
   {
     doc, script, showMarks, page, zoom, contentKey, addressable = false, rebuild = 0,
-    selectedFigure, onFigure, onFigureResize,
-  }: {
+    ...picture
+  }: FigureBlockProps & {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
@@ -50,13 +52,11 @@ export function PagedView(
     /** Forces a rebuild rather than a patch — see `Session.rebuild`. The key
      *  goes on each page's content, never on the measuring probe. */
     rebuild?: number;
-    /** The picture the editor has selected, and how one is chosen. Passed
-     *  through to `DocumentBlocks`; this view has no opinion about either. */
-    selectedFigure?: string;
-    onFigure?: (blockId: string, sectionId: string, at: number) => void;
-    onFigureResize?: (pct: number) => void;
   },
 ): ReactNode {
+  /* The picture props travel through untouched — this view has no opinion
+     about any of them. See `FigureBlockProps`. */
+  const pictureProps = figureBlockProps(picture);
   const probe = useRef<HTMLDivElement>(null);
   const measured = useMeasuredBlocks(probe, page, contentKey);
   const { width: column, height: columnHeight } = contentBox(page);
@@ -146,9 +146,7 @@ export function PagedView(
                   showMarks={showMarks}
                   only={ids}
                   addressable={addressable}
-                  {...(selectedFigure === undefined ? {} : { selectedFigure })}
-                  {...(onFigureResize === undefined ? {} : { onFigureResize })}
-                  {...(onFigure === undefined ? {} : { onFigure })}
+                  {...pictureProps}
                 />
               </div>
               {/*

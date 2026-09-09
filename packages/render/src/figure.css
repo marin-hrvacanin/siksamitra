@@ -258,3 +258,39 @@
    this the cursor flickers between the resize arrow and the I-beam as it
    crosses the text, and a drag over the column selects it. */
 body.is-resizing { cursor: nwse-resize; user-select: none; }
+
+/* ── carrying a picture somewhere else ────────────────────────────────────
+   The gesture is `apps/web/src/editor/figure-drag.ts`; what is here is the
+   three things it makes visible.
+
+   THE CURSOR SAYS IT CAN BE MOVED, and only where it can: the editor is the
+   view that makes the column `contenteditable`, so the selector asks the page
+   whether it is being edited rather than needing a class of its own. A reader
+   and every export are untouched. */
+.doc[contenteditable='true'] .fig { cursor: move; }
+
+/* THE PICTURE BEING CARRIED is left behind at part strength, so the drop rule
+   can be read against it and it is obvious which picture is in the air. */
+.fig.is-moving { opacity: var(--fig-drag-ghost); }
+
+/* THE DROP RULE — where it will land, and which side it will take. It is the
+   caret of this gesture: half the column's width means it will float on that
+   side, the full width means its own line.
+
+   `position: fixed` and placed from the viewport rectangle of the block it
+   marks, because the column it is drawn over scrolls, is transformed by the
+   zoom, and in the paged view is one of several sheets. A rule positioned
+   inside any of those would need every one of those offsets undone. */
+.fig-drop {
+  position: fixed;
+  z-index: 2;
+  height: var(--fig-drop-rule);
+  margin-top: calc(var(--fig-drop-rule) / -2);
+  background: var(--chrome-accent);
+  border-radius: var(--fig-drop-rule);
+  pointer-events: none;
+}
+
+/* The pointer belongs to the gesture, exactly as for a resize. */
+body.is-moving-figure { cursor: move; user-select: none; }
+@media print { .fig-drop { display: none; } }

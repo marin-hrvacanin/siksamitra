@@ -160,6 +160,93 @@ export function updateFigure(
   return { section: write(section, items), notes, changed: true };
 }
 
+/**
+ * Where a dragged picture ENDS UP, given where it was and which gap it was
+ * dropped in.
+ *
+ * `to.at` counts the gaps in the items as the person saw them, so a drop below
+ * the picture's own position has shifted down by one once the picture is
+ * lifted out. Exported because the window has to select the picture where it
+ * landed, and two subtractions of one are two chances to select the item
+ * beside it.
+ */
+export const movedFigureIndex = (
+  from: { sectionId: string; at: number },
+  to: { sectionId: string; at: number },
+): number => (from.sectionId === to.sectionId && to.at > from.at ? to.at - 1 : to.at);
+
+/**
+ * Take the picture out of one place and put it in another.
+ *
+ * DRAGGING IS THE GESTURE THIS EXISTS FOR, and it is why `to` counts gaps in
+ * the items as they are NOW rather than after the removal. A drop indicator is
+ * drawn between two items the person can see; making the caller subtract one
+ * when it is dragging downwards inside the same step is arithmetic nobody
+ * would get right twice.
+ *
+ * ACROSS STEPS AS WELL. A picture's anchor is its position in a section's
+ * items, so moving it to another section is the same operation with a
+ * different list — and dragging a drawing from one step of the puja manual to
+ * the next is a thing somebody will do on the first day.
+ *
+ * A SIDE, NOT A POSITION. A floating picture dropped in the left half of the
+ * column floats left and in the right half floats right, because that is what
+ * dragging a wrapped picture does in Word. A picture that is NOT floating is
+ * not made to float by being dragged: its flow is a decision taken on the
+ * Picture tab, and a drag that silently changed it would be a drag whose
+ * effect could not be predicted.
+ */
+export function moveFigure(
+  doc: ChantDoc,
+  from: { sectionId: string; at: number },
+  to: { sectionId: string; at: number; side?: 'start' | 'end' },
+): FigureApplied {
+  const source = doc.sections.find((s) => s.id === from.sectionId);
+  const target = doc.sections.find((s) => s.id === to.sectionId);
+  if (source === undefined) {
+    return { doc, notes: [`no step "${from.sectionId}"`], changed: false };
+  }
+  if (target === undefined) {
+    return { doc, notes: [`no step "${to.sectionId}"`], changed: false };
+  }
+  const out = itemsOf(source);
+  const item = out[from.at];
+  if (item === undefined || item.t !== 'figure') {
+    return {
+      doc,
+      notes: [`there is no picture at position ${from.at} of "${from.sectionId}"`],
+      changed: false,
+    };
+  }
+
+  /* The one place a side is applied, and only to a picture that already
+     floats. `side` is undefined for a drop in the middle of the column. */
+  const flow = item.figure?.flow;
+  const moved: ChantItem = to.side !== undefined && item.figure !== undefined
+    && (flow === 'start' || flow === 'end') && flow !== to.side
+    ? { ...item, figure: { ...item.figure, flow: to.side } }
+    : item;
+
+  const same = from.sectionId === to.sectionId;
+  /* Dropping in either gap touching the picture leaves it where it is. A
+     silent undo step for a drag that did nothing is a Ctrl+Z that appears to
+     do nothing too. */
+  if (same && (to.at === from.at || to.at === from.at + 1) && moved === item) {
+    return { doc, notes: [], changed: false };
+  }
+
+  out.splice(from.at, 1);
+  const into = same ? out : itemsOf(target);
+  into.splice(Math.max(0, Math.min(movedFigureIndex(from, to), into.length)), 0, moved);
+
+  const sections = doc.sections.map((s) => {
+    if (s.id === to.sectionId) return write(s, into);
+    if (s.id === from.sectionId) return write(s, out);
+    return s;
+  });
+  return { doc: { ...doc, sections }, notes: [], changed: true };
+}
+
 /** Take a picture out. */
 export function removeFigure(section: ChantSection, at: number): FigureResult {
   const items = itemsOf(section);
@@ -210,8 +297,17 @@ export interface FigureCommand {
   op:
   | { kind: 'insert'; figure: ChantFigure }
   | { kind: 'update'; patch: Partial<ChantFigure> }
-  | { kind: 'remove' };
+  | { kind: 'remove' }
+  /* Dragged somewhere else. `to.at` counts the gaps in the destination's items
+     as they are now — see `moveFigure`. */
+  | { kind: 'move'; to: { sectionId: string; at: number; side?: 'start' | 'end' } };
 }
+
+/** Every section a figure command can touch, so the undo step covers both. */
+export const figureSectionsTouched = (command: FigureCommand): string[] =>
+  (command.op.kind === 'move' && command.op.to.sectionId !== command.sectionId
+    ? [command.sectionId, command.op.to.sectionId]
+    : [command.sectionId]);
 
 /** The document as the command leaves it, and anything it had to say. */
 export interface FigureApplied {
@@ -232,6 +328,9 @@ export function applyFigureCommand(
   doc: ChantDoc, section: ChantSection, command: FigureCommand,
 ): FigureApplied {
   const library = doc.figures ?? [];
+  if (command.op.kind === 'move') {
+    return moveFigure(doc, { sectionId: command.sectionId, at: command.at }, command.op.to);
+  }
   const done = command.op.kind === 'insert'
     ? insertFigure(section, command.at, command.op.figure)
     : command.op.kind === 'remove'

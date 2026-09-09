@@ -49,4 +49,21 @@ export const FIGURE = {
   /* And beside it, when the caption is set alongside rather than under. */
   "fig-cap-beside-gap": "0.9rem",
   "fig-cap-beside-w": "40%",
+  /* THE DROP RULE — the line that says where a dragged picture will land.
+     Thicker than a hairline because it has to be findable while the pointer is
+     moving, and it is chrome, so it never prints. */
+  "fig-drop-rule": "0.1875rem",
+  /* How far the pointer must travel before a press on a picture becomes a
+     drag. Below this a click is a click: a person selecting a picture moves
+     the mouse a pixel or two while the button is down, and a document that
+     re-ordered itself on that would be a document nobody could click. */
+  "fig-drag-slop": "4px",
+  /* The picture being carried, left behind at half strength so the rule can be
+     read against it. */
+  "fig-drag-ghost": "0.4",
+  /* The band at the top and bottom of the column that scrolls while a picture
+     is held over it, and how fast. A drag to a step off the screen is the
+     common case in a manual of 54 of them. */
+  "fig-drag-edge": "48px",
+  "fig-drag-speed": "14px",
 } as const;

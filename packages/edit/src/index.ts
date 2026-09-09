@@ -52,8 +52,9 @@ export type { MarkPatch, MarkReason, UnitAddress } from './marks.js';
 
 /* A picture in a step: put one in, change one, take one out. */
 export {
-  applyFigureCommand, figureIdsIn, insertFigure, nextFigureId, removeFigure,
-  updateFigure, withFigureDefaults,
+  applyFigureCommand, figureIdsIn, figureSectionsTouched, insertFigure,
+  movedFigureIndex, moveFigure, nextFigureId, removeFigure, updateFigure,
+  withFigureDefaults,
 } from './figures.js';
 export type { FigureApplied, FigureCommand, FigureResult } from './figures.js';
 

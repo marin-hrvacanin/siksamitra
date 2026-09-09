@@ -83,6 +83,11 @@
   --fig-cap-gap: 0.45rem;
   --fig-cap-beside-gap: 0.9rem;
   --fig-cap-beside-w: 40%;
+  --fig-drop-rule: 0.1875rem;
+  --fig-drag-slop: 4px;
+  --fig-drag-ghost: 0.4;
+  --fig-drag-edge: 48px;
+  --fig-drag-speed: 14px;
   --mark-holdPad-top: 0.1;
   --mark-holdPad-x: 0.07;
   --mark-holdPad-bottom: 0.12;
