@@ -29,11 +29,17 @@ switch statement — see *Extension points* below.
 
 ## The document model is changing — read this before touching a verse
 
-A verse is becoming **one text and a list of markings over it**, replacing
-`src` + `tokens`. The change is specified in
+A verse **is** one text and a list of markings over it. That is what a document
+on disk holds; `tokens` is rebuilt when the file is opened and is never
+written. The change is specified in
 [`openspec/changes/text-and-marks/`](openspec/changes/text-and-marks/) —
-proposal, design, five capability specs — and it is partly built. Know where it
+proposal, design, five capability specs — and it is half built. Know where it
 stands before you write anything that touches a document.
+
+**Open a document with `openChantDoc` (`@siksamitra/engine`), never with
+`normalizeChantDoc` or `readChantFile` alone.** Those give you the structure
+with no syllables at all, and `ChantVerse.tokens` is typed as present, so you
+get `undefined` at runtime rather than an error at build time.
 
 **Why.** Deriving is lossy in one direction: `ṁ` becomes `n` before a dental
 and nothing recorded that it was ever `ṁ`. So the input was kept separately,
@@ -45,17 +51,25 @@ to answer with a paragraph about evidence.
 
 - `packages/format/src/mark.ts` + `mark-ops.ts` — what a marking is, its
   invariants, and the span algebra. Toggling is bold's rule.
+- `packages/format/src/mark-codec.ts` — the stored form, and what it leaves out
+  because the kind already says it.
 - `packages/format/src/migrate.ts` — `tokens ⇄ text + markings`, **573 of 573
   verses byte for byte**. `npm run check:migrate`.
-- `packages/render/src/runs.ts` — text + markings as the runs that draw them.
-- `apps/web/src/editor/lexical/` — the editing surface is **Lexical**, with the
-  document behind one bridge. The whole corpus goes through it headlessly in
-  `tests/integration/lexical-bridge.test.ts`.
+- `packages/format/src/chant-file.ts` + `packages/engine/src/open-doc.ts` — the
+  document as bytes, both directions. **The corpus is 1871.6 kB, from 6564.7.**
+- `packages/render/src/runs.ts` — text + markings as the runs that draw them,
+  photographed against the token renderer by `check:run-parity`.
+- `apps/web/src/editor/lexical/` — the editing surface is to be **Lexical**,
+  with the document behind one bridge. The whole corpus goes through it
+  headlessly in `tests/integration/lexical-bridge.test.ts`. The surface itself
+  is not built: `EditorSurface.tsx` is still the contenteditable one.
 
-**What is not done:** the app still holds `src` + `tokens`, so the engine still
-re-derives on every keystroke. That is why the rules run without being asked,
-and why removing a holding cannot yet be told apart from never having placed
-one. Both are fixed by the switch, not before it.
+**What is not done: the EDITOR.** It still edits `src`, re-derives `tokens` on
+every keystroke, and the text and markings are computed back from those tokens
+when the file is written — so the truth in memory is still the token stream.
+That is why the rules run without being asked, and why removing a holding
+cannot yet be told apart from never having placed one. Both are fixed by
+finishing the switch, not before it.
 
 **Three things that are no longer true**, wherever you find them written:
 
@@ -238,12 +252,12 @@ npm run spec               # the OpenSpec CLI
 The gates in `npm run check`: `check:web` `check:word-addin` `check:icons`
 `check:authoring` `check:modules` `check:tokens` `check:literals`
 `check:fixtures` `check:conformance` `check:marking` `check:migrate`
-`check:size` `check:source` `check:transliteration` `check:lossless`
-`check:engine`
+`check:size` `check:open` `check:source` `check:transliteration`
+`check:lossless` `check:engine`
 `check:export:html` `check:export:image` `check:export:figures`
 `check:export:word` `check:export:pdf`.
 
-Five of those are worth knowing by name:
+Six of those are worth knowing by name:
 
 | | |
 |---|---|
@@ -251,6 +265,7 @@ Five of those are worth knowing by name:
 | `check:marking` | marks one letter in every transcribed verse and compares every OTHER byte |
 | `check:export:html` | every document exported and re-imported, byte-identical |
 | `check:size` | no verse stored twice, and no document larger than recorded |
+| `check:open` | nothing parses a document from disk without `openChantDoc` |
 | `check:reflow` | applying a marking may not move a glyph (in `check:edit`) |
 
 `check:size` is the one to read before touching the format. A composed section

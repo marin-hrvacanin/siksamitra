@@ -9,14 +9,20 @@ a gate, or a test with an independent oracle. Where a task is partly done it
 says which half, because "roughly done" is how a list stops being read.
 
 **Where this stands.** The model, its algebra and the migration are built and
-gated. The renderer can draw the new shape and a pixel gate says it draws what
-the old one draws. Nothing in the running application uses any of it yet: the
-document on disk still holds `src` + `tokens`, the editor still derives on every
-keystroke, and that is what blocks §4.3, §6.4 and the file size.
+gated, and THE CORPUS HAS MOVED: a verse on disk is one text and a list of
+markings, and its tokens are rebuilt on open by `openChantDoc`. The corpus is
+1871.6 kB, from 6564.7 kB.
+
+What has not moved is the EDITOR. It still edits `src`, re-derives `tokens` on
+every keystroke, and the text and markings are computed from those tokens when
+the file is written — so the truth in memory is still the token stream. That is
+what blocks §4.3 (the engine running unasked) and §6.4 (removing None), and it
+is the next piece of work: the surface has to edit text and markings directly,
+which is what Lexical is for.
 
 ## 1. The model, on its own
 
-- [~] 1.1 `packages/format`: `Mark`, `MarkKind`, `Stage` — done in `mark.ts`, no dependencies. THE VERSE SHAPE IS NOT: `ChantVerse` still holds `tokens` + `src`, and nothing on disk carries text plus marks.
+- [x] 1.1 `packages/format`: `Mark`, `MarkKind`, `Stage` and the verse shape — `mark.ts`, and `ChantVerse.text` + `ChantVerse.marks`, which is what a document now stores. No dependencies. `tokens` remains on the in-memory verse until §10.1.
 - [x] 1.2 The invariants as one function — `markFaults` / `assertMarks` in `mark.ts`, called after every operation in `mark-ops.ts`.
 - [x] 1.3 The mark algebra, pure — `mark-ops.ts`. `normalise` is `mergeAdjacent`; splitting falls out of `applyMark`/`removeMark` rather than being its own entry point.
 - [x] 1.4 Property tests over random ranges — 38 in `__tests__/mark.test.ts`, including `coverage` against a character-by-character oracle and the invariants after every random operation.
@@ -24,15 +30,18 @@ keystroke, and that is what blocks §4.3, §6.4 and the file size.
 
 ## 2. Reading and writing
 
-- [ ] 2.1 Read and write the new shape, with the invariants checked on read and the fault named per verse. **Next.**
+- [x] 2.1 Read and write the new shape — `writeChantFile` converts on the way out; `openChantDoc` (`@siksamitra/engine`) rebuilds the tokens on the way in. Every load site in the program, the gates, the tools and the tests goes through it.
 - [~] 2.2 A size gate — `check:size` (`tools/size.mjs`) holds every document to a recorded size that may only fall, and fails structurally when a verse is stored twice. It is a RATCHET, not the target: the targets below need §4.5 and §5.2 first.
 
   Measured, after the `items`/`verses` duplication went:
 
-  | | on disk | text+marks | +deflate | without `syl` | +deflate |
+  | | before | now | +deflate | without `syl` | +deflate |
   |---|---|---|---|---|---|
-  | Śrī Rudram | 918.7 kB | 308.2 kB | 51.8 kB | 227.0 kB | 40.7 kB |
-  | the corpus | 3330.6 kB | 1784.6 kB | 286.1 kB | 1581.6 kB | 252.8 kB |
+  | Śrī Rudram | 918.7 kB | **340.5 kB** | 59.0 kB | 227.0 kB | 40.7 kB |
+  | the corpus | 3330.6 kB | **1871.6 kB** | 307.3 kB | 1581.6 kB | 252.8 kB |
+
+  From 6564.7 kB at the start of this change: the `items`/`verses` duplication
+  was half of it and the tokens 45% of the rest.
 
   Against targets of 25 kB and 60 kB. The gap is not compression: on Śrī Rudram
   the text itself is 22.3 kB, `syl` markings 373.5 kB, other markings 372.0 kB,
@@ -46,7 +55,7 @@ keystroke, and that is what blocks §4.3, §6.4 and the file size.
 
 - [x] 3.1 `tokens` → `text` + `marks`, per verse — `toTextAndMarks` in `migrate.ts`, with `toTokens` back the other way.
 - [x] 3.2 **The gate** — `check:migrate` (`tools/migrate-audit.mjs`), 573/573 round-trip exactly. It compares the box PARTITION rather than group ids, because ids are an implementation detail.
-- [ ] 3.3 For the 420 verses that have one, compare the new text against `src.lines` and report every disagreement — this is the last chance to see where the two copies had drifted.
+- [x] 3.3 The 420 verses with a source layer are re-derived from `src.lines` through the engine and compared with what they store — `check:source`, 420 of 420. It renumbers holding groups the way `holdingSpans` defines a box, because `hg` is a reused label rather than a fact.
 - [x] 3.4 Run it over the corpus — 573/573, "NOTHING WAS LOST". Faults it found are recorded in `design.md`.
 
 ## 4. The engine, against the text
@@ -60,7 +69,9 @@ keystroke, and that is what blocks §4.3, §6.4 and the file size.
 ## 5. Drawing
 
 - [x] 5.1 Render from text and markings — `runs.ts` + `render/run-marks.tsx`, drawing a run as ONE element.
-- [ ] 5.2 Stop storing and stop reading script spellings and syllable division.
+- [~] 5.2 Stop STORING the script spellings — done; they are rebuilt on open, and the published forms are frozen in `corpus/transliteration-reference.json` so the gate that checks the tables still has an authority. Nothing has stopped READING them, and the syllable divisions are still stored (`syl`, 373.5 kB on Śrī Rudram) until the engine reproduces them.
+
+  **The Tamil forms need the owner's decision.** Rebuilding changed 215 syllables of 15,881. The shipped Tamil disagrees with itself on 43 of them and puts the Devanāgarī avagraha `ऽ` in a Tamil field ten times; the engine is consistent. `check:transliteration` prints the whole list on every run.
 - [x] 5.3 One box over a range — a run is one element, so a holding crossing a space is one rectangle. `check:run-parity` photographs a verse drawn both ways: worst 0.97% of pixels against a 1.5% limit. Three real faults were found on the way down and are recorded in the tool.
 - [ ] 5.4 A marking occupies no layout space; assert glyph positions are identical with and without it.
 - [ ] 5.5 The reader (`ChantReader`) draws through the same path — it and `apps/web/src/views/token-renderers.tsx` are the only two drawing sites left on tokens.

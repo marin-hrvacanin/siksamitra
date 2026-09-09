@@ -13,8 +13,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { ChantDoc, Mark } from '@siksamitra/format';
-import { mark, normalizeChantDoc, toTextAndMarks } from '@siksamitra/format';
-import { resolveProfile } from '@siksamitra/engine';
+import { mark, toTextAndMarks } from '@siksamitra/format';
+import { openChantDoc, resolveProfile } from '@siksamitra/engine';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { STAGES, rerun, typedText } from '../rerun.js';
@@ -22,7 +22,7 @@ import { corpusVerses } from './corpus.js';
 
 const DIR = fileURLToPath(new URL('../../../../../corpus/chants/', import.meta.url));
 const docOf = (file: string): ChantDoc =>
-  normalizeChantDoc(JSON.parse(readFileSync(DIR + file, 'utf8')));
+  openChantDoc(JSON.parse(readFileSync(DIR + file, 'utf8')));
 
 interface Over { verses: number; reproduced: number; handKept: number; handSeen: number }
 
