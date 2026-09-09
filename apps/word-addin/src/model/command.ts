@@ -15,28 +15,47 @@
  */
 import type { Mark, MarkKind, TextAndMarks } from '@siksamitra/format';
 import {
-  assertMarks, coverage, mark, normalise, removeMark, toggleMark,
+  assertMarks, coverage, mark, normalise, removeMark, shiftForEdit, toggleMark,
 } from '@siksamitra/format';
 
 export type MarkCommand =
   | { k: 'hold'; v: 'short' | 'long' }
   | { k: 'svara'; v: 'anudatta' | 'svarita' | 'dirgha-svarita' }
-  | { k: 'candra' }
   /** A dot before the range's start. A point marking. */
   | { k: 'sbhakti' }
   /** A pause at the range's start. A point marking. */
   | { k: 'pause'; v: 'short' | 'long' }
   /** The letters the rules replaced; `v` is what was typed. */
   | { k: 'was'; v: string }
+  /**
+   * A combining character typed onto the letters in the range.
+   *
+   * The candrabindu is this, and not a marking. A run of text is drawn as one
+   * element with one text node in it, and a mark laid OVER a letter has
+   * nowhere to live in that — the renderer parity gate photographed all 89 of
+   * the corpus's candrabindus simply absent when it was one. U+0310 belongs in
+   * the text, which is where an author types it, and the invariant that a
+   * marking may not begin between a letter and its combining mark already
+   * protects it.
+   */
+  | { k: 'combining'; v: string }
   /** Every marking in the range, gone. */
   | { k: 'clear' };
 
 /** The kinds `clear` withdraws. `syl` is division, not an opinion. */
 const CLEARABLE: readonly MarkKind[] =
-  ['hold', 'svara', 'candra', 'sbhakti', 'sup', 'pause', 'was', 'cj'];
+  ['hold', 'svara', 'sbhakti', 'sup', 'pause', 'was', 'cj'];
 
 export interface CommandResult {
   marks: Mark[];
+  /**
+   * The text, when the command changed it.
+   *
+   * Only `combining` does. Every other control moves markings over a text that
+   * does not move, which is why this is optional rather than always returned —
+   * a caller that ignores it cannot silently drop an edit it never makes.
+   */
+  text?: string;
   /** What happened, for the task pane to say. One line, plain. */
   note: string;
 }
@@ -55,6 +74,40 @@ function suppression(removed: readonly Mark[], from: number, to: number): Mark[]
   return [mark({ k: 'hold', from, to, v: 'none', by: 'hand' })];
 }
 
+/**
+ * Put a combining character onto every letter in the range, or take it off.
+ *
+ * A toggle, like every other control: if each letter already carries it, it
+ * comes off. The markings move with the edit, because inserting a character
+ * shifts every offset after it.
+ */
+function combining(
+  tm: TextAndMarks, from: number, to: number, ch: string,
+): { text: string; marks: Mark[]; added: number; removed: number } {
+  let text = tm.text;
+  let marks = [...tm.marks];
+  let added = 0;
+  let removed = 0;
+  /* Backwards, so an earlier offset is still valid after a later edit. */
+  const letters: number[] = [];
+  for (let i = from; i < to && i < text.length; i += 1) {
+    if (text[i] !== ch) letters.push(i);
+  }
+  for (let n = letters.length - 1; n >= 0; n -= 1) {
+    const at = letters[n]! + 1;
+    const has = text[at] === ch;
+    const edit = has
+      ? { from: at, to: at + ch.length, inserted: 0 }
+      : { from: at, to: at, inserted: ch.length };
+    text = has
+      ? text.slice(0, at) + text.slice(at + ch.length)
+      : text.slice(0, at) + ch + text.slice(at);
+    marks = shiftForEdit(marks, edit).marks;
+    if (has) removed += 1; else added += 1;
+  }
+  return { text, marks: normalise(marks), added, removed };
+}
+
 export function applyCommand(
   tm: TextAndMarks, from: number, to: number, cmd: MarkCommand,
 ): CommandResult {
@@ -64,6 +117,15 @@ export function applyCommand(
     for (const k of CLEARABLE) out = removeMark(out, k, from, to);
     assertMarks(out, text, 'after clear');
     return { marks: out, note: `${marks.length - out.length} marking(s) withdrawn` };
+  }
+
+  if (cmd.k === 'combining') {
+    const done = combining(tm, from, to, cmd.v);
+    assertMarks(done.marks, done.text, 'after a combining character');
+    const note = done.added > 0
+      ? `placed on ${done.added} letter(s)`
+      : `removed from ${done.removed} letter(s)`;
+    return { marks: done.marks, text: done.text, note };
   }
 
   if (cmd.k === 'sbhakti' || cmd.k === 'pause') {
@@ -115,7 +177,6 @@ export function selectionState(
   return {
     'hold-short': at('hold', 'short'),
     'hold-long': at('hold', 'long'),
-    candra: at('candra'),
     anudatta: at('svara', 'anudatta'),
     svarita: at('svara', 'svarita'),
     'dirgha-svarita': at('svara', 'dirgha-svarita'),

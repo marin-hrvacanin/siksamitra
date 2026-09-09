@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 import { setView } from './_ui.mjs';
-const exe = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const b = await puppeteer.launch({ executablePath: exe, headless: 'shell', args: ['--no-sandbox'] });
+const b = await puppeteer.launch({ executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'], });
 const p = await b.newPage();
 const errs = [];
 p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });

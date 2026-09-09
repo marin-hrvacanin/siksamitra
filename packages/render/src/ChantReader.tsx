@@ -4,6 +4,7 @@ import { useRenderHost } from "./host.js";
 import {
   CHANT_FORMAT_VERSION,
   canonicalJson,
+  isEmbeddedImage,
   normalizeChantDoc,
   parseChantSelect,
   sliceChantDoc,
@@ -57,7 +58,10 @@ import { applyRate, SEG_LEAD, startAt } from "./transport.js";
 import {
   plainText, renderSyl as renderSylShared, sylText, toScriptDigits, wordSurface,
 } from "./render/marks";
+/* A picture is drawn by the one figure component, not by markup of its own. */
+import { Figure } from "./render/figure.js";
 import "./chant.css";
+import "./figure.css";
 import "./hold-join.css";
 
 /* ==========================================================================
@@ -1461,42 +1465,22 @@ function LazySection({ eager, children }: { eager: boolean; children: ReactNode 
   return <div ref={ref} className="section__placeholder" aria-hidden="true" />;
 }
 
+/**
+ * A figure, drawn by the ONE figure component.
+ *
+ * This used to be its own `<figure>` markup — a second implementation of a
+ * picture, which drifted the moment the editor's views grew one of their own.
+ * All that is left here is the seam only a reader has: the HOST resolves a
+ * path (the platform serves `/figures/…` with a build version on it), while a
+ * picture the document carries as bytes resolves itself.
+ */
 function FigureView({ fig }: { fig: ChantFigure }) {
-  const captionAt = fig.captionAt ?? "below";
-  const caption = captionAt === "none" ? null : fig.caption?.en;
-  const cls = [
-    "fig",
-    `fig--${fig.size ?? "medium"}`,
-    `fig--flow-${fig.flow ?? "block"}`,
-    `fig--cap-${captionAt}`,
-    `fig--frame-${fig.frame ?? "none"}`,
-    fig.rounded === false ? "fig--square-corners" : "fig--rounded",
-  ].join(" ");
-  const img = (
-    <img
-      className="fig__img"
-      src={fig.src}
-      alt={fig.alt}
-      loading="lazy"
-      decoding="async"
-      {...(fig.width ? { width: fig.width } : {})}
-      {...(fig.height ? { height: fig.height } : {})}
-    />
+  const { resolveUrl } = useRenderHost();
+  const resolve = useCallback(
+    (src: string): string | null => (isEmbeddedImage(src) ? src : resolveUrl(src)),
+    [resolveUrl],
   );
-  return (
-    <figure className={cls} data-crop={fig.crop ?? "auto"}>
-      {caption && captionAt === "above" ? <figcaption className="fig__cap" lang="en">{caption}</figcaption> : null}
-      <div className="fig__box">
-        {fig.srcDark ? (
-          <picture>
-            <source media="(prefers-color-scheme: dark)" srcSet={fig.srcDark} />
-            {img}
-          </picture>
-        ) : img}
-      </div>
-      {caption && captionAt !== "above" ? <figcaption className="fig__cap" lang="en">{caption}</figcaption> : null}
-    </figure>
-  );
+  return <Figure fig={fig} resolve={resolve} />;
 }
 
 /** One direction: quiet prose, and nothing around it. */

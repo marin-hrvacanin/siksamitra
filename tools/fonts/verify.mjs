@@ -25,6 +25,7 @@
  */
 
 import puppeteer from 'puppeteer-core';
+import { browserPath } from '../_browser.mjs';
 import { pathToFileURL } from 'node:url';
 import { join, resolve } from 'node:path';
 import { unlinkSync, writeFileSync } from 'node:fs';
@@ -32,8 +33,6 @@ import {
   FAMILIES, REQUIRED_COMBINING, REQUIRED_LETTERS, TEXT_FALLBACK, textStack,
 } from './manifest.mjs';
 
-const exe = process.env.CHROME
-  ?? 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 
 const need = { ...REQUIRED_LETTERS, ...REQUIRED_COMBINING };
 const textFamilies = FAMILIES.filter((f) => f.role === 'text').map((f) => f.name);
@@ -48,7 +47,7 @@ writeFileSync(probeFile, `<!doctype html><meta charset="utf-8">
 <body><span id="p"></span></body>`);
 
 const browser = await puppeteer.launch({
-  executablePath: exe, headless: 'shell', args: ['--no-sandbox'],
+  executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'],
 });
 const page = await browser.newPage();
 const missingFiles = [];

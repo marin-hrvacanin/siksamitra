@@ -727,36 +727,13 @@
 }
 .dir__text { color: inherit; }
 
-/* ---- figures ------------------------------------------------------------- */
-.fig { margin: 1rem 0; min-width: 0; }
-.fig--thumb { width: 88px; }
-.fig--small { width: clamp(120px, 25%, 210px); }
-.fig--medium { width: clamp(160px, 50%, 340px); }
-.fig--large { width: 75%; }
-.fig--full { width: 100%; }
-.fig--flow-block { margin-left: auto; margin-right: auto; }
-.fig--flow-start { float: left; margin: .2rem 1.1rem .8rem 0; }
-.fig--flow-end { float: right; margin: .2rem 0 .8rem 1.1rem; }
-/* The box reserves the aspect BEFORE the file loads, so a figure landing
-   mid-step never pushes the mantra being read down the screen. */
-.fig__box { position: relative; width: 100%; display: block; }
-.fig[data-crop="square"] .fig__box { aspect-ratio: 1 / 1; }
-.fig[data-crop="portrait"] .fig__box { aspect-ratio: 3 / 4; }
-.fig[data-crop="wide"] .fig__box { aspect-ratio: 16 / 9; }
-.fig__img { display: block; width: 100%; height: 100%; object-fit: contain; }
-/* No backing plate and no frame by default: VU procedural art is transparent
-   art that must read against the page in BOTH themes. */
-.fig--frame-thin .fig__box { border: 1px solid var(--c-line); }
-.fig--frame-violet .fig__box { border: 1px solid var(--color-rule-violet, var(--c-violet)); }
-.fig--rounded .fig__box, .fig--rounded .fig__img { border-radius: var(--radius-card, 10px); }
-.fig__cap {
-  font-family: var(--font-ui); font-size: .72rem; line-height: 1.5;
-  color: var(--c-ink-mute); margin-top: .45rem;
-}
-.fig--cap-above .fig__cap { margin: 0 0 .45rem; }
-.fig--cap-beside { display: flex; gap: .9rem; align-items: center; }
-.fig--cap-beside .fig__box { flex: 1 1 auto; }
-.fig--cap-beside .fig__cap { flex: 1 1 40%; margin: 0; }
+/* ---- figures -------------------------------------------------------------
+   Nowhere. A picture is drawn by `render/figure.tsx` and sized by `figure.css`
+   — the same component and the same widths the editor's three views and every
+   export use. The rules that were here were the second implementation, and the
+   88px / clamp(120px,25%,210px) / clamp(160px,50%,340px) / 75% / 100% steps
+   they set are now tokens (`fig-*` in `packages/tokens/src/source.ts`), so
+   adopting the shared component moved no picture in the pūjā manual. */
 
 /* ---- an embed, and its fallbacks ----------------------------------------- */
 .emb { margin: .9rem 0; padding: .2rem 0 .2rem .9rem; border-left: 2px dashed var(--c-line); }
@@ -834,7 +811,8 @@
   .fig__img { max-height: 38vh; }
   .dir { padding-left: 0; }
 }
-@media print {
-  .fig { float: none !important; width: 25% !important; margin: .6rem auto !important; }
-  .fig__cap { margin-top: .3rem; }
-}
+/* A figure's printed size WAS forced here — `width: 25% !important`, the float
+   killed — and that was a second opinion about how wide a picture is, held by
+   the stylesheet the reader inherited. It made a printed page disagree with the
+   paged view, which is this program's print preview. Gone; `figure.css` decides
+   once, for the screen and for paper. */

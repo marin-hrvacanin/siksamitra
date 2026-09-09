@@ -20,14 +20,16 @@
  *   else.
  */
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { ChantDoc, ChantProfileKey, ChantSection } from '@siksamitra/format';
+import type { ChantDoc, ChantProfileKey } from '@siksamitra/format';
 import type { SrcMap } from '@siksamitra/engine';
 import {
-  apply, emptyHistory, flatten, newState, redo, registerOf, select, sourcesOf, srcMapFor, undo,
+  apply, emptyHistory, flatten, newState, redo, registerOf, select, sourcesOf, undo,
   type EditCommand, type EditState, type FlatSource, type History, type Selection,
 } from '@siksamitra/edit';
 import { selectedUnits, type UnitRange } from './selection.js';
 import { useMarks, type HoldState, type MarkField } from './useMarks.js';
+import { useSourceMaps } from './useSourceMaps.js';
+import { useFigures, type Figures } from './useFigures.js';
 import { useText } from './useText.js';
 import { useRegister } from './useRegister.js';
 import { useSetRecording } from './useSetRecording.js';
@@ -104,6 +106,15 @@ export interface Session {
   holdState: HoldState;
   /** Press a holding button on letters that already have it, and it comes off. */
   toggleHold: (value: 'short' | 'long') => void;
+
+  /**
+   * THE PICTURES — which one is selected, and every change to one.
+   *
+   * A whole object rather than eight more members, because a picture is its
+   * own subject: the ribbon group takes this and needs nothing else, and the
+   * rest of the session does not have to grow when a picture gains an axis.
+   */
+  figures: Figures;
 
   /**
    * WHICH REGISTER'S RULES GOVERN THE TEXT.
@@ -217,57 +228,9 @@ export function useSession(doc: ChantDoc): Session {
     [section],
   );
 
-  /**
-   * The flat source of ANY section, not only the one the caret is in.
-   *
-   * A click in another section has to be turned into an offset in THAT section
-   * before the caret can move there — and without this it could not be, so the
-   * caret was trapped in the first section: 2 of Durgā Sūktam's 9 verses and
-   * 191 of Śrī Rudram's 198 were unreachable in edit mode, with no keyboard
-   * route either.
-   */
-  /*
-   * CACHED BY SECTION.
-   *
-   * It re-flattened the whole section on every call, and it is called from the
-   * mapping that runs on every `selectionchange` — so a drag across Śrī
-   * Rudram re-flattened 198 verses of source per event. Nothing about the
-   * source changes while a mouse is moving.
-   *
-   * Keyed on the SECTION OBJECT, not its id: an edit gives the section a new
-   * identity, so the entry falls out of date exactly when the text does and
-   * never a moment later.
-   */
-  const flats = useRef(new Map<string, { of: ChantSection; flat: FlatSource }>());
-  const flatFor = useCallback((id: string): FlatSource => {
-    const found = live.sections.find((s) => s.id === id);
-    if (found === undefined) return flatten([]);
-    const hit = flats.current.get(id);
-    if (hit !== undefined && hit.of === found) return hit.flat;
-    const flat = flatten(sourcesOf(found));
-    flats.current.set(id, { of: found, flat });
-    return flat;
-  }, [live]);
-
-  /** Source maps, cached by section, verse and the verse's own source text. */
-  const cache = useRef(new Map<string, { key: string; map: SrcMap | null }>());
-  const srcMapIn = useCallback((where: string, verseId: string): SrcMap | null => {
-    const found = live.sections.find((s) => s.id === where);
-    const verse = found?.verses.find((v) => v.id === verseId);
-    if (found === undefined || verse === undefined) return null;
-    const key = (verse.src?.lines ?? []).join('\n');
-    const at = `${where}/${verseId}`;
-    const hit = cache.current.get(at);
-    if (hit !== undefined && hit.key === key) return hit.map;
-    const map = srcMapFor(live, found.id, verseId);
-    cache.current.set(at, { key, map });
-    return map;
-  }, [live]);
-
-  const srcMapOf = useCallback(
-    (verseId: string): SrcMap | null => srcMapIn(sectionId, verseId),
-    [srcMapIn, sectionId],
-  );
+  /* Flattening a section and deriving a verse's source map are the two things
+     the caret asks for on every pointer move — cached, in `useSourceMaps`. */
+  const { flatFor, srcMapIn, srcMapOf } = useSourceMaps(live, sectionId);
 
   const selected = useMemo(
     () => (state.selection === null ? [] : selectedUnits(flat, state.selection, srcMapOf)),
@@ -354,6 +317,15 @@ export function useSession(doc: ChantDoc): Session {
     setRevision((n) => n + 1);
   }, []);
 
+  /* A picture is a section ITEM, so it needs the section the caret is in and
+     the verse it is in — that is where a new one lands. */
+  const figures = useFigures({
+    run,
+    doc: live,
+    sectionId: section?.id ?? '',
+    verseId: state.selection?.head.verseId,
+  });
+
   const setRegister = useRegister(setLive, setRevision, sectionId);
   const setRecording = useSetRecording(setLive, setRevision);
 
@@ -381,6 +353,7 @@ export function useSession(doc: ChantDoc): Session {
     autoHoldings,
     holdState,
     toggleHold,
+    figures,
     register: registerOf(live),
     sectionRegister: section === undefined ? null : registerOf(live, section),
     setRegister,

@@ -4,6 +4,7 @@
  *
  *   npm run export -- corpus/chants/durga-suktam.json
  *   npm run export -- <doc> --style card --png --select '#sec-1/v-1'
+ *   npm run export -- <doc> --docx --pdf
  *   npm run export -- <doc> --style veda-union --png --svg --scale 3
  *   npm run export -- --styles            # what the styles are
  *
@@ -20,6 +21,8 @@ import { basename, dirname, join } from 'node:path';
 import { EXPORT_STYLES, exportStyle } from '@siksamitra/tokens/export-styles';
 import { SCRIPTS, buildPage, loadDoc } from './page.mjs';
 import { toPng, toSvg, withBrowser } from './raster.mjs';
+import { buildWord } from './word.mjs';
+import { buildPdf } from './pdf.mjs';
 
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(`--${name}`);
@@ -66,8 +69,23 @@ if (!flag('no-html')) {
     + `  (${built.fonts.faces} faces, ${(built.fonts.bytes / 1024).toFixed(0)} KB of them)`);
 }
 
-if (flag('png') || flag('svg')) {
+if (flag('docx')) {
+  const word = await buildWord(doc, { style: style.id, script, select });
+  writeFileSync(`${stem}.docx`, word.bytes);
+  console.log(`  ${stem}.docx`.padEnd(56)
+    + `${(word.bytes.length / 1024).toFixed(0)} KB`
+    + '  (the document is inside it — reopen it losslessly)');
+}
+
+if (flag('png') || flag('svg') || flag('pdf')) {
   await withBrowser(async (browser) => {
+    if (flag('pdf')) {
+      const out = await buildPdf(browser, doc, { style: style.id, script, select });
+      writeFileSync(`${stem}.pdf`, out.bytes);
+      console.log(`  ${stem}.pdf`.padEnd(56)
+        + `${(out.bytes.length / 1048576).toFixed(2)} MB`
+        + '  (document.json is attached to it)');
+    }
     if (flag('png')) {
       const png = await toPng(browser, built.html, { frame: style.frame, scale });
       writeFileSync(`${stem}.png`, png.bytes);

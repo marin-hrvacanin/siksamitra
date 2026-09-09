@@ -25,10 +25,11 @@ import { DEFAULT_PAGE, pageGeometry } from '@siksamitra/layout';
 import {
   chooseFaces, codepointsIn, exportHtml, faceRule, facesNeeded, parseFaceCss,
 } from '@siksamitra/interop';
-import { CHROME_TOKENS, DEFAULT_CHROME } from '@siksamitra/tokens';
-import { documentThemeOf, exportStyle, type ExportStyle } from '@siksamitra/tokens/export-styles';
+import {
+  documentThemeOf, exportStyle, styleStacks, type ExportStyle,
+} from '@siksamitra/tokens/export-styles';
 import { typeScaleOf } from '@siksamitra/tokens/document-themes';
-import { TEXT_FACES } from '@siksamitra/tokens/fonts';
+
 import { FlowView } from './FlowView.js';
 import { DocumentBlocks } from './DocumentBlocks.js';
 
@@ -126,14 +127,11 @@ export async function buildExportPage(
   const view = documentView(shown, style, script);
 
   const theme = documentThemeOf(style);
-  /*
-   * The `ui` face slot falls back to the CHROME theme's face when a document
-   * theme names none of its own — `emit.mjs`'s `face()` resolves it to
-   * `var(--font-ui)` — so the export has to know which chrome the page is set
-   * under to know which family that is. It is always the default one.
-   */
-  const uiStack = CHROME_TOKENS[DEFAULT_CHROME]![style.mode]!['font-ui']!;
-  const stacks = facesNeeded(theme, TEXT_FACES[theme.face], typeScaleOf(theme), uiStack);
+  /* Both stacks come from `styleStacks`, which the `.docx` exporter also calls
+     — a page that embedded one family while the Word file asked for another
+     would be two documents. */
+  const { text: textStack, ui: uiStack } = styleStacks(style);
+  const stacks = facesNeeded(theme, textStack, typeScaleOf(theme), uiStack);
   const { chosen, uncovered } = chooseFaces(
     parseFaceCss(await io.faceCss()), stacks, codepointsIn(view),
   );

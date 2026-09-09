@@ -19,16 +19,17 @@
  *
  * See specs/chant-editor/03-INTEROP.md §2.
  */
-import { unzipSync, zipSync, strFromU8, strToU8 } from 'fflate';
+import { unzipSync, strFromU8 } from 'fflate';
 import type { ChantDoc, ChantSection, ChantToken, ChantUnit, ChantVerse } from '@siksamitra/format';
 import { normalize } from '@siksamitra/engine';
 import { parseLetters, isVowel, ANU, CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
 import { transliterateSyllable } from '@siksamitra/engine';
 import { syllabify } from '@siksamitra/engine';
 import {
-  REFERENCE_COUNTS, SVARA_BY_CHAR, SVARA_CHAR, paraRoleOf, roleOf,
-  type WordParaRole,
+  BAR_GLYPH, HOLD_CHANGE_ROLES, REFERENCE_COUNTS, SVARA_BY_CHAR, paraRoleOf, roleOf,
+  type WordMarkRole, type WordParaRole,
 } from './word-styles.js';
+import { xmlText } from './xml.js';
 
 /* ==========================================================================
    A minimal OOXML reader
@@ -57,24 +58,6 @@ const RE_PSTYLE = /<w:pStyle\s+w:val="([^"]*)"/;
 const RE_RSTYLE = /<w:rStyle\s+w:val="([^"]*)"/;
 const RE_TAB = /<w:tab\b[^>]*\/?>/;
 const RE_BR = /<w:br\b[^>]*\/?>/;
-
-function xmlText(s: string): string {
-  return s
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, h: string) => String.fromCodePoint(Number.parseInt(h, 16)))
-    .replace(/&amp;/g, '&');
-}
-
-function xmlEscape(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
 
 /** Read `word/document.xml` into paragraphs of runs, in DOCUMENT ORDER. */
 export function readParagraphs(documentXml: string): WordParagraph[] {
@@ -181,7 +164,7 @@ export function tokensFromRuns(
   /** Letters of the current word, with their marks. */
   let word: ChantUnit[] = [];
   let hg = 0;
-  let holdRun: { role: 'hold-short' | 'hold-long'; id: number } | null = null;
+  let holdRun: { role: WordMarkRole; id: number } | null = null;
   /**
    * A svarabhakti dot waiting for its letter.
    *
@@ -292,11 +275,21 @@ export function tokensFromRuns(
 
     if (role === 'pause') {
       flush();
+      /* A BAR AND A SHORT PAUSE ARE DIFFERENT TOKENS and were written with the
+         same pipe in the same style, so every one of the corpus's 59 bars came
+         back from a round trip as a pause. `BAR_GLYPH` is what the exporter
+         writes now; his own files contain no bar, so nothing of his changes. */
+      const bars = (run.text.split(BAR_GLYPH).length - 1);
       const pipes = (run.text.match(/\|/g) ?? []).length;
-      if (pipes > 0) {
+      if (bars > 0 || pipes > 0) {
         if (tokens.length > 0 && tokens[tokens.length - 1]!.t !== 'sp') tokens.push({ t: 'sp' });
-        tokens.push({ t: 'pause', len: pipes >= 2 ? 'long' : 'short' });
-        bump('pause');
+        if (bars > 0) {
+          for (let k = 0; k < bars; k += 1) tokens.push({ t: 'bar' });
+          bump('bar');
+        } else {
+          tokens.push({ t: 'pause', len: pipes >= 2 ? 'long' : 'short' });
+          bump('pause');
+        }
       }
       continue;
     }
@@ -321,7 +314,17 @@ export function tokensFromRuns(
     }
 
     if (role === 'gum') {
-      // base `m` + candra, and the g-run that follows is the reading aid.
+      /*
+       * base `m` + candra, and the g-run that follows is the reading aid.
+       *
+       * `change` IS SET, and it is his file that says so: `VedicAnusvara` is
+       * basedOn `Anusvara` and carries its blue, which on his page means the
+       * letter actually recited. Our own exporter does not use this style — a
+       * candrabindu is a CHARACTER, so a gum letter is written in whichever
+       * style its other marks call for and the candra rides in the text. That
+       * is what the page does too: `is-change` colours a letter, `u.candra`
+       * does not.
+       */
       const g = /^([g]{1,2}ṁ?|ṁ)/.exec(run.text.replace(/^m?̐?/, ''));
       const host = lastUnit();
       if (host !== undefined && (host.c === 'm' || host.c === ANU)) {
@@ -340,8 +343,15 @@ export function tokensFromRuns(
       if (run.superscript) {
         const host = lastUnit();
         if (host !== undefined) {
+          /*
+           * A RAISED AID IS NOT A SUBSTITUTION. The `Anusvara` style carries
+           * both — the letter actually recited, and the small letter printed
+           * above one — and only the second is raised. Setting `change` here as
+           * well put a substitution on 104 letters across 79 verses that the
+           * exporter never marked, which a round trip over all 573 corpus
+           * verses reported as marks gained out of nowhere.
+           */
           host.sup = (host.sup ?? '') + run.text.trim();
-          host.change = true;
           bump('sup');
           continue;
         }
@@ -352,7 +362,13 @@ export function tokensFromRuns(
       continue;
     }
 
-    if (role === 'hold-short' || role === 'hold-long') {
+    if (role === 'hold-short' || role === 'hold-long'
+      || role === 'hold-short-change' || role === 'hold-long-change') {
+      /* A held letter that is ALSO a substitution comes back as both. See
+         `word-styles.ts`: one run carries one character style, so the pairing
+         has a style of its own rather than losing one of its two marks. */
+      const alsoChange = HOLD_CHANGE_ROLES.has(role);
+      const long = role === 'hold-long' || role === 'hold-long-change';
       // A new holding run opens a group; a run of the same style immediately
       // after it continues the same box.
       if (holdRun === null || holdRun.role !== role) {
@@ -362,11 +378,13 @@ export function tokensFromRuns(
       const id = holdRun.id;
       const before = word.length;
       addLetters(run.text, (u) => {
-        u.hold = role === 'hold-long' ? 'long' : 'short';
+        u.hold = long ? 'long' : 'short';
         u.hg = id;
+        if (alsoChange) u.change = true;
       });
       const covered = word.length - before;
-      for (let k = 0; k < covered; k += 1) bump(role);
+      const counted: WordMarkRole = long ? 'hold-long' : 'hold-short';
+      for (let k = 0; k < covered; k += 1) bump(counted);
       if (covered > 1) {
         report.unresolved.push({
           at: where,
@@ -383,14 +401,28 @@ export function tokensFromRuns(
       if (piece === '') continue;
       if (/^\s+$/.test(piece)) {
         flush();
-        if (tokens.length > 0 && tokens[tokens.length - 1]!.t !== 'sp') tokens.push({ t: 'sp' });
+        /*
+         * A NEWLINE IS A LINE, NOT A SPACE. `readParagraphs` writes `<w:br/>`
+         * as a newline and `importDocx` puts one between consecutive `Translit`
+         * paragraphs, so both ways a verse is broken into pādas arrive here —
+         * and reading them as spaces ran every verse together onto one line.
+         */
+        if (piece.includes('\n')) {
+          while (tokens.length > 0 && tokens[tokens.length - 1]!.t === 'sp') tokens.pop();
+          if (tokens.length > 0 && tokens[tokens.length - 1]!.t !== 'br') tokens.push({ t: 'br' });
+          continue;
+        }
+        const last = tokens[tokens.length - 1];
+        if (last !== undefined && last.t !== 'sp' && last.t !== 'br') tokens.push({ t: 'sp' });
         continue;
       }
       if (piece === '।' || piece === '॥') {
         flush();
-        if (tokens.length > 0 && tokens[tokens.length - 1]!.t !== 'sp') tokens.push({ t: 'sp' });
+        /* NO SPACE IS INVENTED HERE. A space around a daṇḍa arrives as its own
+           whitespace piece above; adding one on each side as well turned `॥1॥`
+           into `॥ 1 ॥` on the way back out, so a Word round trip was never
+           byte-exact even when every mark survived it. */
         tokens.push({ t: 'danda', s: piece });
-        tokens.push({ t: 'sp' });
         continue;
       }
       const num = /^\d+(?:[.,]\d+)*$/.exec(piece);
@@ -403,7 +435,7 @@ export function tokensFromRuns(
     }
   }
   flush();
-  while (tokens.length > 0 && tokens[tokens.length - 1]!.t === 'sp') tokens.pop();
+  while (tokens.length > 0 && ['sp', 'br'].includes(tokens[tokens.length - 1]!.t)) tokens.pop();
   return tokens;
 }
 
@@ -568,123 +600,6 @@ export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
     version: 3,
   };
   return { doc, report, paragraphs };
-}
-
-/* ==========================================================================
-   Export
-   ========================================================================== */
-
-/**
- * Turn a document back into `word/document.xml`.
- *
- * The rest of the package — `styles.xml`, the theme, the embedded fonts — is
- * copied from a TEMPLATE built out of his own file, so the styles are identical
- * by construction rather than by approximation. Nothing here synthesises a
- * style definition.
- */
-export function documentXml(doc: ChantDoc): string {
-  const paras: string[] = [];
-  const p = (style: string | null, runs: string) =>
-    `<w:p>${style === null ? '' : `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`}${runs}</w:p>`;
-  const run = (text: string, rStyle: string | null, sup = false) =>
-    `<w:r>${rStyle === null && !sup ? '' : `<w:rPr>${rStyle === null ? '' : `<w:rStyle w:val="${rStyle}"/>`}${sup ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr>`}`
-    + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
-
-  for (const s of doc.sections) {
-    if (s.part !== undefined) paras.push(p('Heading2', run(s.part, null)));
-    const head = [s.n, s.title ?? s.label].filter((x) => x !== undefined && x !== '').join(' · ');
-    if (head !== '') paras.push(p('Heading3', run(head, null)));
-    if (s.source != null && s.source !== '') paras.push(p(null, run(s.source, 'Comment')));
-
-    for (const v of s.verses) {
-      // One `Translit` paragraph per rendered line; a `br` starts a new one.
-      let runs = '';
-      const push = () => {
-        if (runs !== '') paras.push(p('Translit', runs));
-        runs = '';
-      };
-      for (const t of v.tokens) {
-        if (t.t === 'br') { push(); continue; }
-        if (t.t === 'sp') { runs += run(' ', null); continue; }
-        if (t.t === 'pause') { runs += run(t.len === 'long' ? '||' : '|', 'Pause'); continue; }
-        if (t.t === 'bar') { runs += run('|', 'Pause'); continue; }
-        if (t.t === 'danda') { runs += run(t.s, null); continue; }
-        if (t.t === 'num') { runs += run(t.s, null); continue; }
-        if (t.t === 'text') { runs += run(t.s, null); continue; }
-        if (t.t !== 'syl') continue;
-        // One run per maximal group of units sharing a signature — the inverse
-        // of the importer's merge, which is what makes a round trip stable.
-        //
-        // A unit's TRAILING marks (its svara, its raised aid) are emitted in
-        // ONE place, after whatever base run carried the letter. Emitting them
-        // per branch is how they went missing: the holding branch dropped them,
-        // and so did the gum branch, which together lost 25 of his svaras.
-        /** The dot is written BEFORE its letter, in the `Svara` style. */
-        const leading = (u: ChantUnit): string =>
-          (u.sbhakti === true ? run('·', 'Svara') : '');
-        const trailing = (u: ChantUnit): string => {
-          let r = '';
-          if (u.svara !== undefined) r += run(SVARA_CHAR.get(u.svara) ?? '', 'Svara');
-          if (u.sup !== undefined) r += run(u.sup, 'Anusvara', true);
-          return r;
-        };
-        let i = 0;
-        while (i < t.units.length) {
-          const u = t.units[i]!;
-          if (u.hold !== undefined) {
-            const style = u.hold === 'long' ? '2Holding' : 'Holding';
-            const g = u.hg;
-            const held: ChantUnit[] = [];
-            while (i < t.units.length && t.units[i]!.hold === u.hold && t.units[i]!.hg === g) {
-              held.push(t.units[i]!);
-              i += 1;
-            }
-            for (const h of held) runs += leading(h);
-            runs += run(held.map((h) => h.c).join(''), style);
-            for (const h of held) runs += trailing(h);
-            continue;
-          }
-          if (u.candra === true) {
-            runs += leading(u);
-            runs += run('m' + CANDRA, 'VedicAnusvara');
-            runs += trailing(u);
-            i += 1;
-            continue;
-          }
-          if (u.c === VIRAMA_TICK) {
-            runs += run(VIRAMA_TICK, 'Virama');
-            runs += trailing(u);
-            i += 1;
-            continue;
-          }
-          runs += leading(u);
-          runs += run(u.c, u.change === true ? 'Anusvara' : null);
-          runs += trailing(u);
-          i += 1;
-        }
-      }
-      push();
-      if (v.translation?.en !== undefined) paras.push(p('Prijevod', run(v.translation.en, null)));
-    }
-  }
-
-  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-    + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-    + `<w:body>${paras.join('')}</w:body></w:document>`;
-}
-
-/**
- * Write a `.docx` by replacing ONE part of the template.
- *
- * Deterministic: `fflate` is given a fixed modification time so the same
- * document always produces the same bytes (gate W3).
- */
-export function exportDocx(doc: ChantDoc, template: Uint8Array): Uint8Array {
-  const parts = unzipSync(template);
-  parts['word/document.xml'] = strToU8(documentXml(doc));
-  // 1980-01-01 UTC — the earliest date a zip can carry. Fixed, so the same
-  // document always produces the same bytes (gate W3).
-  return zipSync(parts, { level: 6, mtime: 315532800000 });
 }
 
 export { REFERENCE_COUNTS };

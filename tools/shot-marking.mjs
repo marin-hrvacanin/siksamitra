@@ -9,15 +9,14 @@
  */
 import { mkdirSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 import { APP_URL, openApp, openTab, press, setMode } from './_ui.mjs';
 
 const OUT = 'artifacts/marking';
 mkdirSync(OUT, { recursive: true });
 
 const browser = await puppeteer.launch({
-  executablePath: process.env.CHROME,
-  headless: 'shell',
-  args: ['--no-sandbox'],
+  executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'],
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 1400, height: 900, deviceScaleFactor: 6 });

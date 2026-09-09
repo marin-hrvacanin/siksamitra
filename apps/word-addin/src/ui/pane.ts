@@ -105,7 +105,9 @@ async function press(control: Control): Promise<void> {
   }
   await guard('cannot mark', async () => {
     const result = applyCommand(here.tm, here.from, here.to, control.command);
-    const tm = { text: here.tm.text, marks: result.marks };
+    /* `text` comes back only when the command changed it — a combining
+       character does, every other control does not. */
+    const tm = { text: result.text ?? here.tm.text, marks: result.marks };
     await writeParagraph(tm, here.style);
     const undrawable = notCarried(result.marks);
     say(result.note, undrawable.length === 0 ? 'plain' : 'warn',

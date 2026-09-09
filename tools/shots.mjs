@@ -1,9 +1,10 @@
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 import { press, setView } from './_ui.mjs';
 import { mkdirSync } from 'node:fs';
 const out = process.argv[2] ?? 'shots';
 mkdirSync(out, { recursive: true });
-const b = await puppeteer.launch({ executablePath: process.env.CHROME, headless: 'shell', args: ['--no-sandbox'] });
+const b = await puppeteer.launch({ executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'], });
 const p = await b.newPage();
 await p.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
 await p.goto('http://localhost:5273/', { waitUntil: 'networkidle0' });

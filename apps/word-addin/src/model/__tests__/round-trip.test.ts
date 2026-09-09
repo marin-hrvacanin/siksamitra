@@ -44,6 +44,8 @@ interface Tally {
   verses: number;
   same: Record<string, number>;
   total: Record<string, number>;
+  /** Each verse's text before and after, for the checks that count characters. */
+  texts: { text: string; back: string }[];
 }
 
 function measure(): Tally {
@@ -52,6 +54,7 @@ function measure(): Tally {
   const hit = (k: string): void => { same[k] = (same[k] ?? 0) + 1; };
   const add = (k: string, n: number): void => { total[k] = (total[k] ?? 0) + n; };
   const verses = corpusVerses();
+  const texts: { text: string; back: string }[] = [];
   for (const { verse } of verses) {
     const before = toTextAndMarks(verse);
     const after = through(before.text, before.marks);
@@ -70,18 +73,19 @@ function measure(): Tally {
         hit(k);
       }
     }
-    for (const k of ['sup', 'candra', 'sbhakti', 'cj']) {
+    for (const k of ['sup', 'sbhakti', 'cj']) {
       if (count(before.marks, k) === count(after.marks, k)) hit(k);
     }
-    for (const k of ['hold', 'svara', 'sup', 'candra', 'sbhakti', 'was', 'pause', 'slot', 'cj']) {
+    for (const k of ['hold', 'svara', 'sup', 'sbhakti', 'was', 'pause', 'slot', 'cj']) {
       add(`in.${k}`, count(before.marks, k));
       add(`out.${k}`, count(after.marks, k));
     }
     add('bars', (before.text.match(/¦/gu) ?? []).length);
     if (count(after.marks, 'was') > count(before.marks, 'was')) hit('was-gained');
     if (count(after.marks, 'was') < count(before.marks, 'was')) hit('was-lost');
+    texts.push({ text: before.text, back: after.text });
   }
-  return { verses: verses.length, same, total };
+  return { verses: verses.length, same, total, texts };
 }
 
 const tally = measure();
@@ -105,36 +109,59 @@ describe('a verse through Word and back', () => {
     expect(tally.same['svara']).toBe(573);
   });
 
-  it('keeps every reading aid, candrabindu and svarabhakti dot', () => {
+  it('keeps every reading aid and svarabhakti dot', () => {
     expect(tally.total['in.sup']).toBe(359);
-    expect(tally.total['in.candra']).toBe(89);
     expect(tally.total['in.sbhakti']).toBe(31);
-    for (const k of ['sup', 'candra', 'sbhakti']) expect(tally.same[k]).toBe(573);
+    for (const k of ['sup', 'sbhakti']) expect(tally.same[k]).toBe(573);
+  });
+
+  it('keeps every candrabindu, which is a CHARACTER and not a marking', () => {
+    /*
+     * It was a marking and is not any more. A run of text is drawn as one
+     * element with one text node inside it, and a combining mark laid over a
+     * letter has nowhere to live in that — the renderer parity gate
+     * photographed all 89 of them simply absent. U+0310 belongs in the text,
+     * which is also where an author types it, and `splitsCharacter` already
+     * forbids a marking boundary falling between a letter and its combining
+     * mark. So the count is of characters now, not of markings.
+     */
+    const CANDRA = '̐';
+    let before = 0;
+    let after = 0;
+    for (const { text, back } of tally.texts) {
+      before += [...text].filter((c) => c === CANDRA).length;
+      after += [...back].filter((c) => c === CANDRA).length;
+    }
+    expect(before).toBe(89);
+    expect(after).toBe(before);
   });
 
   /*
-   * Word's own limit, and the sharpest one. A run carries ONE character style,
-   * and `documentXml` gives a held letter the holding style — so a letter that
-   * is both boxed and substituted comes back boxed and not substituted. One
-   * letter in the corpus is both: the `s` from a visarga inside a box, in
-   * `viṣṇuvakṣassthalasthitāyai`.
+   * The sharpest limit Word imposes, and it is closed. A run carries ONE
+   * character style, and `documentXml` used to give a held letter the holding
+   * style and nothing else — so a letter that was both boxed and substituted
+   * came back boxed and black. One letter in the corpus is both: the `s` from a
+   * visarga inside a box, in `viṣṇuvakṣassthalasthitāyai`. `styles.ts` emits a
+   * style for the PAIRING — `HoldingChange` and `2HoldingChange` — rather than
+   * making the body choose which of the two marks to lose.
    */
-  it('loses a substitution on a letter that is also inside a box — once', () => {
-    /* A ratchet. One verse today; a `docx.ts` that learned to write a boxed
-       substitution would make it zero, and an improvement upstream must not
-       fail a test down here. Only a REGRESSION does. */
-    expect(tally.same['was-lost']).toBeLessThanOrEqual(1);
+  it('keeps a substitution on a letter that is also inside a box', () => {
+    /* A ratchet, and it is at zero. `undefined` is what the tally holds when no
+       verse lost one at all, which is the state this test now defends. */
+    expect(tally.same['was-lost'] ?? 0).toBe(0);
   });
 
   /*
-   * `docx.ts`, not Word: the importer sets `change` on the letter a raised
-   * reading aid is attached to, and the exporter does not require it. So a
-   * letter carrying only a `sup` comes back carrying a substitution as well.
-   * 104 markings over 79 verses, and no letter changes.
+   * `docx.ts`'s own fault, and it is closed. The importer set `change` on the
+   * letter a raised reading aid is attached to, and the exporter never required
+   * it — so a letter carrying only a `sup` came back carrying a substitution as
+   * well: 104 markings over 79 verses. The `Anusvara` style carries both the
+   * letter actually recited and the small letter printed above one, and only
+   * the second is raised.
    */
-  it('gains a substitution wherever a raised reading aid sits — 79 verses', () => {
-    expect(tally.same['was-gained']).toBeLessThanOrEqual(79);
-    expect((tally.total['out.was'] ?? 0) - (tally.total['in.was'] ?? 0)).toBeLessThanOrEqual(104);
+  it('gains no substitution where a raised reading aid sits', () => {
+    expect(tally.same['was-gained'] ?? 0).toBe(0);
+    expect((tally.total['out.was'] ?? 0) - (tally.total['in.was'] ?? 0)).toBe(0);
   });
 
   it('turns each of the 59 bars into a pause, and adds nothing else', () => {

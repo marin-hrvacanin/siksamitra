@@ -22,6 +22,8 @@ import type { ChantSvara } from '@siksamitra/format';
 export type WordMarkRole =
   | 'hold-short'
   | 'hold-long'
+  | 'hold-short-change'
+  | 'hold-long-change'
   | 'svara'
   | 'virama'
   | 'change'
@@ -72,6 +74,24 @@ export const WORD_CHAR_STYLES: readonly WordCharStyle[] = [
   {
     id: 'Anusvara', role: 'change', color: '0070C0', italic: true, seen: 1115,
     note: 'the letter actually recited; superscript when w:vertAlign says so',
+  },
+  /*
+   * A LETTER CAN BE BOTH BOXED AND SUBSTITUTED, and a run carries exactly one
+   * character style. Measured over the corpus: one verse has a held letter that
+   * is also recited as another, and it printed as a plain black box — the
+   * substitution simply disappeared. Two more styles cost nothing and are the
+   * only way one run can say both things. They are OURS, not his: his file has
+   * no such letter, which is why the pairing was never noticed.
+   */
+  {
+    id: 'HoldingChange', role: 'hold-short-change', border: { sz: 2, color: '538135' },
+    color: '0070C0', italic: true, seen: 0,
+    note: 'a thin box round a letter that is also a substitution',
+  },
+  {
+    id: '2HoldingChange', role: 'hold-long-change', border: { sz: 12, color: '538135' },
+    color: '0070C0', italic: true, seen: 0,
+    note: 'a thick box round a letter that is also a substitution',
   },
   {
     id: 'VedicAnusvara', role: 'gum', color: WORD_MARKS.change.color, italic: true, seen: 64,
@@ -153,6 +173,28 @@ export function paraRoleOf(pStyle: string | null): WordParaRole {
   if (pStyle === null) return 'prose';
   return PARA_STYLE_BY_ID.get(pStyle)?.role ?? 'prose';
 }
+
+/**
+ * The glyph a BAR is written with, inside the `Pause` style.
+ *
+ * Not `|`. A bar and a short pause were both written as one pipe in one style,
+ * so a Word round trip turned every one of the corpus's 59 bars into a pause —
+ * measured over all 573 verses. A broken bar is a different character in the
+ * same style: the same colour and weight on the page, and unambiguous coming
+ * back. His own files contain no bar, so nothing of his is affected.
+ */
+export const BAR_GLYPH = '¦';
+
+/** The character style a held letter takes, given what else is on it. */
+export function holdingStyle(hold: 'short' | 'long', change: boolean): string {
+  const base = hold === 'long' ? '2Holding' : 'Holding';
+  return change ? `${base}Change` : base;
+}
+
+/** The two marks a combined holding style carries. */
+export const HOLD_CHANGE_ROLES: ReadonlySet<WordMarkRole> = new Set<WordMarkRole>([
+  'hold-short-change', 'hold-long-change',
+]);
 
 /** The combining marks a `Svara` run carries, and what they mean. */
 export const SVARA_BY_CHAR: ReadonlyMap<string, ChantSvara> = new Map([

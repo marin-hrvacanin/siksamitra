@@ -16,6 +16,8 @@
  * so that nothing was retyped, and therefore nothing quietly changed.
  */
 
+import { FIGURE } from './figure.js';
+
 /** A face, named by what it is FOR rather than by what it is. */
 export interface FontRole {
   readonly note: string;
@@ -244,6 +246,8 @@ export const BASE = {
   "doc-pad": "2rem",
   "doc-verse-gap": "1.15rem",
 
+
+  ...FIGURE,
 } as const;
 
 export type TokenName = keyof typeof BASE;

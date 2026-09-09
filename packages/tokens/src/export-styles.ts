@@ -18,7 +18,9 @@
  * printed on. A frame is geometry, not appearance, which is why it can live
  * here without duplicating a theme.
  */
+import { CHROME_TOKENS, DEFAULT_CHROME } from '../generated/tokens.js';
 import { documentTheme, type DocumentTheme } from './document-themes.js';
+import { TEXT_FACES } from './fonts.js';
 
 /**
  * The shape an exported document is set on.
@@ -199,4 +201,33 @@ export function exportStyle(id: string): ExportStyle {
  */
 export function documentThemeOf(style: ExportStyle): DocumentTheme {
   return documentTheme(style.doc);
+}
+
+/**
+ * The two font stacks a style resolves to.
+ *
+ * ASKED IN THREE PLACES and answered here. The page exporter needs them to
+ * decide which faces to embed, the `.docx` exporter needs them to name a family
+ * Word can find, and the fidelity gate needs them to know what it is measuring
+ * against. Three copies of this resolution would be three chances for the
+ * `.docx` to ask for Calibri while the page draws Carlito.
+ *
+ * `ui` is the CHROME theme's interface face, which is what the token generator
+ * falls back to when a document theme names no `ui` face of its own — see
+ * `emit.mjs`'s `face()`. An exported file is always set under the default
+ * chrome, because the desk a sheet lies on is not part of the document.
+ */
+export interface StyleStacks {
+  /** The theme's reading face, as a CSS stack. */
+  readonly text: string;
+  /** The interface face, as a CSS stack. */
+  readonly ui: string;
+}
+
+export function styleStacks(style: ExportStyle): StyleStacks {
+  const theme = documentThemeOf(style);
+  return {
+    text: TEXT_FACES[theme.face],
+    ui: CHROME_TOKENS[DEFAULT_CHROME]![style.mode]!['font-ui']!,
+  };
 }

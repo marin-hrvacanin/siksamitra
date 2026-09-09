@@ -2,49 +2,21 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { corpus } from './vite-corpus.js';
 import { resolve } from 'node:path';
+import { workspaceAliases } from '../../tools/workspace-alias.mjs';
 
 /**
  * The web app.
  *
  * Workspace packages resolve to SOURCE, not `dist`, so `npm run dev` needs no
- * build step and a change in the engine is on screen immediately. The published
- * build resolves the same names through the packages' own `exports`.
+ * build step and a change in the engine is on screen immediately. Which
+ * subpaths exist and where they are is read from the packages' own `exports`
+ * maps by `tools/workspace-alias.mjs` — this file used to retype that list,
+ * fell one entry behind, and the bundle stopped building while `tsc` passed.
  */
-const pkg = (name: string, entry = 'src/index.ts') =>
-  resolve(import.meta.dirname, '../../packages', name, entry);
 
 export default defineConfig({
   plugins: [react(), corpus()],
-  resolve: {
-    // ORDER MATTERS. Vite matches aliases as an ordered list, so the CSS
-    // subpaths must come before the bare package names — otherwise
-    // `@siksamitra/render/chant.css` resolves against the alias for
-    // `@siksamitra/render` and looks for a stylesheet inside a .ts file.
-    alias: {
-      '@siksamitra/tokens/tokens.css': pkg('tokens', 'generated/tokens.css'),
-      '@siksamitra/render/mark-geometry.css': pkg('render', 'src/generated/mark-geometry.css'),
-      '@siksamitra/render/chant.css': pkg('render', 'src/chant.css'),
-      '@siksamitra/render/export.css': pkg('render', 'src/export.css'),
-      '@siksamitra/render/hold-join.css': pkg('render', 'src/hold-join.css'),
-      '@siksamitra/render/print.css': pkg('render', 'src/print.css'),
-      '@siksamitra/format': pkg('format'),
-      '@siksamitra/engine': pkg('engine'),
-      '@siksamitra/interop': pkg('interop'),
-      '@siksamitra/storage': pkg('storage'),
-      '@siksamitra/layout': pkg('layout'),
-      '@siksamitra/edit': pkg('edit'),
-      '@siksamitra/audio': pkg('audio'),
-      '@siksamitra/account': pkg('account'),
-      '@siksamitra/tokens/word': pkg('tokens', 'src/word.ts'),
-      '@siksamitra/tokens/document-themes': pkg('tokens', 'src/document-themes.ts'),
-      '@siksamitra/tokens/document-type': pkg('tokens', 'src/document-type.ts'),
-      '@siksamitra/tokens/export-styles': pkg('tokens', 'src/export-styles.ts'),
-      '@siksamitra/tokens/fonts': pkg('tokens', 'src/fonts.ts'),
-      '@siksamitra/tokens': pkg('tokens', 'generated/tokens.ts'),
-      '@siksamitra/render/theme': pkg('render', 'src/theme/marks.ts'),
-      '@siksamitra/render': pkg('render'),
-    },
-  },
+  resolve: { alias: workspaceAliases() },
   server: { port: 5273, strictPort: false },
   // The fonts and the icon live here. The CORPUS does not — it is served from
   // `corpus/chants` by the plugin above, because a copy of it drifted.

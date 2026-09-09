@@ -37,8 +37,23 @@ const DIR = 'corpus/chants';
 const OUT = 'artifacts/run-parity';
 mkdirSync(OUT, { recursive: true });
 
-/** Above this share of pixels differing, the two are not drawing the same thing. */
-const LIMIT = 0.03;
+/**
+ * Above this share of pixels differing, the two are not drawing the same thing.
+ *
+ * A RATCHET. The worst verse measures 0.97% and the limit is 1.5%, so there is
+ * room for the shaping difference and none for a mark going missing. It started
+ * at 3% and found three real faults on the way down, each of which had been
+ * invisible to every other check in this repository:
+ *
+ *   6.92%  every svara and anudātta absent, because their CSS is keyed to `.u`
+ *          and a run wore `run sv-anudatta`
+ *   5.64%  the candrabindu absent — it was a marking, and a run has one text
+ *          node with no room for a combining mark laid over it. It is a
+ *          character in the text now, which is where an author types it
+ *   4%+    the daṇḍa drawn in the letter colour with no space around it,
+ *          because a run held it without saying it was structure
+ */
+const LIMIT = 0.015;
 /** A pixel counts as moved only if a channel changed by more than this. */
 const CHANNEL = 28;
 

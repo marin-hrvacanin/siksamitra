@@ -20,7 +20,8 @@
 import { useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
 import { contentBox, paginate, px, type PageGeometry } from '@siksamitra/layout';
-import { DocumentBlocks, KEEP_WITH_NEXT } from './DocumentBlocks.js';
+import { DocumentBlocks } from './DocumentBlocks.js';
+import { KEEP_WITH_NEXT } from './blocks.js';
 import { useMeasuredBlocks } from './useMeasure.js';
 
 /**
@@ -33,7 +34,10 @@ import { useMeasuredBlocks } from './useMeasure.js';
 const isHeading = (id: string): boolean => KEEP_WITH_NEXT.some((p) => id.startsWith(p));
 
 export function PagedView(
-  { doc, script, showMarks, page, zoom, contentKey, addressable = false, rebuild = 0 }: {
+  {
+    doc, script, showMarks, page, zoom, contentKey, addressable = false, rebuild = 0,
+    selectedFigure, onFigure,
+  }: {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
@@ -46,11 +50,15 @@ export function PagedView(
     /** Forces a rebuild rather than a patch — see `Session.rebuild`. The key
      *  goes on each page's content, never on the measuring probe. */
     rebuild?: number;
+    /** The picture the editor has selected, and how one is chosen. Passed
+     *  through to `DocumentBlocks`; this view has no opinion about either. */
+    selectedFigure?: string;
+    onFigure?: (blockId: string, sectionId: string, at: number) => void;
   },
 ): ReactNode {
   const probe = useRef<HTMLDivElement>(null);
   const measured = useMeasuredBlocks(probe, page, contentKey);
-  const column = contentBox(page).width;
+  const { width: column, height: columnHeight } = contentBox(page);
 
   const map = useMemo(() => paginate(
     measured.map((m) => ({
@@ -85,7 +93,16 @@ export function PagedView(
         className="doc paged__probe"
         aria-hidden
         ref={probe}
-        style={{ width: `${px(column, 1)}px` }}
+        /*
+         * THE PICTURE CAP IS ON THE PROBE TOO, at zoom 1 like everything it
+         * measures. A probe without it measures a figure at its natural height
+         * and the page draws it capped, so the page map would reserve space
+         * for a picture that is not that tall.
+         */
+        style={{
+          width: `${px(column, 1)}px`,
+          ...({ '--doc-fig-max-h': `${px(columnHeight, 1)}px` } as CSSProperties),
+        }}
       >
         <DocumentBlocks doc={doc} script={script} showMarks={showMarks} />
       </div>
@@ -117,7 +134,10 @@ export function PagedView(
                 spellCheck={false}
                 {...(addressable ? { role: 'textbox', 'aria-multiline': true, 'aria-label': 'The document' } : {})}
                 className="doc page__content"
-                style={{ ...({ '--doc-zoom': String(zoom) } as CSSProperties) }}
+                style={{
+                  ...({ '--doc-zoom': String(zoom) } as CSSProperties),
+                  ...({ '--doc-fig-max-h': `${px(columnHeight, zoom)}px` } as CSSProperties),
+                }}
               >
                 <DocumentBlocks
                   doc={doc}
@@ -125,6 +145,8 @@ export function PagedView(
                   showMarks={showMarks}
                   only={ids}
                   addressable={addressable}
+                  {...(selectedFigure === undefined ? {} : { selectedFigure })}
+                  {...(onFigure === undefined ? {} : { onFigure })}
                 />
               </div>
               {/*

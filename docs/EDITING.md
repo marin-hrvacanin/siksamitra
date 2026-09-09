@@ -188,6 +188,49 @@ boxes. They now keep their three elements and lose the EDGE where they meet —
 the run reads as the single box it is. Within one syllable nothing changed:
 `normaliseHoldings` already merged those into one group.
 
+## Putting a picture in
+
+A picture is a BLOCK — an item of a step — and its position in `items` is its
+whole anchor. It is never inside a verse's text: the run is a metrical line
+whose syllables, marks and script forms are computed per letter, and a picture
+in the middle of that string would be a letter with no syllable. The refusals
+and the measurements behind them are in
+`openspec/changes/document-images/design.md`.
+
+| file | what it owns |
+| --- | --- |
+| `packages/format/src/figure.ts` | what a picture may be, and where its bytes live |
+| `packages/edit/src/figures.ts` | insert / update / remove, pure, and the one command |
+| `apps/web/src/editor/useFigures.ts` | which one is selected, and reading a file |
+| `apps/web/src/shell/PictureGroup.tsx` | the ribbon group and its two dialogs |
+| `packages/render/src/render/figure.tsx` | the ONE component that draws one |
+
+**All six gestures are one command.** Insert, replace, resize, align, caption
+and delete are `{ k: 'figure', … }` with a different payload, so undo covers all
+of them and there is no second path that writes a figure. It is dispatched
+BEFORE rule zero and the re-derivation, because it changes `items` and no verse
+— putting it through that pipeline would make it look as though a picture could
+cost a mark.
+
+**The bytes go into the document**, as a `data:` URI. This program saves one
+`.json`, so a picture stored anywhere else is a picture the file does not have.
+It is Word's answer arrived at differently — a `.docx` keeps its pictures inside
+the zip — and it is what makes the lossless HTML export lossless without a new
+inlining pass.
+
+**A picture is not editable text.** `contentEditable={false}` on the figure, so
+the caret cannot walk into it and a Backspace beside it cannot delete the
+`<img>` behind the document's back. Clicking one selects it, on `mousedown`,
+because by click time the browser has already moved the caret.
+
+**A description is asked for before the picture goes in**, and Insert stays
+disabled until there is one. A drawing of a mudrā is the only form that step's
+instruction takes, so a picture without a description is a step a blind reciter
+cannot perform — and refusing at the end of a gesture that has already happened
+is worse than asking at the start of one. **Describe** reopens the same dialog
+on a picture already in, because a required field that can never be corrected is
+worse than an absent one.
+
 ## Known and unfixed
 
 Written down rather than left to be rediscovered.
@@ -222,6 +265,14 @@ separate boxes there.
 selection that runs out of one is pulled back to its edge and the status bar
 says how much is really selected. Ctrl+A in a multi-section document therefore
 selects the last section, not the document.
+
+**A picture cannot be moved within its step.** The command can express it —
+remove, then insert at another index — and no control does it, so a picture in
+the wrong place has to be deleted and put back.
+
+**Neither drag-and-drop nor paste inserts a picture.** Only the ribbon's file
+picker does. Dropping an image file onto the document does whatever the browser
+does with it, which is to navigate away from the app.
 
 **Motion in `packages/edit` is no longer used by the editor.** `moveChar`,
 `moveWord`, `moveLine`, `lineEdge` and `selectAll` are still exported and still

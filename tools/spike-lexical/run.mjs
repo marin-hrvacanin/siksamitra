@@ -11,6 +11,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import puppeteer from 'puppeteer-core';
+import { browserPath } from '../_browser.mjs';
 
 const DIR = 'tools/spike-lexical';
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.woff2': 'font/woff2' };
@@ -26,7 +27,7 @@ const server = createServer(async (req, res) => {
 await new Promise((r) => server.listen(5399, r));
 
 const browser = await puppeteer.launch({
-  executablePath: process.env.CHROME,
+  executablePath: browserPath(),
   headless: 'shell',
   args: ['--no-sandbox'],
 });

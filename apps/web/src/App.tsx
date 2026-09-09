@@ -357,6 +357,7 @@ export function App() {
             contentKey={contentKey}
             addressable={session.editing}
             rebuild={session.remount}
+            {...session.figures.viewProps}
           />
         ) : (
           <FlowView
@@ -368,6 +369,7 @@ export function App() {
             addressable={session.editing}
             rebuild={session.remount}
             web={state.view.kind === 'web'}
+            {...session.figures.viewProps}
           />
         ))}
         {doc !== null && <EditorSurface session={session} scroller={scroller} />}

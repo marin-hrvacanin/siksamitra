@@ -27,7 +27,6 @@ import type { Mark, MarkKind } from '@siksamitra/format';
 export interface RunMarks {
   hold?: string;
   svara?: string;
-  candra?: boolean;
   /** This run's letters replaced something; the value is what they replaced. */
   was?: string;
   cj?: string;
@@ -39,7 +38,35 @@ export interface RunMarks {
   slot?: string;
 }
 
+/**
+ * What a run holds, so it can be drawn as what it is.
+ *
+ * A daṇḍa is not a letter. The first version gave every run the letter class,
+ * and the parity gate photographed the result: the daṇḍa in Mantra Puṣpam drew
+ * in the letter colour with no space around it, because `.danda` and `.sp`
+ * never matched anything. Structure breaks a run as surely as a marking does.
+ */
+export type RunKind = 'text' | 'danda' | 'bar' | 'num' | 'br';
+
+const DANDA: ReadonlySet<string> = new Set(['।', '॥']);
+
+export function runKindOf(ch: string): RunKind {
+  if (ch === '\n') return 'br';
+  /*
+   * A SPACE IS TEXT. `.sp` carries no style at all — only `.danda` and `.bar`
+   * do — and keeping the space inside its run is what lets one holding box
+   * cross a word gap as a single rectangle, which is the whole reason runs
+   * replaced a span per letter.
+   */
+  if (ch === '¦') return 'bar';
+  if (DANDA.has(ch)) return 'danda';
+  if (/^[0-9.]$/.test(ch)) return 'num';
+  return 'text';
+}
+
 export interface Run {
+  /** What this run holds — letters, or a piece of structure. */
+  kind: RunKind;
   /** The characters, exactly as they appear in the verse's text. */
   text: string;
   /** Where the run starts in the verse's text. */
@@ -54,7 +81,7 @@ export interface Run {
 
 /** The kinds that describe a stretch rather than a position. */
 const SPAN_KINDS: ReadonlySet<MarkKind> =
-  new Set<MarkKind>(['hold', 'svara', 'candra', 'was', 'cj', 'sup', 'plain', 'slot']);
+  new Set<MarkKind>(['hold', 'svara', 'was', 'cj', 'sup', 'plain', 'slot']);
 
 /**
  * The kinds where two equal neighbours are still two things.
@@ -95,7 +122,6 @@ function marksAtPosition(marks: readonly Mark[], at: number): RunMarks {
     if (m.from > at || m.to <= at) continue;
     if (m.k === 'hold') out.hold = m.v;
     else if (m.k === 'svara') out.svara = m.v;
-    else if (m.k === 'candra') out.candra = true;
     else if (m.k === 'was') out.was = m.v;
     else if (m.k === 'cj') out.cj = m.v;
     else if (m.k === 'sup') out.sup = m.v;
@@ -106,7 +132,7 @@ function marksAtPosition(marks: readonly Mark[], at: number): RunMarks {
 }
 
 const sameMarks = (a: RunMarks, b: RunMarks): boolean =>
-  a.hold === b.hold && a.svara === b.svara && a.candra === b.candra
+  a.hold === b.hold && a.svara === b.svara
   && a.was === b.was && a.cj === b.cj && a.sup === b.sup && a.plain === b.plain && a.slot === b.slot;
 
 /**
@@ -121,6 +147,10 @@ export function toRuns(text: string, marks: readonly Mark[]): Run[] {
      not be drawn as a single element on either line. */
   for (let i = 0; i < text.length; i += 1) {
     if (text[i] === '\n') { edges.push(i, i + 1); }
+  }
+  /* Structure breaks a run as surely as a marking does. */
+  for (let i = 1; i < text.length; i += 1) {
+    if (runKindOf(text[i]!) !== runKindOf(text[i - 1]!)) edges.push(i);
   }
   const cuts = [...new Set(edges)].sort((a, b) => a - b);
 
@@ -146,7 +176,9 @@ export function toRuns(text: string, marks: readonly Mark[]): Run[] {
      * in force around it puts a holding on a run with no letters in it, and
      * every consumer then has to know to ignore that.
      */
-    const at = text.slice(from, to) === '\n' ? {} : marksAtPosition(marks, from);
+    const body = text.slice(from, to);
+    const kind = runKindOf(body[0] ?? '');
+    const at = kind === 'br' ? {} : marksAtPosition(marks, from);
     const previous = out[out.length - 1];
     /*
      * Fuse with the run before it when nothing about the drawing changed and
@@ -154,16 +186,18 @@ export function toRuns(text: string, marks: readonly Mark[]): Run[] {
      * marking's edges, so two markings that end at the same place would
      * otherwise leave a seam that draws as two elements.
      */
-    if (previous !== undefined && previous.to === from && sameMarks(previous.marks, at)
+    if (previous !== undefined && previous.to === from && previous.kind === kind
+      && sameMarks(previous.marks, at)
       && (points.get(from) ?? []).length === 0
       && !startsHere.has(from)
-      && !previous.text.endsWith('\n') && text[from] !== '\n') {
-      previous.text += text.slice(from, to);
+      && kind !== 'br') {
+      previous.text += body;
       previous.to = to;
       continue;
     }
     out.push({
-      text: text.slice(from, to),
+      kind,
+      text: body,
       from,
       to,
       marks: at,

@@ -1,0 +1,245 @@
+/**
+ * `word/document.xml` — the document, as Word paragraphs and runs.
+ *
+ * THE STRUCTURE IS `DocumentBlocks`'s, element for element and in its order.
+ * That component is the one renderer of a chant, the PDF is a print of what it
+ * drew, and a Word file that ordered the same content differently would make
+ * "the Word document and the PDF are identical" false in a way no style sheet
+ * could fix. Four differences were found by putting the two side by side and
+ * are closed here:
+ *
+ *   - a section's SOURCE line is drawn UNDER its verses, not under its heading;
+ *   - a part heading is drawn where the part CHANGES, not above every section;
+ *   - the levels are Heading3 for a part and Heading4 for a step — see
+ *     `styleOf`, which reads them off the page's own role table;
+ *   - a verse's instructions and its own source line are drawn, and were not.
+ *
+ * ONE PARAGRAPH PER VERSE, not per line. `Translit` is
+ * `w:ind w:left="284" w:hanging="284"`: the first LINE of a paragraph comes out
+ * to the margin and every later line sits in. With a paragraph per pāda every
+ * pāda was a first line, so the whole verse printed flush and the hanging
+ * indent — the most visible thing about the shape of his page — never appeared.
+ * A `<w:br/>` starts a line without starting a paragraph, which is exactly the
+ * distinction the page makes between a `.verse` and a `.pada` inside it.
+ *
+ * NOTHING HERE KNOWS A COLOUR OR A SIZE. A run names a character style and
+ * `styles.ts` decides what that style looks like, which is what lets one body
+ * be written in eight export styles.
+ */
+import type { ChantDoc, ChantToken, ChantUnit } from '@siksamitra/format';
+import { CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
+import { ROLE_OF_ELEMENT } from '@siksamitra/tokens/document-type';
+import { xmlEscape } from '../xml.js';
+import { BAR_GLYPH, SVARA_CHAR, holdingStyle } from '../word-styles.js';
+import { PARA_STYLE_OF } from './styles.js';
+
+/**
+ * Which Word style each of the page's elements is written in.
+ *
+ * READ OFF THE PAGE, through the two tables that already exist:
+ * `ROLE_OF_ELEMENT` says which type role a class name takes and
+ * `PARA_STYLE_OF` says which of his paragraph styles that role is. So the
+ * `.docx` cannot put a section heading at a different level from the one the
+ * page draws it at — which it did, until this was measured: `doc__part` came
+ * out as Heading2 where the page sets it as Heading3, two points larger and at
+ * the wrong indent.
+ */
+const styleOf = (element: keyof typeof ROLE_OF_ELEMENT): string => {
+  const found = PARA_STYLE_OF[ROLE_OF_ELEMENT[element]];
+  if (found === undefined) throw new Error(`no Word paragraph style for ${element}`);
+  return found;
+};
+
+/** A unit's character-style signature, so a run covers only letters that agree. */
+const signature = (u: ChantUnit): string =>
+  `${u.hold ?? '-'}/${u.hg ?? '-'}/${u.change === true ? 'c' : '-'}`;
+
+/** Write the body. `tail` is appended inside `<w:body>` — see the return. */
+export function documentXml(doc: ChantDoc, tail = ''): string {
+  const paras: string[] = [];
+  const p = (style: string | null, runs: string) =>
+    `<w:p>${style === null ? '' : `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`}${runs}</w:p>`;
+  const run = (text: string, rStyle: string | null, sup = false) =>
+    `<w:r>${rStyle === null && !sup ? '' : `<w:rPr>${rStyle === null ? '' : `<w:rStyle w:val="${rStyle}"/>`}${sup ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr>`}`
+    + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
+
+  /* A part heading is drawn where the part CHANGES — it names a run of steps,
+     not a step — and a section with no part ends the run. `DocumentBlocks`
+     makes the same two decisions in the same order. */
+  let part: string | undefined;
+  const prose = (style: string | null, rStyle: string | null, text: string): void => {
+    if (text !== '') paras.push(p(style, run(text, rStyle)));
+  };
+
+  /**
+   * The letters of one verse, as runs.
+   *
+   * A run covers a maximal group of units sharing a `signature` — the inverse
+   * of the importer's merge, which is what makes a round trip stable.
+   */
+  const verseRuns = (tokens: readonly ChantToken[]): string => {
+    let runs = '';
+    /** The dot is written BEFORE its letter, in the `Svara` style. */
+    const leading = (u: ChantUnit): string => (u.sbhakti === true ? run('·', 'Svara') : '');
+    /*
+     * A unit's TRAILING marks — its svara, its raised aid — are emitted in ONE
+     * place, after whatever base run carried the letter. Emitting them per
+     * branch is how they went missing: the holding branch dropped them and so
+     * did the gum branch, which together lost 25 of his svaras.
+     */
+    const trailing = (u: ChantUnit): string => {
+      let r = '';
+      if (u.svara !== undefined) r += run(SVARA_CHAR.get(u.svara) ?? '', 'Svara');
+      if (u.sup !== undefined) r += run(u.sup, 'Anusvara', true);
+      return r;
+    };
+    /**
+     * The character a unit contributes: a gum anusvāra is `m` plus a candra.
+     *
+     * A CANDRABINDU IS A CHARACTER, not a style. His file has a `VedicAnusvara`
+     * character style for it, in URW Palladio and in the substitution blue, and
+     * writing every candra letter in it made the two exports disagree: the page
+     * colours a letter by `is-change` and not by `u.candra`, so a gum letter
+     * that is NOT a substitution is ink on the page and was blue in Word. It
+     * also came back from a round trip carrying a substitution nobody wrote —
+     * 3 letters in the Puruṣa Sūktam alone. The mark travels in the text and
+     * the style is chosen by the letter's other marks, exactly as for any other
+     * letter. The importer still reads his `VedicAnusvara`.
+     */
+    const glyph = (u: ChantUnit): string => (u.candra === true ? `m${CANDRA}` : u.c);
+
+    /**
+     * The hold group a space falls inside, if it falls inside one.
+     *
+     * A `sp` written unstyled inside a holding closes the box and opens a new
+     * one, so a box spanning two words draws as two rectangles. The space takes
+     * the group's own style when the letters on both sides of it are in the
+     * same group — which is the only case where one rectangle is what was
+     * meant.
+     */
+    const bridging = (at: number): ChantUnit | null => {
+      let before: ChantUnit | null = null;
+      for (let k = at - 1; k >= 0; k -= 1) {
+        const t = tokens[k]!;
+        if (t.t === 'syl') { before = t.units[t.units.length - 1] ?? null; break; }
+        if (t.t !== 'sp') return null;
+      }
+      for (let k = at + 1; k < tokens.length; k += 1) {
+        const t = tokens[k]!;
+        if (t.t === 'syl') {
+          const after = t.units[0];
+          if (before === null || after === undefined) return null;
+          /* BOTH must be in the SAME NUMBERED group. Comparing only `hold`
+             matched two ADJACENT boxes with no group id at all — `undefined`
+             equals `undefined` — and the styled space between them was then
+             swallowed by the importer, turning `dadan naḥ` into `dadannaḥ`. */
+          return before.hold !== undefined && before.hg !== undefined
+            && before.hold === after.hold && before.hg === after.hg ? before : null;
+        }
+        if (t.t !== 'sp') return null;
+      }
+      return null;
+    };
+
+    tokens.forEach((t, at) => {
+      if (t.t === 'br') { runs += '<w:r><w:br/></w:r>'; return; }
+      if (t.t === 'sp') {
+        const inside = bridging(at);
+        runs += run(' ', inside === null ? null : holdingStyle(inside.hold!, inside.change === true));
+        return;
+      }
+      if (t.t === 'pause') { runs += run(t.len === 'long' ? '||' : '|', 'Pause'); return; }
+      /* A BAR IS NOT A PAUSE. Both were written as `|` in the `Pause` style, so
+         all 59 bars in the corpus came back from a round trip as short pauses.
+         `¦` is a different character in the same style: the same colour and
+         weight on the page, and unambiguous to the reader. */
+      if (t.t === 'bar') { runs += run(BAR_GLYPH, 'Pause'); return; }
+      if (t.t === 'danda' || t.t === 'num' || t.t === 'text') { runs += run(t.s, null); return; }
+      if (t.t !== 'syl') return;
+
+      let i = 0;
+      while (i < t.units.length) {
+        const u = t.units[i]!;
+        /*
+         * ONLY A HOLDING GROUPS. A box has to be ONE run or Word draws two
+         * rectangles, so held letters that agree are written together; nothing
+         * else is. Grouping plain letters as well put a svarabhakti dot before
+         * the wrong letter and a svara after the wrong one — `leading` and
+         * `trailing` are emitted around a run, and a run of four letters has
+         * only one place to put them. Caught by the add-in's own tests:
+         * `-:agne Svara:̱` where `-:a Svara:̱ -:gne` was meant.
+         */
+        const sig = signature(u);
+        const group: ChantUnit[] = [u];
+        i += 1;
+        if (u.hold !== undefined) {
+          while (i < t.units.length && signature(t.units[i]!) === sig) {
+            group.push(t.units[i]!);
+            i += 1;
+          }
+        }
+        for (const g of group) runs += leading(g);
+        if (u.hold !== undefined) {
+          /* A HELD LETTER CAN ALSO BE A SUBSTITUTION. A run carries one
+             character style, so a boxed letter that is also recited as another
+             printed black: `styles.ts` emits a combined style for the pairing
+             rather than making the body choose which mark to lose. */
+          runs += run(group.map(glyph).join(''), holdingStyle(u.hold, u.change === true));
+        } else if (u.c === VIRAMA_TICK) {
+          runs += run(VIRAMA_TICK, 'Virama');
+        } else {
+          runs += run(group.map(glyph).join(''), u.change === true ? 'Anusvara' : null);
+        }
+        for (const g of group) runs += trailing(g);
+      }
+    });
+    return runs;
+  };
+
+  for (const s of doc.sections) {
+    if (s.part !== undefined && s.part !== part) {
+      paras.push(p(styleOf('doc__part'), run(s.part, null)));
+    }
+    part = s.part;
+    const title = s.title ?? s.label;
+    /* `${n}. ${title}` — the page's `headingOf`, not a middle dot. */
+    const head = title === undefined || title === ''
+      ? '' : s.n === undefined ? title : `${s.n}. ${title}`;
+    if (head !== '') paras.push(p(styleOf('section__title'), run(head, null)));
+
+    /* The section's own item list when it has one, its verses otherwise —
+       `itemsOf` in `DocumentBlocks`. */
+    const items = s.items !== undefined && s.items.length > 0
+      ? s.items
+      : s.verses.map((v) => ({ t: 'verse' as const, ...v }));
+
+    for (const item of items) {
+      if (item.t === 'instruction') {
+        prose(styleOf('doc__instruction'), null, item.instruction.text.en ?? '');
+        continue;
+      }
+      if (item.t !== 'verse') continue;
+      const runs = verseRuns(item.tokens);
+      if (runs !== '') paras.push(p(styleOf('pada'), runs));
+      for (const ins of item.instructions ?? []) {
+        prose(styleOf('doc__instruction'), null, ins.text.en ?? '');
+      }
+      if (item.translation?.en !== undefined) {
+        prose(styleOf('doc__translation'), null, item.translation.en);
+      }
+      /* `Comment` is a CHARACTER style in his file, so a source line is an
+         ordinary paragraph with one styled run in it. */
+      if (item.source !== undefined) prose(null, 'Comment', item.source);
+    }
+
+    /* Under the section's verses, where the page draws it. */
+    if (s.source != null && s.source !== '') prose(null, 'Comment', s.source);
+  }
+
+  /* `tail` is the section properties — the sheet size and its margins — which
+     OOXML requires as the last child of `<w:body>`. The body writer does not
+     know what paper it is being printed on; `exportWord` does. */
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    + `<w:body>${paras.join('')}${tail}</w:body></w:document>`;
+}

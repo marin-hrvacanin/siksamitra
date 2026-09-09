@@ -44,8 +44,6 @@ export type MarkKind =
   | 'hold'
   /** `v`: `anudatta` | `svarita` | `dirgha-svarita`. */
   | 'svara'
-  /** Candrabindu over the range. */
-  | 'candra'
   /** Svarabhakti — a dot before `from`. A point marking. */
   | 'sbhakti'
   /** A superscript after the range. `v`: the letters. */
@@ -75,7 +73,6 @@ export const STAGE_OF: Readonly<Record<MarkKind, Stage>> = {
   was: 'change',
   hold: 'holdings',
   svara: 'svara',
-  candra: 'aids',
   sbhakti: 'aids',
   sup: 'aids',
   pause: 'aids',
@@ -98,7 +95,7 @@ export const STAGE_OF: Readonly<Record<MarkKind, Stage>> = {
  * which belong to one letter each.
  */
 export const MERGING_KINDS: ReadonlySet<MarkKind> =
-  new Set<MarkKind>(['hold', 'svara', 'candra', 'slot']);
+  new Set<MarkKind>(['hold', 'svara', 'slot']);
 
 /** The kinds that sit BETWEEN letters rather than over them. */
 export const POINT_KINDS: ReadonlySet<MarkKind> = new Set<MarkKind>(['sbhakti', 'pause', 'syl']);

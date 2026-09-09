@@ -93,7 +93,6 @@ function marksFor(marks: RunMarks, from: number, to: number): Mark[] {
   const out: Mark[] = [];
   if (marks.hold !== undefined) out.push(mark({ k: 'hold', from, to, v: marks.hold }));
   if (marks.svara !== undefined) out.push(mark({ k: 'svara', from, to, v: marks.svara }));
-  if (marks.candra === true) out.push(mark({ k: 'candra', from, to }));
   if (marks.was !== undefined) out.push(mark({ k: 'was', from, to, v: marks.was }));
   if (marks.cj !== undefined) out.push(mark({ k: 'cj', from, to, v: marks.cj }));
   if (marks.sup !== undefined) out.push(mark({ k: 'sup', from, to, v: marks.sup }));

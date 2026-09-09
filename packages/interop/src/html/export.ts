@@ -28,10 +28,9 @@
  */
 import type { ChantDoc } from '@siksamitra/format';
 import type { ExportStyle } from '@siksamitra/tokens/export-styles';
-import { documentBytes, sha256Hex } from '../package.js';
+import { embedded } from '../embed.js';
 import {
   HTML_FORMAT, HTML_SLOTS, HTML_VERSION, escapeHtml, jsonForScript, toBase64,
-  type HtmlManifest,
 } from './manifest.js';
 
 export interface HtmlExportInput {
@@ -103,28 +102,18 @@ function block(id: string, json: string): string {
  */
 export async function exportHtml(input: HtmlExportInput): Promise<string> {
   const { doc, style } = input;
-  const json = documentBytes(doc);
   const assets = input.assets ?? {};
   const assetNames = Object.keys(assets).sort();
-
-  const manifest: HtmlManifest = {
-    format: HTML_FORMAT,
-    version: HTML_VERSION,
+  const { manifest, json } = await embedded(HTML_FORMAT, HTML_VERSION, {
+    doc,
     slug: input.slug,
-    title: doc.title,
     engine: input.engine,
-    savedAt: input.savedAt ?? new Date().toISOString(),
-    docHash: await sha256Hex(json),
     style: style.id,
     script: input.script,
+    assets,
     ...(input.select === undefined ? {} : { select: input.select }),
-    contents: {
-      documentBytes: json.length,
-      assets: assetNames.length,
-      assetBytes: assetNames.reduce((n, k) => n + assets[k]!.length, 0),
-      verses: doc.sections.reduce((n, s) => n + s.verses.length, 0),
-    },
-  };
+    ...(input.savedAt === undefined ? {} : { savedAt: input.savedAt }),
+  });
 
   /* Sorted, so exporting the same document twice gives the same bytes. */
   const encoded: Record<string, string> = {};

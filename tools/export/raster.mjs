@@ -12,57 +12,14 @@
  * WHAT IS CLIPPED per frame, and how the vector form is wrapped, are in
  * `packages/interop/src/html/frame.ts`. The window rasterises too — through an
  * iframe rather than a headless browser — and the two have to be pictures of
- * the same thing. What is left here is the half only a command can do: finding
- * a browser and driving it.
+ * the same thing. What is left here is the half only a command can do: driving
+ * a browser. Finding one is `tools/_browser.mjs`, which every tool that opens
+ * a browser shares.
  */
-import { existsSync } from 'node:fs';
-import puppeteer from 'puppeteer-core';
 import { CLIP_SELECTOR, RASTER_ATTR, svgDocument } from '@siksamitra/interop';
+import { browserPath, withBrowser } from '../_browser.mjs';
 
-/**
- * Where a browser is.
- *
- * `CHROME` first, because that is what every other browser gate in `tools/`
- * reads and one variable should point them all at the same binary. The list
- * after it exists so the export gate runs on a machine where nobody has set it.
- */
-const CANDIDATES = [
-  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-  'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-  '/usr/bin/google-chrome',
-  '/usr/bin/chromium',
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-];
-
-export function browserPath() {
-  const named = process.env.CHROME;
-  if (named !== undefined && named !== '') {
-    if (!existsSync(named)) throw new Error(`CHROME is set to "${named}", which is not there`);
-    return named;
-  }
-  const found = CANDIDATES.find((p) => existsSync(p));
-  if (found === undefined) {
-    throw new Error(
-      'no browser found. Rasterising needs one — set CHROME to a Chrome or '
-      + `Edge binary. Looked in:\n  ${CANDIDATES.join('\n  ')}`,
-    );
-  }
-  return found;
-}
-
-/** Open a browser once and hand it to `fn`, closing it whatever happens. */
-export async function withBrowser(fn) {
-  const browser = await puppeteer.launch({
-    executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'],
-  });
-  try {
-    return await fn(browser);
-  } finally {
-    await browser.close();
-  }
-}
+export { browserPath, withBrowser };
 
 /**
  * Load an exported page and hold it open while `fn` measures it.

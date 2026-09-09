@@ -38,7 +38,16 @@
   margin-inline: auto;
   background: var(--doc-bg);
   color: var(--doc-ink);
-  border: var(--border-hair) solid var(--chrome-line);
+  /*
+   * AN OUTLINE, NOT A BORDER. `box-sizing` is `border-box` and the column's
+   * width IS the sheet's width, so a 1 px border on each side came out of the
+   * TEXT: the measure was 452.04 pt where his Word document's is 453.54, and
+   * the printed PDF then broke lines 1.5 pt earlier than Word did. An outline
+   * is drawn outside the box and costs nothing, so the page, the PDF and the
+   * `.docx` all measure the same column.
+   */
+  outline: var(--border-hair) solid var(--chrome-line);
+  outline-offset: calc(-1 * var(--border-hair));
   border-radius: var(--chrome-radius);
   /* Padding is the PAGE's margins, set by the view from the geometry — see
      `FlowView`. `--doc-pad` was a token nothing emitted. */

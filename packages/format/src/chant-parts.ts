@@ -57,9 +57,16 @@ export interface ChantInstruction {
 }
 
 /** How the step's text moves around a figure. `aside` is a margin rail (≥1024
- *  only); everything degrades to `block` on a phone. */
+ *  only); everything degrades to `block` on a phone.
+ *
+ *  A float NEVER runs beside a pāda: a pāda is a metrical line, and text
+ *  narrowed by a picture wraps where the picture ends rather than where the
+ *  metre does. `figure.css` clears the float at every verse, and
+ *  `openspec/changes/document-images/design.md` has the measurement. */
 export type ChantFigureFlow = 'block' | 'start' | 'end' | 'aside';
-/** Width as a fraction of the step column — never free-form pixels. */
+/** Width as a fraction of the step column — never free-form pixels. The same
+ *  document is drawn in an A4 column, a web measure and a card, so a picture
+ *  set at 340 px is a third of one and two thirds of another. */
 export type ChantFigureSize = 'thumb' | 'small' | 'medium' | 'large' | 'full';
 
 /**
@@ -73,12 +80,25 @@ export type ChantFigureSize = 'thumb' | 'small' | 'medium' | 'large' | 'full';
  */
 export interface ChantFigure {
   id: string;
-  /** Under `client/public/`. SVG line art on `currentColor` is preferred: it
-   *  self-themes and needs no `srcDark`. */
+  /**
+   * The picture. Either the bytes, as `data:<type>;base64,…`, or a path the
+   * HOST resolves (`RenderHost.resolveUrl`) — the platform serves its own from
+   * `client/public/`.
+   *
+   * A picture inserted in the editor is always the bytes, because this program
+   * saves one `.json` and a path is a picture the file does not carry. See
+   * `figure.ts`; the media types, the size ceiling and the reason are there.
+   */
   src: string;
   /** Alternate for the dark theme, when `src` cannot self-theme. */
   srcDark?: string;
-  /** Required, non-empty, never a repeat of the caption. */
+  /**
+   * What is IN the picture. Required, non-empty, never a repeat of the caption.
+   *
+   * Not a formality: a mudrā drawing is the only form that instruction takes,
+   * so a picture with no alternative text is a step a blind reciter cannot
+   * perform. `figureFaults` refuses one.
+   */
   alt: string;
   caption?: { en: string };
   flow?: ChantFigureFlow;

@@ -31,7 +31,6 @@ export function runClasses(marks: RunMarks): string {
   const out = ['run'];
   if (marks.hold !== undefined) out.push('hold', `hold-${marks.hold}`);
   if (marks.svara !== undefined) out.push(`sv-${marks.svara}`);
-  if (marks.candra === true) out.push('is-candra');
   /* A letter the rules replaced is coloured, and it says what it replaced so a
      reader can see it without opening anything. */
   if (marks.was !== undefined) out.push('is-change');

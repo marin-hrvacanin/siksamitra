@@ -18,7 +18,8 @@
  *
  *   import '@siksamitra/render/mark-geometry.css';
  *   import '@siksamitra/render/chant.css';
- *   import '@siksamitra/render/print.css';
+ *   import '@siksamitra/render/figure.css';
+ *   import '@siksamitra/render/export.css';
  */
 
 // ── the host contract ───────────────────────────────────────────────────────
@@ -44,6 +45,10 @@ export { ChantSettings } from './ChantSettings.js';
 export { applyRate, SEG_LEAD, startAt } from './transport.js';
 export type { StartAt } from './transport.js';
 
+// ── a picture in a document: ONE component, every surface ───────────────────
+export { EMBEDDED_ONLY, Figure, figureClassName } from './render/figure.js';
+export type { FigureProps, ResolveFigureSrc } from './render/figure.js';
+
 // ── the primitives the editor renders with ──────────────────────────────────
 export { renderSyl, toScriptDigits } from './render/marks.js';
 export { holdJoins } from './render/hold-joins.js';
@@ -57,7 +62,7 @@ export * from './theme/marks.js';
  * Text and markings, as the runs that draw them — the one shape the page and
  * the editing surface share. See `openspec/changes/text-and-marks`.
  */
-export { toLines, toRuns } from './runs.js';
-export type { Run, RunMarks } from './runs.js';
+export { runKindOf, toLines, toRuns } from './runs.js';
+export type { Run, RunKind, RunMarks } from './runs.js';
 export { renderRun, renderRunLine, runClassName } from './render/run-marks.js';
 export type { RunRenderOptions } from './render/run-marks.js';

@@ -50,6 +50,13 @@ export {
 } from './marks.js';
 export type { MarkPatch, MarkReason, UnitAddress } from './marks.js';
 
+/* A picture in a step: put one in, change one, take one out. */
+export {
+  applyFigureCommand, figureIdsIn, insertFigure, nextFigureId, removeFigure,
+  updateFigure, withFigureDefaults,
+} from './figures.js';
+export type { FigureApplied, FigureCommand, FigureResult } from './figures.js';
+
 export { adoptSource, unitsOf } from './adopt-source.js';
 export { markUnits } from './mark-tokens.js';
 export { tokenSrcMap } from './token-src-map.js';

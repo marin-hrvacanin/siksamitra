@@ -19,6 +19,7 @@
  *   CHROME=<path> node tools/responsive.mjs
  */
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 import { APP_URL, openApp, openTab } from './_ui.mjs';
 
 const WIDTHS = [1920, 1600, 1400, 1200, 1024, 900, 880, 800, 700, 620, 560, 500, 440, 400, 380];
@@ -27,9 +28,7 @@ const TABS = ['home', 'marking', 'audio', 'view'];
 const NAV_MIN = 880;
 
 const browser = await puppeteer.launch({
-  executablePath: process.env.CHROME,
-  headless: 'shell',
-  args: ['--no-sandbox'],
+  executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'],
 });
 const page = await browser.newPage();
 const errors = [];

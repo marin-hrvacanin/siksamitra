@@ -4,7 +4,6 @@
   "files": {
     "packages/render/src/chant.css": 399,
     "packages/render/src/ChantReader.tsx": 15,
-    "packages/render/src/print.css": 14,
     "packages/render/src/ChantEmbed.tsx": 2
   }
 }

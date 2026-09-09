@@ -16,9 +16,9 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 import { mark, openApp, openTab, setMode, setView } from './_ui.mjs';
 
-const exe = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const URL = process.env.URL ?? 'http://localhost:5273/';
 const out = process.argv.includes('--out')
   ? process.argv[process.argv.indexOf('--out') + 1]
@@ -26,7 +26,7 @@ const out = process.argv.includes('--out')
 mkdirSync(out, { recursive: true });
 
 const browser = await puppeteer.launch({
-  executablePath: exe,
+  executablePath: browserPath(),
   headless: 'shell',
   args: ['--no-sandbox', '--force-device-scale-factor=2'],
 });

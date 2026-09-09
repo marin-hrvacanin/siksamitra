@@ -22,7 +22,10 @@ import {
   transliterateSyllable, wordsAlign, type ScriptKey, type ScriptUnit,
   type Profile, type ProfileKey,
 } from '@siksamitra/engine';
-import { exportDocx, importDocx, pack, readManifest, unpack } from '@siksamitra/interop';
+import { exportWord, importDocx, pack, readManifest, unpack } from '@siksamitra/interop';
+import {
+  DEFAULT_EXPORT_STYLE, exportStyle, styleStacks,
+} from '@siksamitra/tokens/export-styles';
 import { attachSource } from './attach-src.js';
 import {
   EDIT_HELP, EDIT_VERBS, runEditVerb, type EditVerb,
@@ -137,7 +140,7 @@ Options
   --preset <name>            taittiriya | rigveda | sukla-yajurveda | smarta | prose
   --patch '<json>'           field overrides on top of the preset
   --out <path>               where to write
-  --template <path>          the Word template (default: the committed one)
+  --style <id>               an export style (default: veda-union)
   --assets <dir>             pack: a directory of audio / figures to carry along
   --original <file>          pack: the .docx or .pdf it was imported from
   --family auto|calibri|arial  import: which PDF reader (default: detect)
@@ -798,15 +801,27 @@ switch (cmd) {
     const path = positional(0);
     if (path === undefined) die(2, 'which document?');
     const doc = readDoc(path!);
-    const tpl = flag('template') ?? 'tools/chant/templates/vu-word-template.docx';
-    if (!existsSync(tpl)) die(2, `no template at ${tpl} — run npm run gen:word-template`);
-    const out = flag('out') ?? `${basename(path!).replace(/\.json$/i, '')}.docx`;
-    const bytes = exportDocx(doc, new Uint8Array(readFileSync(tpl)));
+    const style = exportStyle(flag('style') ?? DEFAULT_EXPORT_STYLE);
+    const stacks = styleStacks(style);
+    const stem = basename(path!).replace(/\.json$/i, '');
+    const out = flag('out') ?? `${stem}.docx`;
+    /* The document rides inside the file — see `word/export.ts` — so this is
+       both the Word document someone prints and the file that can be opened
+       again with nothing lost. */
+    const bytes = await exportWord({
+      doc,
+      style,
+      textStack: stacks.text,
+      uiStack: stacks.ui,
+      engine: 'siksamitra-cli',
+      slug: `${stem}.docx`,
+      script: 'iast',
+    });
     mkdirSync(dirname(resolve(out)), { recursive: true });
     writeFileSync(out, bytes);
-    say(`\n  ${out} — ${(bytes.length / 1024).toFixed(0)} KB`);
-    say('  styles.xml, the theme and the fonts come from the template unchanged');
-    emit({ out, bytes: bytes.length });
+    say(`\n  ${out} — ${(bytes.length / 1024).toFixed(0)} KB, ${style.name} style`);
+    say('  the document itself is in customXml/item1.xml — reopen it losslessly');
+    emit({ out, bytes: bytes.length, style: style.id });
     break;
   }
 

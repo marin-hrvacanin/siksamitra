@@ -87,6 +87,7 @@ one. Both are fixed by the switch, not before it.
 | adding or changing an icon | `tools/icons/manifest.mjs` — our name → the library's — then `npm run icons` |
 | working on the page's type | `packages/tokens/src/document-type.ts` (the scale, and which of our elements takes which of HIS styles) then `apps/web/src/styles/document.css` |
 | working on the navigation panel | `apps/web/src/shell/NavPanel.tsx` — the tree is `blockRefs`, not a second model |
+| working on pictures in a document | `openspec/changes/document-images/design.md` — which of Word's answers this program takes and which it refuses — then `packages/render/src/render/figure.tsx` (the ONE component) and `figure.css` (the ONE place that decides a size) |
 | wondering why a document cannot be edited | **nothing stops one now** — see *The document model is changing* below; rule zero is superseded |
 | working on the editing surface | `openspec/changes/text-and-marks/design.md`, then `apps/web/src/editor/lexical/` |
 | moving markings around | `packages/format/src/mark.ts` (what one IS) and `mark-ops.ts` (what may be done to a list) |
@@ -113,6 +114,8 @@ packages/
   engine/    derivation: source + profile -> marked tokens. The rules, the
              profiles, the script registry, transliteration. NEVER LEAVES.
   render/    the one renderer IN THIS PROGRAM: tokens -> screen and paper.
+             `render/figure.tsx` + `figure.css` are the one picture, used by
+             the editor's three views, the reader, print and every export.
   layout/    pure: pagination, zoom, scroll anchoring, view modes.
   edit/      what an edit IS. The caret over a section, the one function that
              changes a verse's source, hand-placed marks as overrides,
@@ -206,6 +209,7 @@ that is true today:
 | a ribbon group, or a tab | the arrays in `apps/web/src/shell/Toolbar.tsx` |
 | an icon | `tools/icons/manifest.mjs`, then `npm run icons` |
 | a token type's rendering | `apps/web/src/views/token-renderers.tsx` |
+| a picture treatment (a size step, a frame) | `packages/tokens/src/figure.ts`, then `packages/render/src/figure.css` |
 | an editing key or a marking button | `apps/web/src/editor/keymap.ts` — one table, buttons render from it |
 | an editing command | `EditCommand` in `packages/edit/src/session.ts` |
 | a font | `tools/fonts/manifest.mjs`, then `npm run fonts` |
@@ -235,8 +239,8 @@ The gates in `npm run check`: `check:web` `check:word-addin` `check:icons`
 `check:authoring` `check:modules` `check:tokens` `check:literals`
 `check:fixtures` `check:conformance` `check:marking` `check:migrate`
 `check:source` `check:transliteration` `check:lossless` `check:engine`
-`check:export:html` `check:export:image` `check:export:word`
-`check:export:pdf`.
+`check:export:html` `check:export:image` `check:export:figures`
+`check:export:word` `check:export:pdf`.
 
 Four of those are worth knowing by name:
 

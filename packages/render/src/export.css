@@ -173,3 +173,130 @@
   width: var(--measure-web);
   background: transparent;
 }
+
+/* ── printed ────────────────────────────────────────────────────────────── */
+/*
+ * THE PDF IS THIS PAGE, PRINTED. Nothing here changes a size, a face or a
+ * leading — a print stylesheet that re-set the type would make the PDF a third
+ * rendering of the document, and the whole point is that there are only two:
+ * the page, and the Word file that agrees with it.
+ *
+ * What goes is the DESK. On screen a sheet lies on a grey ground with a gutter
+ * around it, a hairline edge, a rounded corner and a shadow; on paper the sheet
+ * IS the paper, and printing the desk would put a grey band down every margin.
+ *
+ * THE HAIRLINE IS AN OUTLINE, so removing it moves nothing. It used to be a
+ * border, and with `box-sizing: border-box` that 1 px on each side came out of
+ * the text: the measure was 452.04 pt where his Word document's is 453.54, and
+ * a printed line broke 1.5 pt earlier than the same line in Word. See
+ * `canvas.css`.
+ */
+@media print {
+  /*
+   * NO `@page { margin }` HERE. A CSS page margin OVERRIDES the one the printer
+   * was given, so `margin: 0` written here silently cancelled the 25 mm
+   * `pdf.mjs` passes and every page printed hard against the paper's edge —
+   * the first baseline 14 pt from the top where Word puts it at 70.87. The
+   * margins belong to one place and that place is `pageGeometry`, handed to
+   * the print job.
+   */
+  /*
+   * THE BODY MUST BE AS TALL AS THE DOCUMENT. `base.css` sizes `html`, `body`
+   * and `#root` to 100 % because the editor is a fixed-height grid; carried
+   * into a print that makes the body exactly one sheet tall, and Chrome printed
+   * a seven-verse section as ONE page with the seventh verse cut off in the
+   * middle of its translation. Measured: six verses printed, one lost, no
+   * warning anywhere. The column was 1430 px against a 600 px body.
+   *
+   * `:root` AND `body.export-body`, not `html` and `body`. This sheet is loaded
+   * BEFORE `app.css`, which is where `base.css` arrives, and a media query adds
+   * no specificity — so the plain selectors lost the cascade and the rule did
+   * nothing at all. `:root` is a pseudo-class and `.export-body` is the class
+   * the exporter puts on the body, so each outranks the rule it has to beat
+   * without an `!important` that would also override a later intention.
+   */
+  :root { height: auto; overflow: visible; }
+  body.export-body { height: auto; overflow: visible; }
+
+  .export--page,
+  .export--web,
+  .export--card {
+    min-height: 0;
+  }
+
+  .export--page .flow { padding: 0; }
+
+  /*
+   * FLUSH LEFT, NOT CENTRED. `margin-inline: auto` centres the sheet on the
+   * desk, and on paper the desk is the sheet — but Chrome's page box comes out
+   * 0.6 pt wider than A4 whatever unit it is asked in, and centring put half of
+   * that in front of every line. Measured against Word printing the same
+   * document: 71.36 pt against 70.82 pt for the same left margin.
+   */
+  /*
+   * THE VERTICAL MARGINS BECOME THE PAGE BOX'S.
+   *
+   * `FlowView` writes the page's width and its 25 mm margins onto this element
+   * as an inline width and padding, because on screen the sheet is a thing
+   * lying on a desk. Padding is applied once to a flow, so on paper page two
+   * began 12 pt from the top edge where Word began at 70.87 — a vertical margin
+   * has to repeat, and only the PAGE BOX repeats. `pdf.mjs` gives it those two
+   * and keeps the sides here; see the comment there for why the sides cannot
+   * move.
+   *
+   * `!important` because the padding is INLINE, and an inline style cannot be
+   * overridden any other way. It is not a shortcut past specificity: nothing
+   * else in the program sets padding on this element.
+   */
+  .export--page .flow__column {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-inline: 0;
+    outline: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /*
+   * A VERSE AND ITS TRANSLATION DO NOT SPLIT ACROSS A PAGE.
+   *
+   * Not a preference — an agreement. `Translit` in the `.docx` carries
+   * `w:keepNext` and `w:keepLines`, which is what his own style does, and with
+   * nothing said here Chrome split a four-line verse two and two where Word
+   * moved it whole: the PDF ended page one on verse 6 and the Word file on
+   * verse 5. Two files of one document, disagreeing about what is on the page.
+   */
+  /* `.doc .verse` in `document.css` sets `break-inside: auto` at the same
+     specificity and is loaded AFTER this sheet, so a two-class selector lost
+     the cascade and Chrome split verse 6 away from its translation while Word
+     moved the whole block. Measured: 24 mantra lines on our page one against
+     Word's 20. */
+  .export--page .doc .verse {
+    break-inside: avoid;
+  }
+
+  /*
+   * A MARK MUST NOT BE PAINTED ON THE PAGE ITS LETTER LEFT.
+   *
+   * A svara is drawn as a stroke ABOVE the line box — `--mark-svara-top` is
+   * negative — and when a page break falls before its line, Chrome paints that
+   * overflow at the position the line had before the break. Measured: three
+   * red ticks alone in the bottom margin of page one, a full line below the
+   * last verse, with the verse they belong to at the top of page two.
+   *
+   * `overflow: clip` on the LINE confines a line's ink to the line, and the
+   * clip margin is exactly the mark's own reach out of the box, so nothing that
+   * should be drawn is lost. `clip` rather than `hidden` because `hidden`
+   * establishes a formatting context and would change the layout it is
+   * protecting.
+   */
+  .export--page .doc .pada {
+    overflow: clip;
+    overflow-clip-margin: calc(-1 * var(--mark-svara-top));
+  }
+
+  .export--page .doc .section__title,
+  .export--page .doc .doc__part {
+    break-after: avoid;
+  }
+}

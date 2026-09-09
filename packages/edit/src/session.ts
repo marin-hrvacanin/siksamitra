@@ -6,12 +6,13 @@
  * tested without a browser, and it is the difference from v1, where "what
  * happens when I press this" was answerable only by pressing it.
  *
- * Four commands, and every editing gesture is one of them. Typing, deleting,
+ * Five commands, and every editing gesture is one of them. Typing, deleting,
  * pasting three verses, splitting a line and joining two verses are all
- * `replace` — one range replacement — so they cannot disagree with each other
- * about what a verse boundary is. Placing a holding is `mark`; withdrawing an
- * opinion is `unmark`; handing the holdings back to the rules is
- * `auto-holdings`.
+ * `replace` — one range replacement — so they cannot disagree about what a
+ * verse boundary is. A holding is `mark`; withdrawing an opinion is `unmark`;
+ * handing the holdings back to the rules is `auto-holdings`; and everything
+ * done to a picture — insert, replace, resize, align, caption, delete — is
+ * `figure`.
  *
  * Every branch ends the same way: change the marks, change the source,
  * re-derive what changed, and REPORT what happened — refusals, orphaned
@@ -36,8 +37,9 @@ import { verseSrcMap, type VerseReport } from './derive-verse.js';
 import {
   changedVerses, rebaseSection, rederive, sourcesOf, writeSources, type LostMark,
 } from './sync.js';
-import { record, restore, snapshot, type History } from './history.js';
+import { record, restore, snapshot, type History, type Snapshot } from './history.js';
 import { setProfile, type ProfileChange } from './set-profile.js';
+import { applyFigureCommand, type FigureCommand } from './figures.js';
 
 export type EditCommand =
   /** Replace a flat range of one section's source. Every text change is this. */
@@ -75,6 +77,8 @@ export type EditCommand =
     verseIds: readonly string[];
     mode: 'keep' | 'replace';
   }
+  /** A picture: put one in, change one, take one out — see `figures.ts`. */
+  | FigureCommand
   /** Change which register's rules govern the document, or one section. */
   | ProfileChange;
 
@@ -165,6 +169,18 @@ export function apply(state: EditState, history: History, command: EditCommand):
   const section = sectionOf(state.doc, command.sectionId);
   if (section === undefined) {
     return refuse(state, history, `no section "${command.sectionId}"`);
+  }
+
+  /* A picture is not text — it changes `items`, no verse — so it goes before
+     rule zero, the source writing and the re-derivation. See `figures.ts`. */
+  if (command.k === 'figure') {
+    const done = applyFigureCommand(state.doc, section, command);
+    const snap = (d: ChantDoc): Snapshot => snapshot(d, [section.id], state.selection);
+    const step = { before: snap(state.doc), after: snap(done.doc) };
+    return {
+      state: { ...quiet(state), doc: done.doc, refusals: [...done.notes] },
+      history: done.changed ? record(history, step) : history,
+    };
   }
 
   const before = snapshot(state.doc, [section.id], state.selection);

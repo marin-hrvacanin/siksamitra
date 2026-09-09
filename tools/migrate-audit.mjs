@@ -27,9 +27,12 @@ function splitLetters(text) {
   const out = [];
   for (let i = 0; i < text.length;) {
     const two = text.slice(i, i + 2);
-    if (DIGRAPHS.includes(two)) { out.push(two); i += 2; continue; }
-    out.push(text[i]);
-    i += 1;
+    let letter;
+    if (DIGRAPHS.includes(two)) { letter = two; i += 2; } else { letter = text[i]; i += 1; }
+    /* A combining mark is not a letter of its own: U+0310 over an `m` is one
+       character to a reader, and a marking may not begin between them. */
+    while (i < text.length && /\p{Mn}|\p{Mc}/u.test(text[i])) { letter += text[i]; i += 1; }
+    out.push(letter);
   }
   return out;
 }

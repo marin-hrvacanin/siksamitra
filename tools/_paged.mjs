@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 import { setMode, setView } from './_ui.mjs';
-const b = await puppeteer.launch({ executablePath: process.env.CHROME, headless: 'shell', args: ['--no-sandbox'] });
+const b = await puppeteer.launch({ executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'], });
 const p = await b.newPage();
 await p.setViewport({ width: 1400, height: 900 });
 await p.goto('http://localhost:5273/', { waitUntil: 'networkidle0' });

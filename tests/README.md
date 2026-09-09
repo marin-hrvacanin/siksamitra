@@ -58,6 +58,8 @@ its bugs most cheaply.
 | pages, zoom, the three views | `packages/layout/src/__tests__/zoom.test.ts`, `paginate.test.ts`, `anchor.test.ts` |
 | the document's type scale, and 1:1 with his `.docx` | `tests/integration/document-type.test.ts`, `word-fidelity.test.ts` + the `check:document` gate |
 | reading and writing a `.json` document — the refusals, the empty one | `packages/format/src/__tests__/chant-file.test.ts` |
+| what a picture in a document may be, and where its bytes live | `packages/format/src/__tests__/figure.test.ts` |
+| putting a picture in, changing it, taking it out, and undoing all three | `packages/edit/src/__tests__/figures.test.ts` + the `check:export:figures` gate |
 | the same over the eleven documents that ship | `tests/integration/chant-file.test.ts` |
 | the document lifecycle: new, open, save, save as, the guard, recents | `tests/component/doc-lifecycle.test.tsx` |
 | unsaved changes, and what each answer to the guard means | `apps/web/src/shell/__tests__/doc-file.test.ts` |

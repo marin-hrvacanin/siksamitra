@@ -12,11 +12,14 @@
  * from the registry so that the button and the accelerator cannot drift apart:
  * see `commands.ts` and `useDocFile.ts`.
  *
- * IMPORT IS NOT OPEN, and it stopped pretending to be. `.smdoc`, `.vuchant`
- * and `.docx` come IN and cannot be written back — a `.docx` round trip is
- * lossy by construction and a `.vuchant` is a package, not this document — so
- * an imported document arrives unsaved, named after the file it came from, and
- * the first Save takes it to a `.json` of its own.
+ * IMPORT IS NOT OPEN, and it stopped pretending to be — with one exception it
+ * now has to make. `.smdoc`, `.vuchant` and a `.docx` the OWNER typed come IN
+ * and cannot be written back: his file has the text and the styles but not the
+ * source layer, the overrides or the register, so what comes back is a
+ * re-derivation. A `.docx` THIS PROGRAM wrote is different — it carries the
+ * document itself in a custom XML part — and `isSiksamitraDocx` is how the two
+ * are told apart. Choosing wrong is the difference between the exact document
+ * and a lookalike, so nothing guesses.
  *
  * PRINTING IS THE PDF PATH, deliberately. The paged view already lays the
  * document out on real A4 with his own 25 mm margins, measured from his file;
@@ -100,14 +103,26 @@ export function FileGroup(
           );
         }
       } else if (ext === 'docx') {
-        const { importDocx } = await import('@siksamitra/interop');
-        const result = importDocx(bytes);
-        onImport(result.doc, file.name);
-        if (result.report.unresolved.length > 0) {
-          onNote(
-            `${file.name}: ${result.report.unresolved.length} run(s) whose styling this `
-            + 'version does not understand were kept as plain text',
-          );
+        const interop = await import('@siksamitra/interop');
+        /* One of OURS carries the document itself, so it comes back exactly —
+           marks, overrides, register and all — rather than being re-derived
+           from what the page happens to show. */
+        if (interop.isSiksamitraDocx(bytes)) {
+          const read = await interop.importWord(bytes);
+          onImport(read.doc, file.name);
+          onNote(read.intact
+            ? `${file.name}: opened exactly — the document was inside the file`
+            : `${file.name}: the text was edited in Word after it was written, so the `
+              + 'document inside it no longer matches what the page shows');
+        } else {
+          const result = interop.importDocx(bytes);
+          onImport(result.doc, file.name);
+          if (result.report.unresolved.length > 0) {
+            onNote(
+              `${file.name}: ${result.report.unresolved.length} run(s) whose styling this `
+              + 'version does not understand were kept as plain text',
+            );
+          }
         }
       } else {
         onNote(`${file.name}: not a document this program imports (.smdoc, .vuchant, .docx)`);
@@ -153,12 +168,12 @@ export function FileGroup(
    * HTML AND IMAGE, both through `views/export-page.tsx` and both taking a
    * style from `EXPORT_STYLES`.
    *
-   * The HTML is the LOSSLESS export and the only one that is also an import:
-   * the page is what you send someone, and the document itself rides inside it
-   * in a `<script type="application/json">` block, so the same file reopens
-   * with nothing lost. `.docx` above cannot do that — it has nowhere to put the
-   * source layer, the overrides or the register — which is why Import and
-   * Export Word are separate verbs and this one is not.
+   * The HTML is one of THREE lossless exports and they work the same way: the
+   * file is what you send someone, and the document itself rides inside it — in
+   * a `<script type="application/json">` block here, in a custom XML data store
+   * part in the `.docx` above, as an attached `document.json` in a PDF. Each
+   * one reopens with nothing lost, and a gate proves it over all eleven corpus
+   * documents. See `packages/interop/src/embed.ts`.
    *
    * The PNG is that same file, photographed. See `export-doc.ts`.
    */
@@ -201,21 +216,15 @@ export function FileGroup(
     if (doc === null) return;
     setBusy(true);
     try {
-      const [{ exportDocx }, template] = await Promise.all([
-        import('@siksamitra/interop'),
-        /* His own template, so the exported file carries his style definitions
-           rather than ones we invented — that is what makes the round trip 1:1
-           rather than approximate. */
-        fetch('/templates/vu-word-template.docx').then(async (r) => {
-          if (!r.ok) throw new Error(`the Word template is not available (HTTP ${r.status})`);
-          return new Uint8Array(await r.arrayBuffer());
-        }),
-      ]);
+      const { exportDocumentWord } = await import('./export-doc.js');
+      const word = await exportDocumentWord(doc, { style, slug: fileNameFor(doc.title, 'docx') });
       download(
         fileNameFor(doc.title, 'docx'),
-        exportDocx(doc, template),
+        word.bytes,
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       );
+      onNote(`Exported as ${word.style.name} — the document travels inside the file, `
+        + 'so opening it again loses nothing.');
     } catch (e) {
       onNote(`Could not export: ${e instanceof Error ? e.message : 'unknown error'}`);
     } finally {
@@ -256,7 +265,7 @@ export function FileGroup(
           <RibbonButton
             icon="export"
             label="Export Word"
-            title="Write a .docx using his own template's styles"
+            title="Write a .docx in the chosen style, with the document inside it"
             disabled={doc === null || busy}
             onClick={() => void exportWord()}
           />

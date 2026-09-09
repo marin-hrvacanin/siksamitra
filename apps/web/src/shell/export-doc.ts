@@ -12,9 +12,14 @@
  * file are the rules that are styling the page behind the dialog, the same
  * objects, in the same cascade order.
  */
-import type { ChantDoc, ChantScriptKey } from '@siksamitra/format';
+import {
+  normalizeChantDoc, parseChantSelect, sliceChantDoc,
+  type ChantDoc, type ChantScriptKey,
+} from '@siksamitra/format';
 import { CLIP_SELECTOR, RASTER_ATTR, svgDocument, toBase64 } from '@siksamitra/interop';
-import type { ExportStyle } from '@siksamitra/tokens/export-styles';
+import {
+  exportStyle, styleStacks, type ExportStyle,
+} from '@siksamitra/tokens/export-styles';
 import {
   buildExportPage, type ExportIo, type ExportedPage,
 } from '../views/export-page.js';
@@ -78,6 +83,38 @@ const io: ExportIo = {
   },
   fontBytes: (file) => base64Of(`${FONT_DIR}${file}`),
 };
+
+/**
+ * One `.docx`: the Word document, and the document inside it.
+ *
+ * The whole build is `packages/interop/src/word/`, which the command line calls
+ * too; the window supplies nothing, because a `.docx` names its faces and the
+ * machine that opens it provides them. `styleStacks` is the same resolution the
+ * page export uses, so the Word file asks for the family the page is set in.
+ */
+export async function exportDocumentWord(
+  doc: ChantDoc,
+  options: { style: string; script?: ChantScriptKey; select?: string; slug?: string },
+): Promise<{ bytes: Uint8Array; style: ExportStyle }> {
+  const { exportWord } = await import('@siksamitra/interop');
+  const style = exportStyle(options.style);
+  const stacks = styleStacks(style);
+  const shown = sliceChantDoc(
+    normalizeChantDoc(doc),
+    options.select === undefined ? null : parseChantSelect(options.select),
+  );
+  const bytes = await exportWord({
+    doc: shown,
+    style,
+    textStack: stacks.text,
+    uiStack: stacks.ui,
+    engine: ENGINE,
+    slug: options.slug ?? 'document.docx',
+    script: options.script ?? 'iast',
+    ...(options.select === undefined ? {} : { select: options.select }),
+  });
+  return { bytes, style };
+}
 
 /** One self-contained `.html`: the page, and the document inside it. */
 export function exportDocumentHtml(

@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ChantDoc, ChantSection, ChantVerse } from '@siksamitra/format';
 import { outlineOf } from '../NavPanel.js';
-import { blockRefs } from '../../views/DocumentBlocks.js';
+import { blockRefs } from '../../views/blocks.js';
 
 const verse = (id: string, n?: string): ChantVerse => ({
   id,

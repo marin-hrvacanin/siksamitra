@@ -12,7 +12,7 @@
  * runs after every one of these in the callers that can afford it.
  */
 import {
-  compareMarks, MERGING_KINDS, POINT_KINDS, sameValue,
+  compareMarks, MERGING_KINDS, sameValue,
   type Mark, type MarkKind,
 } from './mark.js';
 

@@ -17,102 +17,25 @@
  * The document says what it holds; the renderer's job is to draw all of it, in
  * the order `items` gives, which is the format's canonical order.
  *
- * STILL NOT DRAWN: figures and embeds. They are declared in the format and
- * carried through the file untouched, but nothing here renders them yet — so a
- * document with figures is faithful in text and incomplete on the page. Named
- * here rather than silently skipped.
+ * STILL NOT DRAWN: embeds. They are declared in the format and carried through
+ * the file untouched, but nothing here renders one yet. Named here rather than
+ * silently skipped.
+ *
+ * FIGURES ARE DRAWN, and by the render package's one `Figure` component — the
+ * same one the reader uses — so a picture is the same picture in the flow view,
+ * on a page, on the web, in the reader and in every export. This file decides
+ * only WHERE it goes in the block order and what the page map calls it; how
+ * wide it is and how the text moves around it are `figure.css`, and the widths
+ * are tokens.
  */
 
 import { Fragment, memo, type ReactNode } from 'react';
 import type {
-  ChantDoc, ChantItem, ChantScriptKey, ChantSection, ChantToken, ChantVerse,
+  ChantDoc, ChantScriptKey, ChantToken, ChantVerse,
 } from '@siksamitra/format';
-import { holdJoins } from '@siksamitra/render';
+import { Figure, holdJoins } from '@siksamitra/render';
+import { blockId, figureOf, headingOf, itemsOf, sourceOf } from './blocks.js';
 import { renderToken, unitsBefore, type TokenContext } from './token-renderers.js';
-
-export interface BlockRef {
-  readonly id: string;
-  readonly kind: 'heading' | 'verse' | 'part' | 'instruction';
-  readonly sectionId: string;
-  readonly verseId?: string;
-}
-
-/**
- * The ids, in one place.
- *
- * Pagination reads the PREFIX to decide what may be orphaned (`isHeading` in
- * `PagedView`), so the prefixes are part of the contract and not decoration.
- */
-export const blockId = {
-  part: (sectionId: string): string => `p:${sectionId}`,
-  heading: (sectionId: string): string => `h:${sectionId}`,
-  instruction: (sectionId: string, at: number): string => `i:${sectionId}:${at}`,
-  verse: (sectionId: string, verseId: string): string => `v:${sectionId}:${verseId}`,
-  source: (sectionId: string): string => `c:${sectionId}`,
-} as const;
-
-/** Prefixes of blocks that must not be left alone at the foot of a page. */
-export const KEEP_WITH_NEXT = ['p:', 'h:', 'i:'];
-
-/** The section's contents, in canonical order, whichever field holds them. */
-function itemsOf(section: ChantSection): readonly ChantItem[] {
-  if (section.items !== undefined && section.items.length > 0) return section.items;
-  return section.verses.map((v) => ({ t: 'verse', ...v }) as ChantItem);
-}
-
-/** The heading text of a section: its printed number and its name. */
-function headingOf(section: ChantSection): string | undefined {
-  const title = section.title ?? section.label;
-  if (title === undefined || title === '') return undefined;
-  return section.n === undefined ? title : `${section.n}. ${title}`;
-}
-
-/** Where the section's words come from, if it says. */
-function sourceOf(section: ChantSection): string | undefined {
-  return section.source == null || section.source === '' ? undefined : section.source;
-}
-
-/** The block list, in document order. Shared by the views and the exporter. */
-export function blockRefs(doc: ChantDoc): BlockRef[] {
-  const out: BlockRef[] = [];
-  let part: string | undefined;
-  for (const section of doc.sections) {
-    /* A section with no part ends the run — see `outlineOf`, which draws the
-       same tree and must agree with this list. */
-    if (section.part === undefined) part = undefined;
-    else if (section.part !== part) {
-      out.push({ id: blockId.part(section.id), kind: 'part', sectionId: section.id });
-      part = section.part;
-    }
-    if (headingOf(section) !== undefined) {
-      out.push({ id: blockId.heading(section.id), kind: 'heading', sectionId: section.id });
-    }
-    itemsOf(section).forEach((item, at) => {
-      if (item.t === 'verse') {
-        out.push({
-          id: blockId.verse(section.id, item.id),
-          kind: 'verse',
-          sectionId: section.id,
-          verseId: item.id,
-        });
-      } else if (item.t === 'instruction') {
-        out.push({
-          id: blockId.instruction(section.id, at),
-          kind: 'instruction',
-          sectionId: section.id,
-        });
-      }
-    });
-    if (sourceOf(section) !== undefined) {
-      out.push({
-        id: blockId.source(section.id),
-        kind: 'instruction',
-        sectionId: section.id,
-      });
-    }
-  }
-  return out;
-}
 
 const FONT_STACK = 'var(--doc-verse-face)';
 
@@ -195,12 +118,23 @@ function VerseLines(
  * exact rather than a guess.
  */
 function DocumentBlocksInner(
-  { doc, script, showMarks, only, addressable = false }: {
+  { doc, script, showMarks, only, addressable = false, selectedFigure, onFigure }: {
     doc: ChantDoc;
     script: ChantScriptKey;
     showMarks: boolean;
     /** Render only these block ids — how the paged view draws one page. */
     only?: ReadonlySet<string>;
+    /** The block id of the picture the editor has selected, if any. */
+    selectedFigure?: string;
+    /**
+     * Somebody pointed at a picture.
+     *
+     * Passed in rather than handled here because the SESSION owns what is
+     * selected — the ribbon's picture controls read it, and a second notion of
+     * selection living in the renderer would be a second thing to keep in
+     * step. Stable, so the memo below still holds.
+     */
+    onFigure?: (blockId: string, sectionId: string, at: number) => void;
     /**
      * The editor is drawing: letters carry `data-u` and verses `data-verse`.
      *
@@ -214,6 +148,10 @@ function DocumentBlocksInner(
   },
 ): ReactNode {
   const wanted = (id: string): boolean => only === undefined || only.has(id);
+  /* Built once per render rather than per figure item: the pūjā manual has 22
+     figure items against a 22-entry library, so a lookup per item is 484
+     comparisons on every keystroke. */
+  const library = new Map((doc.figures ?? []).map((f) => [f.id, f]));
   /* A part heading is drawn where the part CHANGES — it names a run of steps,
      not a step, so repeating it above each one would be noise. */
   let part: string | undefined;
@@ -248,6 +186,23 @@ function DocumentBlocksInner(
                   <p className="doc__instruction" data-block-id={id} key={id}>
                     {item.instruction.text.en}
                   </p>
+                );
+              }
+              if (item.t === 'figure') {
+                const id = blockId.figure(section.id, at);
+                if (!wanted(id)) return null;
+                const fig = figureOf(item, library);
+                if (fig === undefined) return null;
+                return (
+                  <Figure
+                    key={id}
+                    fig={fig}
+                    blockId={id}
+                    selected={selectedFigure === id}
+                    {...(addressable && onFigure !== undefined
+                      ? { onSelect: () => onFigure(id, section.id, at) }
+                      : {})}
+                  />
                 );
               }
               if (item.t !== 'verse') return null;
@@ -310,6 +265,17 @@ function DocumentBlocksInner(
                   {item.source !== undefined && (
                     <p className="doc__source">{item.source}</p>
                   )}
+                  {/*
+                    A VERSE MAY CARRY ITS OWN PICTURES (`ChantVerse.figures`),
+                    and they are not blocks: they are inside the verse, so the
+                    page map moves them with it and they cannot be selected on
+                    their own. The format has both placements and the reader
+                    draws both; drawing only the section's would lose a picture
+                    silently.
+                  */}
+                  {(item.figures ?? []).map((fig) => (
+                    <Figure key={fig.id} fig={fig} />
+                  ))}
                 </div>
               );
             })}

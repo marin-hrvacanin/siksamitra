@@ -193,7 +193,7 @@ came from is not finished.
 
 ---
 
-## 4. Assets are referenced, never inlined
+## 4. Audio is referenced, never inlined — a picture is the other way round
 
 `recording` carries **references** and timings. Audio bytes live beside the
 document, not inside it.
@@ -202,6 +202,43 @@ This is not a preference. v1 base64'd audio into the content string and produced
 a 38.8 MB Puruṣa Sūktam that had to be decompressed in full before verse 1 could
 be shown. A reader must be able to open the first verse of a document without
 reading a single byte of audio.
+
+### 4.1 A picture goes INSIDE, and the difference is not inconsistency
+
+`ChantFigure.src` may be either:
+
+- **the bytes** — `data:image/png;base64,…`, which is what this program writes;
+- **a name** — a path or a URL, which the **host** resolves
+  (`RenderHost.resolveUrl`). The platform serves `/figures/<doc>/…`; this
+  editor resolves nothing but the bytes.
+
+The two answers differ because the two things do. A recording is tens of
+megabytes and is played after the first verse is on screen; a picture is
+kilobytes and IS the first thing on the page. And the failure each avoids is the
+opposite one: inlining audio made a document nobody could open, while
+referencing a picture made a document whose pictures do not travel —
+`puja-vidhi.json` names 22 PNGs, and every one of them is a hole in any copy of
+the document outside the platform.
+
+A reader that cannot resolve a named picture **draws a placeholder carrying the
+figure's `alt`**, and emits no URL. It does not fetch, and it does not draw
+nothing.
+
+Binding, for every implementation:
+
+- `alt` is REQUIRED and non-empty, and is not the caption repeated. A picture in
+  a liturgical manual is frequently the whole of an instruction.
+- A carried picture is PNG, JPEG, WebP, GIF or AVIF. **SVG is refused**: it is a
+  script host, and a picture arriving inside a document someone was sent must
+  not be able to run.
+- A figure reserves its box before it loads — a fixed `crop`, or `width` and
+  `height`.
+- `size` is one of five named fractions of the column. A width in pixels is not
+  expressible, on purpose: one document is drawn in an A4 column, a web measure
+  and a card.
+
+`packages/format/src/figure.ts` is the definition and `figureFaults` is the
+check. The reasoning is `openspec/changes/document-images/design.md`.
 
 ---
 

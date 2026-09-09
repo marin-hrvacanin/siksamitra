@@ -45,6 +45,8 @@ export interface TextAndMarks {
 const NASALS = new Set(['ṅ', 'ñ', 'ṇ', 'n', 'm', 'ṁ']);
 const SIBILANTS = new Set(['ś', 'ṣ', 's', 'r', ':']);
 const ANUSVARA = 'ṁ';
+/** U+0310, the combining candrabindu — a character in the text, not a mark. */
+export const CANDRA = '̐';
 const VISARGA = 'ḥ';
 
 const typedAs = (u: ChantUnit): string => {
@@ -100,15 +102,28 @@ export function toTextAndMarks(verse: ChantVerse): TextAndMarks {
         for (const u of t.units) {
           const at = text.length;
           text += u.c;
-          const to = text.length;
 
-          if (u.change === true) marks.push(mark({ k: 'was', from: at, to, v: typedAs(u) }));
-          if (u.hold !== undefined) put('hold', u.hold, at, to); else close('hold');
-          if (u.svara !== undefined) put('svara', u.svara, at, to); else close('svara');
-          if (u.candra === true) put('candra', undefined, at, to); else close('candra');
-          if (u.cj !== undefined) marks.push(mark({ k: 'cj', from: at, to, v: u.cj }));
+          /*
+           * A CANDRABINDU IS A CHARACTER, not a marking.
+           *
+           * The token shape stores it as a boolean on the letter, and the old
+           * renderer put it back by appending U+0310 to the glyph. As a
+           * marking it could not be drawn at all by the run renderer, whose
+           * element holds one text node and no room for a combining mark laid
+           * over it — the parity gate showed it simply absent. It belongs in
+           * the text, which is also where an author types it, and
+           * `splitsCharacter` already forbids a marking boundary falling
+           * between a letter and its combining mark.
+           */
+          if (u.candra === true) text += CANDRA;
+          const end = text.length;
+
+          if (u.change === true) marks.push(mark({ k: 'was', from: at, to: end, v: typedAs(u) }));
+          if (u.hold !== undefined) put('hold', u.hold, at, end); else close('hold');
+          if (u.svara !== undefined) put('svara', u.svara, at, end); else close('svara');
+          if (u.cj !== undefined) marks.push(mark({ k: 'cj', from: at, to: end, v: u.cj }));
           if (u.sbhakti === true) marks.push(mark({ k: 'sbhakti', from: at, to: at }));
-          if (u.sup !== undefined) marks.push(mark({ k: 'sup', from: at, to, v: u.sup }));
+          if (u.sup !== undefined) marks.push(mark({ k: 'sup', from: at, to: end, v: u.sup }));
         }
         /*
          * WHERE THE SYLLABLE ENDED. Carried rather than recomputed — see the
@@ -218,7 +233,6 @@ export function toTokens(
       if (cell === undefined) continue;
       if (m.k === 'hold') cell.hold = m.v;
       else if (m.k === 'svara') cell.svara = m.v;
-      else if (m.k === 'candra') cell.candra = true;
       else if (m.k === 'sup') cell.sup = m.v;
       else if (m.k === 'cj') cell.cj = m.v;
       else if (m.k === 'was') cell.change = true;
@@ -307,7 +321,11 @@ export function toTokens(
       continue;
     }
 
-    const unit: ChantUnit = { c: ch };
+    /* The combining candrabindu rides on the letter before it — it is one
+       character to a reader and `split` keeps it with its base. */
+    const bare = ch.endsWith(CANDRA) ? ch.slice(0, -CANDRA.length) : ch;
+    const unit: ChantUnit = { c: bare };
+    if (bare !== ch) unit.candra = true;
     if (cell.hold !== undefined) {
       /* A new box wherever the run started; the same one while it continues. */
       const before = at[i - 1];
@@ -324,7 +342,7 @@ export function toTokens(
     if (cell.change === true) unit.change = true;
     if (units.length === 0) sylAt = i;
     units.push(unit);
-    iast += ch;
+    iast += bare;
   }
   /* Anything at the very end: the last syllable, and a pause after it. */
   flush();

@@ -19,6 +19,13 @@ import '@siksamitra/render/mark-geometry.css';
 import '@siksamitra/render/chant.css';
 import '@siksamitra/render/hold-join.css';
 /*
+ * A PICTURE, sized and placed. Beside the mark stylesheets rather than in the
+ * app's own, because the component that draws one lives in `@siksamitra/render`
+ * and the reader loads exactly this sheet — two copies of "how wide is a
+ * medium figure" is the drift this package exists to prevent.
+ */
+import '@siksamitra/render/figure.css';
+/*
  * THE EXPORT FRAMES, loaded by the editor that never draws one.
  *
  * An exported page carries the app's own stylesheets — that is what makes it

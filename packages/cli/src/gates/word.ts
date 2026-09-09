@@ -8,11 +8,13 @@
  *   npx tsx tools/verify-docx.ts
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { canonicalJson } from '@siksamitra/format';
 import { REFERENCE_COUNTS } from '@siksamitra/interop';
 import { strFromU8, unzipSync } from 'fflate';
 import {
-  documentXml, exportDocx, importDocx, mergeRuns, readParagraphs,
+  documentXml, exportWord, importDocx, importWord, mergeRuns, readParagraphs,
 } from '@siksamitra/interop';
+import { exportStyle, styleStacks } from '@siksamitra/tokens/export-styles';
 
 const FILE = 'tools/chant/fixtures-sadhana.docx';
 if (!existsSync(FILE)) {
@@ -60,10 +62,18 @@ if (report.structure.verses === 0) fails.push('no verses were built');
 if (report.structure.syllables === 0) fails.push('no syllables were built');
 
 console.log('\n── round trip: export, then re-read');
-// The COMMITTED template — his own styles.xml, theme and settings, with the
-// body replaced. Using his whole file would prove nothing about what ships.
-const template = new Uint8Array(readFileSync('tools/chant/templates/vu-word-template.docx'));
-const out = exportDocx(doc, template);
+/* The `veda-union` style, whose `styles.xml` is generated from the same table
+   his own file was measured into — see `packages/interop/src/word/styles.ts`.
+   The stripped copy of his `.docx` this used to be built from is gone: it was a
+   broken package, and one template could only ever produce one style. */
+const style = exportStyle('veda-union');
+const stacks = styleStacks(style);
+const writeWord = (d: typeof doc): Promise<Uint8Array> => exportWord({
+  doc: d, style, textStack: stacks.text, uiStack: stacks.ui,
+  engine: 'siksamitra-gate', slug: 'sadhana.docx', script: 'iast',
+  savedAt: '2026-01-01T00:00:00.000Z',
+});
+const out = await writeWord(doc);
 mkdirSync('tools/.shots', { recursive: true });
 writeFileSync('tools/.shots/roundtrip.docx', out);
 const again = importDocx(out, 'again');
@@ -114,30 +124,26 @@ ok('  every accent lands on a letter', report.marks['svara'] ?? 0, accentChars);
 console.log(`     svarabhakti dots read: ${report.marks['sbhakti'] ?? 0}`);
 
 console.log('\n── determinism');
-const a = exportDocx(doc, template);
-const b = exportDocx(doc, template);
+const a = await writeWord(doc);
+const b = await writeWord(doc);
 ok('  same bytes twice', Buffer.compare(Buffer.from(a), Buffer.from(b)), 0);
 ok('  document.xml stable', documentXml(doc) === documentXml(doc), true);
 
-// Gate W4: the template's style parts come through the export UNTOUCHED.
+/*
+ * Gate W4: his 4.5 MB file, exported by us, comes back as the same document.
+ *
+ * It replaced a check that the template's parts were copied through byte for
+ * byte, which stopped meaning anything when the template did: the styles are
+ * generated now. What is worth checking instead is the property the owner
+ * actually asked for — that the biggest document anyone has survives the round
+ * trip exactly, not merely that some bytes were copied.
+ */
 {
-  const tpl = unzipSync(template);
-  const got = unzipSync(out);
-  for (const part of ['word/styles.xml', 'word/theme/theme1.xml', '[Content_Types].xml']) {
-    const a2 = tpl[part];
-    const b2 = got[part];
-    ok(`  ${part} byte-identical`,
-      a2 !== undefined && b2 !== undefined && Buffer.compare(Buffer.from(a2), Buffer.from(b2)) === 0,
-      true);
-  }
-  ok('  only document.xml differs',
-    Object.keys(got).filter((k) => {
-      const a3 = tpl[k];
-      const b3 = got[k];
-      return a3 === undefined || b3 === undefined
-        || Buffer.compare(Buffer.from(a3), Buffer.from(b3)) !== 0;
-    }).join(','),
-    'word/document.xml');
+  const back = await importWord(out);
+  ok('  the embedded document is intact', back.intact, true);
+  ok('  it came from the datastore', back.from, 'custom-xml');
+  ok('  it is the document we exported',
+    canonicalJson(back.doc) === canonicalJson(doc), true);
 }
 void readParagraphs;
 void mergeRuns;

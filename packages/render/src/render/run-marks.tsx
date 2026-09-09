@@ -40,14 +40,28 @@ export interface RunRenderOptions {
   addressable?: boolean;
 }
 
-/** The classes a run wears. The one place that decides, for page and editor. */
+/**
+ * The classes a run wears. The one place that decides, for page and editor.
+ *
+ * `u` IS ONE OF THEM, and it is load-bearing. Every svara in this program is
+ * drawn by CSS on `.u` — `.u.sv-svarita::before` is the stroke above the
+ * letter, `.u.sv-anudatta::after` the rule beneath it — and the first version
+ * of this emitted `run sv-anudatta`, which those selectors do not match. The
+ * parity gate photographed it: every accent in Mantra Puṣpam simply absent,
+ * 6.92% of the page's pixels. A run is one or more letters, so it wears the
+ * letter class.
+ */
 export function runClassName(run: Run, showMarks: boolean): string {
-  const out = ['run'];
+  /* Structure is drawn as what it is: `.danda`, `.sp`, `.bar` and `.num` are
+     the classes the token renderer emits and the stylesheet already knows.
+     Only letters wear `.u`. Giving a daṇḍa the letter class drew it in the
+     letter colour with no space around it — the parity gate photographed it. */
+  if (run.kind !== 'text') return `run ${run.kind}`;
+  const out = ['run', 'u'];
   if (!showMarks) return out.join(' ');
   const { marks } = run;
   if (marks.hold !== undefined) out.push('hold', `hold-${marks.hold}`);
   if (marks.svara !== undefined) out.push(`sv-${marks.svara}`);
-  if (marks.candra === true) out.push('is-candra');
   /* A letter the rules replaced is coloured, which is how a reader tells a
      visarga's `s` from a typed one without opening anything. */
   if (marks.was !== undefined) out.push('is-change');

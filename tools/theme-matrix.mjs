@@ -11,15 +11,15 @@
  * a resolved ink, and a contrast between them.
  */
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 import { UI, openApp } from './_ui.mjs';
 
 /* Both from the environment, like every other gate: a hard-coded port works
    until somebody serves the built bundle on a different one, and then reports
    a connection refused against a server that is plainly running. */
-const exe = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const URL = process.env.URL ?? 'http://localhost:5273/';
 
-const b = await puppeteer.launch({ executablePath: exe, headless: 'shell', args: ['--no-sandbox'] });
+const b = await puppeteer.launch({ executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'], });
 const p = await b.newPage();
 await p.setViewport({ width: 1400, height: 900 });
 await openApp(p, URL, { selector: '[data-block-id]' });

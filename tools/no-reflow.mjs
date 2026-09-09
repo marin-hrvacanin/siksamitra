@@ -25,12 +25,11 @@
  * `openspec/changes/text-and-marks`, not to a stylesheet.
  */
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 import { APP_URL, openApp, press, setMode } from './_ui.mjs';
 
 const browser = await puppeteer.launch({
-  executablePath: process.env.CHROME,
-  headless: 'shell',
-  args: ['--no-sandbox'],
+  executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'],
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 1400, height: 900, deviceScaleFactor: 1 });

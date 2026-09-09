@@ -22,11 +22,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { workspaceAliases } from '../../tools/workspace-alias.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-const root = join(here, '..', '..');
-const pkg = (name: string, entry = 'src/index.ts'): string =>
-  join(root, 'packages', name, entry);
 
 /** The certificate `office-addin-dev-certs install` writes. */
 function devCerts(): { key: Buffer; cert: Buffer } | undefined {
@@ -41,26 +39,13 @@ export default defineConfig({
   root: here,
   publicDir: join(here, 'assets'),
   /*
-   * The workspace packages resolve to SOURCE, as they do for `apps/web` and for
-   * the tests. A build against `dist` would need every package built first and
-   * would drift from what the tests measured.
+   * The workspace packages resolve to SOURCE, as they do for `apps/web` and
+   * for the tests. A build against `dist` would need every package built first
+   * and would drift from what the tests measured. The list is read from the
+   * packages' own `exports` maps, so it cannot fall behind them the way the
+   * hand-written copy in `apps/web` did.
    */
-  resolve: {
-    alias: {
-      '@siksamitra/tokens/export-styles': pkg('tokens', 'src/export-styles.ts'),
-      '@siksamitra/tokens/document-themes': pkg('tokens', 'src/document-themes.ts'),
-      '@siksamitra/tokens/document-type': pkg('tokens', 'src/document-type.ts'),
-      '@siksamitra/tokens/source': pkg('tokens', 'src/source.ts'),
-      '@siksamitra/tokens/fonts': pkg('tokens', 'src/fonts.ts'),
-      '@siksamitra/tokens/word': pkg('tokens', 'src/word.ts'),
-      '@siksamitra/tokens/tokens.css': pkg('tokens', 'generated/tokens.css'),
-      '@siksamitra/tokens': pkg('tokens', 'generated/tokens.ts'),
-      '@siksamitra/format': pkg('format'),
-      '@siksamitra/engine': pkg('engine'),
-      '@siksamitra/layout': pkg('layout'),
-      '@siksamitra/interop': pkg('interop'),
-    },
-  },
+  resolve: { alias: workspaceAliases() },
   server: {
     port: 3000,
     strictPort: true,

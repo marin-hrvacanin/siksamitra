@@ -19,13 +19,13 @@
  *   CHROME=<path> node tools/doc-fidelity.mjs
  */
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 import { APP_URL, openApp } from './_ui.mjs';
 
 const URL = APP_URL;
-const exe = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
 const browser = await puppeteer.launch({
-  executablePath: exe, headless: 'shell', args: ['--no-sandbox'],
+  executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'],
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 1500, height: 950 });

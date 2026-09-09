@@ -30,6 +30,7 @@ import { Ribbon, type RibbonGroup, type RibbonTab } from './Ribbon.js';
 import { FileGroup } from './FileGroup.js';
 import { ScriptGroup } from './ScriptGroup.js';
 import { RegisterGroup } from './RegisterGroup.js';
+import { PictureGroup } from './PictureGroup.js';
 import { BoundaryGroup, MappingGroup, SpeedGroup, TransportGroup } from './AudioGroup.js';
 import type { Recording } from '../audio/useRecording.js';
 import type { Mapping } from '../audio/useMapping.js';
@@ -92,8 +93,21 @@ export function Toolbar(
       id: 'history', label: 'History', icon: 'undo', priority: 2,
       content: <HistoryButtons session={session} />,
     },
+    /*
+     * ON HOME, where Word's Insert tab would be.
+     *
+     * A fifth tab for one group is a tab people do not find; the ribbon
+     * already collapses a group to a button when the window is narrow, which
+     * is what a rarely-used group should do. It folds before the file actions
+     * and after the history, because a picture is put in once and undo is
+     * reached for constantly.
+     */
     {
-      id: 'file', label: 'File', icon: 'document', priority: 4,
+      id: 'picture', label: 'Picture', icon: 'image', priority: 3,
+      content: <PictureGroup session={session} onNote={onNote} />,
+    },
+    {
+      id: 'file', label: 'File', icon: 'document', priority: 5,
       content: (
         <FileGroup ctx={ctx} doc={ctx.hasDoc ? session.doc : null} onImport={onImport} onNote={onNote} />
       ),

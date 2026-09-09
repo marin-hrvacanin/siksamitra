@@ -83,11 +83,14 @@ export const GROUPS: readonly Group[] = [
     title: 'Aids',
     controls: [
       {
-        state: 'candra',
         label: 'Candrabindu',
-        tip: 'The nasalised `m̐`, written in his `VedicAnusvara` style.',
+        /* A CHARACTER, not a marking — U+0310 laid on the letter. It was a
+           marking until the run renderer showed it could not be drawn as one:
+           a run is one element with one text node, with nowhere for a mark
+           laid over a letter to live. */
+        tip: 'The nasalised `m̐` — the combining mark, typed onto each letter.',
         mark: 'aid',
-        command: { k: 'candra' },
+        command: { k: 'combining', v: '̐' },
       },
       {
         label: 'Svarabhakti',

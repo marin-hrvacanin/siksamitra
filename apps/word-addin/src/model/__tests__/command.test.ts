@@ -112,18 +112,22 @@ describe('the other markings', () => {
   });
 });
 
-describe('what Word will not draw', () => {
+describe('a box that crosses a space', () => {
   /*
-   * A box that crosses a space is one box in the model and two in Word.
-   * ECMA-376 §17.3.2.4 merges ADJACENT runs whose border attributes agree, and
-   * `documentXml` writes a space as an unstyled run, which breaks the pair.
-   * Inside a word the same box is a single run and draws as one rectangle.
+   * ONE RECTANGLE, NOT TWO. ECMA-376 §17.3.2.4 merges ADJACENT runs whose
+   * border attributes agree, and `documentXml` used to write a space as an
+   * unstyled run — which broke the pair, so a box spanning two words drew as
+   * two boxes with a gap between them. The space now takes the group's own
+   * style when the letters on both sides of it are in the SAME NUMBERED group,
+   * and only then: comparing the holding kind alone matched two adjacent boxes
+   * that had no group id at all.
    *
-   * No holding in the corpus crosses a space — 4 400 of the 4 788 cover one
-   * letter, 387 cover two, one covers three — so this is a limit on what can
-   * be drawn next, not a defect in what exists.
+   * No holding in the corpus crosses a space today — 4 400 of the 4 788 cover
+   * one letter, 387 cover two, one covers three — but the model allows it and
+   * the design promises it, so it is drawn correctly rather than left as a
+   * limit nobody has hit yet.
    */
-  it('breaks a box that crosses a space into two runs', () => {
-    expect(shape(after(start, 3, 6, 'long').marks)).toBe('-:agn 2Holding:e -:  2Holding:t -:vam');
+  it('draws as one run, with the space inside the box', () => {
+    expect(shape(after(start, 3, 6, 'long').marks)).toBe('-:agn 2Holding:e t -:vam');
   });
 });

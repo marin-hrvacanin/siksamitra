@@ -23,7 +23,11 @@ const split = (text: string): string[] => {
   const out: string[] = [];
   for (let i = 0; i < text.length;) {
     const two = text.slice(i, i + 2);
-    if (DIGRAPHS.includes(two)) { out.push(two); i += 2; } else { out.push(text[i]!); i += 1; }
+    let letter: string;
+    if (DIGRAPHS.includes(two)) { letter = two; i += 2; } else { letter = text[i]!; i += 1; }
+    /* A combining mark rides on the letter before it. */
+    while (i < text.length && /\p{Mn}|\p{Mc}/u.test(text[i]!)) { letter += text[i]!; i += 1; }
+    out.push(letter);
   }
   return out;
 };

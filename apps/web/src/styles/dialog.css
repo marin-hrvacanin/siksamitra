@@ -93,3 +93,74 @@
 .guard__b--danger:hover {
   background: color-mix(in srgb, var(--chrome-danger) 12%, transparent);
 }
+
+/*
+ * THE PICTURE DIALOG — the guard's box, asked a different question.
+ *
+ * It reuses `.guard`, `.guard__box`, `.guard__acts` and `.guard__b` on purpose:
+ * a second modal shell would be a second set of paddings, radii and button
+ * colours to keep in step, and the two would have drifted by the third
+ * appearance. What is here is only what a picture dialog has that a
+ * save-or-discard question does not — a preview, and two fields.
+ */
+.pic__preview {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  margin-top: var(--space-5);
+}
+/* Square, because the thumbnail's job is to say WHICH picture, not to preview
+   its proportions — a tall photograph in a flexible box shoves the facts off
+   the side of a dialog. `contain` keeps the whole picture inside it. */
+.pic__thumb {
+  flex: none;
+  width: var(--space-9);
+  height: var(--space-9);
+  object-fit: contain;
+  background: var(--chrome-sunk);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+}
+.pic__facts {
+  margin: 0;
+  font-size: var(--text-ui-sm);
+  line-height: 1.6;
+  color: var(--chrome-ink-mute);
+}
+/* What it costs the file. Not a warning colour: it is a fact, not a fault. */
+.pic__cost { color: var(--chrome-ink-soft); }
+
+.pic__field { display: block; margin-top: var(--space-6); }
+.pic__label { display: block; font-size: var(--text-ui); font-weight: 600; }
+.pic__opt {
+  margin-left: var(--space-2);
+  font-weight: 400;
+  color: var(--chrome-ink-mute);
+}
+.pic__input {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  box-sizing: border-box;
+  background: var(--chrome-bg);
+  color: var(--chrome-ink);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  font: inherit;
+  resize: vertical;
+}
+.pic__input:focus-visible {
+  outline: var(--border-thick) solid var(--chrome-accent);
+  outline-offset: var(--space-1);
+}
+.pic__hint {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-mute);
+}
+
+/* A disabled Insert is the dialog's whole argument, so it has to READ as
+   unavailable rather than merely fail to respond. */
+.guard__b:disabled { opacity: 0.45; cursor: default; }

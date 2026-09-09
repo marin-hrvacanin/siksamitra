@@ -10,6 +10,8 @@
  * same identity.
  */
 
+import type { ExportManifest } from '../embed.js';
+
 export const HTML_FORMAT = 'sikshamitra.html';
 export const HTML_VERSION = 1;
 
@@ -20,29 +22,14 @@ export const HTML_SLOTS = {
   assets: 'siksamitra-assets',
 } as const;
 
-export interface HtmlManifest {
-  format: typeof HTML_FORMAT;
-  version: number;
-  slug: string;
-  title: string;
-  /** What wrote it. A reader can then say "written by an older engine". */
-  engine: string;
-  savedAt: string;
-  /** `sha256(canonicalJson(document))` — see above. */
-  docHash: string;
-  /** The `EXPORT_STYLES` id the page was set in. */
-  style: string;
-  /** The script the text is written in — `iast`, `devanagari`, and so on. */
-  script: string;
-  /** A `ChantSelection` expression, when only part of the document was taken. */
-  select?: string;
-  contents: {
-    documentBytes: number;
-    assets: number;
-    assetBytes: number;
-    verses: number;
-  };
-}
+/**
+ * What an exported page says about itself.
+ *
+ * The SHARED shape, not a copy of it. `.docx` and `.pdf` embed the same
+ * document with the same four questions to answer, and three copies of this
+ * interface would be three things to keep in step — see `embed.ts`.
+ */
+export type HtmlManifest = ExportManifest;
 
 export class HtmlError extends Error {
   constructor(message: string) {
@@ -82,51 +69,10 @@ export function jsonForScript(json: string): string {
   return json.replace(/</g, '\\u003c');
 }
 
-const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
 /**
- * Bytes to base64, without `btoa`.
+ * The base64 codec, from the one place all three embedding formats read it.
  *
- * `btoa(String.fromCharCode(...bytes))` is the one-liner and it throws on a
- * real recording: spreading a 4 MB `Uint8Array` into an argument list exceeds
- * the engine's argument limit, and the failure is a `RangeError` at export
- * time rather than anything a reader could diagnose. Three bytes at a time
- * costs nothing measurable next to writing the file.
+ * It used to live here, and then the `.docx` and the `.pdf` needed exactly the
+ * same thing. See `base64.ts` for why it is hand-rolled.
  */
-export function toBase64(bytes: Uint8Array): string {
-  let out = '';
-  let i = 0;
-  for (; i + 2 < bytes.length; i += 3) {
-    const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
-    out += B64[(n >> 18) & 63]! + B64[(n >> 12) & 63]! + B64[(n >> 6) & 63]! + B64[n & 63]!;
-  }
-  const left = bytes.length - i;
-  if (left === 1) {
-    const n = bytes[i]! << 16;
-    out += `${B64[(n >> 18) & 63]!}${B64[(n >> 12) & 63]!}==`;
-  } else if (left === 2) {
-    const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8);
-    out += `${B64[(n >> 18) & 63]!}${B64[(n >> 12) & 63]!}${B64[(n >> 6) & 63]!}=`;
-  }
-  return out;
-}
-
-/** Base64 back to bytes. Refuses anything that is not base64 rather than
- *  returning a shorter array than it was given. */
-export function fromBase64(text: string): Uint8Array {
-  const clean = text.replace(/\s+/g, '');
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean) || clean.length % 4 !== 0) {
-    throw new HtmlError('an embedded asset is not base64');
-  }
-  const pad = clean.endsWith('==') ? 2 : clean.endsWith('=') ? 1 : 0;
-  const out = new Uint8Array((clean.length / 4) * 3 - pad);
-  let at = 0;
-  for (let i = 0; i < clean.length; i += 4) {
-    const n = (B64.indexOf(clean[i]!) << 18) | (B64.indexOf(clean[i + 1]!) << 12)
-      | ((B64.indexOf(clean[i + 2]!) & 63) << 6) | (B64.indexOf(clean[i + 3]!) & 63);
-    if (at < out.length) out[at++] = (n >> 16) & 255;
-    if (at < out.length) out[at++] = (n >> 8) & 255;
-    if (at < out.length) out[at++] = n & 255;
-  }
-  return out;
-}
+export { fromBase64, toBase64 } from '../base64.js';

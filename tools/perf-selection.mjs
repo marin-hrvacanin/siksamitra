@@ -25,15 +25,13 @@
  *   node tools/perf-selection.mjs
  */
 import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
 
-const exe = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const URL = process.env.URL ?? 'http://localhost:5273/';
 const MOVES = 40;
 
 const browser = await puppeteer.launch({
-  executablePath: exe,
-  headless: 'shell',
-  args: ['--no-sandbox'],
+  executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'],
 });
 const page = await browser.newPage();
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
