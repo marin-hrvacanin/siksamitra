@@ -192,6 +192,100 @@ check(
   (await verseText()) === before,
 );
 
+/* ── ENTER, which nothing in this repository had ever pressed ───────────── */
+/*
+ * The owner's report: "Enter doesn't work and behaves strangely". Both halves
+ * were true, and nothing could see it — `range.test.ts` has a case named
+ * "Enter at the end of a verse starts a new one" which calls `splitVerse`, a
+ * function the application never invokes. It was green the whole time.
+ *
+ * Asserted against the RENDERED document: how many `.pada` lines the page
+ * draws, and the verse's own text as the DOM has it. The session is never
+ * asked what it thinks it did.
+ */
+const padaCount = () => page.$$eval('[data-verse="v-2"] .pada', (els) => els.length);
+const verseCount = () => page.evaluate(() => [...document.querySelectorAll('[data-verse]')]
+  .filter((el) => el.closest('.paged__probe') === null).length);
+const undoUntil = async (want, read) => {
+  for (let i = 0; i < 4 && (await read()) !== want; i += 1) {
+    await page.keyboard.down('Control'); await page.keyboard.press('KeyZ'); await page.keyboard.up('Control');
+    await wait(350);
+  }
+};
+
+/* (a) in the middle of a pāda: the line divides, in the same verse. */
+await clickLetter(4);
+const linesBefore = await padaCount();
+const versesBefore = await verseCount();
+await page.keyboard.press('Enter');
+await wait(500);
+check('Enter in the middle of a pāda divides the line',
+  (await padaCount()) === linesBefore + 1, `${linesBefore} → ${await padaCount()} lines`);
+check('and does not make a new verse',
+  (await verseCount()) === versesBefore, `${versesBefore} → ${await verseCount()} verses`);
+
+/*
+ * AND THE CARET IS ON THE NEW LINE, not the one above it. This is the
+ * "behaves strangely" half: the caret came back one character short, so it was
+ * drawn at the end of the line ABOVE the break — and the next letter typed
+ * went back onto it. Read from the status bar, which reports the caret's line
+ * and column from the document rather than from the DOM.
+ */
+const afterEnter = await caret();
+check('and the caret is at the start of the NEW line, not the end of the old one',
+  /col 1\b/.test(afterEnter), afterEnter);
+
+/* The proof a person would recognise: what you type next appears after the
+   break. */
+await page.keyboard.type('na');
+await wait(450);
+const typedAfter = await verseText();
+check('so the next letter typed lands after the break',
+  /\|\s*na/.test(typedAfter) || typedAfter.includes('| na'), typedAfter.slice(0, 40));
+
+await undoUntil(linesBefore, padaCount);
+check('and undo puts the line back together', (await padaCount()) === linesBefore,
+  `${await padaCount()} lines`);
+
+/* (b) at the END of a verse: a new verse, which is how the next one is written. */
+await clickLetter(0);
+await page.keyboard.press('End');
+await wait(250);
+const versesAtEnd = await verseCount();
+await page.keyboard.press('Enter');
+await wait(600);
+check('Enter at the end of a line starts a new verse',
+  (await verseCount()) === versesAtEnd + 1, `${versesAtEnd} → ${await verseCount()} verses`);
+
+/*
+ * AND THERE IS SOMEWHERE TO TYPE IN IT. A verse with no text renders as a
+ * `.pada` with no children — zero height, no line box — and `unitOfAddress`
+ * returned null for it, so the caret was never placed and Enter looked like
+ * it had done nothing even though the document had changed.
+ */
+/* Which verse the caret went to, from the status bar — so the check follows
+   the caret rather than guessing which of the ten verses is the new one. */
+const newVerseId = /^(\S+)/.exec(await caret())?.[1] ?? '';
+const caretAtNew = await caret();
+check('and the caret is in the verse Enter just made', /· col 1\b/.test(caretAtNew), caretAtNew);
+
+await page.keyboard.type('agni');
+await wait(500);
+const newVerseText = await page.evaluate((id) => {
+  const el = [...document.querySelectorAll(`[data-verse="${id}"]`)]
+    .find((e) => e.closest('.paged__probe') === null);
+  return el === undefined ? null : el.textContent.replace(/\s+/g, ' ').trim();
+}, newVerseId);
+check('and the empty verse it made can be typed into',
+  newVerseText !== null && newVerseText.includes('agni'),
+  newVerseText === null ? `no ${newVerseId} on the page` : JSON.stringify(newVerseText));
+check('and the caret moved by the four letters typed',
+  /col 5\b/.test(await caret()), await caret());
+
+await undoUntil(versesAtEnd, verseCount);
+check('and undo takes the new verse away again',
+  (await verseCount()) === versesAtEnd, `${await verseCount()} verses`);
+
 /* ── deleting ───────────────────────────────────────────────────────────── */
 await clickLetter(3);
 const kept = await verseText();

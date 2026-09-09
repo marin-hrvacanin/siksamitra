@@ -16,7 +16,7 @@
 import { useCallback } from 'react';
 import type { ChantSection } from '@siksamitra/format';
 import {
-  isCollapsed, selectionRange,
+  VERSE_GAP, isCollapsed, lineBreakAt, selectionRange,
   type EditCommand, type FlatSource, type Selection,
 } from '@siksamitra/edit';
 
@@ -73,11 +73,26 @@ export function useText(
     replace(from, to, '', 'delete');
   }, [flat, selection, replace]);
 
+  /**
+   * ENTER.
+   *
+   * What it inserts is `lineBreakAt`'s to decide, and that is the fix: this
+   * inserted a bare `'\n'`, and a lone newline at either EDGE of a line makes
+   * an empty line, which `split` prunes as the residue of its own verse
+   * separator. So Enter at the start of a verse, at the end of a verse, and at
+   * the end of a section changed NOT ONE BYTE — the owner's "Enter doesn't
+   * work", exactly. `splitLine` in `@siksamitra/edit` has expressed the right
+   * rule since it was written and nothing ever called it.
+   *
+   * `verse: true` — Ctrl+Enter, "start a new verse here" — still says so
+   * outright, because at a line's middle that is a different request from
+   * Enter and only the person knows which they mean.
+   */
   const newLine = useCallback((verse: boolean) => {
     if (selection === null) return;
     const range = selectionRange(flat, selection);
     if (range === null) return;
-    replace(range.from, range.to, verse ? '\n\n' : '\n');
+    replace(range.from, range.to, verse ? VERSE_GAP : lineBreakAt(flat, range.from));
   }, [flat, selection, replace]);
 
 

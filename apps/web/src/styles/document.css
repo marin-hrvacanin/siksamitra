@@ -124,6 +124,22 @@
   border: 0;
   break-inside: auto;
 }
+/*
+ * AN EMPTY LINE IS STILL A LINE — it has to be, or there is nowhere to type.
+ *
+ * Enter at the end of a verse makes the next one, and a verse with no text is
+ * a `<div class="pada">` with no children: zero height, no line box, and so no
+ * caret however correctly the model addresses it. Enter looked like it had
+ * done nothing when it had in fact done the right thing.
+ *
+ * A zero-width space in `::after` rather than in the markup, because generated
+ * content is not `textContent`: nothing that reads the page — an export, a
+ * gate comparing verse text, a screen reader — sees a character that is not in
+ * the document. The line box is real; the text is not.
+ */
+.doc .pada:empty::after {
+  content: '\200B';
+}
 .doc .pada {
   font-family: var(--doc-verse-face);
   font-size: var(--doc-verse-size);

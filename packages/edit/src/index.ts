@@ -28,7 +28,7 @@
  */
 
 export {
-  VERSE_GAP, addressAt, caretAt, flatten, isCollapsed, lineEdge, moveChar,
+  VERSE_GAP, addressAt, caretAt, flatten, isCollapsed, lineBreakAt, lineEdge, moveChar,
   moveLine, moveWord, offsetOf, offsetOrStart, selectAll, selectionRange,
   versesInSelection,
 } from './caret.js';

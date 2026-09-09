@@ -86,5 +86,21 @@ export function unitOfAddress(
     }
     previous = { unit, after: true };
   }
+  /*
+   * A VERSE WITH NO LETTERS IN IT STILL HAS A CARET.
+   *
+   * Pressing Enter at the end of a verse is how the next one is written, and
+   * what it creates is a verse with no text at all — `srcMap.units` empty, so
+   * the loop above never runs and this returned `null`. `useDomCaret` bails on
+   * a null and leaves the browser caret where it was, so Enter appeared to do
+   * nothing even once the document had really changed: the new verse existed,
+   * and there was no way to type into it.
+   *
+   * Unit zero of an empty verse addresses no letter, and `domPointOf` already
+   * knows what to do with that — it falls back to the verse element itself,
+   * which is exactly where an empty line's caret belongs. The line box it
+   * needs comes from `.pada:empty::after` in `document.css`.
+   */
+  if (previous === null && srcMap.units.length === 0) return { unit: 0, after: false };
   return previous;
 }

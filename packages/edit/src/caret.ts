@@ -61,6 +61,26 @@ export interface FlatSource {
 export const VERSE_GAP = '\n\n';
 
 /**
+ * WHAT ENTER INSERTS AT A GIVEN OFFSET — the whole rule, in one place.
+ *
+ * A line is a breath and a blank line is a verse boundary, so a lone `'\n'`
+ * typed at either EDGE of a line produces an empty line — which `split` then
+ * prunes as the residue of its own separator. The result is that Enter at the
+ * start of a verse, at the end of a verse, and at the end of a section changed
+ * not one byte of the document. That was the owner's "Enter doesn't work".
+ *
+ * So at an edge Enter means "start the next verse" and inserts the separator;
+ * between two syllables it divides the line. `splitLine` has expressed that
+ * since it was written and nothing ever called it — the editor reached for
+ * `replace(from, to, '\n')` directly. This is the rule both now read, because
+ * two copies of it are two answers to where a verse begins.
+ */
+export function lineBreakAt(flat: FlatSource, at: number): string {
+  const edge = flat.lineStarts.some((l) => at === l.at || at === l.at + l.length);
+  return edge ? VERSE_GAP : '\n';
+}
+
+/**
  * Join a section's verses into one editable string.
  *
  * The blank-line separator is not cosmetic: it is what lets a paste of several

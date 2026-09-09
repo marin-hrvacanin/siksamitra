@@ -35,7 +35,7 @@
  * verse is a different matter and is not representable — see `splitLine`.
  */
 import { normLoose } from '@siksamitra/engine';
-import { VERSE_GAP, flatten, type VerseSource } from './caret.js';
+import { VERSE_GAP, flatten, lineBreakAt, type VerseSource } from './caret.js';
 
 export interface RangeEdit {
   /** Half-open, in flat-source characters. */
@@ -72,6 +72,17 @@ export interface RangeResult {
  * person editing the source cannot see whether the empty line they left has a
  * space on it and should not have to.
  */
+/**
+ * The same division, keeping the empty lines at a block's ends.
+ *
+ * For the text those are residue; for the PREFIX the caret is measured
+ * against, an empty last line is the newline that was just typed, and dropping
+ * it is what put the caret on the wrong side of the break.
+ */
+function splitKeepingEnds(text: string): string[][] {
+  return text.split(/\n[^\S\n]*\n/).map((block) => block.split('\n').map((l) => normLoose(l)));
+}
+
 function split(text: string): string[][] {
   return text.split(/\n[^\S\n]*\n/).map((block) => {
     /*
@@ -244,9 +255,17 @@ export function replaceRange(
    * insertion's length to `from`, which is wrong whenever normalisation shrank
    * something (a double space collapsed, a trailing space trimmed) and lands
    * the caret one character past where the text actually ends.
+   *
+   * `splitKeepingEnds`, NOT `split`. `split` prunes empty lines at a block's
+   * ends because they are the residue of its own separator — which is right
+   * for the TEXT and wrong for a PREFIX, whose last line is empty precisely
+   * when the thing just typed was the newline. Measured: Enter in the middle
+   * of a pāda put the caret at 14 rather than 15, so it was drawn at the end
+   * of the line ABOVE the break and the next letter typed went back onto it.
+   * That is the "behaves strangely" half of the owner's report.
    */
   const caret = flatten(
-    split(head + edit.insert).map((lines, i) => ({ id: `p${i}`, lines })),
+    splitKeepingEnds(head + edit.insert).map((lines, i) => ({ id: `p${i}`, lines })),
   ).text.length;
 
   const { ids, removed, added } = identify(
@@ -289,11 +308,5 @@ export const splitVerse = (
  * what it did when the empty line it produced was pruned away.
  */
 export function splitLine(verses: readonly VerseSource[], at: number): RangeResult {
-  const flat = flatten(verses);
-  const edge = flat.lineStarts.some((l) => at === l.at || at === l.at + l.length);
-  return replaceRange(verses, {
-    from: at,
-    to: at,
-    insert: edge ? VERSE_GAP : '\n',
-  });
+  return replaceRange(verses, { from: at, to: at, insert: lineBreakAt(flatten(verses), at) });
 }
