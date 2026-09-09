@@ -1,22 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="śikṣāmitra">
   <!--
-    THE MARK: a seated figure, abstracted to three shapes — a halo, a head, and
-    a base that is both the crossed legs and the palm leaf the text sits on.
+    THE MARK: a circle above a tapering leaf.
 
-    WHY THIS AND NOT A LETTER. The mark it replaced set `श` in Nirmala UI and
-    drew two rectangles beside it. Three faults: it was type, so it depended on
-    a Devanagari face being installed in whatever rasterised it; at 16px in a
-    tray the glyph and the two rectangles collapsed into a smudge; and a letter
-    in a white rounded square is the shape every application has.
+    Two readings, deliberately, because both are the subject: a figure seated in
+    recitation — the head and the sweep of the shoulders — and a leaf of a palm
+    manuscript, which is what the text this program marks was written on for two
+    thousand years before it was written on anything else.
 
-    Three shapes survive 16px. That is the whole constraint an icon has, and it
-    is why this is a silhouette rather than a picture: the reference images are
-    line drawings of a ṛṣi with fifty strokes, which is beautiful at 800px and
-    grey at sixteen.
+    WHAT IT REPLACED, and why. First `श` set in Nirmala UI beside two
+    rectangles: that is type, so it depended on a Devanagari face existing in
+    whatever rasterised it, and at 16px the glyph and the rectangles collapsed
+    into a smudge. Then a head above a rounded dome with a halo arc, which read
+    as the universal "user account" avatar with a rendering fault behind it.
 
-    FLAT, AND ONE HUE. No gradient, no glow, no glass — see the interface rules
-    in `openspec/config.yaml`. The depth comes from the halo being lighter than
-    the figure, which is a value difference rather than an effect.
+    The leaf is what makes this one not that. A dome is a blob; a lens with
+    drawn-out tips is a shape with a direction and an edge, and it is the shape
+    of the thing being edited.
+
+    TWO SHAPES AND NOTHING ELSE. A rib along the leaf and a small holding box on
+    it were tried and removed: inside a lens they turned the whole mark into an
+    eye with an iris. What survives 16px is a circle over a curve, and anything
+    that does not survive 16px is decoration on an icon.
+
+    FLAT, TWO TONES OF ONE HUE, no gradient, no glow, no glass — the interface
+    rules in `openspec/config.yaml`. The ground is parchment rather than ink so
+    the mark reads on a dark taskbar and a light one alike.
   -->
   <defs>
     <clipPath id="round">
@@ -25,43 +33,33 @@
   </defs>
 
   <g clip-path="url(#round)">
-    <!-- The deep warm ink of the document themes. A light ground would vanish
-         on a light title bar, and this icon has to read on both. -->
-    <rect width="512" height="512" fill="#231803"/>
-
-    <!-- The halo. Thin, and open at the bottom where the figure meets it, so
-         it reads as light rather than as a ring drawn round a head. -->
-    <circle cx="256" cy="196" r="132" fill="none" stroke="#dcab63"
-            stroke-width="10" stroke-linecap="round" opacity="0.38"
-            stroke-dasharray="560 240" transform="rotate(-90 256 196)"/>
-
-    <!-- The head. -->
-    <circle cx="256" cy="176" r="62" fill="#d99a45"/>
+    <rect width="512" height="512" fill="#f7f1e4"/>
 
     <!--
-      The base: shoulders falling to crossed knees and a flat seat. One path,
-      all curves, symmetric — the figure is meditating, not moving, so nothing
-      here leans. The flat bottom doubles as the leaf of a manuscript.
+      The leaf, drawn as a SWEEP rather than a lens.
+
+      A symmetric lens with a line through it is an eye — that was the previous
+      attempt, and a circle above an eye is what it looked like. An asymmetric
+      curve cannot be read that way: it has a direction, it rises, and the two
+      tips are at different heights, which is what makes the reference the owner
+      liked feel like a figure with open arms rather than a shape.
+
+      One path. The upper edge sweeps from the low left tip up to the high
+      right; the lower edge returns beneath it, deeper on the left where the
+      weight sits.
     -->
-    <path fill="#d99a45" d="
-      M 256 258
-      C 320 258, 360 306, 378 358
-      C 388 388, 404 400, 404 418
-      C 404 432, 392 440, 374 440
-      L 138 440
-      C 120 440, 108 432, 108 418
-      C 108 400, 124 388, 134 358
-      C 152 306, 192 258, 256 258
+    <path fill="#d98b2b" d="
+      M 40 300
+      C 150 232, 300 214, 470 176
+      C 430 268, 344 342, 250 372
+      C 168 398, 88 366, 40 300
       Z"/>
 
     <!--
-      Two rules across the seat: the lines of text on the leaf. They disappear
-      below about 48px, which is correct — they are the meaning at a large size
-      and would be noise at a small one.
+      The head, sitting over the deep end of the sweep, slightly left of centre.
+      Off-centre because the sweep is: a circle centred over an asymmetric form
+      reads as a mistake.
     -->
-    <g fill="#231803" opacity="0.55">
-      <rect x="168" y="386" width="176" height="11" rx="5.5"/>
-      <rect x="196" y="412" width="120" height="11" rx="5.5"/>
-    </g>
+    <circle cx="196" cy="150" r="58" fill="#c8781f"/>
   </g>
 </svg>

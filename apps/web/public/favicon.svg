@@ -1,1 +1,65 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="%23faf7f0"/><text x="16" y="23" font-family="Georgia,serif" font-size="21" text-anchor="middle" fill="%235e3fa0">श</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="śikṣāmitra">
+  <!--
+    THE MARK: a circle above a tapering leaf.
+
+    Two readings, deliberately, because both are the subject: a figure seated in
+    recitation — the head and the sweep of the shoulders — and a leaf of a palm
+    manuscript, which is what the text this program marks was written on for two
+    thousand years before it was written on anything else.
+
+    WHAT IT REPLACED, and why. First `श` set in Nirmala UI beside two
+    rectangles: that is type, so it depended on a Devanagari face existing in
+    whatever rasterised it, and at 16px the glyph and the rectangles collapsed
+    into a smudge. Then a head above a rounded dome with a halo arc, which read
+    as the universal "user account" avatar with a rendering fault behind it.
+
+    The leaf is what makes this one not that. A dome is a blob; a lens with
+    drawn-out tips is a shape with a direction and an edge, and it is the shape
+    of the thing being edited.
+
+    TWO SHAPES AND NOTHING ELSE. A rib along the leaf and a small holding box on
+    it were tried and removed: inside a lens they turned the whole mark into an
+    eye with an iris. What survives 16px is a circle over a curve, and anything
+    that does not survive 16px is decoration on an icon.
+
+    FLAT, TWO TONES OF ONE HUE, no gradient, no glow, no glass — the interface
+    rules in `openspec/config.yaml`. The ground is parchment rather than ink so
+    the mark reads on a dark taskbar and a light one alike.
+  -->
+  <defs>
+    <clipPath id="round">
+      <rect width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#round)">
+    <rect width="512" height="512" fill="#f7f1e4"/>
+
+    <!--
+      The leaf, drawn as a SWEEP rather than a lens.
+
+      A symmetric lens with a line through it is an eye — that was the previous
+      attempt, and a circle above an eye is what it looked like. An asymmetric
+      curve cannot be read that way: it has a direction, it rises, and the two
+      tips are at different heights, which is what makes the reference the owner
+      liked feel like a figure with open arms rather than a shape.
+
+      One path. The upper edge sweeps from the low left tip up to the high
+      right; the lower edge returns beneath it, deeper on the left where the
+      weight sits.
+    -->
+    <path fill="#d98b2b" d="
+      M 40 300
+      C 150 232, 300 214, 470 176
+      C 430 268, 344 342, 250 372
+      C 168 398, 88 366, 40 300
+      Z"/>
+
+    <!--
+      The head, sitting over the deep end of the sweep, slightly left of centre.
+      Off-centre because the sweep is: a circle centred over an asymmetric form
+      reads as a mistake.
+    -->
+    <circle cx="196" cy="150" r="58" fill="#c8781f"/>
+  </g>
+</svg>

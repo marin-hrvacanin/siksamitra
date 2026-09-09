@@ -76,6 +76,20 @@ for (const size of [32, 64, 128, 256, 512]) {
 await sharp(docSvg, { density: 512 }).resize(1024, 1024).png()
   .toFile(join(OUT, 'document-1024.png'));
 
+/*
+ * AND THE WEB APP'S FAVICON, from the same source.
+ *
+ * It was a hand-written file of its own — a purple `श` set in Georgia, with
+ * its colours escaped as `%23` so they did not even apply — which is to say
+ * the program wore three different marks: one in the taskbar, one on its
+ * files, and one in a browser tab. One source, or they drift, and they had.
+ */
+const WEB = join(HERE, '..', '..', 'web', 'public');
+writeFileSync(join(WEB, 'favicon.svg'), svg);
+await sharp(svg, { density: 512 }).resize(180, 180).png()
+  .toFile(join(WEB, 'apple-touch-icon.png'));
+
 console.log(`\n  ${PNGS.length} PNGs + icon.ico -> ${OUT}`);
+console.log('  favicon.svg + apple-touch-icon.png -> apps/web/public');
 console.log('  document.ico + 6 document PNGs — the icon a .smdoc file shows');
 console.log('  icon.icns must be produced on macOS: iconutil -c icns icon.iconset\n');

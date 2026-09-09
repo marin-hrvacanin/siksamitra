@@ -1,38 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="a śikṣāmitra document">
   <!--
-    THE DOCUMENT ICON — what a `.smdoc` looks like in a file manager.
+    THE DOCUMENT ICON — what one of this program's files looks like in a file
+    manager.
 
-    A different thing from the application icon, and it has to read as one at
+    A different thing from the application icon and it has to read as one at
     16px in a list: a SHEET, so the eye knows it is a file, carrying the
-    program's own mark so it knows whose. The app icon is the bronze `श` with
-    no sheet; putting the same picture on both would make a folder of
-    documents look like a folder of copies of the program.
+    program's mark so it knows whose. Putting the app icon on both would make a
+    folder of documents look like a folder of copies of the program.
 
-    The marks on the sheet are the two holdings — thin and thick — because
-    that is what the file contains and what this program is for.
+    It shares the application icon's palette and its mark — the circle and the
+    sweep — because the two are the same family and were not: this used to set
+    `श` in Nirmala UI over a grey sheet with two green rectangles, which shared
+    nothing with the app icon but the fact that somebody drew both.
+
+    NO GRADIENT ON THE SHEET. There was one, and at 16px a gradient is mud. The
+    fold is drawn as a darker flat shape instead, which is what makes a sheet
+    read as a sheet at any size.
   -->
-  <defs>
-    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#f4f2ee"/>
-    </linearGradient>
-  </defs>
 
-  <!-- The sheet, with a folded corner. Drawn, not shaded: a flat mark stays
-       legible at 16px, where a gradient becomes mud. -->
+  <!-- The sheet, with a folded corner. -->
   <path d="M96 40h216l104 104v328a24 24 0 0 1-24 24H96a24 24 0 0 1-24-24V64a24 24 0 0 1 24-24z"
-        fill="url(#page)" stroke="#c9c4bb" stroke-width="8" stroke-linejoin="round"/>
-  <path d="M312 40l104 104H336a24 24 0 0 1-24-24z" fill="#e6e1d8" stroke="#c9c4bb"
-        stroke-width="8" stroke-linejoin="round"/>
+        fill="#fdfaf3" stroke="#d8cfbd" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M312 40l104 104H336a24 24 0 0 1-24-24z"
+        fill="#eee5d3" stroke="#d8cfbd" stroke-width="8" stroke-linejoin="round"/>
 
-  <!-- The program's own letter, in its bronze. -->
-  <text x="244" y="330" font-family="Nirmala UI, Noto Serif Devanagari, serif"
-        font-size="210" text-anchor="middle" fill="#b8813d">श</text>
-
-  <!-- The two holdings: the short box thin, the long box thick. The only
-       difference between them is the stroke weight, on the page and here. -->
-  <rect x="140" y="368" width="92" height="46" rx="6" fill="none"
-        stroke="#538135" stroke-width="8"/>
-  <rect x="256" y="368" width="92" height="46" rx="6" fill="none"
-        stroke="#538135" stroke-width="18"/>
+  <!-- The mark, smaller and set into the sheet: the same circle and sweep the
+       application wears, so a file and the program that opens it look related. -->
+  <circle cx="196" cy="236" r="34" fill="#c8781f"/>
+  <path fill="#d98b2b" d="
+    M 112 322
+    C 176 282, 264 272, 364 250
+    C 340 304, 289 348, 233 366
+    C 185 381, 140 362, 112 322
+    Z"/>
 </svg>
