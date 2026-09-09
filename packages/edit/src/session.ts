@@ -160,6 +160,9 @@ export function apply(state: EditState, history: History, command: EditCommand):
   const sources = sourcesOf(section);
   let overrides: readonly ChantOverride[] = state.doc.overrides ?? [];
   let nextSources: readonly VerseSource[] = sources;
+  /* For a verse a text edit CREATED, the old verse its text was carved out of
+     — so `writeSources` can carry the markings across a split. See `range.ts`. */
+  let origins: Readonly<Record<string, string>> = {};
   let selection = state.selection;
   const lostMarks: LostMark[] = [];
   const orphaned: string[] = [];
@@ -189,6 +192,7 @@ export function apply(state: EditState, history: History, command: EditCommand):
       taken: state.doc.sections.flatMap((s) => s.verses.map((v) => v.id)),
     });
     nextSources = result.verses;
+    origins = result.origins;
     orphaned.push(...result.removed);
 
     /*
@@ -290,7 +294,7 @@ export function apply(state: EditState, history: History, command: EditCommand):
    * The text, and the markings carried across it. NO RULE RUNS HERE — see
    * `retext.ts`. Typing used to re-derive, and a derivation is the rules.
    */
-  const written = writeSources(working, nextSources);
+  const written = writeSources(working, nextSources, origins);
   const withSource = written.section;
   for (const cost of written.accentsLost) {
     blockedMarks.push(

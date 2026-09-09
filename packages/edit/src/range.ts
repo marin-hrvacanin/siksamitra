@@ -63,6 +63,12 @@ export interface RangeResult {
   removed: string[];
   /** Verses that did not exist before. */
   added: string[];
+  /**
+   * For a verse this edit CREATED, the old verse its text was carved out of —
+   * when the edit reached exactly one, so the answer is the range's and not a
+   * guess. `writeSources` carries the markings across it. Absent otherwise.
+   */
+  origins: Record<string, string>;
 }
 
 /**
@@ -138,7 +144,7 @@ function identify(
   edit: { from: number; to: number },
   offered: readonly string[],
   taken: readonly string[],
-): { ids: string[]; removed: string[]; added: string[] } {
+): { ids: string[]; removed: string[]; added: string[]; origins: Record<string, string> } {
   const extents = verseExtents(verses);
 
   const before = extents.filter((v) => v.end < edit.from);
@@ -230,10 +236,34 @@ function identify(
      that came back through `offered` was neither removed nor added. */
   const kept = new Set(final);
   const was = new Set(verses.map((v) => v.id));
+  const added = final.filter((id) => !was.has(id));
+
+  /*
+   * WHERE A NEW VERSE'S TEXT CAME FROM, when the answer is not a guess.
+   *
+   * A verse split in two is one old verse and two new blocks, and the second
+   * block is a brand-new verse — which used to mean brand-new in every sense,
+   * including having no markings. Pressing Enter at the end of a line took
+   * Puruṣa Sūktam's verse from 124 markings to 30: the holdings, the svaras
+   * and the substitutions on everything after the caret simply went.
+   *
+   * The edit's RANGE says which old verses it reached, exactly, and that is
+   * what is used — never text similarity, which is what the header above
+   * warns about and which decides identity wrongly. When the edit reached
+   * exactly ONE old verse, every verse it created was carved out of that one,
+   * and `writeSources` can go and fetch the markings. When it reached several,
+   * nothing is claimed: an origin nobody can be sure of is worse than none.
+   */
+  const origins: Record<string, string> = {};
+  if (middle.length === 1 && added.length > 0) {
+    for (const id of added) origins[id] = middle[0]!.id;
+  }
+
   return {
     ids: final,
     removed: verses.filter((v) => !kept.has(v.id)).map((v) => v.id),
-    added: final.filter((id) => !was.has(id)),
+    added,
+    origins,
   };
 }
 
@@ -268,12 +298,14 @@ export function replaceRange(
     splitKeepingEnds(head + edit.insert).map((lines, i) => ({ id: `p${i}`, lines })),
   ).text.length;
 
-  const { ids, removed, added } = identify(
+  const { ids, removed, added, origins } = identify(
     verses, blocks, { from, to }, edit.newIds ?? [], edit.taken ?? [],
   );
   const out: VerseSource[] = blocks.map((lines, i) => ({ id: ids[i]!, lines }));
 
-  return { verses: out, caret: Math.min(caret, flatten(out).text.length), removed, added };
+  return {
+    verses: out, caret: Math.min(caret, flatten(out).text.length), removed, added, origins,
+  };
 }
 
 /**
