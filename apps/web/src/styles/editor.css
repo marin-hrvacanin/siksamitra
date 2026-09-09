@@ -53,7 +53,19 @@
 
 /* ── what is editable, and what is not ─────────────────────────────────── */
 
-.canvas.is-editing { cursor: text; }
+/*
+ * THE I-BEAM OVER THE PAGE, IN BOTH MODES.
+ *
+ * This was `.canvas.is-editing`, so the pointer stayed an arrow over the text
+ * whenever the document was being read — and reading is when a person is most
+ * likely to want to select a line and copy it. Word shows an I-beam over the
+ * page whether or not you are typing, and so does this. The arrow comes back
+ * over the parts of the page that are not text.
+ */
+.canvas { cursor: text; }
+.canvas .verse__n,
+.canvas .section__title,
+.canvas .verse__translation { cursor: text; }
 
 /*
  * A transcribed verse: its marks were read off a hand-marked source and exist
@@ -62,7 +74,7 @@
  * afterwards — and it is a hairline in the margin, not a warning colour,
  * because there is nothing wrong with it.
  */
-.canvas.is-editing .verse[data-attested] { cursor: default; }
+.canvas.is-editing .verse[data-attested] { cursor: text; }
 /*
  * Drawn BESIDE the verse, not around it. As a border with a compensating
  * negative margin it moved the text: every transcribed verse sat a few pixels

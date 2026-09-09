@@ -33,3 +33,16 @@ export {
 export type { ChantFileRead } from './chant-file.js';
 export * from './chant-doc.js';
 export * from './chant-vars.js';
+
+/*
+ * ONE TEXT AND MARKINGS ON IT — see `openspec/changes/text-and-marks`.
+ *
+ * The model that replaces `src` + `tokens`. It is exported alongside the old
+ * shape rather than in place of it, because the corpus migrates under a gate
+ * that compares the two and the comparison needs both.
+ */
+export {
+  applyMark, assertMarks, compareMarks, coverage, mark, markFaults, marksAt,
+  marksIn, normalise, POINT_KINDS, removeMark, shiftForEdit, STAGE_OF, toggleMark,
+} from './mark.js';
+export type { Mark, MarkFault, MarkInput, MarkKind, Stage, TextEdit } from './mark.js';

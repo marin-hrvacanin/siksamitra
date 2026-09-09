@@ -40,10 +40,39 @@ describe('typing', () => {
   it('puts the caret after what was actually inserted', () => {
     const vs = verses();
     const start = at(vs, 'v-1', 0, 5);
-    // A space typed next to a space inserts nothing, so the caret must not move.
+    /*
+     * A space typed next to a space adds no character — two spaces are one in
+     * this notation — and the caret steps over the space that is already
+     * there, which is what typing over an absorbed character does everywhere
+     * else. What matters is that it lands on a real position: the text is
+     * unchanged, and the caret is inside it.
+     */
     const result = replaceRange(vs, { from: start, to: start, insert: ' ' });
-    expect(result.caret).toBe(start);
     expect(result.verses[0]!.lines[0]).toBe('agnim īḷe');
+    expect(result.caret).toBe(start + 1);
+    expect(result.caret).toBeLessThanOrEqual(result.verses[0]!.lines[0]!.length);
+  });
+
+  it('a space typed at the end of a line SURVIVES', () => {
+    /*
+     * The bug the owner hit on a document he had just made: "I can't type
+     * space". Every keystroke ran the line through `norm`, which trims, so
+     * `'agni' + ' '` came back as `'agni'` and the second word could never be
+     * started. Typing normalises with `normLoose` now; the trim belongs to
+     * saving.
+     */
+    const vs = verses();
+    const end = at(vs, 'v-1', 0, 9);
+    const result = replaceRange(vs, { from: end, to: end, insert: ' ' });
+    expect(result.verses[0]!.lines[0]).toBe('agnim īḷe ');
+  });
+
+  it('a space typed into an empty document survives', () => {
+    const empty = [{ id: 'v-1', lines: [''] }];
+    const result = replaceRange(empty, { from: 0, to: 0, insert: ' ' });
+    expect(result.verses[0]!.lines[0]).toBe(' ');
+    const then = replaceRange(result.verses, { from: 1, to: 1, insert: 'a' });
+    expect(then.verses[0]!.lines[0]).toBe(' a');
   });
 });
 
@@ -205,15 +234,18 @@ describe('splitting', () => {
   it('Enter in the middle of a verse divides it', () => {
     const vs = verses();
     const result = splitVerse(vs, at(vs, 'v-1', 0, 5), 'v-1b');
+    /* The space the split fell on stays where it was, at the head of the new
+       verse, because typing no longer trims a line's ends. Tidying it is the
+       save path's business, not a keystroke's. */
     expect(result.verses[0]!.lines).toEqual(['agnim']);
-    expect(result.verses[1]!.lines).toEqual(['īḷe', 'purohitaṁ']);
+    expect(result.verses[1]!.lines).toEqual([' īḷe', 'purohitaṁ']);
   });
 
   it('a line break is a breath, not a new verse', () => {
     const vs = verses();
     const result = splitLine(vs, at(vs, 'v-2', 0, 8));
     expect(result.verses).toHaveLength(3);
-    expect(result.verses[1]!.lines).toEqual(['yajñasya', 'devam']);
+    expect(result.verses[1]!.lines).toEqual(['yajñasya', ' devam']);
   });
 });
 

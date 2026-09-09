@@ -34,7 +34,7 @@
  * and belongs to the save path rather than to editing. An empty LINE inside a
  * verse is a different matter and is not representable — see `splitLine`.
  */
-import { norm } from '@siksamitra/engine';
+import { normLoose } from '@siksamitra/engine';
 import { VERSE_GAP, flatten, type VerseSource } from './caret.js';
 
 export interface RangeEdit {
@@ -74,16 +74,24 @@ export interface RangeResult {
  */
 function split(text: string): string[][] {
   return text.split(/\n[^\S\n]*\n/).map((block) => {
-    const lines = block.split('\n').map((line) => norm(line));
+    /*
+     * `normLoose`, NOT `norm`. This runs on every keystroke, and `norm` trims
+     * the ends of a line and collapses runs of spaces — so the space just
+     * typed at the caret was deleted before it reached the document, and a
+     * second word could never be started. `norm(' ')` is `''`. The owner's
+     * report was "I just created a new document and I can't type space".
+     * The whitespace tidy belongs to saving, not to typing.
+     */
+    const lines = block.split('\n').map((line) => normLoose(line));
     // Empty lines at the ends are the residue of the split, not breaths.
-    while (lines.length > 1 && lines[0] === '') lines.shift();
-    while (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
+    while (lines.length > 1 && lines[0]?.trim() === '') lines.shift();
+    while (lines.length > 1 && lines[lines.length - 1]?.trim() === '') lines.pop();
     return lines;
   });
 }
 
 /** Verses with no text at all. Not an error while editing; not saved either. */
-export const isEmpty = (v: VerseSource): boolean => v.lines.every((l) => l === '');
+export const isEmpty = (v: VerseSource): boolean => v.lines.every((l) => l.trim() === '');
 
 /** Drop empty verses. For the save path, never for the editing path. */
 export const pruneEmpty = (verses: readonly VerseSource[]): VerseSource[] =>

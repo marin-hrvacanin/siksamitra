@@ -134,13 +134,38 @@ export function normalize(input: string): NormalizeResult {
  * `normalize()` still gets them: they are zero-width and must never survive as
  * `_`/`+`, which would be lexed as letters.
  */
-export function norm(s: string): string {
+/**
+ * Everything `norm` does EXCEPT trimming the ends.
+ *
+ * The trim is right for a line being stored and wrong for a line being
+ * written: it deletes the space you just pressed before it reaches the
+ * document. `norm(' ')` is `''` and `norm('agni ')` is `'agni'`, so the space
+ * at the caret never survived a keystroke and a second word could never be
+ * started — the owner's report was "I just created a new document and I can't
+ * type space".
+ *
+ * The COLLAPSE stays, because it is not about the caret: a tab or a carriage
+ * return pasted in has to become a space, and two spaces in the middle of a
+ * line are one space in this notation. Only the ends are the typist's
+ * business.
+ */
+export function normLoose(s: string): string {
   return s
     .replace(/_/g, ZWNJ)
     .replace(/\+/g, ZWJ)
     .toLowerCase()
     .replace(/ṃ/g, ANU)
     .replace(/,/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * The canonical form of a line, for storing and comparing.
+ *
+ * `normLoose` and then the ends trimmed. A stored line is canonical — the
+ * offsets every marking is addressed by are offsets into it — so it may not
+ * carry a trailing space that a later save would silently remove.
+ */
+export function norm(s: string): string {
+  return normLoose(s).trim();
 }

@@ -40,7 +40,7 @@ export { witnessLine } from './rules/witness.js';
 export type { SvaraPlan, SvaraPosition } from './rules/svara.js';
 
 // ── text ────────────────────────────────────────────────────────────────────
-export { normalize, norm } from './normalize.js';
+export { normalize, norm, normLoose } from './normalize.js';
 export type { Normalisation, NormalizeResult } from './normalize.js';
 export { lex } from './lex.js';
 export type { Elem, ElemKind, SrcSpan, LexResult } from './lex.js';
