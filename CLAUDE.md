@@ -204,6 +204,26 @@ Not style preferences. Each one is here because its absence cost something.
     keystrokes arrive through a hidden field. v1's Quill editor made the
     document *be* the DOM, which is why "is this holding correct?" had no
     answer.
+13. **Every feature carries tests from every tier that can see it.** Not "a
+    test" — the ones that could actually catch it being wrong: a unit test for
+    the arithmetic, an integration test for the round trip, a component test
+    for what a person sees, a browser gate for a gesture, and an export gate
+    for anything that leaves the program. The owner's standing instruction:
+    *"always write extensive tests from all categories of tests, for this and
+    all other functionalities and features, so that we always know that it
+    looks and works exactly as it should."* A feature with only the tier that
+    was easiest to write is not finished.
+14. **Rebuild when a chunk is verified.** `npm run build:web` and
+    `npm run desktop:build` (with `~/.cargo/bin` on `PATH`), in the background,
+    so the program on disk is the program the work describes. The owner runs it
+    between messages: *"Always rebuild it all in the background when you finish
+    and verify and test something."*
+15. **No value is hardcoded and buried — including behaviour.** Rule 6 covers
+    colours and sizes; this is the general form. Key bindings, the tabs of the
+    ribbon and what is on them, which script is shown, the window size, the
+    theme, the fonts of each kind of text — all of it is DATA, loaded at start
+    from one place, overridable per user and resettable to the defaults. See
+    *Configuration* below.
 
 ---
 
