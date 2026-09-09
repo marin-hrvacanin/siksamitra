@@ -188,6 +188,33 @@ export const EDIT_KEYS: readonly Binding[] = [
   // function, and they drifted.
   { key: 'y', ctrl: true, label: 'Redo', run: (s) => s.redoEdit() },
 
+  // ── the rules, run because a person asked ─────────────────────────────────
+  /*
+   * THE ONLY TWO BUTTONS IN THE PROGRAM THAT RUN THE ENGINE.
+   *
+   * Over the selection, or over the whole step when nothing is selected. The
+   * owner's requirement, in his words: "only on selection or the entire
+   * document, with user action".
+   */
+  {
+    key: 'r',
+    ctrl: true,
+    shift: true,
+    label: 'Re-apply rules',
+    ribbon: 'auto',
+    icon: 'auto-keep',
+    hint: 'Run the marking rules here, keeping everything you placed by hand',
+    run: (s) => s.reapplyRules('keep-hand'),
+  },
+  {
+    key: '',
+    label: 'Re-apply, mine out',
+    ribbon: 'auto',
+    icon: 'auto-replace',
+    hint: 'Run the marking rules here and DROP everything you placed by hand',
+    run: (s) => s.reapplyRules('replace-all'),
+  },
+
   // ── the holdings, back to the rules ───────────────────────────────────────
   {
     key: '',

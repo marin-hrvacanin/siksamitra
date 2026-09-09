@@ -19,18 +19,21 @@
  *   `toTextAndMarks`  the result, in the model's shape
  *   `removeMark` / `normalise`  the merge
  *
- * WHERE THIS BELONGS EVENTUALLY. In `@siksamitra/edit`, beside `apply`, so the
- * window's Re-apply rules and the add-in's are one function. `edit` has no
- * text-and-markings command yet; when it grows one this file becomes a call to
- * it, and the six exported names below are the shape it should have.
+ * WHY IT LIVES IN THE ENGINE. It was written in the add-in and said it
+ * belonged in `@siksamitra/edit`, beside `apply`, so that the window's
+ * Re-apply rules and the add-in's would be one function. `edit` is the wrong
+ * layer: the add-in has no editing session and would have to take one on to
+ * press a button. This is the ONE entry point through which a rule may run —
+ * `recompute(range, stages, mode)` in the change — and that is the engine's
+ * own business. `edit`'s `recompute` command calls it; so does the task pane.
  */
 import type { Mark, Stage, TextAndMarks } from '@siksamitra/format';
 import {
   STAGE_OF, assertMarks, normalise, removeMark, shiftForEdit, toTextAndMarks,
 } from '@siksamitra/format';
 import type { ChantVerse } from '@siksamitra/format';
-import type { Profile } from '@siksamitra/engine';
-import { derive } from '@siksamitra/engine';
+import type { Profile } from './profile.js';
+import { derive } from './pipeline.js';
 
 export type ReRunMode = 'keep-hand' | 'replace-all';
 
@@ -44,6 +47,16 @@ export interface ReRunRequest {
   from: number;
   to: number;
   profile: Profile;
+  /**
+   * The verse's printed number, when the range is a whole verse.
+   *
+   * `derive` emits the number as a token, so a run that does not pass it
+   * produces text WITHOUT it and one that does not know produces text with a
+   * different one — either way `made.text !== slice`, the run decides the
+   * rules rewrote the letters, and every hand marking in range is discarded.
+   * Durgā Sūktam v-1 lost 75 of them to a single missing `1`.
+   */
+  verseN?: string | null;
 }
 
 export interface ReRun extends TextAndMarks {

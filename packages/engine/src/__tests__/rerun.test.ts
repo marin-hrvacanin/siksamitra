@@ -18,9 +18,9 @@ import { openChantDoc, resolveProfile } from '@siksamitra/engine';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { STAGES, rerun, typedText } from '../rerun.js';
-import { corpusVerses } from './corpus.js';
+import { corpusVerses } from '../../../../tests/helpers/corpus.js';
 
-const DIR = fileURLToPath(new URL('../../../../../corpus/chants/', import.meta.url));
+const DIR = fileURLToPath(new URL('../../../../corpus/chants/', import.meta.url));
 const docOf = (file: string): ChantDoc =>
   openChantDoc(JSON.parse(readFileSync(DIR + file, 'utf8')));
 

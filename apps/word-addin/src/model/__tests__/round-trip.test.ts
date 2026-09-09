@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest';
 import type { Mark } from '@siksamitra/format';
 import { toTextAndMarks } from '@siksamitra/format';
 import { decodeRuns, paragraphRuns } from '../paragraph.js';
-import { corpusVerses } from './corpus.js';
+import { corpusVerses } from '../../../../../tests/helpers/corpus.js';
 
 /** A verse's markings of one kind, as `value:letters` — offsets excluded. */
 const byLetters = (marks: readonly Mark[], k: string, text: string): string =>

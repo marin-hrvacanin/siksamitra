@@ -15,7 +15,7 @@ import type { ChantProfileKey, Stage } from '@siksamitra/format';
 import { resolveProfile } from '@siksamitra/engine';
 import { applyCommand, selectionState } from '../model/command.js';
 import { notCarried } from '../model/carry.js';
-import { STAGES, rerun } from '../model/rerun.js';
+import { STAGES, rerun } from '@siksamitra/engine';
 import { locate, readDocument, writeDocument, writeParagraph } from '../word/client.js';
 import type { Located } from '../word/client.js';
 import { GROUPS, type Control } from './controls.js';

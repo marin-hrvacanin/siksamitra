@@ -20,7 +20,7 @@
  * A command that reports nothing is a command whose failures are invisible.
  */
 import type { ChantDoc, ChantOverride, ChantSection } from '@siksamitra/format';
-import type { OverrideField } from '@siksamitra/engine';
+import { resolveProfile } from '@siksamitra/engine';
 import {
   addressAt, flatten, type Selection, type VerseSource,
 } from './caret.js';
@@ -30,57 +30,19 @@ import { tokenSrcMap } from './token-src-map.js';
 import {
   attestedInRange, refusalForEdit, refusalForOutside,
 } from './rule-zero.js';
-import {
-  autoHoldings, type MarkPatch, type MarkReason, type UnitAddress,
-} from './marks.js';
-import { verseSrcMap, type VerseReport } from './derive-verse.js';
+import { autoHoldings } from './marks.js';
+import { profileChain, verseSrcMap, type VerseReport } from './derive-verse.js';
+import { recompute } from './recompute.js';
 import {
   changedVerses, rebaseSection, rederive, sourcesOf, writeSources, type LostMark,
 } from './sync.js';
 import { record, restore, snapshot, type History, type Snapshot } from './history.js';
-import { setProfile, type ProfileChange } from './set-profile.js';
-import { applyFigureCommand, type FigureCommand } from './figures.js';
+import { setProfile } from './set-profile.js';
+import { applyFigureCommand } from './figures.js';
 
-export type EditCommand =
-  /** Replace a flat range of one section's source. Every text change is this. */
-  | {
-    k: 'replace';
-    sectionId: string;
-    from: number;
-    to: number;
-    insert: string;
-    /** Ids for verses a paste creates, in order. */
-    newIds?: readonly string[];
-    /** Same key as the previous command ⇒ one undo step. */
-    coalesce?: string;
-  }
-  /** Place marks on letters by hand. */
-  | {
-    k: 'mark';
-    sectionId: string;
-    targets: readonly UnitAddress[];
-    patch: MarkPatch;
-    why: MarkReason;
-    note?: string;
-  }
-  /** Withdraw an opinion, letting the rules decide again. */
-  | {
-    k: 'unmark';
-    sectionId: string;
-    targets: readonly UnitAddress[];
-    fields: readonly OverrideField[];
-  }
-  /** Re-run the holding rules over verses that already carry marks. */
-  | {
-    k: 'auto-holdings';
-    sectionId: string;
-    verseIds: readonly string[];
-    mode: 'keep' | 'replace';
-  }
-  /** A picture: put one in, change one, take one out — see `figures.ts`. */
-  | FigureCommand
-  /** Change which register's rules govern the document, or one section. */
-  | ProfileChange;
+import type { EditCommand } from './command.js';
+
+export type { EditCommand } from './command.js';
 
 export interface EditState {
   doc: ChantDoc;
@@ -267,6 +229,39 @@ export function apply(state: EditState, history: History, command: EditCommand):
      * two transcribed accents it never touched.
      */
     nextSources = sourcesOf(working);
+  } else if (command.k === 'recompute') {
+    /*
+     * THE ONLY PLACE A MARKING RULE RUNS. See `recompute.ts`.
+     *
+     * It is not an edit to the text, so nothing is rebased and nothing is
+     * re-derived afterwards: `recompute` returns the verses already rebuilt.
+     * `touched` stays empty on purpose — handing these to `rederive` would run
+     * the whole engine over them a second time and undo the mode the person
+     * chose.
+     */
+    const here = new Set(section.verses.map((v) => v.id));
+    const outside = command.verseIds.filter((id) => !here.has(id));
+    if (outside.length > 0) return refuse(state, history, refusalForOutside(section, outside));
+
+    const done = recompute(
+      working,
+      command.verseIds,
+      command.stages,
+      command.mode,
+      (v) => resolveProfile(profileChain(v, section, state.doc.profile)),
+    );
+    working = done.section;
+    nextSources = sourcesOf(working);
+    blockedMarks.push(...done.refusals);
+    for (const r of done.reports) {
+      if (r.lost > 0) {
+        blockedMarks.push(
+          `verse "${r.verseId}": ${r.lost} marking(s) placed by hand could not be `
+          + 'carried — the rules rewrote the letters they were on',
+        );
+      }
+      for (const w of r.warnings) blockedMarks.push(`verse "${r.verseId}": ${w}`);
+    }
   } else {
     /*
      * The verses must be in the named section. `autoHoldings` in `replace` mode

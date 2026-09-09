@@ -16,7 +16,7 @@
 import { useCallback } from 'react';
 import type { ChantSection, ChantUnit } from '@siksamitra/format';
 import { unitsOf, type EditCommand, type Selection } from '@siksamitra/edit';
-import type { SrcMap } from '@siksamitra/engine';
+import { STAGES, type ReRunMode, type SrcMap } from '@siksamitra/engine';
 import { unitAddresses, unitAtCaret, type UnitRange } from './selection.js';
 
 /**
@@ -36,6 +36,8 @@ export interface Marks {
   mark: (patch: Record<string, unknown>, note?: string) => void;
   unmark: (fields: readonly MarkField[]) => void;
   autoHoldings: (mode: 'keep' | 'replace') => void;
+  /** Run the marking rules over the selection, or the whole step. */
+  reapplyRules: (mode: ReRunMode) => void;
   /** The holding on the selection: one value, `mixed`, or null for nothing. */
   holdState: HoldState;
   /** Press Long on letters that are already long, and the box comes off. */
@@ -151,6 +153,27 @@ export function useMarks(
   }, [run, section, selected]);
 
   /**
+   * RE-APPLY THE RULES — the only thing in the window that runs the engine.
+   *
+   * Over the SELECTED verses, or over every verse of the step when nothing is
+   * selected, which is the owner's "only on selection or the entire document,
+   * with user action". Every stage: a per-stage menu is `text-and-marks` §6.7
+   * and belongs in the right-click menu, not in a button whose label would
+   * then have to name five things.
+   *
+   * `keep-hand` and `replace-all` are the two answers to the only question
+   * that matters when re-running over work somebody did: whose decision wins.
+   */
+  const reapplyRules = useCallback((mode: ReRunMode) => {
+    if (section === undefined) return;
+    const verseIds = selected.length > 0
+      ? [...new Set(selected.map((r) => r.verseId))]
+      : section.verses.map((v) => v.id);
+    if (verseIds.length === 0) { refuse(nothingToMark()); return; }
+    run({ k: 'recompute', sectionId: section.id, verseIds, stages: STAGES, mode });
+  }, [run, refuse, nothingToMark, section, selected]);
+
+  /**
    * A holding button, pressed twice.
    *
    * WORD'S RULE, because it is the one people already have. A selection that
@@ -169,5 +192,5 @@ export function useMarks(
     mark({ hold: holdState === value ? null : value });
   }, [mark, holdState]);
 
-  return { mark, unmark, autoHoldings, holdState, toggleHold };
+  return { mark, unmark, autoHoldings, reapplyRules, holdState, toggleHold };
 }

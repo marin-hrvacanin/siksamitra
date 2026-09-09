@@ -18,7 +18,7 @@ import type { Mark } from '@siksamitra/format';
 import { toTextAndMarks } from '@siksamitra/format';
 import { decodeRuns, paragraphRuns } from '../paragraph.js';
 import { modelRange, offsetMap, toModel, toWord } from '../offsets.js';
-import { corpusVerses } from './corpus.js';
+import { corpusVerses } from '../../../../../tests/helpers/corpus.js';
 
 /**
  * A sample rather than the whole corpus.

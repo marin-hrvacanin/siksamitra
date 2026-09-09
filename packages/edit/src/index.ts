@@ -84,3 +84,8 @@ export type { ProfileChange, ProfileResult } from './set-profile.js';
 export {
   attestedInRange, named, refusalForEdit, refusalForMark, refusalForOutside,
 } from './rule-zero.js';
+
+/* Running the rules over a document's verses — the `recompute` command's work.
+   The rules themselves are `rerun` in `@siksamitra/engine`. */
+export { recompute } from './recompute.js';
+export type { Recomputed, RecomputeReport } from './recompute.js';

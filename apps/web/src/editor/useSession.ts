@@ -21,7 +21,7 @@
  */
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ChantDoc, ChantProfileKey } from '@siksamitra/format';
-import type { SrcMap } from '@siksamitra/engine';
+import type { ReRunMode, SrcMap } from '@siksamitra/engine';
 import {
   apply, emptyHistory, flatten, newState, redo, registerOf, select, sourcesOf, undo,
   type EditCommand, type EditState, type FlatSource, type History, type Selection,
@@ -102,6 +102,13 @@ export interface Session {
   mark: (patch: Record<string, unknown>, note?: string) => void;
   unmark: (fields: readonly MarkField[]) => void;
   autoHoldings: (mode: 'keep' | 'replace') => void;
+  /**
+   * Run the marking rules over the selection, or the whole step.
+   *
+   * The ONLY thing in the window that invokes the engine. Nothing else does —
+   * not typing, not opening a document, not changing the script.
+   */
+  reapplyRules: (mode: ReRunMode) => void;
   /** What the selection is carrying, so a holding button can show it. */
   holdState: HoldState;
   /** Press a holding button on letters that already have it, and it comes off. */
@@ -302,7 +309,7 @@ export function useSession(doc: ChantDoc): Session {
      one part of this hook that is about the MARKING rather than about the
      text, and it is the part a reader comes looking for. */
   const {
-    mark, unmark, autoHoldings, holdState, toggleHold,
+    mark, unmark, autoHoldings, reapplyRules, holdState, toggleHold,
   } = useMarks({
     run, refuse, section, selected, selection: state.selection, srcMapOf,
   });
@@ -351,6 +358,7 @@ export function useSession(doc: ChantDoc): Session {
     mark,
     unmark,
     autoHoldings,
+    reapplyRules,
     holdState,
     toggleHold,
     figures,
