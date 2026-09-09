@@ -186,7 +186,14 @@ export const WORD_PARAGRAPHS: readonly WordParagraphMetric[] = [
     indent: 0,
     hanging: 0,
     right: 0,
-    face: 'ui',
+    /*
+     * TIMES NEW ROMAN, and it was `'ui'` — Calibri. Measured in his template:
+     * `<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"
+     * w:cs="Times New Roman"/>`. The `serif` slot is the one a theme resolves
+     * to its own Times, so a source note follows the theme rather than naming
+     * a family, which is the difference between this and a mark's face.
+     */
+    face: 'serif',
     italic: true,
     color: '808080',
   },
@@ -210,20 +217,50 @@ export const WORD_AUTO_LEADING = 259 / 240;
  * weights are the ONLY difference between a short and a long box — 0.25 pt
  * against 1.5 pt — which is why they are recorded to the eighth of a point.
  */
+/**
+ * THE FAMILY A MARK IS SET IN, and why it is a name and not a face slot.
+ *
+ * A mark's family is a measured property of HIS vocabulary, exactly as its
+ * colour is: `Svara` is URW Palladio ITU and bold in every one of his files
+ * and in the template in this repository, while the paragraph it sits in is
+ * Arial. The accents are deliberately set in another face.
+ *
+ * This was missing entirely — `ink()` wrote a colour and a size and no
+ * `<w:rFonts>` at all — so every svara in every document we exported inherited
+ * Arial from `Translit`. That is the owner's report, word for word: "the
+ * Svaras are rendered in a different font than originally".
+ *
+ * A theme does not override it today, because `DocumentMode` has a colour per
+ * mark and no face. When one wants to, it grows a slot, the same way the
+ * colours did.
+ */
+const MARK_FACES = {
+  /** What `Svara` and `VedicAnusvara` are set in. Not vendored: his file names
+   *  it, so ours names it, and Word substitutes on a machine without it —
+   *  which is exactly what happens when he opens his own file elsewhere. */
+  palladio: 'URW Palladio ITU',
+  /** `Virama`, which shares the svara's colour and size but not its face. */
+  arial: 'Arial',
+} as const;
+
 export const WORD_MARKS = {
   /** `Holding` — `w:bdr w:sz="2"`. */
   holdShort: { color: '538135', weight: fromEighths(2) },
   /** `2Holding` — `w:bdr w:sz="12"`. */
   holdLong: { color: '538135', weight: fromEighths(12) },
-  /** `Svara`, and `Virama`, which shares its colour and size. */
-  svara: { color: '943634', size: fromHalfPoints(36) },
-  /** `Anusvara` / `VedicAnusvara` — the letter actually recited. */
+  /** `Svara` — URW Palladio ITU, BOLD, 18 pt, #943634. All four measured. */
+  svara: { color: '943634', size: fromHalfPoints(36), face: MARK_FACES.palladio, bold: true },
+  /** `Virama` — the svara's colour and size, Arial, and not bold. */
+  virama: { color: '943634', size: fromHalfPoints(36), face: MARK_FACES.arial },
+  /** `Anusvara` — the letter actually recited. No face of its own. */
   change: { color: '0070C0', italic: true },
+  /** `VedicAnusvara` — the same colour, set in Palladio. */
+  vedicChange: { color: '0070C0', italic: true, face: MARK_FACES.palladio },
   /** `Pause` — one style for both lengths; the glyph count decides. */
   pause: { color: 'C00000', italic: true },
   /** `Long` — the dīrgha overline (unresolved, 00 §5.1). */
   dirgha: { color: '4472C4', size: fromHalfPoints(36) },
-  /** `Comment` — a source note under a section. */
+  /** `Comment` — a source note under a section. Times New Roman in his file. */
   comment: { color: '808080', size: fromHalfPoints(22), italic: true },
 } as const;
 

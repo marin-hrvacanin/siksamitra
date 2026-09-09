@@ -22,6 +22,7 @@ export {
 } from './parts.js';
 
 export {
-  PARA_STYLE_OF, familiesOf, holdStroke, roleColor, sectPr, stylesXml, wordFamily,
+  PARA_STYLE_OF, familiesOf, roleColor, sectPr, stylesXml, wordFamily,
 } from './styles.js';
+export { charStyles, holdStroke } from './char-styles.js';
 export type { StyleSheetInput } from './styles.js';

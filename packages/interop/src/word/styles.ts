@@ -24,21 +24,17 @@
  * The type scale is in rem at 1 rem = 12 pt, so every conversion below is that
  * identity times one of these four factors.
  */
-import { MARK_GEOMETRY } from '@siksamitra/tokens/source';
 import type { DocumentMode, DocumentTheme } from '@siksamitra/tokens/document-themes';
 import { typeScaleOf } from '@siksamitra/tokens/document-themes';
 import type { DocRole, DocTypeScale, RoleMetric } from '@siksamitra/tokens/document-type';
-import { WORD_MARKS, WORD_PARAGRAPHS, WORD_SUBSTITUTES } from '@siksamitra/tokens/word';
+import { WORD_SUBSTITUTES } from '@siksamitra/tokens/word';
 import type { PageGeometry } from '@siksamitra/layout';
 import { xmlEscape } from '../xml.js';
+import { charStyles } from './char-styles.js';
+import {
+  PT_PER_REM, channels, halfPoints, twips, wordHex, type Families,
+} from './units.js';
 
-/** 1 rem is 12 pt — the identity `document-type.ts` is written in. */
-const PT_PER_REM = 12;
-const halfPoints = (rem: number): number => Math.round(rem * PT_PER_REM * 2);
-const twips = (rem: number): number => Math.round(rem * PT_PER_REM * 20);
-const eighths = (pt: number): number => Math.round(pt * 8);
-/** A CSS reference pixel is 1/96 in and a point is 1/72 in. */
-const PT_PER_PX = 72 / 96;
 
 /**
  * Which of his paragraph styles each of our roles is written as.
@@ -73,21 +69,6 @@ export const PARA_STYLE_OF: Readonly<Partial<Record<DocRole, string>>> = {
   comment: 'Caption',
 };
 
-/** `#7f7f7f` as Word writes it. */
-function wordHex(css: string): string {
-  const m = /^#?([0-9a-fA-F]{6})$/.exec(css.trim());
-  if (m === null) throw new Error(`cannot write "${css}" as a Word colour`);
-  return m[1]!.toUpperCase();
-}
-
-const channels = (hex: string): [number, number, number] => {
-  const h = wordHex(hex);
-  return [
-    Number.parseInt(h.slice(0, 2), 16),
-    Number.parseInt(h.slice(2, 4), 16),
-    Number.parseInt(h.slice(4, 6), 16),
-  ];
-};
 
 /**
  * A role's colour, resolved against the mode it will be printed in.
@@ -137,7 +118,9 @@ export function wordFamily(stack: string): string {
 }
 
 /** The four face slots a theme resolves, as Word family names. */
-export function familiesOf(theme: DocumentTheme, textStack: string, uiStack: string) {
+export function familiesOf(
+  theme: DocumentTheme, textStack: string, uiStack: string,
+): Families {
   return {
     text: wordFamily(textStack),
     display: wordFamily(theme.faces?.display ?? textStack),
@@ -146,14 +129,28 @@ export function familiesOf(theme: DocumentTheme, textStack: string, uiStack: str
   };
 }
 
-type Families = ReturnType<typeof familiesOf>;
 
-function rPr(m: RoleMetric, mode: DocumentMode, families: Families): string {
+function rPr(
+  m: RoleMetric,
+  mode: DocumentMode,
+  families: Families,
+  /**
+   * The colour this style would INHERIT — `docDefaults`', which every style
+   * without a `w:color` of its own gets.
+   *
+   * Restating it changes nothing on the page and does not match his file: his
+   * `Translit` carries no `w:color` at all, ours wrote `#000000`. A style that
+   * genuinely differs — a grey heading, a grey translation — still writes one.
+   * Omitted for `docDefaults` itself, which is where the value comes from.
+   */
+  inherited?: string,
+): string {
   const family = xmlEscape(families[m.face]);
   const sz = halfPoints(m.size);
+  const color = roleColor(m.color, mode);
   return `<w:rPr><w:rFonts w:ascii="${family}" w:hAnsi="${family}" w:cs="${family}"/>`
     + `${m.bold ? '<w:b/>' : ''}${m.italic ? '<w:i/>' : ''}`
-    + `<w:color w:val="${roleColor(m.color, mode)}"/>`
+    + (color === inherited ? '' : `<w:color w:val="${color}"/>`)
     + `<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>`;
 }
 
@@ -212,7 +209,12 @@ const KEEP_WITH_NEXT: readonly DocRole[] = ['verse', 'title', 'part', 'section',
 
 /** One `<w:style>` for a paragraph role. */
 function paraStyle(
-  id: string, role: DocRole, scale: DocTypeScale, mode: DocumentMode, families: Families,
+  id: string,
+  role: DocRole,
+  scale: DocTypeScale,
+  mode: DocumentMode,
+  families: Families,
+  inherited: string,
 ): string {
   const m = scale[role];
   const isNormal = id === 'Normal';
@@ -225,85 +227,8 @@ function paraStyle(
     + '<w:qFormat/>'
     + pPr(m, KEEP_WITH_NEXT.includes(role))
       .replace('</w:pPr>', `${outline === null ? '' : `<w:outlineLvl w:val="${Number(outline[1]) - 1}"/>`}</w:pPr>`)
-    + rPr(m, mode, families)
+    + rPr(m, mode, families, inherited)
     + '</w:style>';
-}
-
-/**
- * The holding box's stroke, in eighths of a point.
- *
- * The page draws it as `max(1px, 0.032em)` (`mark-geometry.css`), so a 16 pt
- * mantra gets a 1 px hairline — 0.75 pt — and the long box 0.075 em, 1.2 pt.
- * Those are the numbers the PDF prints, so they are the numbers the `.docx`
- * has to ask for, or the two exports differ on the most visible mark on the
- * page. Word stores a border weight in eighths of a point and takes integers
- * only, so 1.2 pt is written as 10/8 = 1.25 pt: a 0.05 pt quantisation that
- * `gate-pdf.mjs` reports rather than hides.
- */
-export function holdStroke(sizeRem: number, which: 'short' | 'long'): number {
-  const em = MARK_GEOMETRY.holdStroke[which];
-  const floor = MARK_GEOMETRY.holdStroke.minPx * PT_PER_PX;
-  return Math.max(2, eighths(Math.max(em * sizeRem * PT_PER_REM, floor)));
-}
-
-/**
- * The mark styles, from the theme's own palette.
- *
- * The `Svara` run is a combining character rather than a drawn stroke, and his
- * file sets it 2 pt larger than the line it sits on — `w:sz="36"` over
- * `w:sz="32"`. Kept as that RATIO of the theme's mantra size rather than as
- * 18 pt, so a theme with a different mantra size gets a mark in proportion; on
- * the `word` theme it resolves to his 18 pt exactly.
- */
-function charStyles(scale: DocTypeScale, mode: DocumentMode, families: Families): string {
-  const verse = scale.verse;
-  const markRatio = WORD_MARKS.svara.size
-    / WORD_PARAGRAPHS.find((p) => p.role === 'verse-line')!.size;
-  const svaraSz = halfPoints(verse.size * markRatio);
-  /*
-   * `w:bdr` COMES LAST in `CT_RPr`, after `w:color` and `w:sz` — the schema is a
-   * sequence and Word reports a violation only as "the file appears to be
-   * corrupted". The combined styles below are what makes a letter able to be
-   * boxed and substituted at once; see `word-styles.ts` for the measurement
-   * that found the pairing losing its blue.
-   */
-  const box = (
-    id: string, which: 'short' | 'long', color: string, also?: string,
-  ): string =>
-    `<w:style w:type="character" w:customStyle="1" w:styleId="${id}"><w:name w:val="${id}"/>`
-    + '<w:uiPriority w:val="1"/><w:qFormat/><w:rPr>'
-    + (also === undefined ? '' : `<w:i/><w:color w:val="${wordHex(also)}"/>`)
-    + `<w:bdr w:val="single" w:sz="${holdStroke(verse.size, which)}" w:space="0"`
-    + ` w:color="${wordHex(color)}"/></w:rPr></w:style>`;
-  const ink = (id: string, color: string, opts: { sz?: number; italic?: boolean } = {}): string =>
-    `<w:style w:type="character" w:customStyle="1" w:styleId="${id}"><w:name w:val="${id}"/>`
-    + '<w:uiPriority w:val="1"/><w:qFormat/><w:rPr>'
-    + `${opts.italic === true ? '<w:i/>' : ''}<w:color w:val="${wordHex(color)}"/>`
-    + (opts.sz === undefined ? '' : `<w:sz w:val="${opts.sz}"/><w:szCs w:val="${opts.sz}"/>`)
-    + '</w:rPr></w:style>';
-
-  const comment = scale.comment;
-  const family = xmlEscape(families[comment.face]);
-  return [
-    box('Holding', 'short', mode.hold),
-    box('2Holding', 'long', mode.holdLong),
-    box('HoldingChange', 'short', mode.hold, mode.change),
-    box('2HoldingChange', 'long', mode.holdLong, mode.change),
-    ink('Svara', mode.svara, { sz: svaraSz }),
-    ink('Virama', mode.svara, { sz: svaraSz }),
-    ink('Anusvara', mode.change, { italic: true }),
-    ink('VedicAnusvara', mode.change, { italic: true }),
-    ink('Pause', mode.pauseShort, { italic: true }),
-    /* His `Comment` is a character style with a face of its own — the source
-       line under a heading is set in it, inside an ordinary paragraph. */
-    `<w:style w:type="character" w:customStyle="1" w:styleId="Comment">`
-    + '<w:name w:val="Comment"/><w:uiPriority w:val="1"/><w:qFormat/><w:rPr>'
-    + `<w:rFonts w:ascii="${family}" w:hAnsi="${family}" w:cs="${family}"/>`
-    + `${comment.italic ? '<w:i/>' : ''}`
-    + `<w:color w:val="${roleColor(comment.color, mode)}"/>`
-    + `<w:sz w:val="${halfPoints(comment.size)}"/>`
-    + `<w:szCs w:val="${halfPoints(comment.size)}"/></w:rPr></w:style>`,
-  ].join('');
 }
 
 const W_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
@@ -315,6 +240,17 @@ export interface StyleSheetInput {
    *  the caller, exactly as `buildExportPage` resolves them for the page. */
   textStack: string;
   uiStack: string;
+  /**
+   * The `w:rStyle` ids the BODY actually references.
+   *
+   * A stylesheet that lists a style nothing uses is a Styles pane full of
+   * names for things that are not on the page — the owner's "hallucinated
+   * styles". Only the two paired hold-and-change styles are gated on it,
+   * because only they are ours rather than his; the rest of the vocabulary is
+   * written whether or not this document happens to need it, which is what
+   * makes our files and his interchangeable.
+   */
+  usedStyles?: ReadonlySet<string>;
 }
 
 /** The whole of `word/styles.xml`. */
@@ -330,11 +266,15 @@ export function stylesXml(input: StyleSheetInput): string {
     + '</w:rPrDefault><w:pPrDefault>'
     + pPr(body)
     + '</w:pPrDefault></w:docDefaults>';
+  /* What `docDefaults` sets, and therefore what every style inherits. */
+  const inherited = roleColor(body.color, mode);
   const paras = Object.entries(PARA_STYLE_OF)
-    .map(([role, id]) => paraStyle(id, role as DocRole, scale, mode, families))
+    .map(([role, id]) => paraStyle(id, role as DocRole, scale, mode, families, inherited))
     .join('');
+  const used = input.usedStyles ?? new Set<string>();
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-    + `<w:styles ${W_NS}>${defaults}${paras}${charStyles(scale, mode, families)}</w:styles>`;
+    + `<w:styles ${W_NS}>${defaults}${paras}`
+    + `${charStyles(scale, mode, families, used)}</w:styles>`;
 }
 
 /**

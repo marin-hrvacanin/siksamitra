@@ -93,13 +93,32 @@ export async function exportWord(input: WordExportInput): Promise<Uint8Array> {
   const columnEmu = Math.round(
     ((page.width - page.margins.left - page.margins.right) / 72) * EMU_PER_INCH,
   );
+  /*
+   * THE BODY IS WRITTEN FIRST, and the stylesheet is told what it referenced.
+   *
+   * `HoldingChange` and `2HoldingChange` are ours rather than his — a Word run
+   * carries one character style, so a letter that is both boxed and
+   * substituted needs a combined one — and they were written into every file
+   * whether or not any letter needed them. Measured: zero runs used them in
+   * any document we have exported, and they showed up in the Styles pane
+   * regardless. Asking the body which ids it actually wrote is exact, and it
+   * still writes them for a document that has such a letter.
+   */
+  const body = documentXml(input.doc, tail, { media, columnEmu });
+  const usedStyles = new Set(
+    [...body.matchAll(/<w:rStyle w:val="([^"]+)"/g)].map((m) => m[1] as string),
+  );
   const parts: Record<string, Uint8Array> = {
     [WORD_PARTS.contentTypes]: strToU8(contentTypes([...media.values()].map((m) => m.extension))),
     [WORD_PARTS.rootRels]: strToU8(rootRels()),
-    [WORD_PARTS.document]: strToU8(documentXml(input.doc, tail, { media, columnEmu })),
+    [WORD_PARTS.document]: strToU8(body),
     [WORD_PARTS.documentRels]: strToU8(documentRels([...media.values()])),
     [WORD_PARTS.styles]: strToU8(stylesXml({
-      theme, mode: input.style.mode, textStack: input.textStack, uiStack: input.uiStack,
+      theme,
+      mode: input.style.mode,
+      textStack: input.textStack,
+      uiStack: input.uiStack,
+      usedStyles,
     })),
     [WORD_PARTS.settings]: strToU8(settings()),
     [WORD_PARTS.item]: strToU8(item),

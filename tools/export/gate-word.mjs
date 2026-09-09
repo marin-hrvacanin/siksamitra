@@ -46,6 +46,7 @@ import { canonicalJson } from '@siksamitra/format';
 import { importDocx, importWord, WORD_PARTS } from '@siksamitra/interop';
 import { EXPORT_STYLES } from '@siksamitra/tokens/export-styles';
 import { WORD_PARAGRAPHS } from '@siksamitra/tokens/word';
+import { compareLook } from './gate-word-look.mjs';
 import { SCRIPTS, loadDoc } from './page.mjs';
 import { buildWord } from './word.mjs';
 import { packageProblems, stylesOf } from './docx-metrics.mjs';
@@ -348,6 +349,22 @@ try {
 }
 if (!refused.includes('customXml/item1.xml') || !refused.includes('importDocx')) {
   fail("someone else's .docx", `was not refused clearly — said "${refused}"`);
+}
+
+
+/*
+ * WHAT EACH STYLE LOOKS LIKE — the half the six numbers above cannot see.
+ *
+ * Every measured paragraph value agreed with his file to 0.000 pt while our
+ * `Svara` was set in the wrong face and two styles he has never had were in
+ * every file's Styles pane. See `gate-word-look.mjs`.
+ */
+if (existsSync(HIS)) {
+  compareLook(
+    mine,
+    stylesOf(strFromU8(unzipSync(new Uint8Array(readFileSync(HIS)))['word/styles.xml'])),
+    fail,
+  );
 }
 
 console.log(`\n     ${(bytes / files.length / 1024).toFixed(0)} KB per document. `

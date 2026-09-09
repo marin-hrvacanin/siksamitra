@@ -1623,7 +1623,7 @@
   --doc-comment-indent: 0px;
   --doc-comment-hanging: 0px;
   --doc-comment-right: 0px;
-  --doc-comment-face: 'Carlito', Calibri, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-comment-face: 'Tinos', 'Times New Roman', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: #808080;
