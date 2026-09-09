@@ -238,18 +238,28 @@ npm run spec               # the OpenSpec CLI
 The gates in `npm run check`: `check:web` `check:word-addin` `check:icons`
 `check:authoring` `check:modules` `check:tokens` `check:literals`
 `check:fixtures` `check:conformance` `check:marking` `check:migrate`
-`check:source` `check:transliteration` `check:lossless` `check:engine`
+`check:size` `check:source` `check:transliteration` `check:lossless`
+`check:engine`
 `check:export:html` `check:export:image` `check:export:figures`
 `check:export:word` `check:export:pdf`.
 
-Four of those are worth knowing by name:
+Five of those are worth knowing by name:
 
 | | |
 |---|---|
 | `check:migrate` | `tokens ⇄ text + markings`, 573 of 573 verses byte for byte |
 | `check:marking` | marks one letter in every transcribed verse and compares every OTHER byte |
 | `check:export:html` | every document exported and re-imported, byte-identical |
+| `check:size` | no verse stored twice, and no document larger than recorded |
 | `check:reflow` | applying a marking may not move a glyph (in `check:edit`) |
+
+`check:size` is the one to read before touching the format. A composed section
+holds its verses in `items` and `normalizeChantDoc` rebuilds `verses` from that
+on load — so the derived array is NOT written, and `writeChantFile` is the only
+function allowed to decide what a document's bytes are. Writing a document any
+other way put every verse on disk twice: 49% of the corpus. The gate is
+structural rather than arithmetic because the arithmetic one missed it —
+`tools/size-study.mjs` reads `s.items ?? s.verses`, one copy, never both.
 
 **A gate that cannot fail is worse than no gate.** Every one of these compares
 against something the code under test does not itself compute, and several were

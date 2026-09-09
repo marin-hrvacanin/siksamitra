@@ -21,6 +21,21 @@ const DIR = 'corpus/chants';
  * fitting the tables to them would bake in their errors.
  */
 const SCRIPTS = ['deva', 'tel'] as const;
+/**
+ * Tamil is REPORTED, never failed on.
+ *
+ * The stored forms are not a verification target, but leaving them unmeasured
+ * meant nobody knew how far they had drifted. They have: 215 of 15,881
+ * syllables disagree with the engine, and the stored side is the wrong one in
+ * at least one whole class — `ऽ`, the DEVANĀGARĪ avagraha, sits in the Tamil
+ * field of ten syllables. That is a defect in the shipped data, not a
+ * difference of opinion, and it was invisible because the gate did not look.
+ *
+ * It does not fail the build: choosing between the two changes what a reader
+ * sees in Tamil, and that is the owner's call, not this gate's. It prints, so
+ * the number cannot quietly grow.
+ */
+const REPORTED = 'tam' as const;
 const show = Number(process.argv[process.argv.indexOf('--show') + 1]) || 12;
 
 interface Syl {
@@ -34,8 +49,10 @@ interface Syl {
 }
 
 const miss: Record<string, Map<string, { iast: string; want: string; got: string; n: number }>> = {
-  deva: new Map(), tel: new Map(),
+  deva: new Map(), tel: new Map(), tam: new Map(),
 };
+/** How many syllables carried a stored form, per script. */
+const carried: Record<string, number> = { deva: 0, tel: 0, tam: 0 };
 let total = 0;
 let checked = 0;
 
@@ -44,10 +61,11 @@ function walk(tokens: Syl[]): void {
     if (t.t === 'slot' && t.tokens) { walk(t.tokens); continue; }
     if (t.t !== 'syl' || !t.units) continue;
     total += 1;
-    for (const script of SCRIPTS) {
+    for (const script of [...SCRIPTS, REPORTED]) {
       const want = t[script];
       if (typeof want !== 'string' || want === '') continue;
-      checked += 1;
+      carried[script] = (carried[script] ?? 0) + 1;
+      if (script !== REPORTED) checked += 1;
       const got = transliterateSyllable(t.units, script);
       if (got === want) continue;
       const key = `${t.iast ?? ''}→${want}`;
@@ -67,14 +85,17 @@ for (const f of readdirSync(DIR).filter((n) => n.endsWith('.json'))) {
 }
 
 let bad = 0;
-for (const script of SCRIPTS) {
+for (const script of [...SCRIPTS, REPORTED]) {
   const m = miss[script]!;
   const n = [...m.values()].reduce((a, b) => a + b.n, 0);
-  bad += n;
-  const pct = checked ? ((1 - n / (checked / SCRIPTS.length)) * 100).toFixed(2) : '0';
-  console.log(`\n${script}: ${n} mismatched syllables (${m.size} distinct) — ${pct}% agree`);
+  if (script !== REPORTED) bad += n;
+  const seen = carried[script] ?? 0;
+  const pct = seen ? ((1 - n / seen) * 100).toFixed(2) : '0';
+  console.log(`\n${script}: ${n} of ${seen} syllables disagree (${m.size} distinct)`
+    + ` — ${pct}% agree`
+    + (script === REPORTED ? '   [REPORTED, not a target — see the note above]' : ''));
   for (const e of [...m.values()].sort((a, b) => b.n - a.n).slice(0, show)) {
-    console.log(`  ${e.iast.padEnd(10)} want ${e.want.padEnd(12)} got ${e.got.padEnd(12)} ×${e.n}`);
+    console.log(`  ${e.iast.padEnd(10)} stored ${e.want.padEnd(12)} engine ${e.got.padEnd(12)} ×${e.n}`);
   }
 }
 console.log(`\n${total} syllables, ${checked} assertions, ${checked - bad} pass, ${bad} fail`);

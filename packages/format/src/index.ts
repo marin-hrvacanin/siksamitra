@@ -60,6 +60,10 @@ export {
   applyMark, coverage, marksAt, marksIn, normalise, removeMark, shiftForEdit, toggleMark,
 } from './mark-ops.js';
 export type { TextEdit } from './mark-ops.js';
+/* The stored form of a marking. One encoder, one decoder — see `mark-codec.ts`
+   for what it omits and why, and for the measurements behind the tuple. */
+export { decodeMark, decodeMarks, encodeMark, encodeMarks } from './mark-codec.js';
+export type { StoredMark } from './mark-codec.js';
 
 /* Tokens ⇄ text and markings, and the round trip that proves it loses nothing. */
 export { toTextAndMarks, toTokens } from './migrate.js';
