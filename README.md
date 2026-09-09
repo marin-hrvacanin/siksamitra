@@ -8,8 +8,9 @@ Devanāgarī, Telugu and Tamil, with every script losslessly convertible to ever
 other. It reads and writes Word and PDF, works entirely offline, and ships every
 font it needs inside the application.
 
-**This is the `v2` branch, a rewrite.** It shares no history with `main`, which
-is frozen v1 — kept as a behavioural reference, never merged.
+**This is `main`, and it is v2 — a rewrite.** The v1 program it replaces is
+kept, frozen, on **`legacy-v1`**: a behavioural reference, sharing no history
+with this branch and never merged.
 
 ---
 

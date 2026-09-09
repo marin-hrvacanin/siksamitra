@@ -3,8 +3,10 @@
 Read this first. It tells you what this program is, where things live, what to
 read for a given task, and the rules that are not negotiable.
 
-**This is the `v2` branch, an orphan.** It shares no history with `main`, which
-is frozen v1 — kept as a behavioural reference to diff against, never merged.
+**This is `main`, and it is v2.** The v1 program it replaces is kept, frozen,
+on **`legacy-v1`** — a behavioural reference to diff against, sharing no
+history with this branch and never merged. `v2` still points at the same
+commit as `main` and is now just an alias for it; new work goes on `main`.
 
 ---
 
