@@ -20,7 +20,9 @@
  * See specs/chant-editor/03-INTEROP.md §2.
  */
 import { unzipSync, strFromU8 } from 'fflate';
-import type { ChantDoc, ChantSection, ChantToken, ChantUnit, ChantVerse } from '@siksamitra/format';
+import type {
+  ChantDoc, ChantItem, ChantSection, ChantToken, ChantUnit, ChantVerse,
+} from '@siksamitra/format';
 import { normalize } from '@siksamitra/engine';
 import { parseLetters, isVowel, ANU, CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
 import { transliterateSyllable } from '@siksamitra/engine';
@@ -29,87 +31,15 @@ import {
   BAR_GLYPH, HOLD_CHANGE_ROLES, REFERENCE_COUNTS, SVARA_BY_CHAR, paraRoleOf, roleOf,
   type WordMarkRole, type WordParaRole,
 } from './word-styles.js';
-import { xmlText } from './xml.js';
+import {
+  columnEmuOf, figureFromDrawing, relationshipTargets, type DocxDrawing,
+} from './docx-figures.js';
+import { mergeRuns, readParagraphs, type WordParagraph, type WordRun } from './docx-read.js';
 
-/* ==========================================================================
-   A minimal OOXML reader
-   ========================================================================== */
-
-/** One `<w:r>`: its text, its character style, and whether it is raised. */
-export interface WordRun {
-  text: string;
-  rStyle: string | null;
-  superscript: boolean;
-}
-
-export interface WordParagraph {
-  pStyle: string | null;
-  runs: WordRun[];
-  /** A self-closing `<w:p/>` — a real, empty paragraph. OOXML allows it, and
-   *  the regex the reference counts were first taken with could not see it,
-   *  which is the whole of the 845-vs-846 difference. */
-  empty?: boolean;
-}
-
-const RE_PARA = /<w:p\b[^>]*>([\s\S]*?)<\/w:p>|<w:p\b[^>]*\/>/g;
-const RE_RUN = /<w:r\b[^>]*>([\s\S]*?)<\/w:r>/g;
-const RE_TEXT = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
-const RE_PSTYLE = /<w:pStyle\s+w:val="([^"]*)"/;
-const RE_RSTYLE = /<w:rStyle\s+w:val="([^"]*)"/;
-const RE_TAB = /<w:tab\b[^>]*\/?>/;
-const RE_BR = /<w:br\b[^>]*\/?>/;
-
-/** Read `word/document.xml` into paragraphs of runs, in DOCUMENT ORDER. */
-export function readParagraphs(documentXml: string): WordParagraph[] {
-  const out: WordParagraph[] = [];
-  RE_PARA.lastIndex = 0;
-  let m: RegExpExecArray | null;
-  while ((m = RE_PARA.exec(documentXml)) !== null) {
-    const body = m[1] ?? '';
-    const selfClosing = m[1] === undefined;
-    const pStyle = RE_PSTYLE.exec(body)?.[1] ?? null;
-    const runs: WordRun[] = [];
-    RE_RUN.lastIndex = 0;
-    let r: RegExpExecArray | null;
-    while ((r = RE_RUN.exec(body)) !== null) {
-      const rb = r[1] ?? '';
-      let text = '';
-      RE_TEXT.lastIndex = 0;
-      let t: RegExpExecArray | null;
-      while ((t = RE_TEXT.exec(rb)) !== null) text += xmlText(t[1] ?? '');
-      if (RE_TAB.test(rb)) text += ' ';
-      if (RE_BR.test(rb)) text += '\n';
-      runs.push({
-        text,
-        rStyle: RE_RSTYLE.exec(rb)?.[1] ?? null,
-        superscript: /vertAlign\s+w:val="superscript"/.test(rb),
-      });
-    }
-    out.push({ pStyle, runs, ...(selfClosing ? { empty: true } : {}) });
-  }
-  return out;
-}
-
-/**
- * Merge consecutive runs with the same signature.
- *
- * Word splits a run on revision ids and spell-check state for no semantic
- * reason, so a single styled letter can arrive as four runs. Merging first is
- * what makes the inverse (§ export) stable.
- */
-export function mergeRuns(runs: WordRun[]): WordRun[] {
-  const out: WordRun[] = [];
-  for (const r of runs) {
-    if (r.text === '') continue; // an empty run carries nothing to merge
-    const last = out[out.length - 1];
-    if (last !== undefined && last.rStyle === r.rStyle && last.superscript === r.superscript) {
-      last.text += r.text;
-    } else {
-      out.push({ ...r });
-    }
-  }
-  return out;
-}
+/* The OOXML reader is `docx-read.ts`. Re-exported because it is part of this
+   module's published surface — the add-in and two gates read paragraphs. */
+export { mergeRuns, readParagraphs } from './docx-read.js';
+export type { WordParagraph, WordRun } from './docx-read.js';
 
 /* ==========================================================================
    Import
@@ -448,11 +378,28 @@ export interface DocxImport {
 
 /** Read a `.docx` into a chant document plus a report of everything it did. */
 export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
-  const zip = unzipSync(bytes, { filter: (f) => f.name === 'word/document.xml' });
+  /*
+   * THE PICTURES COME OUT OF THE ZIP TOO. A `.docx` keeps them in
+   * `word/media/`, named from `word/_rels/document.xml.rels`, and reading only
+   * `document.xml` is how every picture in an imported manual used to become
+   * nothing at all — silently, because a `<w:drawing>` carries no text and a
+   * paragraph with no text is a paragraph this reader skips.
+   */
+  const zip = unzipSync(bytes, {
+    filter: (f) => f.name === 'word/document.xml'
+      || f.name === 'word/_rels/document.xml.rels'
+      || f.name.startsWith('word/media/'),
+  });
   const xml = zip['word/document.xml'];
   if (xml === undefined) throw new Error('not a .docx — word/document.xml is missing');
 
-  const paragraphs = readParagraphs(strFromU8(xml));
+  const documentText = strFromU8(xml);
+  const paragraphs = readParagraphs(documentText);
+  const rels = zip['word/_rels/document.xml.rels'] === undefined
+    ? new Map<string, string>()
+    : relationshipTargets(strFromU8(zip['word/_rels/document.xml.rels']));
+  const columnEmu = columnEmuOf(documentText);
+  let figureN = 0;
 
   const report: ImportReport = {
     source: { kind: 'docx', bytes: bytes.length },
@@ -509,6 +456,71 @@ export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
     return made;
   };
 
+  /*
+   * THE ORDER OF A SECTION'S CONTENTS, kept as it is read.
+   *
+   * `ChantSection` carries both `verses` and `items`, and `itemsOf` prefers
+   * `items` whenever it is not empty — so a section that put ONE thing in
+   * `items` and its verses in `verses` drew that one thing and nothing else.
+   * That was already happening: a step beginning with a direction and then a
+   * mantra came back as the direction alone. Recorded here by reference and
+   * materialised at the end, so a verse that gains a translation or an
+   * instruction after it was recorded still goes in carrying it.
+   */
+  type Entry = { verse: ChantVerse } | { item: ChantItem };
+  const order = new Map<string, Entry[]>();
+  const entries = (sec: ChantSection): Entry[] => {
+    const found = order.get(sec.id);
+    if (found !== undefined) return found;
+    const made: Entry[] = [];
+    order.set(sec.id, made);
+    return made;
+  };
+
+  /** One picture out of the zip, as an item of the step being read. */
+  const addFigure = (drawing: DocxDrawing): void => {
+    const sec = current() ?? newSection(title, 'section');
+    const target = rels.get(drawing.relId);
+    const part = target === undefined ? undefined : `word/${target.replace(/^\.?\//u, '')}`;
+    const media = part === undefined ? undefined : zip[part];
+    if (part === undefined || media === undefined) {
+      report.unresolved.push({
+        at: sec.id, what: 'a picture whose bytes are not in the file', raw: drawing.relId,
+      });
+      return;
+    }
+    figureN += 1;
+    const figure = figureFromDrawing(drawing, part, media, `fig-${figureN}`, columnEmu);
+    if (figure === null) {
+      figureN -= 1;
+      report.unresolved.push({
+        at: sec.id,
+        what: 'a picture in a format a document may not carry '
+          + '(.emf and .wmf are the two Word writes)',
+        raw: part,
+      });
+      return;
+    }
+    entries(sec).push({ item: { t: 'figure', figure } });
+  };
+
+  /**
+   * A `Caption` paragraph belongs to the picture above it.
+   *
+   * Word's own style, which is what we write and what a person using Word gets
+   * from Insert ▸ Caption. Without this the caption came back as a direction —
+   * a step with one picture read as picture, note, picture, note — because a
+   * caption is prose and `classifyProse` has no way to know better.
+   */
+  const addCaption = (text: string): void => {
+    const list = order.get(current()?.id ?? '') ?? [];
+    const last = list[list.length - 1];
+    if (last === undefined || !('item' in last) || last.item.t !== 'figure') return;
+    const figure = last.item.figure;
+    if (figure === undefined || text === '') return;
+    list[list.length - 1] = { item: { t: 'figure', figure: { ...figure, caption: { en: text } } } };
+  };
+
   const closeVerse = (): void => {
     if (verseRuns.length === 0) return;
     const sec: ChantSection = current() ?? newSection(title, 'section');
@@ -525,12 +537,21 @@ export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
     };
     pendingSource = undefined;
     sec.verses.push(verse);
+    entries(sec).push({ verse });
     report.structure.verses += 1;
   };
 
   for (const p of paragraphs) {
     const role = paraRoleOf(p.pStyle);
     const text = p.runs.map((r) => r.text).join('').trim();
+
+    /* A picture stands where its paragraph stands, so it is taken before the
+       paragraph is classified — a `<w:drawing>` carries no text, and a
+       paragraph with no text is one this reader would otherwise skip. */
+    if (p.drawings !== undefined) {
+      closeVerse();
+      for (const d of p.drawings) addFigure(d);
+    }
 
     if (role === 'drop') continue;
 
@@ -562,6 +583,10 @@ export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
       }
       continue;
     }
+    if (role === 'caption') {
+      addCaption(text);
+      continue;
+    }
     if (role === 'insert') {
       report.unresolved.push({
         at: current()?.id ?? 'doc',
@@ -585,7 +610,7 @@ export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
       };
       const last = sec.verses[sec.verses.length - 1];
       if (last !== undefined) last.instructions = [...(last.instructions ?? []), instr];
-      else sec.items = [...(sec.items ?? []), { t: 'instruction', instruction: instr }];
+      else entries(sec).push({ item: { t: 'instruction', instruction: instr } });
     }
   }
   closeVerse();
@@ -593,10 +618,22 @@ export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
   const norm = normalize(paragraphs.map((p) => p.runs.map((r) => r.text).join('')).join('\n'));
   report.normalisations = norm.changes;
 
+  /* Materialised last, so a verse goes in carrying whatever it gained after it
+     was recorded. A section with nothing but verses is left with no `items` at
+     all, which is the shape `itemsOf` reads as "the verses, in order". */
+  const withItems = sections.map((s) => {
+    const list = order.get(s.id) ?? [];
+    if (!list.some((e) => 'item' in e)) return s;
+    return {
+      ...s,
+      items: list.map((e) => ('item' in e ? e.item : { t: 'verse' as const, ...e.verse })),
+    };
+  });
+
   const doc: ChantDoc = {
     title,
     titleForms: { iast: title },
-    sections: sections.filter((s) => s.verses.length > 0 || (s.items?.length ?? 0) > 0),
+    sections: withItems.filter((s) => s.verses.length > 0 || (s.items?.length ?? 0) > 0),
     version: 3,
   };
   return { doc, report, paragraphs };

@@ -26,12 +26,14 @@
  * `styles.ts` decides what that style looks like, which is what lets one body
  * be written in eight export styles.
  */
-import type { ChantDoc, ChantToken, ChantUnit } from '@siksamitra/format';
+import type { ChantDoc, ChantFigure, ChantToken, ChantUnit } from '@siksamitra/format';
+import { FIGURE_DEFAULTS } from '@siksamitra/format';
 import { CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
 import { ROLE_OF_ELEMENT } from '@siksamitra/tokens/document-type';
 import { xmlEscape } from '../xml.js';
 import { BAR_GLYPH, SVARA_CHAR, holdingStyle } from '../word-styles.js';
 import { PARA_STYLE_OF } from './styles.js';
+import { figureDrawing, figurePlaceholderText, type WordMedia } from './drawing.js';
 
 /**
  * Which Word style each of the page's elements is written in.
@@ -54,8 +56,24 @@ const styleOf = (element: keyof typeof ROLE_OF_ELEMENT): string => {
 const signature = (u: ChantUnit): string =>
   `${u.hold ?? '-'}/${u.hg ?? '-'}/${u.change === true ? 'c' : '-'}`;
 
+/**
+ * What a picture needs in order to be drawn: its bytes' place in the package,
+ * and the column the five width steps are a fraction of.
+ *
+ * Optional as a whole, because two callers — the add-in's paragraph reader and
+ * the determinism check — want the paragraphs and not the pictures. Without it
+ * a figure writes its alternative text, which is what the page does for a
+ * picture whose bytes are not there either.
+ */
+export interface WordPictures {
+  /** Keyed by the picture's `src`, so one photograph is one part. */
+  readonly media: ReadonlyMap<string, WordMedia>;
+  /** The section's content width, in EMU. */
+  readonly columnEmu: number;
+}
+
 /** Write the body. `tail` is appended inside `<w:body>` — see the return. */
-export function documentXml(doc: ChantDoc, tail = ''): string {
+export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): string {
   const paras: string[] = [];
   const p = (style: string | null, runs: string) =>
     `<w:p>${style === null ? '' : `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`}${runs}</w:p>`;
@@ -69,6 +87,55 @@ export function documentXml(doc: ChantDoc, tail = ''): string {
   let part: string | undefined;
   const prose = (style: string | null, rStyle: string | null, text: string): void => {
     if (text !== '') paras.push(p(style, run(text, rStyle)));
+  };
+
+  /* The shared library, so a `ref` draws the picture it points at rather than
+     nothing: the puja manual uses one anjali drawing at five steps. */
+  const library = new Map((doc.figures ?? []).map((f) => [f.id, f]));
+  /*
+   * A drawing's `docPr` id must be unique in the whole document — Word treats
+   * a repeated one as the same object in two places and the second loses its
+   * alternative text. Counted here rather than derived from a position,
+   * because the same figure may be drawn at five steps through `ref`.
+   */
+  let drawingId = 0;
+
+  /**
+   * One picture: the drawing, then its caption where the page puts it.
+   *
+   * A picture the document does not CARRY — the pūjā manual names 22 that live
+   * on the platform — writes its alternative text instead. The page draws a
+   * plate carrying the same words for the same reason: the alt text IS the
+   * instruction, and a reader who cannot see the drawing still needs it.
+   */
+  const picture = (fig: ChantFigure | undefined): void => {
+    if (fig === undefined) return;
+    drawingId += 1;
+    const at = fig.captionAt ?? FIGURE_DEFAULTS.captionAt;
+    const caption = at === 'none' ? undefined : fig.caption?.en;
+    /* Word's `Caption`, generated from the page's own `comment` role — see
+       `PARA_STYLE_OF`. A paragraph style rather than the `Comment` character
+       style a source line takes, because a caption has to be findable coming
+       back: one that merely looked like a caption came back as a direction. */
+    const cap = (): void => {
+      if (caption !== undefined && caption !== '') paras.push(p(styleOf('fig__cap'), run(caption, null)));
+    };
+    if (at === 'above') cap();
+    const drawing = pictures === undefined
+      ? null
+      : figureDrawing(fig, pictures.media.get(fig.src), drawingId, pictures.columnEmu);
+    if (drawing === null) {
+      paras.push(p(null, run(figurePlaceholderText(fig), 'Comment')));
+    } else {
+      /* Centred for an inline picture, which is what `margin-inline: auto`
+         does on the page. A floated one is positioned by the anchor itself and
+         its paragraph is only the thing it is anchored to. */
+      const flow = fig.flow ?? FIGURE_DEFAULTS.flow;
+      const centred = flow !== 'start' && flow !== 'end';
+      paras.push(`<w:p>${centred ? '<w:pPr><w:jc w:val="center"/></w:pPr>' : ''}`
+        + `<w:r>${drawing}</w:r></w:p>`);
+    }
+    if (at !== 'above') cap();
   };
 
   /**
@@ -218,12 +285,17 @@ export function documentXml(doc: ChantDoc, tail = ''): string {
         prose(styleOf('doc__instruction'), null, item.instruction.text.en ?? '');
         continue;
       }
+      if (item.t === 'figure') {
+        picture(item.figure ?? (item.ref === undefined ? undefined : library.get(item.ref)));
+        continue;
+      }
       if (item.t !== 'verse') continue;
       const runs = verseRuns(item.tokens);
       if (runs !== '') paras.push(p(styleOf('pada'), runs));
       for (const ins of item.instructions ?? []) {
         prose(styleOf('doc__instruction'), null, ins.text.en ?? '');
       }
+      for (const f of item.figures ?? []) picture(f);
       if (item.translation?.en !== undefined) {
         prose(styleOf('doc__translation'), null, item.translation.en);
       }
@@ -240,6 +312,11 @@ export function documentXml(doc: ChantDoc, tail = ''): string {
      OOXML requires as the last child of `<w:body>`. The body writer does not
      know what paper it is being printed on; `exportWord` does. */
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-    + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+    /* `r:` is what `<a:blip r:embed>` names a picture's bytes with. Declared
+       on the root whether or not the document has a picture, because a
+       namespace that appears only sometimes is a file that parses only
+       sometimes. */
+    + 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
     + `<w:body>${paras.join('')}${tail}</w:body></w:document>`;
 }

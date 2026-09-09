@@ -58,6 +58,19 @@ export const PARA_STYLE_OF: Readonly<Partial<Record<DocRole, string>>> = {
   translation: 'Prijevod',
   body: 'Normal',
   head: 'Header',
+  /*
+   * A PICTURE'S CAPTION IS WORD'S OWN `Caption`, set from the `comment` role —
+   * the same 11 pt italic grey the page draws it in, because a caption is
+   * apparatus exactly as a source note is.
+   *
+   * His file has no Caption style, and it has no pictures either; this is not
+   * a departure from his page but a place his page never went. A PARAGRAPH
+   * style rather than the `Comment` character style a source line takes,
+   * because a caption has to be findable coming back — one that merely looked
+   * like a caption was read as a direction — and because a Word user gets a
+   * real Caption, which is what "Insert Table of Figures" collects.
+   */
+  comment: 'Caption',
 };
 
 /** `#7f7f7f` as Word writes it. */

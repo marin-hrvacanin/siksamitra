@@ -61,6 +61,7 @@ export const DOC_ROLES: readonly DocRole[] = [
  *   our translation       → `translation` (Prijevod, 11 pt italic)
  *   our instructions      → `body`     (Normal, 11 pt)
  *   our source notes      → `comment`  (Comment, 11 pt italic grey)
+ *   a picture's caption   → `comment`  (Caption in Word, the same values)
  *   the paged running head→ `head`     (Header, 12 pt)
  *
  * `title` (Heading1, 24 pt) is a title page's heading and nothing renders it
@@ -74,6 +75,9 @@ export const ROLE_OF_ELEMENT = {
   'doc__translation': 'translation',
   'doc__instruction': 'body',
   'doc__source': 'comment',
+  /* A caption is apparatus, exactly like a source note, and is set in the same
+     role — see `figure.css`, which says so and takes its face from here. */
+  'fig__cap': 'comment',
   'page__head': 'head',
 } as const satisfies Readonly<Record<string, DocRole>>;
 

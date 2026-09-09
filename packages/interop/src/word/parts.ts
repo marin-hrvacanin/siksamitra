@@ -81,14 +81,38 @@ function relationships(rels: { id: string; type: string; target: string }[]): st
     + '</Relationships>';
 }
 
-export function contentTypes(): string {
+/**
+ * The media types a picture part may declare, by its file extension.
+ *
+ * A `.docx` with a `word/media/image1.png` and no `<Default Extension="png">`
+ * is a package Word opens with "unreadable content", so this list and
+ * `EXTENSIONS` in `drawing.ts` have to agree — they are the two halves of one
+ * decision, which is why the extension travels ON the media rather than being
+ * worked out twice.
+ */
+const MEDIA_TYPES: Record<string, string> = {
+  png: 'image/png',
+  jpeg: 'image/jpeg',
+  jpg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  avif: 'image/avif',
+};
+
+/** @param extensions the picture extensions the package actually contains. */
+export function contentTypes(extensions: readonly string[] = []): string {
   const wml = 'application/vnd.openxmlformats-officedocument.wordprocessingml';
   const over = (part: string, type: string): string =>
     `<Override PartName="/${part}" ContentType="${type}"/>`;
+  const media = [...new Set(extensions)].sort()
+    .filter((e) => MEDIA_TYPES[e] !== undefined)
+    .map((e) => `<Default Extension="${e}" ContentType="${MEDIA_TYPES[e]!}"/>`)
+    .join('');
   return `${XML_HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`
     + '<Default Extension="rels" '
     + 'ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
     + '<Default Extension="xml" ContentType="application/xml"/>'
+    + media
     + over(WORD_PARTS.document, `${wml}.document.main+xml`)
     + over(WORD_PARTS.styles, `${wml}.styles+xml`)
     + over(WORD_PARTS.settings, `${wml}.settings+xml`)
@@ -111,13 +135,26 @@ export function rootRels(): string {
   ]);
 }
 
-export function documentRels(): string {
+/**
+ * The first relationship id a picture may take.
+ *
+ * Three are spent below. Named rather than counted at the call site, because
+ * a picture whose `r:embed` names the styles part is a picture Word draws as
+ * an error frame and nothing in the file says why.
+ */
+export const FIRST_MEDIA_REL = 4;
+
+/** @param media the pictures in the package: their rel id and their target. */
+export function documentRels(
+  media: readonly { relId: string; target: string }[] = [],
+): string {
   return relationships([
     { id: 'rId1', type: `${OFFICE_REL}/styles`, target: 'styles.xml' },
     { id: 'rId2', type: `${OFFICE_REL}/settings`, target: 'settings.xml' },
     /* The relationship is what makes the custom part part of the DOCUMENT
        rather than loose in the zip. Without it Word has no reason to keep it. */
     { id: 'rId3', type: `${OFFICE_REL}/customXml`, target: '../customXml/item1.xml' },
+    ...media.map((m) => ({ id: m.relId, type: `${OFFICE_REL}/image`, target: m.target })),
   ]);
 }
 

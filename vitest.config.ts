@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import { resolve } from 'node:path';
+import { workspaceAliases } from './tools/workspace-alias.mjs';
 
 /**
  * Shared config for every tier. The tiers themselves are in
@@ -11,31 +11,18 @@ import { resolve } from 'node:path';
  * prior build.
  */
 
-const pkg = (name: string, entry = 'src/index.ts') =>
-  resolve(import.meta.dirname, 'packages', name, entry);
-
-const alias = {
-  '@siksamitra/format': pkg('format'),
-  '@siksamitra/engine': pkg('engine'),
-  '@siksamitra/interop': pkg('interop'),
-  '@siksamitra/storage': pkg('storage'),
-  '@siksamitra/layout': pkg('layout'),
-  '@siksamitra/edit': pkg('edit'),
-  '@siksamitra/audio': pkg('audio'),
-  '@siksamitra/account': pkg('account'),
-  '@siksamitra/tokens/word': pkg('tokens', 'src/word.ts'),
-  '@siksamitra/tokens/document-themes': pkg('tokens', 'src/document-themes.ts'),
-  '@siksamitra/tokens/document-type': pkg('tokens', 'src/document-type.ts'),
-  /* The Word exporter reads the export styles and the mark geometry; without
-     these two entries every test that touches `@siksamitra/interop` fails to
-     resolve, which says nothing about the test. */
-  '@siksamitra/tokens/export-styles': pkg('tokens', 'src/export-styles.ts'),
-  '@siksamitra/tokens/source': pkg('tokens', 'src/source.ts'),
-  '@siksamitra/tokens/fonts': pkg('tokens', 'src/fonts.ts'),
-  '@siksamitra/tokens': pkg('tokens', 'generated/tokens.ts'),
-  '@siksamitra/render/theme': pkg('render', 'src/theme/marks.ts'),
-  '@siksamitra/render': pkg('render'),
-};
+/*
+ * DERIVED FROM THE PACKAGES' OWN `exports` MAPS, not retyped.
+ *
+ * This was a fourth hand-written copy of a list the packages already publish,
+ * and it drifted the moment a new subpath appeared: adding
+ * `@siksamitra/tokens/figure` made nine test suites fail to load with "Cannot
+ * find module", which says nothing at all about the tests. `tools/
+ * workspace-alias.mjs` reads the maps and sorts longest-key-first, and the two
+ * vite configs already use it — see its header for what the drift cost last
+ * time.
+ */
+const alias = workspaceAliases();
 
 export default defineConfig({
   resolve: { alias },

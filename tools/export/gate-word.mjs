@@ -50,6 +50,7 @@ import { SCRIPTS, loadDoc } from './page.mjs';
 import { buildWord } from './word.mjs';
 import { packageProblems, stylesOf } from './docx-metrics.mjs';
 import { bodyDifferences, bodyShape, separatorDrift } from './word-body.mjs';
+import { pictureProblems } from './word-pictures.mjs';
 
 const CORPUS = 'corpus/chants';
 const OUT = 'artifacts/export';
@@ -322,6 +323,19 @@ if (!existsSync(HIS)) {
   if (mine.Svara?.color !== his.Svara?.color) {
     fail('Svara colour', `ours ${mine.Svara?.color}, his ${his.Svara?.color}`);
   }
+}
+
+/* ==========================================================================
+   6 · the pictures, in the part Word actually reads
+   ========================================================================== */
+console.log('\n── a picture, in the part Word reads\n');
+const pictures = await pictureProblems(
+  async (d) => (await buildWord(d, { style: 'veda-union', savedAt: FIXED })).bytes,
+);
+for (const p of pictures) problems.push(p);
+if (pictures.length === 0) {
+  console.log('  three pictures, one file       inline + two square-wrapped anchors');
+  console.log('  and back through importDocx    bytes, alt text, side and order');
 }
 
 /* A Word file the owner typed has the text and not the document, and saying so

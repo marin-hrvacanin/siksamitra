@@ -67,3 +67,47 @@ export const FIGURE = {
   "fig-drag-edge": "48px",
   "fig-drag-speed": "14px",
 } as const;
+
+/* ==========================================================================
+   The same widths, as a number — for the formats that cannot say "25 %"
+   ========================================================================== */
+
+/**
+ * How wide this picture is, in the same units as the column it stands in.
+ *
+ * DERIVED FROM THE TOKENS ABOVE, never restated. A `.docx` stores a picture's
+ * size in EMU and a PDF in points; neither has a percentage or a `clamp`, so
+ * each of them needs a number — and a number typed into an exporter is a
+ * second opinion about how wide `medium` is. Reading it out of the same table
+ * `figure.css` uses means a change here moves the picture on the page and in
+ * Word together, which is the whole reason the table exists.
+ *
+ * `widthPct` wins when the document has one: a picture whose corner somebody
+ * dragged has a width of its own, and the five steps are only the starting
+ * points.
+ *
+ * @param columnPx the column's width, in the unit you want the answer in.
+ * @param remPx    what 1 rem is worth in that unit. 16 for CSS pixels.
+ */
+export function figureWidth(
+  fig: { size?: string | undefined; widthPct?: number | undefined },
+  columnPx: number,
+  remPx = 16,
+): number {
+  if (fig.widthPct !== undefined) return (columnPx * fig.widthPct) / 100;
+  const value = (token: string): number => {
+    if (token.endsWith('%')) return (columnPx * parseFloat(token)) / 100;
+    if (token.endsWith('rem')) return parseFloat(token) * remPx;
+    return parseFloat(token);
+  };
+  const clamped = (base: string, lo: string, hi: string): number =>
+    Math.max(value(lo), Math.min(value(base), value(hi)));
+  switch (fig.size ?? 'medium') {
+    case 'thumb': return value(FIGURE['fig-thumb']);
+    case 'small': return clamped(FIGURE['fig-small'], FIGURE['fig-small-min'], FIGURE['fig-small-max']);
+    case 'large': return value(FIGURE['fig-large']);
+    case 'full': return value(FIGURE['fig-full']);
+    default:
+      return clamped(FIGURE['fig-medium'], FIGURE['fig-medium-min'], FIGURE['fig-medium-max']);
+  }
+}

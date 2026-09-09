@@ -1,0 +1,198 @@
+/**
+ * A PICTURE IN A `.docx` — the drawing, the bytes, and the wrap.
+ *
+ * WHY THIS WAS MISSING AND WHY THAT MATTERED. The Word export carries the
+ * whole document in a custom XML part, so a picture always survived a round
+ * trip through our own reader — and nothing showed in Word. A person inserts a
+ * photograph of a mudrā, exports to Word to send to somebody, and the picture
+ * is not in the file they send. The round trip being lossless made the loss
+ * invisible to every gate we had.
+ *
+ * THE BYTES GO IN THE PACKAGE, as `word/media/imageN.png`. That is where a
+ * `.docx` keeps a picture, and it is the one place Word will look. It is not a
+ * contradiction of `format/figure.ts`, which says a picture belongs INSIDE the
+ * document: a `.docx` is a container with somewhere to put bytes, our `.json`
+ * is not. The bytes are the same bytes; only the envelope differs.
+ *
+ * INLINE OR ANCHORED, from the figure's own `flow`:
+ *
+ *   block, aside   `wp:inline` — a picture in the run of text, centred by the
+ *                  paragraph. Word's "In line with text".
+ *   start, end     `wp:anchor` with `wp:wrapSquare` — Word's "Square" wrap,
+ *                  aligned to the left or right margin. The same two things
+ *                  the page does with `float`.
+ *
+ * HOW WIDE, from `@siksamitra/tokens/figure`. A `.docx` stores a size in EMU
+ * and has no percentage, so the five steps are resolved against the section's
+ * own content column — the one `sectPr` writes — rather than against a number
+ * typed in here. A picture is then the same fraction of the column in Word
+ * that it is on the page.
+ */
+import { figureWidth } from '@siksamitra/tokens/figure';
+import {
+  FIGURE_DEFAULTS, figureBytes, imageMediaType, isEmbeddedImage, type ChantFigure,
+} from '@siksamitra/format';
+import { fromBase64 } from '../base64.js';
+import { xmlEscape } from '../xml.js';
+
+/** English Metric Units in one inch — OOXML's unit for everything drawn. */
+export const EMU_PER_INCH = 914400;
+const EMU_PER_POINT = EMU_PER_INCH / 72;
+
+const DML = 'http://schemas.openxmlformats.org/drawingml/2006';
+const WP_NS = `${DML}/wordprocessingDrawing`;
+const A_NS = `${DML}/main`;
+const PIC_NS = `${DML}/picture`;
+
+/** The extension a media part gets, from the picture's own media type. */
+const EXTENSIONS: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpeg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/avif': 'avif',
+};
+
+/** One picture, as it goes into the package. */
+export interface WordMedia {
+  /** The part name, e.g. `word/media/image1.png`. */
+  readonly part: string;
+  /** The relationship id `<a:blip r:embed>` names. */
+  readonly relId: string;
+  /** What the relationship's `Target` says, relative to `word/`. */
+  readonly target: string;
+  readonly extension: string;
+  readonly bytes: Uint8Array;
+}
+
+/**
+ * The pictures a document carries, numbered, with their bytes decoded.
+ *
+ * KEYED BY THE BYTES, not by the figure's id. Three figure items may carry the
+ * same photograph — one drawing of the añjali mudrā used at five steps of the
+ * pūjā manual — and a package that stored it five times would be five times
+ * the size for nothing. Word does the same: one media part, five drawings
+ * pointing at it.
+ *
+ * A picture the document does NOT carry — the pūjā manual names 22 that live
+ * on the platform — has no bytes to write and is skipped here; `figureDrawing`
+ * then draws nothing for it and the body writes its alt text instead, which is
+ * what the page does too.
+ *
+ * The relationship ids start after the four `documentRels` already spends, and
+ * the numbering is by the order figures appear so that two exports of one
+ * document produce the same bytes.
+ */
+export function mediaFor(
+  figures: readonly ChantFigure[], firstRelId: number,
+): Map<string, WordMedia> {
+  const out = new Map<string, WordMedia>();
+  let n = 0;
+  for (const fig of figures) {
+    if (!isEmbeddedImage(fig.src)) continue;
+    const type = imageMediaType(fig.src);
+    const extension = type === null ? undefined : EXTENSIONS[type];
+    if (extension === undefined) continue;
+    if (out.has(fig.src)) continue;
+    n += 1;
+    const target = `media/image${n}.${extension}`;
+    out.set(fig.src, {
+      part: `word/${target}`,
+      target,
+      extension,
+      relId: `rId${firstRelId + n - 1}`,
+      bytes: fromBase64(fig.src.slice(fig.src.indexOf(',') + 1)),
+    });
+  }
+  return out;
+}
+
+/** How big the picture is drawn, in EMU, keeping its own aspect ratio. */
+function extent(fig: ChantFigure, columnEmu: number): { cx: number; cy: number } {
+  const cx = Math.round(figureWidth(fig, columnEmu, EMU_PER_POINT * 12));
+  /* The intrinsic ratio, which `figureFaults` requires a `crop: auto` figure to
+     carry. A figure with a fixed crop is drawn to that shape instead, exactly
+     as `figure.css` does with `aspect-ratio`. */
+  const crop = fig.crop ?? FIGURE_DEFAULTS.crop;
+  const ratio = crop === 'square' ? 1
+    : crop === 'portrait' ? 4 / 3
+      : crop === 'wide' ? 9 / 16
+        : fig.width !== undefined && fig.height !== undefined && fig.width > 0
+          ? fig.height / fig.width
+          : 3 / 4;
+  return { cx, cy: Math.round(cx * ratio) };
+}
+
+/** The `<a:graphic>` half, which is identical inline and anchored. */
+function graphic(fig: ChantFigure, media: WordMedia, id: number, cx: number, cy: number): string {
+  const name = xmlEscape(`Picture ${id}`);
+  const alt = xmlEscape(fig.alt);
+  return `<a:graphic xmlns:a="${A_NS}">`
+    + `<a:graphicData uri="${PIC_NS}">`
+    + `<pic:pic xmlns:pic="${PIC_NS}">`
+    + `<pic:nvPicPr><pic:cNvPr id="${id}" name="${name}" descr="${alt}"/>`
+    + '<pic:cNvPicPr><a:picLocks noChangeAspect="1"/></pic:cNvPicPr></pic:nvPicPr>'
+    + `<pic:blipFill><a:blip r:embed="${media.relId}"/>`
+    + '<a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+    + `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>`
+    + '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
+    + '</pic:pic></a:graphicData></a:graphic>';
+}
+
+/**
+ * One picture as a `<w:drawing>`, or `null` when the document has no bytes.
+ *
+ * `id` must be unique across the document: Word treats a repeated `docPr` id
+ * as one object in two places and the second one loses its alternative text.
+ */
+export function figureDrawing(
+  fig: ChantFigure,
+  media: WordMedia | undefined,
+  id: number,
+  columnEmu: number,
+): string | null {
+  if (media === undefined) return null;
+  const { cx, cy } = extent(fig, columnEmu);
+  const alt = xmlEscape(fig.alt);
+  const docPr = `<wp:docPr id="${id}" name="${xmlEscape(`Picture ${id}`)}" descr="${alt}"/>`
+    + '<wp:cNvGraphicFramePr>'
+    + `<a:graphicFrameLocks xmlns:a="${A_NS}" noChangeAspect="1"/></wp:cNvGraphicFramePr>`;
+  const size = `<wp:extent cx="${cx}" cy="${cy}"/>`
+    + '<wp:effectExtent l="0" t="0" r="0" b="0"/>';
+  const flow = fig.flow ?? FIGURE_DEFAULTS.flow;
+
+  if (flow !== 'start' && flow !== 'end') {
+    return `<w:drawing xmlns:wp="${WP_NS}">`
+      + '<wp:inline distT="0" distB="0" distL="0" distR="0">'
+      + size + docPr + graphic(fig, media, id, cx, cy)
+      + '</wp:inline></w:drawing>';
+  }
+
+  /*
+   * FLOATED, with square wrap. The gutter is on the TEXT side only — the same
+   * asymmetry `figure.css` gives a float, where the margin is a full gutter
+   * towards the text and nothing towards the margin.
+   */
+  const gutter = Math.round(EMU_PER_INCH / 8);
+  const align = flow === 'start' ? 'left' : 'right';
+  return `<w:drawing xmlns:wp="${WP_NS}">`
+    + `<wp:anchor distT="0" distB="0" distL="${flow === 'start' ? 0 : gutter}" `
+    + `distR="${flow === 'start' ? gutter : 0}" simplePos="0" relativeHeight="2" `
+    + 'behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">'
+    + '<wp:simplePos x="0" y="0"/>'
+    + `<wp:positionH relativeFrom="margin"><wp:align>${align}</wp:align></wp:positionH>`
+    + '<wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>'
+    + size
+    + '<wp:wrapSquare wrapText="bothSides"/>'
+    + docPr + graphic(fig, media, id, cx, cy)
+    + '</wp:anchor></w:drawing>';
+}
+
+/** What a picture the document does not carry says instead. Its alt text, as
+ *  the page draws it — not nothing, and not a broken frame. */
+export const figurePlaceholderText = (fig: ChantFigure): string =>
+  (fig.alt.trim() === '' ? '[picture]' : `[${fig.alt.trim()}]`);
+
+/** The decoded size of every picture written, for the export's own report. */
+export const mediaBytes = (figures: readonly ChantFigure[]): number =>
+  figures.reduce((n, f) => n + figureBytes(f.src), 0);

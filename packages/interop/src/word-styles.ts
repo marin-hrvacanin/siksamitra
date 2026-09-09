@@ -141,6 +141,7 @@ export type WordParaRole =
   | 'section'
   | 'step'
   | 'insert'
+  | 'caption'
   | 'prose'
   | 'drop';
 
@@ -158,6 +159,9 @@ export const WORD_PARA_STYLES: readonly WordParaStyle[] = [
   { id: 'Heading3', role: 'section', seen: 23 },
   { id: 'Heading4', role: 'step', seen: 42 },
   { id: 'Insert', role: 'insert', seen: 12, note: 'UNRESOLVED — candidate: an instruction' },
+  /* Word's own built-in, and what we write a picture's caption in. His file
+     has none — it has no pictures — so `seen` is absent rather than 0. */
+  { id: 'Caption', role: 'caption', note: "a picture's caption" },
   { id: 'Normal', role: 'prose' },
   { id: 'NormalWeb', role: 'prose' },
   // A table of contents is regenerable; running furniture is not content.

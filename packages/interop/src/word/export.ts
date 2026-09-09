@@ -24,15 +24,17 @@
  * gives the page exporter, and the parts in `parts.ts`.
  */
 import { zipSync, strToU8 } from 'fflate';
+import { figuresOf } from '@siksamitra/format';
 import { DEFAULT_PAGE, pageGeometry, type PageGeometry } from '@siksamitra/layout';
 import type { ExportStyle } from '@siksamitra/tokens/export-styles';
 import { documentThemeOf } from '@siksamitra/tokens/export-styles';
 import { documentXml } from './body.js';
 import { embedded, type EmbedInput } from '../embed.js';
 import {
-  contentTypes, coreProps, appProps, customProps, customXmlPart, documentRels, hiddenPayload,
-  itemProps, itemRels, rootRels, settings, WORD_PARTS,
+  contentTypes, coreProps, appProps, customProps, customXmlPart, documentRels, FIRST_MEDIA_REL,
+  hiddenPayload, itemProps, itemRels, rootRels, settings, WORD_PARTS,
 } from './parts.js';
+import { EMU_PER_INCH, mediaFor } from './drawing.js';
 import { WORD_FORMAT, WORD_VERSION } from './manifest.js';
 import { sectPr, stylesXml } from './styles.js';
 
@@ -74,11 +76,28 @@ export async function exportWord(input: WordExportInput): Promise<Uint8Array> {
   const theme = documentThemeOf(input.style);
 
   const tail = (input.fallback === 'hidden-text' ? hiddenPayload(item) : '') + sectPr(page);
+
+  /*
+   * THE PICTURES GO IN THE PACKAGE, as `word/media/…`.
+   *
+   * Until they did, a photograph inserted here survived a round trip through
+   * our own reader — it rides in the custom XML part with the rest of the
+   * document — and was simply absent from the file anybody was sent. The round
+   * trip being lossless is what made the loss invisible.
+   *
+   * The five width steps are fractions of the COLUMN, and a `.docx` has no
+   * percentages, so the column is measured here from the same sheet `sectPr`
+   * writes and handed to the body in EMU.
+   */
+  const media = mediaFor(figuresOf(input.doc).map((f) => f.figure), FIRST_MEDIA_REL);
+  const columnEmu = Math.round(
+    ((page.width - page.margins.left - page.margins.right) / 72) * EMU_PER_INCH,
+  );
   const parts: Record<string, Uint8Array> = {
-    [WORD_PARTS.contentTypes]: strToU8(contentTypes()),
+    [WORD_PARTS.contentTypes]: strToU8(contentTypes([...media.values()].map((m) => m.extension))),
     [WORD_PARTS.rootRels]: strToU8(rootRels()),
-    [WORD_PARTS.document]: strToU8(documentXml(input.doc, tail)),
-    [WORD_PARTS.documentRels]: strToU8(documentRels()),
+    [WORD_PARTS.document]: strToU8(documentXml(input.doc, tail, { media, columnEmu })),
+    [WORD_PARTS.documentRels]: strToU8(documentRels([...media.values()])),
     [WORD_PARTS.styles]: strToU8(stylesXml({
       theme, mode: input.style.mode, textStack: input.textStack, uiStack: input.uiStack,
     })),
@@ -90,5 +109,6 @@ export async function exportWord(input: WordExportInput): Promise<Uint8Array> {
     [WORD_PARTS.app]: strToU8(appProps(manifest)),
     [WORD_PARTS.custom]: strToU8(customProps(manifest)),
   };
+  for (const m of media.values()) parts[m.part] = m.bytes;
   return zipSync(parts, { level: 6, mtime: FIXED_MTIME });
 }

@@ -216,8 +216,19 @@ describe('every theme carries the whole scale', () => {
   });
 
   it('the stylesheet names a role for each document element', () => {
-    // The mapping is data, so the CSS can be checked against it.
-    const css = readFileSync('apps/web/src/styles/document.css', 'utf8');
+    /*
+     * The mapping is data, so the CSS can be checked against it.
+     *
+     * TWO STYLESHEETS, because a document element is styled wherever the ONE
+     * component that draws it lives: `document.css` sets the text of the page,
+     * and `figure.css` sets a picture — the render package owns that component
+     * so that a picture is the same picture in the editor, the reader and
+     * every export. A caption is a document element whose role is `comment`
+     * exactly as a source note's is, and reading only the first file said it
+     * was unstyled.
+     */
+    const css = readFileSync('apps/web/src/styles/document.css', 'utf8')
+      + readFileSync('packages/render/src/figure.css', 'utf8');
     for (const [element, role] of Object.entries(ROLE_OF_ELEMENT)) {
       if (element === 'page__head') continue; // the paged view's furniture.
       expect(css, `${element} → ${role}`).toContain(`.${element}`);

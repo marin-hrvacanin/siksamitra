@@ -13,7 +13,8 @@
     "./document-themes": "./src/document-themes.ts",
     "./document-type": "./src/document-type.ts",
     "./export-styles": "./src/export-styles.ts",
-    "./fonts": "./src/fonts.ts"
+    "./fonts": "./src/fonts.ts",
+    "./figure": "./src/figure.ts"
   },
   "files": [
     "generated",
