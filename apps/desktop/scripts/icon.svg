@@ -1,11 +1,67 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- The program's own mark: `श`, the first letter of śikṣā, on the bronze
-       accent. Not a document sheet and not a gradient — an identity. -->
-  <rect width="512" height="512" rx="96" fill="#f2f2f5"/>
-  <rect x="26" y="26" width="460" height="460" rx="74" fill="#ffffff"/>
-  <text x="256" y="366" font-family="Nirmala UI, Noto Serif Devanagari, serif"
-        font-size="330" text-anchor="middle" fill="#b8813d">श</text>
-  <!-- A short and a long holding box, the marks the program exists to draw. -->
-  <rect x="150" y="404" width="86" height="40" rx="5" fill="none" stroke="#10b981" stroke-width="9"/>
-  <rect x="272" y="404" width="86" height="40" rx="5" fill="none" stroke="#10b981" stroke-width="17"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="śikṣāmitra">
+  <!--
+    THE MARK: a seated figure, abstracted to three shapes — a halo, a head, and
+    a base that is both the crossed legs and the palm leaf the text sits on.
+
+    WHY THIS AND NOT A LETTER. The mark it replaced set `श` in Nirmala UI and
+    drew two rectangles beside it. Three faults: it was type, so it depended on
+    a Devanagari face being installed in whatever rasterised it; at 16px in a
+    tray the glyph and the two rectangles collapsed into a smudge; and a letter
+    in a white rounded square is the shape every application has.
+
+    Three shapes survive 16px. That is the whole constraint an icon has, and it
+    is why this is a silhouette rather than a picture: the reference images are
+    line drawings of a ṛṣi with fifty strokes, which is beautiful at 800px and
+    grey at sixteen.
+
+    FLAT, AND ONE HUE. No gradient, no glow, no glass — see the interface rules
+    in `openspec/config.yaml`. The depth comes from the halo being lighter than
+    the figure, which is a value difference rather than an effect.
+  -->
+  <defs>
+    <clipPath id="round">
+      <rect width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#round)">
+    <!-- The deep warm ink of the document themes. A light ground would vanish
+         on a light title bar, and this icon has to read on both. -->
+    <rect width="512" height="512" fill="#231803"/>
+
+    <!-- The halo. Thin, and open at the bottom where the figure meets it, so
+         it reads as light rather than as a ring drawn round a head. -->
+    <circle cx="256" cy="196" r="132" fill="none" stroke="#dcab63"
+            stroke-width="10" stroke-linecap="round" opacity="0.38"
+            stroke-dasharray="560 240" transform="rotate(-90 256 196)"/>
+
+    <!-- The head. -->
+    <circle cx="256" cy="176" r="62" fill="#d99a45"/>
+
+    <!--
+      The base: shoulders falling to crossed knees and a flat seat. One path,
+      all curves, symmetric — the figure is meditating, not moving, so nothing
+      here leans. The flat bottom doubles as the leaf of a manuscript.
+    -->
+    <path fill="#d99a45" d="
+      M 256 258
+      C 320 258, 360 306, 378 358
+      C 388 388, 404 400, 404 418
+      C 404 432, 392 440, 374 440
+      L 138 440
+      C 120 440, 108 432, 108 418
+      C 108 400, 124 388, 134 358
+      C 152 306, 192 258, 256 258
+      Z"/>
+
+    <!--
+      Two rules across the seat: the lines of text on the leaf. They disappear
+      below about 48px, which is correct — they are the meaning at a large size
+      and would be noise at a small one.
+    -->
+    <g fill="#231803" opacity="0.55">
+      <rect x="168" y="386" width="176" height="11" rx="5.5"/>
+      <rect x="196" y="412" width="120" height="11" rx="5.5"/>
+    </g>
+  </g>
 </svg>

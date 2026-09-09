@@ -85,3 +85,7 @@ dist-types/
 
 # Screenshots and measurements the tools write for us to look at.
 /artifacts/
+
+# The Lexical spike bundles itself; the bundle and its font are build products.
+/tools/spike-lexical/spike.js
+/tools/spike-lexical/*.woff2

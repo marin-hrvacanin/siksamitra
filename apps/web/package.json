@@ -10,6 +10,11 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@lexical/history": "^0.50.0",
+    "@lexical/react": "^0.50.0",
+    "@lexical/rich-text": "^0.50.0",
+    "@lexical/selection": "^0.50.0",
+    "@lexical/utils": "^0.50.0",
     "@siksamitra/account": "2.0.0-alpha.0",
     "@siksamitra/audio": "2.0.0-alpha.0",
     "@siksamitra/edit": "2.0.0-alpha.0",
@@ -21,6 +26,7 @@
     "@siksamitra/storage": "2.0.0-alpha.0",
     "@siksamitra/tokens": "2.0.0-alpha.0",
     "@tauri-apps/api": "^2.11.1",
+    "lexical": "^0.50.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

@@ -8,8 +8,8 @@ of the same letters.
 
 #### Scenario: The text is what was typed
 - **WHEN** a verse contains an anusvāra that the rules display as `n`
-- **THEN** the stored text contains `ṁ`
-- **AND** the displayed `n` exists only as a marking
+- **THEN** the stored text contains `n`, which is what is shown
+- **AND** a `was` marking over it carries the `ṁ` that was typed
 
 #### Scenario: Stripping the markings gives the typed text
 - **WHEN** every marking is removed from a verse
@@ -62,28 +62,27 @@ kind, value and origin SHALL be one marking.
 
 ### Requirement: A displayed letter is a stored marking a person may set
 
-A substitution SHALL be a marking carrying the letters to display in place of a
-range. It SHALL be settable and removable by hand, and SHALL NOT be recomputed
+A substitution SHALL be a marking carrying the letters that were REPLACED by the
+range it covers. It SHALL be settable and removable by hand, and SHALL NOT be recomputed
 except by an explicit re-run.
 
 #### Scenario: The engine records what it substituted
 - **WHEN** the rules display an anusvāra as `n`
-- **THEN** a `show` marking over that letter carries `n`
+- **THEN** the text holds `n` and a `was` marking over it carries `ṁ`
 - **AND** its origin is the engine
 
 #### Scenario: A person sets a display by hand
 - **WHEN** a letter is selected and shown as something else from the menu
-- **THEN** a `show` marking carries it with a hand origin
+- **THEN** a `was` marking carries it with a hand origin
 - **AND** no re-run in keep-hand mode replaces it
 
 #### Scenario: A substitution may change the number of letters shown
-- **WHEN** one letter is displayed as two
-- **THEN** the marking's range is one letter and its value is two characters
-- **AND** the text length is unchanged
+- **WHEN** one typed letter is displayed as two
+- **THEN** the marking covers the two shown letters and its value is the one typed
 
 #### Scenario: A substituted letter is never mistaken for a typed one
 - **WHEN** a visarga is displayed as `s`
-- **THEN** the text at that position is `ḥ`
+- **THEN** the letter carries a `was` marking holding `ḥ`
 - **AND** a reader can tell it from a typed `s` without heuristics
 
 ### Requirement: A document file is a compressed container

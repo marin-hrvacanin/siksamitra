@@ -10,13 +10,13 @@ displayed letter.
 - **WHEN** a verse is drawn twice from the same text and markings
 - **THEN** the two results are identical
 
-#### Scenario: Substitutions apply in stage order
-- **WHEN** two stages both replace what is shown over the same letters
-- **THEN** the later stage draws over the earlier one's result
+#### Scenario: The text is what is drawn
+- **WHEN** a verse carries substitutions from two stages
+- **THEN** the letters drawn are the text itself, with no substitution applied at draw time
 
 #### Scenario: Syllables are divided from the displayed letters
-- **WHEN** a substitution changes how many letters are shown
-- **THEN** the syllable division follows what is shown, not what is typed
+- **WHEN** a substitution has changed how many letters are shown
+- **THEN** the syllable division follows the text, which is what is shown
 
 ### Requirement: A box is drawn over a range, in every script
 

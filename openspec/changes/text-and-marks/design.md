@@ -30,10 +30,11 @@ interface Mark {
   rule?: string;
 }
 
-type Stage = 'sandhi' | 'show' | 'holdings' | 'svara' | 'aids';
+type Stage = 'sandhi' | 'change' | 'holdings' | 'svara' | 'aids';
 
 type MarkKind =
-  | 'show'      // display this range as `v` instead of what the text says
+  /** This range was typed as `v` and the rules replaced it. See below. */
+  | 'was'
   | 'hold'      // v: 'short' | 'long' | 'none'
   | 'svara'     // v: 'anudatta' | 'svarita' | 'dirgha-svarita'
   | 'candra'    // candrabindu on the range
@@ -64,16 +65,29 @@ UTF-16 units, so a surrogate pair cannot be split.
    'ṁ'`). Recoverable, but the text on disk is then the *displayed* text, so
    "give me the plain text" is a reconstruction, and every consumer must know to
    undo substitutions before reading.
-3. **Store the true letter in the text and the display as a mark.** ← chosen.
-   The text is always the typed text: reading it needs no knowledge of the
-   marking system at all. Stripping the marks is deleting a list. And because
-   the display is a mark, it can be hand-set, hand-removed, and stacked.
+3. **Store the true letter in the text and the display as a mark.** The text
+   would always be the typed text, and reading it would need no knowledge of
+   the marking system at all.
 
-Option 3 also makes an `s` that came from a visarga permanently distinguishable
-from a typed `s`, which today it is not: the letter on the page is `s` and only a
-`change: true` flag hints otherwise. Here the text says `ḥ`.
+**Option 2 is what ships, and the spike is why** — see "The one consequence"
+under the editing surface below. A flat text run is what makes Lexical's
+selection work, and a flat run means the DOM's text is the model's text: there
+is no way to show `n` over a stored `ṁ` and still have a click land where the
+person aimed. So the text holds what is displayed and the mark carries what it
+was.
 
-### Why `show` is one construct and not four
+Nothing that matters is lost by the inversion. Stripping the markings still
+gives the typed text exactly — replace each `was` range with its value — and it
+is still an exact recovery rather than a guess, which is the whole point. An `s`
+that came from a visarga is still permanently distinguishable from a typed `s`,
+because it carries the mark; today it is not, since the letter on the page is
+`s` and only a `change: true` flag hints otherwise. And the editor is WYSIWYG,
+which option 3 could not be without showing `ṁ` while editing.
+
+The kind is therefore named `was` rather than `show`, and its value is the
+letter it replaced.
+
+### Why `was` is one construct and not four
 
 The corpus carries 966 substituted letters: `m` 254, `ñ` 139, `ś` 112, `n` 104,
 `ṁ` 100, `s` 96, `ḥ` 69, `ṅ` 60, `r` 29, `:` 3. Today each is a `change: true`
@@ -82,26 +96,27 @@ flag on a unit, and the original is recovered by a lookup table that guesses
 guess happens to hold across this corpus. It is still a guess, and a rule that
 ever produces something outside the table fails silently.
 
-A `show` mark carries the replacement outright, so nothing is inferred. One
+A `was` mark carries the original outright, so nothing is inferred. One
 construct covers every case the notation has and the ones it does not have yet:
 
-| case | mark |
+| shown | mark |
 |---|---|
-| anusvāra before a dental | `show [4,5) = "n"` |
-| anusvāra before a sibilant (1 → 2 letters) | `show [4,5) = "gṁ"` |
-| visarga before `p` | `show [9,10) = "ḥ"` + `sup "f"` |
-| a future sandhi join (2 → 1) | `show [3,5) = "e"` |
+| anusvāra before a dental, shown `n` | `was [4,5) = "ṁ"` |
+| anusvāra before a sibilant, shown `gṁ` | `was [4,6) = "ṁ"` |
+| visarga before `p`, shown `ḥ` | `was [9,10) = "ḥ"` + `sup "f"` |
+| a future sandhi join, shown `e` | `was [3,4) = "a i"` |
 
-The range and the replacement have independent lengths, so a substitution may
-grow or shrink the visible text. Nothing else in the model needs to know.
+The range and the original have independent lengths, so a substitution may have
+grown or shrunk the text. Stripping is a replacement of the range by the value,
+and it composes: undo the latest stage first, then the one before it.
 
 ### Layers, which is what stages are for
 
 The owner's question: "maybe we will have layers… automatic sandhi and then on
 top of the sandhi (maybe few layers of sandhi) and on top of it changes".
 
-`stage` is that. Rendering applies every `show` mark in stage order, each stage
-seeing the output of the one before it. Re-running is per stage: "re-run
+`stage` is that. The text holds the outcome of every stage that has run;
+each stage's `was` marks are what undo it, latest first. Re-running is per stage: "re-run
 `sandhi` over this selection" discards that stage's `rule` marks in the range,
 runs the pass, and writes new ones. Marks of other stages are untouched, and
 hand marks are untouched unless the caller asks for `replace`.
@@ -169,8 +184,8 @@ One pass, and nothing it produces is stored.
 
 ```
 text + marks
-  → apply `show` marks by stage           → the displayed characters
-  → syllabify the displayed characters    → syllables
+  → the text IS the displayed characters  → nothing to apply
+  → syllabify them                        → syllables
   → place hold/svara/candra/sbhakti/sup   → marks on letters
   → transliterate per script              → the written forms
   → draw
@@ -268,6 +283,77 @@ real disagreement between the two copies, and finding them is worth doing before
 one of them is deleted.
 
 ## The editing surface
+
+**It is Lexical.** Meta's editor framework, with its React bindings. The
+`contenteditable` seam — `beforeinput` normalisation, selection across blocks,
+IME composition, undo, the clipboard, a reconciler that does not repaint the
+world — is where every serious defect came from, and it is a solved problem
+that this project should not be solving. The standing rule from the owner: look
+for the battle-tested implementation first, and build on top of it.
+
+**Lexical is the surface. It is never the format.** Storing an editor's internal
+state as the document is v1's fatal mistake — Quill `innerHTML`, four places
+producing marks, no arbiter — and it is the reason v2 exists. The document is
+`text` + `marks`; one adapter maps between them.
+
+### What the spike settled
+
+`tools/spike-lexical` is the spike, and it was run rather than reasoned about.
+
+**A custom node emitting this program's existing markup does not work.** A
+`TextNode` subclass that drew a `.syl` per syllable and a `.u` per letter
+survived the reconciler and then failed everything that matters: a click on the
+sixth letter reported offset 1, and typing two characters turned `sunavāma` into
+`YsX`. Lexical maps a DOM position to a model offset through the node's own text
+node, and there is none when every letter is wrapped.
+
+**Flat runs work, and work better than what they replace.** One element per
+marked range, the text flat inside it. Measured in the browser:
+
+| | |
+|---|---|
+| a marked range is one run | `"su" "navā" "ma " "क्ष्मी"` |
+| a click maps to the right offset | clicked `v`, model says offset 2 |
+| typing reaches the model and returns | `sunaXYvāma क्ष्मी` |
+| applying a holding splits the run | `"su":hold-short "naXYvā":hold-long` |
+| the box is one rectangle | 1 client rect |
+| the Devanāgarī conjunct still shapes | 48.7px against 81.7px with `akhn`, `half`, `vatu`, `cjct` off — 40% narrower |
+
+Two things this buys that the hand-written surface could not. **One box over a
+whole range, crossing spaces, for free** — Lexical splits text at every format
+boundary, so a marked range is naturally one element, and the box-per-syllable
+problem and the CSS that joins the pieces back together both disappear. And
+**bold's semantics for free**, because splitting runs at a selection's edges is
+what `formatText` already does.
+
+### The one consequence: which side the substitution records
+
+A flat run means the DOM's text is the node's text. So the editable text is
+what is DISPLAYED, and a substitution cannot show `n` over a stored `ṁ`.
+
+The model therefore records the substitution the other way round: **the text
+holds the displayed letter, and the mark carries what it was.**
+
+```
+text:  … s a n   t a …
+mark:  { k: 'was', from: 4, to: 5, v: 'ṁ', by: 'rule' }
+```
+
+Every property asked for survives, and none of them depends on which side the
+mark sits:
+
+- one text, no second copy;
+- stripping the markings gives the typed text **exactly** — replace each `was`
+  range with its value, no guessing and no lookup table;
+- an `s` that came from a visarga can never be read as a typed `s`, because it
+  carries the mark;
+- a person can set or remove one by hand;
+- and now the editor is WYSIWYG, which the other way round it could not be
+  without showing `ṁ` while editing and `n` only in the reader.
+
+That is why the model above names the kind `was`.
+
+
 
 **Typing produces text.** Nothing else. No rule runs, no mark appears, no verse
 is re-derived. A newly typed document is plain until somebody asks for marks.

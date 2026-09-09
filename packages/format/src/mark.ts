@@ -25,11 +25,21 @@
  */
 
 /** The passes that produce markings. A pass is re-run as a unit. */
-export type Stage = 'sandhi' | 'show' | 'holdings' | 'svara' | 'aids';
+export type Stage = 'sandhi' | 'change' | 'holdings' | 'svara' | 'aids';
 
 export type MarkKind =
-  /** Display this range as `v` instead of the letters underneath. */
-  | 'show'
+  /**
+   * This range was typed as `v`, and a rule replaced it with what is there.
+   *
+   * The text holds what is SHOWN — `n` where an anusvāra was — and this mark
+   * carries what it was. That direction rather than the other because the
+   * editing surface is Lexical and a flat text run is what makes its selection
+   * work: the DOM's text is the model's text, so there is no showing `n` over a
+   * stored `ṁ`. Nothing is lost by it — stripping the markings replaces each
+   * range by its value and recovers the typed text exactly, with no lookup
+   * table and no guess, which is the whole reason the mark exists.
+   */
+  | 'was'
   /** A holding box. `v`: `short` | `long` | `none`. */
   | 'hold'
   /** `v`: `anudatta` | `svarita` | `dirgha-svarita`. */
@@ -45,7 +55,7 @@ export type MarkKind =
 
 /** Which pass owns which kind, when the caller does not say. */
 export const STAGE_OF: Readonly<Record<MarkKind, Stage>> = {
-  show: 'show',
+  was: 'change',
   hold: 'holdings',
   svara: 'svara',
   candra: 'aids',
