@@ -13,7 +13,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { gzipSync, brotliCompressSync, constants } from 'node:zlib';
 import { join } from 'node:path';
-import { normalizeChantDoc } from '../packages/format/src/chant-select.ts';
+import { openChantDoc } from '../packages/engine/src/open-doc.ts';
 
 const DIR = 'corpus/chants';
 
@@ -132,7 +132,7 @@ const rows = [];
 
 for (const f of (await readdir(DIR)).filter((x) => x.endsWith('.json')).sort()) {
   const onDisk = (await stat(join(DIR, f))).size;
-  const doc = normalizeChantDoc(JSON.parse(await readFile(join(DIR, f), 'utf8')));
+  const doc = openChantDoc(JSON.parse(await readFile(join(DIR, f), 'utf8')));
   const b = breakdown(doc);
   for (const k of Object.keys(totals)) totals[k] += b[k];
 

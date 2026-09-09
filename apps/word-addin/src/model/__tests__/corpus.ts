@@ -9,7 +9,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { ChantDoc, ChantVerse } from '@siksamitra/format';
-import { normalizeChantDoc } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 
 const DIR = fileURLToPath(new URL('../../../../../corpus/chants/', import.meta.url));
 
@@ -21,7 +21,7 @@ export interface CorpusVerse {
 export function corpusVerses(): CorpusVerse[] {
   const out: CorpusVerse[] = [];
   for (const file of readdirSync(DIR).filter((f) => f.endsWith('.json'))) {
-    const doc: ChantDoc = normalizeChantDoc(JSON.parse(readFileSync(DIR + file, 'utf8')));
+    const doc: ChantDoc = openChantDoc(JSON.parse(readFileSync(DIR + file, 'utf8')));
     for (const s of doc.sections) for (const verse of s.verses) out.push({ doc: file, verse });
   }
   return out;

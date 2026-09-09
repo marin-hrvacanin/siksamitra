@@ -20,7 +20,8 @@
  */
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { LIMITS, entryNameProblem, formatBytes } from './entry-name.js';
-import { canonicalJson, normalizeChantDoc } from '@siksamitra/format';
+import { writeChantFile } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import type { ChantDoc } from '@siksamitra/format';
 
 export const PACKAGE_FORMAT = 'vedaunion.chant.package';
@@ -47,7 +48,7 @@ export interface ChantPackageManifest {
    *  parsing the document. */
   profile?: unknown;
   createdAt: string;
-  /** `sha256(canonicalJson(document))`, lower-case hex. The one integrity
+  /** `sha256(writeChantFile(document))`, lower-case hex. The one integrity
    *  check: a package whose document does not hash to this has been edited
    *  outside the tools. */
   docHash: string;
@@ -75,11 +76,13 @@ export interface PackOptions {
   /**
    * The exact bytes to store as `document.json`.
    *
-   * Pass the file's own bytes when packaging a document that already exists:
-   * `normalizeChantDoc` fills `items` from `verses`, so serialising a
-   * round-tripped document writes every verse twice and a 122 KB file becomes
-   * 210 KB. The spec's requirement is that `document.json` be *the same bytes
-   * the web serves*, and only the caller knows what those are.
+   * Pass the file's own bytes when packaging a document that already exists on
+   * disk, so the package carries what that file says byte for byte. Omitted,
+   * `documentBytes` above writes it, which is the same thing for any document
+   * the program itself produced.
+   *
+   * It used to be the only way to avoid writing every verse twice; that is now
+   * a property of `writeChantFile` rather than of who calls it.
    */
   documentBytes?: Uint8Array;
   source?: Record<string, string>;
@@ -97,10 +100,20 @@ export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** The exact bytes of a document inside a package — and the bytes the web
- *  serves. One definition, so `docHash` means the same thing everywhere. */
+/**
+ * The exact bytes of a document inside a package — and the bytes the web
+ * serves. One definition, so `docHash` means the same thing everywhere.
+ *
+ * THROUGH `writeChantFile`, which is the function that decides what a
+ * document's bytes are. Calling `canonicalJson` here wrote the derived arrays
+ * too, and worse: it wrote each verse's STORED `text` beside its freshly
+ * edited tokens. An edit followed by a pack and an unpack came back carrying
+ * the markings the verse had before the edit — the document said one thing in
+ * its text and another in its syllables, and the round-trip test caught it
+ * only because the two are now compared as stored bytes.
+ */
 export function documentBytes(doc: ChantDoc): Uint8Array {
-  return strToU8(`${canonicalJson(doc)}\n`);
+  return strToU8(`${writeChantFile(doc)}\n`);
 }
 
 export async function pack(doc: ChantDoc, opts: PackOptions): Promise<Uint8Array> {
@@ -228,7 +241,7 @@ export async function unpack(bytes: Uint8Array): Promise<ChantPackage> {
   }
   let doc: ChantDoc;
   try {
-    doc = normalizeChantDoc(JSON.parse(strFromU8(docBytes)) as ChantDoc);
+    doc = openChantDoc(JSON.parse(strFromU8(docBytes)) as ChantDoc);
   } catch {
     throw new PackageError('document.json is not a chant document');
   }

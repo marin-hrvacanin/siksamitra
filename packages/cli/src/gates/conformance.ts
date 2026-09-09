@@ -33,6 +33,7 @@ import {
   holdingSpans, isAttested, recitationText, resolveSource, syllableCount,
   type ChantDoc, type ChantScriptKey, type HoldingSpan,
 } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 
 const DIR = 'corpus/conformance';
 const CONTRACT = 4;
@@ -85,9 +86,14 @@ for (const file of files) {
     if (a !== b) problems.push(`${what}\n           got  ${a}\n           want ${b}`);
   };
 
-  // Read the document exactly as an application would — through the reader,
-  // not by looking at the JSON.
-  const doc = fx.document;
+  /*
+   * Read the document exactly as an application would — through the reader,
+   * not by looking at the JSON. That is now literal: a fixture holds the
+   * STORED shape, so its sections carry `items` and no `verses`, and its
+   * verses carry text and markings and no tokens. Reading `fx.document`
+   * directly saw a section with no verses at all.
+   */
+  const doc = openChantDoc(fx.document);
   const section = doc.sections[0];
   const verse = section?.verses[0];
 

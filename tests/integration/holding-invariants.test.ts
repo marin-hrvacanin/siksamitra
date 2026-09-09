@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { normalizeChantDoc, type ChantDoc, holdingSpans, syllablesOf, type ChantToken } from '@siksamitra/format';
-import { DEFAULT_PROFILE, derive, resolveProfile } from '@siksamitra/engine';
+import { openChantDoc, DEFAULT_PROFILE, derive, resolveProfile  } from '@siksamitra/engine';
 
 const CORPUS = 'corpus/chants';
 const profile = resolveProfile([{ preset: 'taittiriya' }]) ?? DEFAULT_PROFILE;
@@ -31,7 +31,7 @@ function corpusVerses(): { where: string; tokens: ChantToken[] }[] {
   const out: { where: string; tokens: ChantToken[] }[] = [];
   for (const file of readdirSync(CORPUS).filter((f) => f.endsWith('.json')).sort()) {
     /* NORMALISED: a composed section keeps its verses in `items` on disk. */
-    const doc = normalizeChantDoc(
+    const doc = openChantDoc(
       JSON.parse(readFileSync(join(CORPUS, file), 'utf8')) as ChantDoc,
     );
     for (const s of doc.sections) {

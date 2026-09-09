@@ -12,6 +12,7 @@
 import type { ChantProfileRef } from './profile-ref.js';
 import type { ChantBreakPolicy, ChantToken, ChantWordGram } from './chant-tokens.js';
 import type { ChantFigure, ChantInstruction } from './chant-parts.js';
+import type { StoredMark } from './mark-codec.js';
 
 /* ==========================================================================
    Format v4 — the regenerability layer
@@ -97,7 +98,45 @@ export interface ChantVerse {
   id: string;
   n?: string | null;
   audioId?: string;
+  /**
+   * The syllables, as everything currently draws and edits them.
+   *
+   * DERIVED, AND NEVER WRITTEN TO DISK. A verse is one text and a list of
+   * markings (`openspec/changes/text-and-marks`); tokens are that expanded
+   * into a syllable per akṣara with a mark on each letter, which costs 45% of
+   * the file and is reproducible from the two fields below. `writeChantFile`
+   * omits them and `openChantDoc` in `@siksamitra/edit` fills them back in —
+   * there rather than here because rebuilding them needs the engine's
+   * syllabification and transliteration, and this package has no dependencies.
+   *
+   * Still REQUIRED on the in-memory verse, so the hundred-odd places that read
+   * it keep compiling while they are moved over one at a time. It goes when
+   * the last of them has (§10.1).
+   */
   tokens: ChantToken[];
+  /**
+   * THE TEXT, as it is read aloud and as it is displayed.
+   *
+   * The truth about this verse, with `marks` beside it. A letter the rules
+   * replaced appears here as what is SHOWN and carries a `was` marking with
+   * what it replaced — that direction, rather than storing the underlying
+   * letter and substituting at render time, because the editing surface is
+   * Lexical and its selection maps a DOM position through a real text node.
+   * Nothing is lost: replacing each `was` range by its value recovers the
+   * typed text exactly.
+   *
+   * Optional only for the moment: a document written before this field existed
+   * still opens, and `toTextAndMarks` fills it from the tokens.
+   */
+  text?: string;
+  /**
+   * The markings over `text`, in their stored form — see `mark-codec.ts`.
+   *
+   * Tuples rather than objects, and the derived fields left out, because there
+   * are 11,582 of them in Śrī Rudram alone and the difference is 376.7 kB
+   * against 120.6 kB.
+   */
+  marks?: StoredMark[];
   translation?: { en: string };
   /** Where THIS mantra's words come from, when that is not the whole section's
    *  source: a step may hold three mantras from three different loci. Rendered

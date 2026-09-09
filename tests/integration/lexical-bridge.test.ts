@@ -20,6 +20,7 @@ import { $getRoot } from 'lexical';
 import { normalizeChantDoc, toTextAndMarks, type Mark } from '@siksamitra/format';
 import { MarkedTextNode } from '../../apps/web/src/editor/lexical/MarkedText.js';
 import { $paragraphsOf, $verseOf, pointMarks } from '../../apps/web/src/editor/lexical/bridge.js';
+import { openChantDoc } from '@siksamitra/engine';
 
 const DIR = 'corpus/chants';
 
@@ -57,7 +58,7 @@ describe('a verse survives the editor', () => {
     const wrong: string[] = [];
 
     for (const file of files) {
-      const doc = normalizeChantDoc(JSON.parse(readFileSync(join(DIR, file), 'utf8')));
+      const doc = openChantDoc(JSON.parse(readFileSync(join(DIR, file), 'utf8')));
       for (const section of doc.sections) {
         for (const verse of section.verses) {
           if (verse.tokens === undefined) continue;

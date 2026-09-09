@@ -28,7 +28,8 @@ import { join } from 'node:path';
 import { PNG } from 'pngjs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement, Fragment } from 'react';
-import { normalizeChantDoc, toTextAndMarks } from '@siksamitra/format';
+import { toTextAndMarks } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import { renderSyl, toLines, toRuns, renderRunLine } from '@siksamitra/render';
 import { appCss } from './export/css.mjs';
 import { browserPath, withBrowser } from './export/raster.mjs';
@@ -121,7 +122,7 @@ await withBrowser(async (browser) => {
   await page.setViewport({ width: 1200, height: 600, deviceScaleFactor: 2 });
 
   for (const file of files) {
-    const doc = normalizeChantDoc(JSON.parse(await readFile(join(DIR, file), 'utf8')));
+    const doc = openChantDoc(JSON.parse(await readFile(join(DIR, file), 'utf8')));
     const verse = doc.sections.flatMap((s) => s.verses).find((v) => v?.tokens?.length > 0);
     if (verse === undefined) continue;
     const script = doc.primaryScript === 'devanagari' ? 'deva' : 'iast';

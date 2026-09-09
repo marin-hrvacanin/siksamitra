@@ -10,10 +10,34 @@
  *
  * A difference is REPORTED WITH ITS SHAPE — which token, which field, what it
  * was and what came back — because "97% match" tells nobody what to fix.
+ *
+ * WHAT IT COMPARES AGAINST, NOW THAT THE CORPUS HAS MOVED. It used to start
+ * from the tokens the documents shipped with, which made it a fidelity check
+ * against the owner's published files. Those tokens are no longer stored — a
+ * verse is text and markings and its syllables are rebuilt on open — so what
+ * this measures today is that the conversion is a FIXPOINT: the tokens a
+ * document opens with convert to the markings it carries and back to the same
+ * tokens. That is a real property and it fails if the conversion drops
+ * anything, but it is weaker than what it replaced, and the difference is
+ * worth knowing.
+ *
+ * TWO OTHER THINGS COVER WHAT IT NO LONGER CAN:
+ *
+ *   `check:source` re-derives 420 of the 573 verses from `src.lines` through
+ *   the engine — a path that shares no code with this one — and compares them
+ *   to the stored tokens. 420 of 420 reproduce.
+ *
+ *   The migration itself compared every verse against the shipped tokens
+ *   before overwriting them, using `holdingSpans` for the boxes and a
+ *   field-by-field comparison for the rest. 573 verses: every box in the same
+ *   place, every letter identical, and 215 Tamil syllables changed on purpose
+ *   (see `packages/cli/src/gates/transliteration.ts`). That run is the record
+ *   that nothing was lost on the way in.
  */
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { toTextAndMarks, toTokens, normalizeChantDoc, assertMarks } from '@siksamitra/format';
+import { toTextAndMarks, toTokens, assertMarks } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import { DIGRAPHS } from '@siksamitra/engine';
 
 /**
@@ -141,7 +165,7 @@ const faults = [];
 const rows = [];
 
 for (const file of (await readdir(DIR)).filter((f) => f.endsWith('.json')).sort()) {
-  const doc = normalizeChantDoc(JSON.parse(await readFile(join(DIR, file), 'utf8')));
+  const doc = openChantDoc(JSON.parse(await readFile(join(DIR, file), 'utf8')));
   let ok = 0;
   let bad = 0;
   for (const section of doc.sections) {

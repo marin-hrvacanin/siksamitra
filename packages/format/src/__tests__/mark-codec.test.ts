@@ -6,14 +6,13 @@
  * marking it built itself would prove only that the two functions agree with
  * each other, so the corpus is the oracle here: every marking of all 573
  * verses goes out and comes back, and the check is against the marking as the
- * migration produced it, which the codec had no part in making.
+ * file itself carries, which the codec had no part in producing.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { STAGE_OF, mark, type Mark } from '../mark.js';
 import { decodeMark, decodeMarks, encodeMark, encodeMarks } from '../mark-codec.js';
-import { toTextAndMarks } from '../migrate.js';
 import { normalizeChantDoc } from '../chant-select.js';
 import type { ChantDoc } from '../chant-structure.js';
 
@@ -74,25 +73,29 @@ describe('every marking in the corpus', () => {
   });
 
   for (const file of files) {
-    it(`${file} survives the stored form exactly`, () => {
+    it(`${file} decodes and re-encodes to the same bytes`, () => {
       const doc = normalizeChantDoc(
         JSON.parse(readFileSync(join(CORPUS, file), 'utf8')) as ChantDoc,
       );
       let seen = 0;
       for (const section of doc.sections) {
         for (const verse of section.verses) {
-          const { marks } = toTextAndMarks(verse);
-          seen += marks.length;
-          /* Sorted on the way out, so compare against the same order rather
-             than against the list's incidental one. */
-          const want = encodeMarks(marks).map(decodeMark);
-          expect(decodeMarks(encodeMarks(marks)), `${file} ${verse.id}`).toEqual(want);
-          expect(decodeMarks(encodeMarks(marks)).length).toBe(marks.length);
+          const stored = verse.marks ?? [];
+          if (stored.length === 0) continue;
+          seen += stored.length;
+          /*
+           * THE FILE IS THE ORACLE. These bytes were written by the migration
+           * and are what the program will read for the life of the document;
+           * a codec that cannot return them unchanged has lost something,
+           * whatever it does with a marking the test built itself.
+           */
+          expect(JSON.stringify(encodeMarks(decodeMarks(stored))), `${file} ${verse.id}`)
+            .toBe(JSON.stringify(stored));
         }
       }
       /* A document whose verses all had no markings would pass every
          assertion above without exercising anything. */
-      expect(seen, `${file} produced no markings to check`).toBeGreaterThan(0);
+      expect(seen, `${file} carries no markings to check`).toBeGreaterThan(0);
     });
   }
 });

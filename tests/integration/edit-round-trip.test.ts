@@ -20,18 +20,19 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { canonicalJson, normalizeChantDoc, syllableCount } from '@siksamitra/format';
+import { canonicalJson, syllableCount, writeChantFile } from '@siksamitra/format';
 import type { ChantDoc } from '@siksamitra/format';
 import {
   apply, emptyHistory, flatten, holdingProblems, newState, offsetOf, redo,
   sourcesOf, undo,
 } from '@siksamitra/edit';
 import { pack, readManifest, unpack } from '@siksamitra/interop';
+import { openChantDoc } from '@siksamitra/engine';
 
 const DIR = join(process.cwd(), 'corpus', 'chants');
 const files = readdirSync(DIR).filter((f) => f.endsWith('.json'));
 const read = (f: string): ChantDoc =>
-  normalizeChantDoc(JSON.parse(readFileSync(join(DIR, f), 'utf8')) as ChantDoc);
+  openChantDoc(JSON.parse(readFileSync(join(DIR, f), 'utf8')) as ChantDoc);
 
 /** The first section holding a verse the editor may actually edit. */
 function editable(doc: ChantDoc): { sectionId: string; verseId: string } | null {
@@ -221,7 +222,15 @@ describe('through the interchange format', () => {
 
     const packed = await pack(state.doc, { slug: 'sri-rudram', engine: 'test' });
     const back = await unpack(packed);
-    expect(canonicalJson(back.doc)).toBe(canonicalJson(state.doc));
+    /*
+     * THE STORED BYTES, not the object graph. A document's identity is what
+     * `writeChantFile` produces (docs/INTERCHANGE.md §9), and the tokens are
+     * no longer part of it — they are rebuilt on open. Comparing the graphs
+     * compares `hg`, the holding-group id, which is renumbered by whichever
+     * pass built the syllables and means nothing beyond which letters share a
+     * box. `check:migrate` is what checks that partition survives.
+     */
+    expect(writeChantFile(back.doc)).toBe(writeChantFile(state.doc));
     expect(back.doc.overrides).toEqual(state.doc.overrides);
     expect(
       back.doc.sections.reduce(

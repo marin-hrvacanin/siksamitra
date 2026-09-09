@@ -31,6 +31,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@siksamitra/engine": "2.0.0-alpha.0",
     "@siksamitra/format": "2.0.0-alpha.0",
     "zod": "^3.24.1"
   },

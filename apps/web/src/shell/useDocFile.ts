@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
 import { blankChantDoc, readChantFile, writeChantFile } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import { emptyHistory } from '@siksamitra/edit';
 import { useSession, type Session } from '../editor/useSession.js';
 import { host, windowControls } from './host.js';
@@ -111,9 +112,21 @@ export function useDocFile(onNote: (message: string) => void): DocFile {
     if (live.current === null) setError(message); else onNote(message);
   }, [onNote]);
 
-  /** Put a document on screen; its history starts clean. */
+  /**
+   * Take on a document — and OPEN it here, not at each of the four callers.
+   *
+   * A stored verse is text and markings; its syllables are rebuilt by
+   * `openChantDoc`. `readChantFile` cannot do that (it is in `format`, which
+   * has no engine), so a document that reached the window straight from the
+   * reader had no tokens at all and every view drew nothing. Doing it at the
+   * one place every route passes through is what stops the next route
+   * forgetting.
+   *
+   * A blank document and one built in memory go through it too: opening an
+   * already-open document is a no-op, so there is no branch to get wrong.
+   */
   const install = useCallback((next: Open) => {
-    setOpen(next);
+    setOpen({ ...next, doc: openChantDoc(next.doc) });
     setSaved(START);
     setError(null);
   }, []);

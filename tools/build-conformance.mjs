@@ -38,7 +38,8 @@ import { join } from 'node:path';
 import {
   holdingSpans, isAttested, recitationText, resolveSource, syllableCount,
 } from '../packages/format/src/text.ts';
-import { normalizeChantDoc } from '../packages/format/src/chant-select.ts';
+import { openChantDoc } from '../packages/engine/src/open-doc.ts';
+import { writeChantFile } from '../packages/format/src/chant-file.ts';
 
 const CORPUS = 'corpus/chants';
 const OUT = 'corpus/conformance';
@@ -108,9 +109,9 @@ const CONSTRUCTS = [
 const docs = readdirSync(CORPUS).filter((f) => f.endsWith('.json')).sort()
   .map((f) => ({
     slug: f.replace(/\.json$/, ''),
-    /* NORMALISED: `verses` is rebuilt from `items`, which is where a composed
-       section stores them — a raw read would see empty sections. */
-    doc: normalizeChantDoc(JSON.parse(readFileSync(join(CORPUS, f), 'utf8'))),
+    /* OPENED: `verses` is rebuilt from `items`, and the tokens from the text and
+       markings — a raw read would see empty sections and no syllables. */
+    doc: openChantDoc(JSON.parse(readFileSync(join(CORPUS, f), 'utf8'))),
   }));
 
 /**
@@ -136,7 +137,14 @@ function pruneTo(doc, sectionId, verseId) {
       }),
     }],
   };
-  return { pruned, section, verse };
+  /*
+   * AS A FILE HOLDS IT. The fixture states what an implementation must read,
+   * and what it reads is the stored shape: text and markings, no tokens, no
+   * second copy of the verse. Embedding the OPENED document put both in —
+   * every syllable expanded beside the markings it was rebuilt from — and grew
+   * the fixtures by 400 kB of the same duplication the format exists to avoid.
+   */
+  return { pruned: JSON.parse(writeChantFile(pruned)), section, verse };
 }
 
 const fixtures = [];

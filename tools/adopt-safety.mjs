@@ -15,7 +15,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { apply, emptyHistory, newState } from '@siksamitra/edit';
-import { normalizeChantDoc } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 
 const DIR = 'corpus/chants';
 
@@ -46,7 +46,7 @@ let refused = 0;
 const damaged = [];
 
 for (const file of (await readdir(DIR)).filter((f) => f.endsWith('.json')).sort()) {
-  const doc = normalizeChantDoc(JSON.parse(await readFile(join(DIR, file), 'utf8')));
+  const doc = openChantDoc(JSON.parse(await readFile(join(DIR, file), 'utf8')));
   for (const section of doc.sections) {
     for (const verse of section.verses) {
       if (verse.src !== undefined) continue;

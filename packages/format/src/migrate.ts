@@ -205,8 +205,16 @@ interface LetterMarks {
  * `{"c":"bh"}` came back `{"c":"b"}` in 573 of 573 verses.
  */
 export interface TokenHelp {
-  /** The other scripts for one syllable's IAST. */
-  spell: (iast: string) => Omit<ChantSyllable, 't' | 'units' | 'iast'>;
+  /**
+   * The other scripts for one syllable.
+   *
+   * The UNITS come too, because that is what a real transliterator reads —
+   * `transliterateSyllable` works from the letters and their marks, not from a
+   * reassembled IAST string. The audit tool's speller looks the syllable up by
+   * its IAST instead and ignores the second argument, which is why both fit
+   * behind one signature.
+   */
+  spell: (iast: string, units: readonly ChantUnit[]) => Omit<ChantSyllable, 't' | 'units' | 'iast'>;
   /** The text, divided into LETTERS: `bha` is `['bh', 'a']`. */
   split: (text: string) => string[];
 }
@@ -263,7 +271,7 @@ export function toTokens(
   };
   const flush = (): void => {
     if (units.length === 0) return;
-    emit({ t: 'syl', units, iast, ...spell(iast) } as ChantSyllable, sylAt);
+    emit({ t: 'syl', units, iast, ...spell(iast, units) } as ChantSyllable, sylAt);
     units = [];
     iast = '';
   };

@@ -25,7 +25,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { derive, resolveProfile } from '@siksamitra/engine';
 import { profileChain } from '@siksamitra/edit';
-import { canonicalJson, normalizeChantDoc } from '@siksamitra/format';
+import { canonicalJson } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import type { ChantDoc, ChantToken } from '@siksamitra/format';
 
 const DIR = join(process.cwd(), 'corpus', 'chants');
@@ -36,6 +37,47 @@ interface Row {
   derived: number;
   ok: number;
   bad: { verse: string; why: string }[];
+}
+
+/**
+ * A token stream with its holding groups renumbered THE WAY A BOX IS DEFINED.
+ *
+ * `hg` is a label and the labels are reused along a verse, so two streams can
+ * draw the same boxes under different numbers. What a box IS, per
+ * `holdingSpans`, is a contiguous run of letters inside ONE syllable sharing
+ * `hold` and `hg` — so renumbering each such run in order of appearance gives
+ * a form in which equal boxes compare equal and a box over different letters
+ * still differs.
+ *
+ * The streams used to agree by accident: both came from the same pass. The
+ * stored side is now rebuilt from text and markings on open, and its numbering
+ * starts wherever that pass started. Bhāgya Sūktam v-3 is the case that
+ * exposed it — `dadan naḥ` carries one `hg` across the word gap in the shipped
+ * file and two after a rebuild, and `holdingSpans` calls both of them two
+ * boxes, because this program follows the older convention of one holding on
+ * one letter (owner, 2026-09-07; see the note in `packages/format/src/text.ts`).
+ */
+function withCanonicalGroups(tokens: readonly ChantToken[]): ChantToken[] {
+  let next = 0;
+  const walk = (list: readonly ChantToken[]): ChantToken[] => list.map((t) => {
+    if (t.t === 'slot') return { ...t, tokens: walk(t.tokens) };
+    if (t.t !== 'syl') return t;
+    const units = [...t.units];
+    let i = 0;
+    while (i < units.length) {
+      const u = units[i]!;
+      if (u.hold === undefined) { i += 1; continue; }
+      next += 1;
+      let j = i;
+      while (j < units.length && units[j]!.hold === u.hold && units[j]!.hg === u.hg) {
+        units[j] = { ...units[j]!, hg: next };
+        j += 1;
+      }
+      i = j;
+    }
+    return { ...t, units };
+  });
+  return walk(tokens);
 }
 
 /** The first difference between two token streams, in words. */
@@ -56,7 +98,7 @@ function firstDifference(want: readonly ChantToken[], got: readonly ChantToken[]
 const rows: Row[] = [];
 
 for (const file of readdirSync(DIR).filter((f) => f.endsWith('.json'))) {
-  const doc = normalizeChantDoc(
+  const doc = openChantDoc(
     JSON.parse(readFileSync(join(DIR, file), 'utf8')) as ChantDoc,
   );
   const row: Row = { file, verses: 0, derived: 0, ok: 0, bad: [] };
@@ -78,11 +120,13 @@ for (const file of readdirSync(DIR).filter((f) => f.endsWith('.json'))) {
         { verseId: verse.id, verseN: verse.n ?? null, overrides, trace: false },
       );
 
-      if (canonicalJson(result.tokens) === canonicalJson(verse.tokens)) {
+      const want = withCanonicalGroups(verse.tokens);
+      const got = withCanonicalGroups(result.tokens);
+      if (canonicalJson(got) === canonicalJson(want)) {
         row.ok += 1;
         continue;
       }
-      row.bad.push({ verse: verse.id, why: firstDifference(verse.tokens, result.tokens) });
+      row.bad.push({ verse: verse.id, why: firstDifference(want, got) });
     }
   }
   rows.push(row);

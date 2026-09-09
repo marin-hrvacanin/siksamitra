@@ -91,3 +91,8 @@ export {
   DIGRAPHS, LONG_VOWELS, SHORT_VOWELS, VOWELS, CONSONANTS, SKIP, SIBILANTS,
   BIJA, PRANAVA, VIRAMA_TICK, isVowel, isConsonant, parseLetters,
 } from './alphabet.js';
+
+/* Opening a document: `items`/`verses` in step, and the tokens rebuilt from the
+   text and markings the file actually carries. The one place a stored document
+   becomes one the program can draw — see `open-doc.ts`. */
+export { hydrateVerse, openChantDoc, splitLetters } from './open-doc.js';

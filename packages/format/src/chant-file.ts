@@ -20,9 +20,12 @@
  * refusing to OPEN such a document is the opposite of useful — it is the one
  * you most need to look at.
  */
-import type { ChantDoc, ChantSection } from './chant-structure.js';
+import type { ChantDoc, ChantItem, ChantSection } from './chant-structure.js';
 import type { ChantVerse } from './chant-verse.js';
+import type { ChantToken } from './chant-tokens.js';
 import { CHANT_FORMAT_VERSION, canonicalJson, normalizeChantDoc } from './chant-select.js';
+import { encodeMarks } from './mark-codec.js';
+import { toTextAndMarks } from './migrate.js';
 
 /** What a chant document's `format` field says, when it carries one. */
 export const CHANT_FILE_FORMAT = 'vedaunion.chant';
@@ -51,34 +54,84 @@ export const CHANT_FILE_FORMAT = 'vedaunion.chant';
  * So the derived array is not written. Reading rebuilds it, which is the same
  * path a composed document has always taken.
  *
+ * NEITHER ARE THE TOKENS, for the same reason and a larger saving. A verse is
+ * one text and a list of markings; `tokens` is that expanded into a syllable
+ * per akṣara with an object per letter, and it is 45% of what is left. It is
+ * written as `text` + `marks` and rebuilt on open by `openChantDoc` in
+ * `@siksamitra/edit` — there and not here because rebuilding needs the
+ * engine's syllabification and this package has no dependencies. Going the
+ * other way needs nothing, so the writer can do it.
+ *
+ * `tools/migrate-audit.mjs` is what makes that safe: it converts all 573
+ * verses of the corpus both ways and compares byte for byte, and
+ * `check:size`'s round trip does the same per file on the way in.
+ *
  * The trailing newline is not part of the canonical bytes and is not written.
  */
 export const writeChantFile = (doc: ChantDoc): string => canonicalJson(stored(doc));
 
 /**
- * A section as it is stored: `verses` is absent when `items` carries them.
+ * A section as it is stored: `verses` is absent when `items` carries them, and
+ * a verse's `tokens` are absent when its text and markings can rebuild them.
  *
- * A separate type rather than a cast, because the difference is real — this
- * shape is not one a consumer may read. Everything in the program reads a
- * NORMALISED document, where `verses` is always there.
+ * Separate types rather than casts, because the difference is real — this
+ * shape is not one a consumer may read. Everything in the program reads an
+ * OPENED document, where both are there.
  */
-type StoredSection = Omit<ChantSection, 'verses'> & { verses?: ChantVerse[] };
+type StoredVerse = Omit<ChantVerse, 'tokens'> & { tokens?: ChantToken[] };
+type StoredItem = ChantItem extends infer I
+  ? I extends { t: 'verse' } ? ({ t: 'verse' } & StoredVerse) : I
+  : never;
+type StoredSection = Omit<ChantSection, 'verses' | 'items'> & {
+  verses?: ChantVerse[];
+  items?: StoredItem[];
+};
 type StoredDoc = Omit<ChantDoc, 'sections'> & { sections: StoredSection[] };
 
 /**
- * The document as it goes to disk: nothing that reading will rebuild.
+ * A verse as it goes to disk.
  *
- * A section with no `items` keeps its `verses` — there they are the only copy,
- * and a v2 document must still be writable by a build that has not migrated
- * it. `normalizeChantDoc` gives every section `items`, so in practice this is
- * "write the ordered content once".
+ * The text and the markings are taken from the TOKENS every time rather than
+ * from whatever `text` the verse is carrying, so the two cannot drift: while
+ * both shapes exist, the tokens are what the editor changes, and a stale
+ * `text` written beside fresh tokens would be a document that says two things.
+ * When the editor works on text and markings directly this inverts, and the
+ * tokens stop existing (§10.1).
  */
+function storedVerse(v: ChantVerse): StoredVerse {
+  /*
+   * A verse with no tokens has nothing to convert. A composed section — the
+   * saṅkalpa — carries placeholder verses the reader fills in at render time,
+   * and `toTextAndMarks` would try to walk an array that is not there.
+   */
+  if (v.tokens === undefined || v.tokens.length === 0) {
+    const { tokens: _none, ...bare } = v;
+    return bare;
+  }
+  const { tokens: _derived, text: _t, marks: _m, ...rest } = v;
+  const { text, marks } = toTextAndMarks(v);
+  return { ...rest, text, marks: encodeMarks(marks) };
+}
+
+/** The document as it goes to disk: nothing that opening it will rebuild. */
 const stored = (doc: ChantDoc): StoredDoc => ({
   ...doc,
   sections: doc.sections.map((s): StoredSection => {
-    if (s.items === undefined) return s;
+    /*
+     * A section with no `items` keeps its `verses` — there they are the only
+     * copy, and a v2 document must still be writable by a build that has not
+     * migrated it. `normalizeChantDoc` gives every section `items`, so in
+     * practice this is "write the ordered content once".
+     */
+    if (s.items === undefined) {
+      return { ...s, verses: s.verses.map((v) => storedVerse(v) as ChantVerse) };
+    }
     const { verses: _derived, ...rest } = s;
-    return rest;
+    return {
+      ...rest,
+      items: s.items.map((it) => (
+        it.t === 'verse' ? { ...storedVerse(it), t: 'verse' as const } : it)) as StoredItem[],
+    };
   }),
 });
 
@@ -150,6 +203,17 @@ function problemIn(value: unknown): string | null {
  * Normalising is part of reading, not a step a caller may forget: `items` is
  * authoritative when a section carries it, and a consumer that read the raw
  * `verses` of a composed section would silently show the wrong content.
+ *
+ * THE VERSES HAVE NO TOKENS YET. A stored verse is text and markings; the
+ * syllables are rebuilt by `openChantDoc` in `@siksamitra/engine`, which this
+ * package cannot call. `ChantVerse.tokens` is typed as present because a
+ * hundred places read it and they must keep compiling, so the type is
+ * OPTIMISTIC here and a caller that reads `verse.tokens` off the result of
+ * this function gets `undefined` rather than a compile error.
+ *
+ * So: `openChantDoc(...)` is how a program opens a document. `readChantFile`
+ * is for the half that only wants the structure and the sentence to show when
+ * a file will not open. The distinction disappears with the tokens (§10.1).
  */
 export function readChantFile(text: string): ChantFileRead {
   let parsed: unknown;

@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { normalizeChantDoc, type ChantDoc } from '@siksamitra/format';
 import { holdingProblems, normaliseHoldings } from '@siksamitra/edit';
+import { openChantDoc } from '@siksamitra/engine';
 
 /**
  * The corpus. Every shipped document must already satisfy the invariants, and
@@ -35,7 +36,7 @@ describe('the eleven shipped documents', () => {
       /* NORMALISED. A composed section stores its verses in `items` and no
          longer repeats them in `verses` on disk, so a raw read walks nothing —
          which the "there are verses" assertion below is what caught. */
-      const parsed = normalizeChantDoc(
+      const parsed = openChantDoc(
         JSON.parse(readFileSync(join(dir, file), 'utf8')) as ChantDoc,
       );
       let verses = 0;

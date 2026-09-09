@@ -5,7 +5,6 @@ import {
   CHANT_FORMAT_VERSION,
   canonicalJson,
   isEmbeddedImage,
-  normalizeChantDoc,
   parseChantSelect,
   sliceChantDoc,
   type ChantDoc,
@@ -27,6 +26,9 @@ import {
   type ChantToken,
   type ChantVerse,
 } from "@siksamitra/format";
+/* `openChantDoc`, not `normalizeChantDoc`: a stored verse is text and markings,
+   and its tokens are rebuilt on open. The reader draws tokens, so it opens. */
+import { openChantDoc } from "@siksamitra/engine";
 import {
   DEFAULT_SANKALPA_OPTIONS,
   DEITIES,
@@ -344,7 +346,7 @@ export default function ChantReader({
   const allSlots = useMemo(() => ({ ...slots }), [slots]);
 
   const raw = docProp ?? fetched;
-  const fetchedOrProp = useMemo(() => (raw ? normalizeChantDoc(raw) : null), [raw]);
+  const fetchedOrProp = useMemo(() => (raw ? openChantDoc(raw) : null), [raw]);
 
   /* ---- per-deity VERSE variants ------------------------------------------
      The deity is not a word swap. Substituting it changes the marks of the
@@ -1606,7 +1608,7 @@ function EmbedItem({
       .then((target) => {
         if (!alive) return;
         if ((target.version ?? 2) > CHANT_FORMAT_VERSION) { setProblem("version"); return; }
-        const norm = normalizeChantDoc(target);
+        const norm = openChantDoc(target);
         const sliced = sliceChantDoc(norm, sel);
         const picked = sliced.sections.flatMap((s) => s.verses);
         // `sliceChantDoc` falls back to the WHOLE document when a selection

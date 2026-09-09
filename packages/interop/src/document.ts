@@ -33,7 +33,8 @@
  * An attested verse never loses its tokens: they are the record. Rule zero.
  */
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { canonicalJson, normalizeChantDoc, withVerses } from '@siksamitra/format';
+import { canonicalJson, withVerses } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import type { ChantDoc, ChantVerse } from '@siksamitra/format';
 import { deriveVerse } from '@siksamitra/edit';
 import { LIMITS, entryNameProblem, formatBytes } from './entry-name.js';
@@ -261,7 +262,7 @@ export function unpackDocument(bytes: Uint8Array): DocumentFile {
     );
   }
 
-  const stored = normalizeChantDoc(JSON.parse(strFromU8(documentBytes)) as ChantDoc);
+  const stored = openChantDoc(JSON.parse(strFromU8(documentBytes)) as ChantDoc);
   const { doc, rederived, refused } = manifest.lean
     ? fattenDocument(stored)
     : { doc: stored, rederived: 0, refused: [] };

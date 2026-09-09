@@ -15,6 +15,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { normalizeChantDoc, type ChantDoc } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import {
   EDIT_VERBS, runEditVerb, type EditContext, type EditVerb,
 } from '../../packages/cli/src/edit-commands.js';
@@ -71,7 +72,7 @@ function sm(verb: EditVerb, args: string[]): Ran {
       out.died = { code, message };
       throw new Exit();
     }) as EditContext['die'],
-    readDoc: (p) => normalizeChantDoc(JSON.parse(readFileSync(p, 'utf8')) as ChantDoc),
+    readDoc: (p) => openChantDoc(JSON.parse(readFileSync(p, 'utf8')) as ChantDoc),
     path,
   };
 
@@ -85,7 +86,7 @@ function sm(verb: EditVerb, args: string[]): Ran {
   /* Read back the way the program reads: a composed section stores its
      verses in `items` and `normalizeChantDoc` rebuilds `verses` from them.
      A raw parse here saw sections with no verses at all. */
-  out.doc = normalizeChantDoc(JSON.parse(readFileSync(path, 'utf8')) as ChantDoc);
+  out.doc = openChantDoc(JSON.parse(readFileSync(path, 'utf8')) as ChantDoc);
   return out;
 }
 
@@ -127,7 +128,7 @@ describe('the headless editor', () => {
 
   it('holds letters by hand, and the mark reaches the tokens', () => {
     const was = marksOf(
-      normalizeChantDoc(JSON.parse(readFileSync(path, 'utf8')) as ChantDoc),
+      openChantDoc(JSON.parse(readFileSync(path, 'utf8')) as ChantDoc),
       'v-2',
     );
     const ran = sm('hold', ['--verse', 'v-2', '--units', '0-2', '--value', 'long', '--write']);

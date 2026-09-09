@@ -14,7 +14,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { normalizeChantDoc } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import { EXPORT_SCRIPTS, buildExportPage } from '../../apps/web/src/views/export-page.js';
 import { appCss } from './css.mjs';
 
@@ -27,7 +27,7 @@ export const SCRIPTS = [...EXPORT_SCRIPTS];
 
 /** Read a `.json` chant off disk. */
 export function loadDoc(path) {
-  return normalizeChantDoc(JSON.parse(readFileSync(path, 'utf8')));
+  return openChantDoc(JSON.parse(readFileSync(path, 'utf8')));
 }
 
 /** Where a command gets the three things only its host can give it. */

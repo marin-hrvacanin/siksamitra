@@ -21,6 +21,7 @@ import {
   PROFILES, derive, headword, normalize, resolveProfile, surfacesOf,
   transliterateSyllable, wordsAlign, type ScriptKey, type ScriptUnit,
   type Profile, type ProfileKey,
+  openChantDoc,
 } from '@siksamitra/engine';
 import { exportWord, importDocx, pack, readManifest, unpack } from '@siksamitra/interop';
 import {
@@ -33,7 +34,7 @@ import {
 import { AUDIO_HELP, runAudioVerb } from './audio-commands.js';
 import { divergenceRows, score, verses } from './score.js';
 import {
-  normalizeChantDoc, writeChantFile,
+  writeChantFile,
   type ChantDoc, type ChantVerse,
 } from '@siksamitra/format';
 
@@ -77,7 +78,7 @@ const die: (code: number, message: string) => never = (code, message) => {
 
 function readDoc(path: string): ChantDoc {
   if (!existsSync(path)) die(2, `no such file: ${path}`);
-  return normalizeChantDoc(JSON.parse(readFileSync(path, 'utf8')) as ChantDoc);
+  return openChantDoc(JSON.parse(readFileSync(path, 'utf8')) as ChantDoc);
 }
 
 function profileFor(): Profile {

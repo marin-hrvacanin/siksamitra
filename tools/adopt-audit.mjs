@@ -13,7 +13,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { adoptSource, unitsOf } from '@siksamitra/edit';
-import { normalizeChantDoc } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 
 const DIR = 'corpus/chants';
 const files = (await readdir(DIR)).filter((f) => f.endsWith('.json'));
@@ -27,7 +27,7 @@ let letters = 0;
 const refused = [];
 
 for (const file of files.sort()) {
-  const doc = normalizeChantDoc(JSON.parse(await readFile(join(DIR, file), 'utf8')));
+  const doc = openChantDoc(JSON.parse(await readFile(join(DIR, file), 'utf8')));
   let overrides = doc.overrides ?? [];
   let docAdopted = 0;
   let docRefused = 0;

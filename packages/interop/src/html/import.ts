@@ -21,7 +21,8 @@
  * manifest recorded — a hand-edited file is readable and honestly flagged,
  * rather than refused or silently trusted.
  */
-import { normalizeChantDoc, type ChantDoc } from '@siksamitra/format';
+import type { ChantDoc } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import { documentBytes, sha256Hex } from '../package.js';
 import {
   HTML_FORMAT, HTML_SLOTS, HtmlError, fromBase64, type HtmlManifest,
@@ -81,7 +82,7 @@ export async function importHtml(text: string): Promise<HtmlImport> {
    * do it. Not doing so is how a v2 document arrives with `items` missing and
    * every consumer downstream has to remember to check.
    */
-  const doc = normalizeChantDoc(parse<ChantDoc>(slot(text, HTML_SLOTS.document), 'document'));
+  const doc = openChantDoc(parse<ChantDoc>(slot(text, HTML_SLOTS.document), 'document'));
 
   const encoded = parse<Record<string, string>>(slot(text, HTML_SLOTS.assets), 'assets');
   const assets: Record<string, Uint8Array> = {};

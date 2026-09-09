@@ -19,13 +19,13 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { canonicalJson, normalizeChantDoc } from '@siksamitra/format';
 import type { ChantDoc, ChantVerse } from '@siksamitra/format';
-import { detectJoins, expandJoins, surfacesOf, wordsAlign } from '@siksamitra/engine';
+import { openChantDoc, detectJoins, expandJoins, surfacesOf, wordsAlign  } from '@siksamitra/engine';
 
 const DIR = 'corpus/chants';
 const FILES = readdirSync(DIR).filter((f) => f.endsWith('.json')).sort();
 
 function versesOf(file: string): { id: string; verse: ChantVerse }[] {
-  const doc = normalizeChantDoc(
+  const doc = openChantDoc(
     JSON.parse(readFileSync(join(DIR, file), 'utf8')) as ChantDoc,
   );
   return doc.sections.flatMap((s) => s.verses.map((v) => ({ id: `${s.id}/${v.id}`, verse: v })));

@@ -686,211 +686,103 @@
         "items": [
           {
             "id": "u-avahana-1",
+            "marks": [
+              [
+                "syl",
+                1,
+                0
+              ],
+              [
+                "hold",
+                2,
+                1,
+                "short"
+              ],
+              [
+                "syl",
+                5,
+                0
+              ],
+              [
+                "hold",
+                6,
+                1,
+                "short"
+              ],
+              [
+                "syl",
+                8,
+                0
+              ],
+              [
+                "hold",
+                9,
+                1,
+                "short"
+              ],
+              [
+                "syl",
+                11,
+                0
+              ],
+              [
+                "hold",
+                13,
+                1,
+                "long"
+              ],
+              [
+                "syl",
+                15,
+                0
+              ],
+              [
+                "slot",
+                16,
+                5,
+                "deity"
+              ],
+              [
+                "syl",
+                18,
+                0
+              ],
+              [
+                "was",
+                20,
+                1,
+                "ṁ"
+              ],
+              [
+                "syl",
+                21,
+                0
+              ],
+              [
+                "hold",
+                22,
+                2,
+                "short"
+              ],
+              [
+                "syl",
+                26,
+                0
+              ],
+              [
+                "syl",
+                28,
+                0
+              ],
+              [
+                "syl",
+                30,
+                0
+              ]
+            ],
             "n": null,
             "t": "verse",
-            "tokens": [
-              {
-                "deva": "अ",
-                "iast": "a",
-                "t": "syl",
-                "tam": "அ",
-                "tel": "అ",
-                "units": [
-                  {
-                    "c": "a"
-                  }
-                ]
-              },
-              {
-                "deva": "स्मिन्",
-                "iast": "smin",
-                "t": "syl",
-                "tam": "ஸ்மிந்",
-                "tel": "స్మిన్",
-                "units": [
-                  {
-                    "c": "s"
-                  },
-                  {
-                    "c": "m",
-                    "hg": 1,
-                    "hold": "short"
-                  },
-                  {
-                    "c": "i"
-                  },
-                  {
-                    "c": "n"
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "deva": "बि",
-                "iast": "bi",
-                "t": "syl",
-                "tam": "பி",
-                "tel": "బి",
-                "units": [
-                  {
-                    "c": "b",
-                    "hg": 2,
-                    "hold": "short"
-                  },
-                  {
-                    "c": "i"
-                  }
-                ]
-              },
-              {
-                "deva": "म्बे",
-                "iast": "mbe",
-                "t": "syl",
-                "tam": "ம்பே",
-                "tel": "మ్బే",
-                "units": [
-                  {
-                    "c": "m"
-                  },
-                  {
-                    "c": "b",
-                    "hg": 3,
-                    "hold": "short"
-                  },
-                  {
-                    "c": "e"
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "deva": "श्री",
-                "iast": "śrī",
-                "t": "syl",
-                "tam": "ஶ்ரீ",
-                "tel": "శ్రీ",
-                "units": [
-                  {
-                    "c": "ś"
-                  },
-                  {
-                    "c": "r",
-                    "hg": 4,
-                    "hold": "long"
-                  },
-                  {
-                    "c": "ī"
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "name": "deity",
-                "t": "slot",
-                "tokens": [
-                  {
-                    "deva": "दे",
-                    "iast": "de",
-                    "t": "syl",
-                    "tam": "தே",
-                    "tel": "దే",
-                    "units": [
-                      {
-                        "c": "d"
-                      },
-                      {
-                        "c": "e"
-                      }
-                    ]
-                  },
-                  {
-                    "deva": "वन्",
-                    "iast": "van",
-                    "t": "syl",
-                    "tam": "வந்",
-                    "tel": "వన్",
-                    "units": [
-                      {
-                        "c": "v"
-                      },
-                      {
-                        "c": "a"
-                      },
-                      {
-                        "c": "n",
-                        "change": true
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "deva": "ध्या",
-                "iast": "dhyā",
-                "t": "syl",
-                "tam": "த்யா",
-                "tel": "ధ్యా",
-                "units": [
-                  {
-                    "c": "dh",
-                    "hg": 5,
-                    "hold": "short"
-                  },
-                  {
-                    "c": "y"
-                  },
-                  {
-                    "c": "ā"
-                  }
-                ]
-              },
-              {
-                "deva": "या",
-                "iast": "yā",
-                "t": "syl",
-                "tam": "யா",
-                "tel": "యా",
-                "units": [
-                  {
-                    "c": "y"
-                  },
-                  {
-                    "c": "ā"
-                  }
-                ]
-              },
-              {
-                "deva": "मि",
-                "iast": "mi",
-                "t": "syl",
-                "tam": "மி",
-                "tel": "మి",
-                "units": [
-                  {
-                    "c": "m"
-                  },
-                  {
-                    "c": "i"
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "s": "।",
-                "t": "danda"
-              }
-            ],
+            "text": "asmin bimbe śrī devan dhyāyāmi ।",
             "translation": {
               "en": "In this image I meditate on Śrī Deva."
             },
@@ -995,315 +887,7 @@
         "n": "1",
         "part": "The sixteen upacāras",
         "source": "The sixteen-step pūjā · invocation",
-        "title": "Āvāhanam",
-        "verses": [
-          {
-            "id": "u-avahana-1",
-            "n": null,
-            "tokens": [
-              {
-                "deva": "अ",
-                "iast": "a",
-                "t": "syl",
-                "tam": "அ",
-                "tel": "అ",
-                "units": [
-                  {
-                    "c": "a"
-                  }
-                ]
-              },
-              {
-                "deva": "स्मिन्",
-                "iast": "smin",
-                "t": "syl",
-                "tam": "ஸ்மிந்",
-                "tel": "స్మిన్",
-                "units": [
-                  {
-                    "c": "s"
-                  },
-                  {
-                    "c": "m",
-                    "hg": 1,
-                    "hold": "short"
-                  },
-                  {
-                    "c": "i"
-                  },
-                  {
-                    "c": "n"
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "deva": "बि",
-                "iast": "bi",
-                "t": "syl",
-                "tam": "பி",
-                "tel": "బి",
-                "units": [
-                  {
-                    "c": "b",
-                    "hg": 2,
-                    "hold": "short"
-                  },
-                  {
-                    "c": "i"
-                  }
-                ]
-              },
-              {
-                "deva": "म्बे",
-                "iast": "mbe",
-                "t": "syl",
-                "tam": "ம்பே",
-                "tel": "మ్బే",
-                "units": [
-                  {
-                    "c": "m"
-                  },
-                  {
-                    "c": "b",
-                    "hg": 3,
-                    "hold": "short"
-                  },
-                  {
-                    "c": "e"
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "deva": "श्री",
-                "iast": "śrī",
-                "t": "syl",
-                "tam": "ஶ்ரீ",
-                "tel": "శ్రీ",
-                "units": [
-                  {
-                    "c": "ś"
-                  },
-                  {
-                    "c": "r",
-                    "hg": 4,
-                    "hold": "long"
-                  },
-                  {
-                    "c": "ī"
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "name": "deity",
-                "t": "slot",
-                "tokens": [
-                  {
-                    "deva": "दे",
-                    "iast": "de",
-                    "t": "syl",
-                    "tam": "தே",
-                    "tel": "దే",
-                    "units": [
-                      {
-                        "c": "d"
-                      },
-                      {
-                        "c": "e"
-                      }
-                    ]
-                  },
-                  {
-                    "deva": "वन्",
-                    "iast": "van",
-                    "t": "syl",
-                    "tam": "வந்",
-                    "tel": "వన్",
-                    "units": [
-                      {
-                        "c": "v"
-                      },
-                      {
-                        "c": "a"
-                      },
-                      {
-                        "c": "n",
-                        "change": true
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "deva": "ध्या",
-                "iast": "dhyā",
-                "t": "syl",
-                "tam": "த்யா",
-                "tel": "ధ్యా",
-                "units": [
-                  {
-                    "c": "dh",
-                    "hg": 5,
-                    "hold": "short"
-                  },
-                  {
-                    "c": "y"
-                  },
-                  {
-                    "c": "ā"
-                  }
-                ]
-              },
-              {
-                "deva": "या",
-                "iast": "yā",
-                "t": "syl",
-                "tam": "யா",
-                "tel": "యా",
-                "units": [
-                  {
-                    "c": "y"
-                  },
-                  {
-                    "c": "ā"
-                  }
-                ]
-              },
-              {
-                "deva": "मि",
-                "iast": "mi",
-                "t": "syl",
-                "tam": "மி",
-                "tel": "మి",
-                "units": [
-                  {
-                    "c": "m"
-                  },
-                  {
-                    "c": "i"
-                  }
-                ]
-              },
-              {
-                "t": "sp"
-              },
-              {
-                "s": "।",
-                "t": "danda"
-              }
-            ],
-            "translation": {
-              "en": "In this image I meditate on Śrī Deva."
-            },
-            "words": [
-              {
-                "entries": [
-                  {
-                    "forms": {
-                      "deva": "इदम्",
-                      "tam": "இதம்",
-                      "tel": "ఇదమ్"
-                    },
-                    "gender": "n",
-                    "lemma": "idam",
-                    "meaning": "in this",
-                    "stem": "pronominal (idam)",
-                    "type": "subanta",
-                    "vacana": "eka",
-                    "vibhakti": 7
-                  }
-                ],
-                "surface": "asmin"
-              },
-              {
-                "entries": [
-                  {
-                    "forms": {
-                      "deva": "बिम्ब",
-                      "tam": "பிம்ப",
-                      "tel": "బిమ్బ"
-                    },
-                    "gender": "n",
-                    "lemma": "bimba",
-                    "meaning": "in the image, in the icon",
-                    "stem": "a-stem",
-                    "type": "subanta",
-                    "vacana": "eka",
-                    "vibhakti": 7
-                  }
-                ],
-                "surface": "bimbe"
-              },
-              {
-                "entries": [
-                  {
-                    "forms": {
-                      "deva": "श्री",
-                      "tam": "ஶ்ரீ",
-                      "tel": "శ్రీ"
-                    },
-                    "lemma": "śrī",
-                    "meaning": "revered, holy",
-                    "note": "honorific prefixed to the name of the deity",
-                    "type": "other"
-                  }
-                ],
-                "surface": "śrī"
-              },
-              {
-                "entries": [
-                  {
-                    "forms": {
-                      "deva": "देव",
-                      "tam": "தேவ",
-                      "tel": "దేవ"
-                    },
-                    "gender": "m",
-                    "lemma": "deva",
-                    "meaning": "deva — a slot for the name of the deity being worshipped",
-                    "note": "the anusvāra assimilates to the following stop (rendered in the change colour)",
-                    "stem": "a-stem",
-                    "type": "subanta",
-                    "vacana": "eka",
-                    "vibhakti": 2
-                  }
-                ],
-                "surface": "devan"
-              },
-              {
-                "entries": [
-                  {
-                    "forms": {
-                      "deva": "ध्यै",
-                      "tam": "த்யை",
-                      "tel": "ధ్యై"
-                    },
-                    "gana": "1 (bhvādi)",
-                    "lakara": "laṭ",
-                    "lemma": "dhyai",
-                    "meaning": "I meditate upon, I visualise",
-                    "purusha": 1,
-                    "root": "dhyai",
-                    "type": "tinanta",
-                    "vacana": "eka"
-                  }
-                ],
-                "surface": "dhyāyāmi"
-              }
-            ]
-          }
-        ]
+        "title": "Āvāhanam"
       }
     ],
     "source": "Veda Union pūjā class · ṣoḍaśopacāra pūjā",

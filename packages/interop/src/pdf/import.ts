@@ -18,7 +18,8 @@
  * `intact` says whether the document that came out still hashes to what the
  * manifest recorded.
  */
-import { normalizeChantDoc, type ChantDoc } from '@siksamitra/format';
+import type { ChantDoc } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import { fromBase64 } from '../base64.js';
 import { documentBytes, sha256Hex } from '../package.js';
 import { PDF_ATTACHMENT, PDF_FORMAT, PdfError, type PdfManifest } from './manifest.js';
@@ -112,7 +113,7 @@ export async function importPdf(bytes: Uint8Array): Promise<PdfImport> {
    * every consumer downstream has to remember to check.
    */
   const json = new TextDecoder().decode(fromBase64(payload));
-  const doc = normalizeChantDoc(JSON.parse(json) as ChantDoc);
+  const doc = openChantDoc(JSON.parse(json) as ChantDoc);
 
   const assets: Record<string, Uint8Array> = {};
   for (const [name, b64] of Object.entries(side.assets ?? {})) assets[name] = fromBase64(b64);

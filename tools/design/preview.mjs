@@ -15,7 +15,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { normalizeChantDoc } from '../../packages/format/src/chant-select.ts';
+import { openChantDoc } from '../../packages/engine/src/open-doc.ts';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as React from 'react';
 import { OPTIONS, tokensFor } from './options.mjs';
@@ -37,7 +37,7 @@ const OUT_FILE = ROUND2 ? 'design-round2.html' : 'design-preview.html';
 globalThis.React = React;
 const { renderSyl } = await import('../../packages/render/src/render/marks.tsx');
 
-const DOC = normalizeChantDoc(JSON.parse(readFileSync('corpus/chants/durga-suktam.json', 'utf8')));
+const DOC = openChantDoc(JSON.parse(readFileSync('corpus/chants/durga-suktam.json', 'utf8')));
 const CHANT_CSS = readFileSync('packages/render/src/chant.css', 'utf8');
 const GEOMETRY_CSS = readFileSync('packages/render/src/generated/mark-geometry.css', 'utf8');
 

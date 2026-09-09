@@ -19,12 +19,20 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { canonicalJson, readChantFile, recitationText, writeChantFile } from '@siksamitra/format';
 import type { ChantDoc } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 
 const CORPUS = join(process.cwd(), 'corpus', 'chants');
 const NAMES = readdirSync(CORPUS).filter((n) => n.endsWith('.json'));
 
-/** What a document SAYS — the conformance surface, not its object graph. */
-const said = (doc: ChantDoc): string[] => doc.sections.flatMap(
+/**
+ * What a document SAYS — the conformance surface, not its object graph.
+ *
+ * OPENED first. `readChantFile` gives back the structure with no tokens: a
+ * stored verse is text and markings and the syllables are rebuilt by
+ * `openChantDoc`. Reading `v.tokens` straight off a read document is exactly
+ * the mistake this comment exists to stop.
+ */
+const said = (doc: ChantDoc): string[] => openChantDoc(doc).sections.flatMap(
   (s) => s.verses.map((v) => recitationText(v.tokens, 'iast')),
 );
 

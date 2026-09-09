@@ -25,7 +25,8 @@
  * honestly flagged, rather than refused or silently trusted.
  */
 import { strFromU8, unzipSync } from 'fflate';
-import { normalizeChantDoc, type ChantDoc } from '@siksamitra/format';
+import type { ChantDoc } from '@siksamitra/format';
+import { openChantDoc } from '@siksamitra/engine';
 import { fromBase64 } from '../base64.js';
 import { documentBytes, sha256Hex } from '../package.js';
 import { xmlText } from '../xml.js';
@@ -98,7 +99,7 @@ export async function documentFromCustomXml(
     throw new WordError('this custom XML part is not a śikṣāmitra document');
   }
   const manifest = JSON.parse(decode(rawManifest)) as ExportManifest;
-  const doc = normalizeChantDoc(JSON.parse(decode(rawBody)) as ChantDoc);
+  const doc = openChantDoc(JSON.parse(decode(rawBody)) as ChantDoc);
   const assets: Record<string, Uint8Array> = {};
   const rawAssets = element(xml, 'assets');
   if (rawAssets !== null) {
