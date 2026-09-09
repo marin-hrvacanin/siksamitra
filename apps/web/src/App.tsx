@@ -11,9 +11,8 @@
  * feature add "just a bit" to one place.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChantScriptKey } from '@siksamitra/format';
-import { anchorAt, scrollTopFor, type BlockOffset, type ViewKind } from '@siksamitra/layout';
 import { FlowView } from './views/FlowView.js';
 import { PagedView } from './views/PagedView.js';
 import { StatusBar } from './shell/StatusBar.js';
@@ -34,6 +33,7 @@ import { useMapping } from './audio/useMapping.js';
 import { AudioDock } from './audio/AudioDock.js';
 import { useViewState } from './state/useViewState.js';
 import { useViewport } from './state/useViewport.js';
+import { useScrollAnchor } from './state/useScrollAnchor.js';
 import { useElementWidth } from './state/useElementWidth.js';
 import { useAppearance } from './state/useAppearance.js';
 
@@ -122,46 +122,9 @@ export function App() {
    */
   const navShown = navOpen && viewport.width >= 880;
 
-  /** Scroll a block into view — what the navigation panel asks for. */
-  const goToBlock = useCallback((id: string) => {
-    const el = scroller.current;
-    if (el === null) return;
-    const block = [...el.querySelectorAll<HTMLElement>('[data-block-id]')]
-      .find((b) => b.dataset['blockId'] === id && b.closest('.paged__probe') === null);
-    if (block === undefined) return;
-    /* Positioned, not `scrollIntoView`: the heading should land just under the
-       top of the column with a little air, not flush against the ribbon. */
-    const base = el.getBoundingClientRect().top - el.scrollTop;
-    el.scrollTo({ top: block.getBoundingClientRect().top - base - 24, behavior: 'smooth' });
-  }, []);
-
-  /** Where each block sits in the CURRENT view, for anchoring. */
-  const offsetsOf = useCallback((): BlockOffset[] => {
-    const el = scroller.current;
-    if (el === null) return [];
-    const base = el.getBoundingClientRect().top - el.scrollTop;
-    return [...el.querySelectorAll<HTMLElement>('[data-block-id]')].map((b) => {
-      const r = b.getBoundingClientRect();
-      return { id: b.dataset['blockId'] ?? '', top: r.top - base, height: r.height };
-    });
-  }, []);
-
-  /**
-   * Switch view, keeping the reader's place.
-   *
-   * Read the anchor BEFORE the switch, restore it after the new view has laid
-   * out. Without this, toggling the view in a 700-verse document lands at the
-   * top — the small betrayal that stops a feature being used at all.
-   */
-  const switchView = useCallback((next: ViewKind) => {
-    const el = scroller.current;
-    const anchor = el === null ? null : anchorAt(el.scrollTop, offsetsOf());
-    state.setView(next);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const after = scroller.current;
-      if (after !== null) after.scrollTop = scrollTopFor(anchor, offsetsOf());
-    }));
-  }, [state, offsetsOf]);
+  /* Scrolling, anchoring and switching view without losing the place — the
+     DOM half of `packages/layout`'s arithmetic. See `useScrollAnchor.ts`. */
+  const { goToBlock, switchView } = useScrollAnchor(scroller, state.setView);
 
   const ctx: CommandContext = useMemo(() => ({
     view: state.view.kind,
@@ -380,8 +343,16 @@ export function App() {
       </div>
       </div>
 
-      {/* The transport and the waveform, only once there is something to play. */}
-      {(audio.name !== null || mapping.take !== null) && (
+      {/*
+        The transport and the waveform, whenever there is something to play.
+
+        A DOCUMENT THAT ALREADY HAS A RECITATION COUNTS. This used to wait for
+        a file to be loaded, so opening Durgā Sūktam — nine verses, nine clips,
+        a mapping down to the pāda — showed no transport at all until something
+        had already been played, which is the wrong way round: the dock is how
+        you play it.
+      */}
+      {(audio.name !== null || mapping.take !== null || audio.mapped) && (
         <AudioDock audio={audio} mapping={mapping} />
       )}
 

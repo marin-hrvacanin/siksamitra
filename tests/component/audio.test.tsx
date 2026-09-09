@@ -76,14 +76,28 @@ const mapping = (over: Partial<Mapping> = {}): Mapping => ({
   ...over,
 });
 
+/**
+ * A document that really has the verses its recording names.
+ *
+ * `sections: []` was here, which is a document with a recitation and nothing
+ * to recite — a shape no reader produces and no file on disk holds. It hid a
+ * real question: what should happen to a row naming a verse the document does
+ * not contain? (`checkMapping` calls it a fault; a transport must not try to
+ * play it.) So the verses are built from the rows, in the order they are
+ * written, and a test that wants the mismatch now has to ask for it.
+ */
 const doc = (byVerse: Record<string, unknown> | null, base?: string): ChantDoc => ({
   title: 't',
   titleForms: { iast: 't' },
-  sections: [],
+  sections: byVerse === null ? [] : [{
+    id: 's-1',
+    verses: Object.keys(byVerse).map((id) => ({ id, tokens: [] })),
+    items: Object.keys(byVerse).map((id) => ({ t: 'verse', id, tokens: [] })),
+  }],
   version: 4,
   ...(base === undefined ? {} : { audioBase: base }),
   ...(byVerse === null ? {} : { recording: { byVerse } }),
-} as ChantDoc);
+} as unknown as ChantDoc);
 
 describe('the transport', () => {
   it('says what it will do next, not what it is doing', () => {
@@ -289,5 +303,31 @@ describe('reading the mapping out of a document', () => {
     expect(sourceFor(rooted, 'v-1')).toBe('/already/rooted.mp3');
 
     expect(sourceFor(doc(null), 'v-1')).toBeNull();
+  });
+
+  it('gives back the document’s own path, not the host it is served from', () => {
+    /*
+     * The two are deliberately separate. A document says where its audio is
+     * RELATIVE TO ITSELF; which origin serves `/tests/…` is an install's
+     * answer and belongs to `shell/media.ts`, applied once where the element
+     * is given a source. A `sourceFor` that resolved would put one install's
+     * host into every caller, including the ones that only want to compare
+     * two documents' paths.
+     */
+    const withBase = doc({ 'v-1': { file: 'durga.mp3' } }, '/tests/durga-suktam/audio/');
+    expect(sourceFor(withBase, 'v-1')).toBe('/tests/durga-suktam/audio/durga.mp3');
+    expect(sourceFor(withBase, 'v-1')).not.toMatch(/^https?:/);
+  });
+
+  it('has nothing to play for a row naming a verse the document lacks', () => {
+    /* `checkMapping` reports this as a fault in the document. The transport's
+       job is narrower: not to try to play it. */
+    const stray = {
+      title: 't',
+      titleForms: { iast: 't' },
+      sections: [{ id: 's-1', verses: [{ id: 'v-1', tokens: [] }], items: [] }],
+      recording: { byVerse: { 'v-99': { file: 'ghost.mp3' } } },
+    } as unknown as ChantDoc;
+    expect(sourceFor(stray, 'v-99')).toBeNull();
   });
 });

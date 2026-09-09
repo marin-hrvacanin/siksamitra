@@ -29,19 +29,15 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
-import { mappedIn } from '@siksamitra/audio';
+import { clipOf, clipsOfDoc, padasOfDoc, sourceFor, versesWithAudio, type PadaAt } from './clips.js';
 import { applyRate, SEG_LEAD, startAt } from '@siksamitra/render';
-
-export interface PadaAt {
-  readonly verseId: string;
-  readonly line: number;
-  readonly start: number;
-  readonly end: number;
-}
+import { resolveMedia } from '../shell/media.js';
 
 export interface Recording {
   /** What is loaded, if anything — a name to show, not a path. */
   readonly name: string | null;
+  /** Whether the DOCUMENT has a recitation, whether or not one is loaded. */
+  readonly mapped: boolean;
   readonly ready: boolean;
   readonly playing: boolean;
   readonly duration: number;
@@ -66,19 +62,8 @@ export interface Recording {
   readonly sung: PadaAt | null;
 }
 
-/** Every mapped pāda of a document, in the order it is heard. `@siksamitra/audio`
- *  owns the reading, because the editor's boundary handles have to be numbered
- *  the same way the transport plays them. */
-export const padasOfDoc = (doc: ChantDoc | null): PadaAt[] =>
-  (doc === null ? [] : mappedIn(doc));
-
-/** The file a verse's audio is in, resolved against the document's base. */
-export function sourceFor(doc: ChantDoc | null, verseId: string): string | null {
-  const row = doc?.recording?.byVerse?.[verseId] as { file?: string } | undefined;
-  if (row?.file === undefined) return null;
-  const base = doc?.audioBase ?? '';
-  return /^(https?:|blob:|data:|\/)/.test(row.file) ? row.file : base + row.file;
-}
+export { clipOf, clipsOfDoc, padasOfDoc, sourceFor, versesWithAudio } from './clips.js';
+export type { PadaAt } from './clips.js';
 
 export function useRecording(doc: ChantDoc | null): Recording {
   const el = useRef<HTMLAudioElement | null>(null);
@@ -96,11 +81,41 @@ export function useRecording(doc: ChantDoc | null): Recording {
   const until = useRef<number | null>(null);
   const from = useRef(0);
   const object = useRef<string | null>(null);
+  /**
+   * The clip the element is on, and the verse it belongs to.
+   *
+   * A chant is one file per verse, so "what is playing" is a file, and both
+   * the highlight and the advance need it. `verse` is what a clip ending has
+   * to look up in order to know which one comes next.
+   */
+  const onAir = useRef<{ file: string | null; verse: string | null }>({ file: null, verse: null });
 
   if (el.current === null && typeof Audio !== 'undefined') {
     el.current = new Audio();
     el.current.preload = 'auto';
   }
+
+  /*
+   * THE ELEMENT GOES IN THE PAGE, hidden.
+   *
+   * `new Audio()` is a real media element and plays perfectly well detached —
+   * but nothing can SEE it. `document.querySelector('audio')` found nothing,
+   * so a browser gate could not tell "the recitation is playing" from "the
+   * recitation is silently failing to load", and neither could dev tools, and
+   * neither could anyone reading the page's accessibility tree. That is the
+   * whole reason audio could be broken for this long without a check going
+   * red. The platform's reader has always had a real `<audio>` in its tree.
+   *
+   * It costs nothing: an element with no controls and `hidden` draws nothing.
+   */
+  useEffect(() => {
+    const audio = el.current;
+    if (audio === null || typeof document === 'undefined') return;
+    audio.hidden = true;
+    audio.setAttribute('data-recitation', '');
+    document.body.append(audio);
+    return () => { audio.remove(); };
+  }, []);
 
   /* The mapping, kept in a ref so the frame loop is not rebuilt every render. */
   const padas = useRef<PadaAt[]>([]);
@@ -110,7 +125,15 @@ export function useRecording(doc: ChantDoc | null): Recording {
     const audio = el.current;
     if (audio === null) return;
     const onMeta = (): void => { setDuration(audio.duration); setReady(true); };
-    const onEnd = (): void => setPlaying(false);
+    /*
+     * A CLIP ENDING IS NOT THE CHANT ENDING.
+     *
+     * One `.mp3` per verse, so Play used to stop after the first one — fifteen
+     * seconds of a nine-verse sūktam — and the only way through a chant was to
+     * press a button per verse. What ends a run is running out of verses, a
+     * segment that asked to stop (`until`), or a person pausing.
+     */
+    const onEnd = (): void => { if (!advance.current()) setPlaying(false); };
     audio.addEventListener('loadedmetadata', onMeta);
     audio.addEventListener('ended', onEnd);
     return () => {
@@ -118,6 +141,10 @@ export function useRecording(doc: ChantDoc | null): Recording {
       audio.removeEventListener('ended', onEnd);
     };
   }, []);
+
+  /* Behind a ref, so the listener above is registered once and still sees the
+     current document. */
+  const advance = useRef<() => boolean>(() => false);
 
   /* The speed in a ref as well as in state: `start` must not hold a closure
      over a speed that was current when it was built. */
@@ -169,7 +196,12 @@ export function useRecording(doc: ChantDoc | null): Recording {
         }
       }
 
-      const here = padas.current.find((p) => t >= p.start && t < p.end) ?? null;
+      /* IN THIS CLIP. Every verse's mp3 starts at zero, so a bare time matches
+         a pāda in most of them; the file is what makes the answer one line. */
+      const clip = onAir.current.file;
+      const here = padas.current.find(
+        (p) => (clip === null || p.file === clip) && t >= p.start && t < p.end,
+      ) ?? null;
       light(here);
       setSung((was) => (was?.verseId === here?.verseId && was?.line === here?.line ? was : here));
       frame = requestAnimationFrame(tick);
@@ -215,10 +247,18 @@ export function useRecording(doc: ChantDoc | null): Recording {
    */
   const wanted = useRef(0);
 
-  const start = useCallback((src: string | null, begin: number, end: number | null): void => {
+  const start = useCallback((
+    src: string | null, begin: number, end: number | null, verseId: string | null = null,
+  ): void => {
     const audio = el.current;
     if (audio === null) return;
     if (src === null && audio.src === '') return;
+    /* Which clip is on air, for the highlight and for what plays next. The
+       document's own name, not the resolved URL — that is what a pāda carries. */
+    onAir.current = {
+      file: verseId === null ? onAir.current.file : (clipOf(doc, verseId) ?? onAir.current.file),
+      verse: verseId ?? onAir.current.verse,
+    };
     /* Only change the shown name when the source really differs: `startAt`
        leaves the element alone in that case, and renaming it would say a
        different file was playing. */
@@ -229,35 +269,68 @@ export function useRecording(doc: ChantDoc | null): Recording {
     wanted.current = mine;
     from.current = begin;
     until.current = end;
+    /*
+     * THE ONE PLACE A DOCUMENT'S PATH BECOMES A URL.
+     *
+     * `sourceFor` gives the document's own `/tests/durga-suktam/audio/…`,
+     * which is a path this program does not serve — every fetch 404'd, and an
+     * `<audio>` element that cannot load fails where nobody is listening, so
+     * Play was a button that did nothing at all, in silence. `resolveMedia`
+     * answers where those paths are, once, from one configurable value; a
+     * `blob:` from a file somebody opened is already resolved and passes
+     * through untouched. See `shell/media.ts`.
+     */
     void startAt(audio, {
-      src, at: begin, rate: speed.current, alive: () => mine === wanted.current,
+      src: src === null ? null : resolveMedia(src),
+      at: begin,
+      rate: speed.current,
+      alive: () => mine === wanted.current,
     }).then((ok) => setPlaying(ok));
-  }, []);
+  }, [doc]);
 
   const playPada = useCallback((verseId: string, line: number) => {
     const p = padasOfDoc(doc).find((x) => x.verseId === verseId && x.line === line);
     if (p === undefined) return;
-    start(object.current ?? sourceFor(doc, verseId), p.start, p.end);
+    start(object.current ?? sourceFor(doc, verseId), p.start, p.end, verseId);
   }, [doc, start]);
 
+  /**
+   * PLAY ONE VERSE — mapped or not.
+   *
+   * The bounds used to come from the verse's pādas, so a verse with no `lines`
+   * had no first and no last and this returned having done nothing. That is
+   * seven of the eight verses of the document the app opens, and all
+   * twenty-four of Puruṣa Sūktam: pressing Play on the verse did nothing, in
+   * silence, which read as "the audio is broken" because it was.
+   *
+   * A clip is one verse's recitation, so with no mapping the answer is simply
+   * the WHOLE clip: from zero, with no end. `lines` narrows that when a verse
+   * has been mapped and a person asked for less than all of it.
+   */
   const playVerse = useCallback((verseId: string) => {
+    const src = object.current ?? sourceFor(doc, verseId);
+    if (src === null) return;
     const mine = padasOfDoc(doc).filter((p) => p.verseId === verseId);
     const first = mine[0];
     const last = mine[mine.length - 1];
-    if (first === undefined || last === undefined) return;
-    start(object.current ?? sourceFor(doc, verseId), first.start, last.end);
+    if (first === undefined || last === undefined) { start(src, 0, null, verseId); return; }
+    start(src, first.start, last.end, verseId);
   }, [doc, start]);
 
   const playAll = useCallback(() => {
     const audio = el.current;
     if (audio === null) return;
     if (playing) { wanted.current += 1; audio.pause(); setPlaying(false); return; }
-    const all = padasOfDoc(doc);
-    const first = all[0];
-    const src = object.current ?? (first === undefined ? null : sourceFor(doc, first.verseId));
-    /* Resume where it was paused rather than starting over — the one thing a
+    /* Where it was paused rather than the beginning — the one thing a
        transport must not do is lose someone's place. */
-    start(src, audio.currentTime > 0 && audio.currentTime < audio.duration ? audio.currentTime : 0, null);
+    const resume = audio.currentTime > 0 && audio.currentTime < audio.duration
+      ? audio.currentTime : 0;
+    if (object.current !== null) { start(object.current, resume, null); return; }
+    /* The first CLIP, not the first pāda: an unmapped chant has no pādas and
+       every verse of it is still playable. */
+    const verse = onAir.current.verse ?? clipsOfDoc(doc)[0]?.verseId ?? null;
+    if (verse === null) { start(null, resume, null); return; }
+    start(sourceFor(doc, verse), onAir.current.verse === null ? 0 : resume, null, verse);
   }, [doc, playing, start]);
 
   const pause = useCallback(() => {
@@ -277,8 +350,32 @@ export function useRecording(doc: ChantDoc | null): Recording {
     wanted.current += 1;
   }, []);
 
+  /*
+   * WHAT PLAYS NEXT when a clip runs out. `false` means nothing does.
+   *
+   * Not while a single pāda or verse is playing — `until` says the person
+   * asked for that much and no more — and not for a take opened off a disk,
+   * which is one file for the whole chant and has nothing after it.
+   */
+  advance.current = (): boolean => {
+    if (until.current !== null || object.current !== null) return false;
+    /* The document's order. Taken from the mapping it was the order the CLIP
+       NAMES sort in, so śiva saṅkalpa sūktam — v-1.mp3 … v-39.mp3 — advanced
+       v-1, v-10, v-11, and puruṣa sūktam, whose clips are named after the
+       millisecond they were cut at, advanced in no order at all. */
+    const order = versesWithAudio(doc);
+    const now = onAir.current.verse;
+    const next = now === null ? order[0] : order[order.indexOf(now) + 1];
+    if (next === undefined) return false;
+    start(sourceFor(doc, next), 0, null, next);
+    return true;
+  };
+
   return {
     name,
+    /* The DOCUMENT has a recitation — clips, not pādas. Asking the mapping
+       made the dock invisible for every document but the one that is mapped. */
+    mapped: clipsOfDoc(doc).length > 0,
     file,
     ready,
     playing,

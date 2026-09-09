@@ -27,8 +27,8 @@ export {
 } from './seams.js';
 export type { SeamPada } from './seams.js';
 
-export { checkMapping, padasOf, rowFor, writeMapping } from './document.js';
-export type { MappingProblem, RecordingRow } from './document.js';
+export { checkMapping, clipsOf, padasOf, rowFor, writeMapping } from './document.js';
+export type { MappingProblem, RecordingRow, VerseClip } from './document.js';
 
 export { decodeWav } from './wav.js';
 export type { Decoded } from './wav.js';

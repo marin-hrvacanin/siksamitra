@@ -105,6 +105,89 @@ export function writeMapping(
 export const rowFor = (doc: ChantDoc, verseId: string): RecordingRow | undefined =>
   doc.recording?.byVerse?.[verseId] as RecordingRow | undefined;
 
+/** One verse's recitation: the clip, and the pādas inside it if anyone mapped them. */
+export interface VerseClip {
+  readonly verseId: string;
+  /** The document's own name for the file. `audioBase` is NOT applied here —
+   *  joining it, and resolving where it is served from, is the caller's job. */
+  readonly file: string;
+  /** Seconds, or `null` where the document does not say. */
+  readonly duration: number | null;
+  readonly label: string | null;
+  /** The pāda offsets, when the verse has been mapped. Empty is normal. */
+  readonly lines: readonly { start: number; end: number }[];
+}
+
+/**
+ * WHAT CAN BE PLAYED, IN THE ORDER IT IS SUNG.
+ *
+ * This is the list a transport runs on, and the reason it exists is that the
+ * editor was deriving one from `mappedIn` — which returns PĀDAS, and only for
+ * verses that carry a `lines` array. One document in the corpus has them:
+ *
+ *   bhagya-suktam           9 clips, 9 with lines
+ *   durga-suktam            8 clips, 0 with lines   <- the one the app opens
+ *   purusha-suktam         24 clips, 0
+ *   shiva-sankalpa-suktam  39 clips, 0
+ *
+ * So for Durgā Sūktam the list came back EMPTY: Play found nothing and
+ * returned, and the transport never appeared at all. That is the whole of the
+ * owner's report that "audio should be fully functional, as it used to be on
+ * vedaunion.org" — the platform reads `byVerse[id].file` directly and treats
+ * `lines` as the extra that enables per-pāda play, which is what this does.
+ *
+ * THE ORDER IS THE DOCUMENT'S, and that is not tidiness either. `byVerse` is a
+ * record, `canonicalJson` sorts a record's keys, and `mappedIn` sorts what is
+ * left by `file.localeCompare` — so śiva saṅkalpa sūktam's thirty-nine verses,
+ * whose clips are `v-1.mp3` … `v-39.mp3`, come back as v-1, v-10, v-11, v-12,
+ * and a chant plays in an order nobody recites it in. Purusha Sūktam's clips
+ * are named `audio-1762807901669-1ceh38.mp3` and carry no order at all.
+ * `section.verses` is ordered, and `normalizeChantDoc` guarantees it.
+ *
+ * A SECTION MAY NAME THE CLIP FOR ITS FIRST VERSE (`section.audio`), which is
+ * how a take of a whole step was recorded before there was a per-verse
+ * mapping. `byVerse` wins where both exist.
+ */
+export function clipsOf(doc: ChantDoc | null | undefined): VerseClip[] {
+  if (doc === null || doc === undefined) return [];
+  const byVerse = doc.recording?.byVerse ?? {};
+  const out: VerseClip[] = [];
+
+  for (const section of doc.sections) {
+    for (const [index, verse] of section.verses.entries()) {
+      const row = byVerse[verse.id] as RecordingRow | undefined;
+      /* The step's own take, for the verse it starts at. */
+      const fallback = index === 0 ? section.audio : undefined;
+      const file = row?.file !== undefined && row.file !== ''
+        ? row.file
+        : (fallback?.file ?? '');
+      if (file === '') continue;
+      out.push({
+        verseId: verse.id,
+        file,
+        duration: seconds(row?.duration ?? fallback?.duration),
+        label: row?.label ?? fallback?.label ?? null,
+        lines: (row?.lines ?? []).filter((l) => l !== undefined && l !== null),
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * A duration as a number of seconds, whatever the document wrote it as.
+ *
+ * Every one of these is in the corpus: `15.90` the STRING (durgā sūktam, all
+ * eight verses), `17.38` the number (śiva saṅkalpa), and `null` (puruṣa
+ * sūktam, all twenty-four). A string went into arithmetic as a string and came
+ * out as `"15.900"` or `NaN` depending on the operator.
+ */
+function seconds(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  const n = typeof value === 'number' ? value : Number.parseFloat(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export interface MappingProblem {
   readonly verseId: string;
   readonly why: string;
