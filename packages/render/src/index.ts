@@ -59,3 +59,5 @@ export * from './theme/marks.js';
  */
 export { toLines, toRuns } from './runs.js';
 export type { Run, RunMarks } from './runs.js';
+export { renderRun, renderRunLine, runClassName } from './render/run-marks.js';
+export type { RunRenderOptions } from './render/run-marks.js';

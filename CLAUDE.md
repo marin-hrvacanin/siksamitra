@@ -27,6 +27,50 @@ switch statement — see *Extension points* below.
 
 ---
 
+## The document model is changing — read this before touching a verse
+
+A verse is becoming **one text and a list of markings over it**, replacing
+`src` + `tokens`. The change is specified in
+[`openspec/changes/text-and-marks/`](openspec/changes/text-and-marks/) —
+proposal, design, five capability specs — and it is partly built. Know where it
+stands before you write anything that touches a document.
+
+**Why.** Deriving is lossy in one direction: `ṁ` becomes `n` before a dental
+and nothing recorded that it was ever `ṁ`. So the input was kept separately,
+and two representations of one verse had to agree forever. 153 of 573 verses
+lost their input entirely to v1's exporter, which is why a holding button used
+to answer with a paragraph about evidence.
+
+**What is done and proven:**
+
+- `packages/format/src/mark.ts` + `mark-ops.ts` — what a marking is, its
+  invariants, and the span algebra. Toggling is bold's rule.
+- `packages/format/src/migrate.ts` — `tokens ⇄ text + markings`, **573 of 573
+  verses byte for byte**. `npm run check:migrate`.
+- `packages/render/src/runs.ts` — text + markings as the runs that draw them.
+- `apps/web/src/editor/lexical/` — the editing surface is **Lexical**, with the
+  document behind one bridge. The whole corpus goes through it headlessly in
+  `tests/integration/lexical-bridge.test.ts`.
+
+**What is not done:** the app still holds `src` + `tokens`, so the engine still
+re-derives on every keystroke. That is why the rules run without being asked,
+and why removing a holding cannot yet be told apart from never having placed
+one. Both are fixed by the switch, not before it.
+
+**Three things that are no longer true**, wherever you find them written:
+
+- *Rule zero* — "a document with no `src` must not be re-derived" — is gone.
+  It protected marks by forbidding the operation; the protection is now that
+  every marking carries whether a person or the engine placed it.
+- *"Derived fields are outputs, recomputed never edited"* is gone. A displayed
+  letter is derived AND must be settable by hand.
+- The text holds **what is shown**, and a `was` marking carries what it
+  replaced. That direction, and not the other, because a flat text run is what
+  makes an editing surface's selection work — measured, in
+  `tools/spike-lexical/`.
+
+---
+
 ## What to read, for what
 
 | If you are… | Read |
@@ -43,7 +87,12 @@ switch statement — see *Extension points* below.
 | adding or changing an icon | `tools/icons/manifest.mjs` — our name → the library's — then `npm run icons` |
 | working on the page's type | `packages/tokens/src/document-type.ts` (the scale, and which of our elements takes which of HIS styles) then `apps/web/src/styles/document.css` |
 | working on the navigation panel | `apps/web/src/shell/NavPanel.tsx` — the tree is `blockRefs`, not a second model |
-| wondering why a document cannot be edited | `docs/INTERCHANGE.md` §9.7 (rule zero) and `packages/cli/src/attach-src.ts` |
+| wondering why a document cannot be edited | **nothing stops one now** — see *The document model is changing* below; rule zero is superseded |
+| working on the editing surface | `openspec/changes/text-and-marks/design.md`, then `apps/web/src/editor/lexical/` |
+| moving markings around | `packages/format/src/mark.ts` (what one IS) and `mark-ops.ts` (what may be done to a list) |
+| drawing marked text | `packages/render/src/runs.ts` — where the drawing changes — then `render/run-marks.tsx` |
+| exporting anything | `packages/interop/src/html/` is the pattern: lossless, gated, and the styles come from `packages/tokens/src/export-styles.ts` |
+| working on the Word add-in | `apps/word-addin/` — and read its report on what Word can and cannot represent |
 | adding a test | [`tests/README.md`](tests/README.md) — which tier, and what each may *not* do |
 | building an installer | [`docs/PACKAGING.md`](docs/PACKAGING.md) |
 | wondering why something is the way it is | `openspec/changes/bootstrap-v2/design.md` — eight decisions with their rejected alternatives |
@@ -171,6 +220,8 @@ section 12 cover it.
 
 ```bash
 npm install
+npm run run                # START IT — the newest build, on any of the three
+                           #   platforms, building whatever is stale
 npm run dev                # the app at http://localhost:5273
 npm run check              # typecheck + every test tier + every gate
 npm test                   # the four test tiers
@@ -180,12 +231,28 @@ npm run fonts              # re-vendor the fonts
 npm run spec               # the OpenSpec CLI
 ```
 
-The gates in `npm run check`: `check:web` `check:icons` `check:modules`
-`check:tokens` `check:literals` `check:fixtures` `check:conformance`
-`check:source` `check:transliteration` `check:lossless` `check:engine`.
+The gates in `npm run check`: `check:web` `check:word-addin` `check:icons`
+`check:authoring` `check:modules` `check:tokens` `check:literals`
+`check:fixtures` `check:conformance` `check:marking` `check:migrate`
+`check:source` `check:transliteration` `check:lossless` `check:engine`
+`check:export:html` `check:export:image` `check:export:word`
+`check:export:pdf`.
 
-`sm attach-src <doc.json>` gives a document its source layer back where a
-derivation reproduces it exactly — which is what makes it editable at all.
+Four of those are worth knowing by name:
+
+| | |
+|---|---|
+| `check:migrate` | `tokens ⇄ text + markings`, 573 of 573 verses byte for byte |
+| `check:marking` | marks one letter in every transcribed verse and compares every OTHER byte |
+| `check:export:html` | every document exported and re-imported, byte-identical |
+| `check:reflow` | applying a marking may not move a glyph (in `check:edit`) |
+
+**A gate that cannot fail is worse than no gate.** Every one of these compares
+against something the code under test does not itself compute, and several were
+rewritten when they turned out not to: the editor's old smoke test found a
+letter's rectangle, clicked its centre and asserted the caret was drawn there —
+the same arithmetic on both sides — and stayed green through the entire period
+the editor was unusable.
 
 **The browser gates are not in `npm run check`**, because they need a running
 dev server and a Chromium. Run them after any change to the shell, the
@@ -197,9 +264,15 @@ npm run dev                     # in another terminal, first
 CHROME=<path> npm run check:document    # the page against his .docx, in points
 CHROME=<path> npm run check:responsive  # 15 widths x 3 tabs: nothing clipped
 CHROME=<path> npm run check:themes      # 84 theme combinations resolve
-CHROME=<path> npm run check:edit        # 17 editing checks, end to end
+CHROME=<path> npm run check:edit        # gestures, views, and no reflow
 CHROME=<path> node tools/walkthrough.mjs   # 24 screenshots, to LOOK at
+CHROME=<path> node tools/shot-marking.mjs  # mark five letters and look at the box
 ```
+
+**They refuse a stale build.** Every one of them checks the stamp the build
+writes (`tools/build-stamp.mjs`) against the source on disk, and stops if they
+disagree — or if a built bundle carries no stamp at all. They were once pointed
+at a bundle hours old and passed green against it for a whole session.
 
 `tools/_ui.mjs` holds the selectors and gestures those tools use — one place,
 because rebuilding the toolbar used to break six tools silently. A

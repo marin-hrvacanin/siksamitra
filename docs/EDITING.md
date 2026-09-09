@@ -1,15 +1,72 @@
 # The editing surface
 
-The page is `contenteditable`. The browser owns the caret, the selection, the
-pointer and every motion key; every `beforeinput` is refused and re-expressed
-as a command against the document. The DOM is a projection at all times: the
-browser may select in it and may not change it.
+**It is being rebuilt on [Lexical](https://lexical.dev), and both halves are in
+the tree.** Read this whole section before changing anything here: which files
+are the future and which are the present is not obvious from their names.
 
-That invariant is the whole design. `agnim īḷe` in the file is drawn as
-syllable boxes with holdings around them and accents above the line, and an
-anusvāra may be drawn `gṁ` — so the text on screen is not the text in the
-document, and anything that let the browser edit the page directly would be
-editing a picture of the document rather than the document.
+## Why it changed
+
+The surface was written by hand over `contenteditable` — the browser owning the
+caret, every `beforeinput` refused and re-expressed as a command. It was a
+reasonable design and it was the source of every serious defect the owner
+reported: a frozen window, text that could not be selected, the caret and the
+insertion point in different places, navigation "buggy in more ways than I can
+name", drag-and-drop landing short.
+
+None of those were about marking, which is the part that is genuinely this
+program's to write. They were about a text-editing substrate, which is a solved
+problem with years of other people's bug reports already in it. The owner's
+ruling, now a standing rule: look for the battle-tested implementation first,
+and build on top of it, even when adopting it costs a rewrite.
+
+**Lexical is the surface and never the format.** Storing an editor's internal
+state as the document is v1's fatal mistake — a marking became a CSS-classed
+span inside Quill's `innerHTML`, and marks were produced in four places that
+could not be reconciled. That is why v2 exists. The document is one text and a
+list of markings; Lexical sits over it behind one bridge.
+
+## What the spike settled, by measurement
+
+`tools/spike-lexical/` — run it when Lexical is upgraded; it is the cheapest way
+to find out whether these assumptions still hold.
+
+A custom node emitting this program's per-letter markup — a `.syl` per
+syllable, a `.u` per letter — survived the reconciler and then failed
+everything: a click on the sixth letter reported offset 1, and typing two
+characters turned `sunavāma` into `YsX`. Lexical maps a DOM position through
+the node's own text node, and there is none when every letter is wrapped.
+
+**Flat runs work**, and better than what they replace:
+
+| | |
+|---|---|
+| a marked range is one run | `"su" "navā" "ma " "क्ष्मी"` |
+| a click maps to the right offset | clicked `v`, the model says 2 |
+| typing reaches the model and returns | `sunaXYvāma क्ष्मी` |
+| applying a holding splits the run | `"su":short "naXYvā":long` |
+| the box is one rectangle | 1 client rect |
+| the Devanāgarī conjunct still shapes | 48.7px against 81.7px with `akhn`, `half`, `vatu`, `cjct` off |
+
+Two things fall out that the hand-written surface could not manage: one box
+over a whole range crossing spaces, because Lexical splits text at every format
+boundary; and bold's semantics, because splitting runs at a selection's edges
+is what it already does.
+
+## The files
+
+**The new surface:**
+
+| file | what it owns |
+| --- | --- |
+| `packages/format/src/mark.ts` | what a marking IS, and its invariants |
+| `packages/format/src/mark-ops.ts` | every operation on a list of them |
+| `packages/render/src/runs.ts` | where the drawing changes |
+| `packages/render/src/render/run-marks.tsx` | one run, drawn |
+| `apps/web/src/editor/lexical/MarkedText.ts` | the one node the document is made of |
+| `apps/web/src/editor/lexical/bridge.ts` | document ⇄ editor, both directions in one file |
+
+**The present one**, still what the app runs, and going when the app holds text
+and markings rather than `src` and `tokens`:
 
 | file | what it owns |
 | --- | --- |
@@ -19,6 +76,19 @@ editing a picture of the document rather than the document.
 | `apply-input.ts` | what each `beforeinput` means to the document |
 | `unit-map.ts` | a unit as a line and a column, and back |
 | `focus.ts` | putting the keyboard back on the page |
+
+## What is not done, and what it blocks
+
+The app still holds `src` + `tokens`. Two things the owner asked for are
+waiting on the switch and cannot be done before it:
+
+- **The engine runs on every keystroke.** In the old model typing REQUIRES
+  re-derivation, because the tokens are the rendered text — so "why does the
+  engine immediately write the holdings? Who said that?" cannot be answered
+  until the text is the text.
+- **Removing a holding cannot be told from never having placed one**, which is
+  what the `None` button exists to express. With `by: 'rule' | 'hand'` on every
+  marking the button goes and the capability stays.
 
 ## Why the browser owns the caret
 
