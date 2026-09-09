@@ -244,3 +244,17 @@ export function parseLetters(word: string): string[] {
   }
   return out;
 }
+
+/**
+ * The control character a conjunct boundary emits after the virāma.
+ *
+ * ZWNJ / ZWJ, not the ASCII `_` / `+`: they are zero-width format characters,
+ * invisible, inert in collation and search, and already the canonical internal
+ * form. Here rather than in a script module because it is the same character
+ * in every script, and it was briefly written out in two of them.
+ */
+export const cjControl = (cj: 'split' | 'join' | undefined): string => {
+  if (cj === 'split') return ZWNJ;
+  if (cj === 'join') return ZWJ;
+  return '';
+};

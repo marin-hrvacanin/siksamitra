@@ -75,6 +75,25 @@ export interface ScriptModule {
    */
   readonly approximations?: Readonly<Record<PhonemeId, string>>;
   /**
+   * Characters that QUALIFY the letter they follow and are written after the
+   * whole akṣara, not after the bare consonant.
+   *
+   * Tamil Sanskrit marks the stop series with superscript digits — `க` ka,
+   * `க²` kha, `க³` ga, `க⁴` gha — and the digit is printed at the END of the
+   * cluster: `கீ³தா`, not `க³ீதா`; `வத்³`, not `வத³்`. Composing left to right
+   * puts it straight after the consonant, which lands it BETWEEN the consonant
+   * and its vowel sign and breaks the cluster: the shaper then treats the
+   * consonant as standalone and the vowel sign as an orphan, and `de` draws as
+   * two pieces instead of one letter.
+   *
+   * So a module names its qualifiers and the composer moves them past the
+   * dependent signs that follow, with the reader doing exactly the inverse. It
+   * is a field rather than a branch on `id === 'tam'` because that branch is
+   * the privilege this module system exists to remove — and because any script
+   * that qualifies a letter this way needs the same treatment.
+   */
+  readonly qualifiers?: string;
+  /**
    * Vowel signs (mātrās), for an abugida. `null` for a vowel this script has no
    * sign for — the syllable builder then closes the onset with a virāma and
    * writes the vowel's own letter.

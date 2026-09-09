@@ -14,9 +14,15 @@ import type { ViewState } from '../state/useViewState.js';
 import { EditStatus } from '../editor/EditStatus.js';
 import type { Session } from '../editor/useSession.js';
 
-const UNVERIFIED: Partial<Record<ChantScriptKey, string>> = {
-  tam: 'Tamil forms are unreviewed',
-};
+/**
+ * A script whose forms nobody has reviewed says so, here, where the text is.
+ *
+ * Tamil was the only entry and is no longer one: it is printed the way Tamil
+ * Sanskrit is printed, round-trips exactly and is held to the same standard as
+ * Devanāgarī and Telugu. The map stays because the next script added will need
+ * it before anyone has read it.
+ */
+const UNVERIFIED: Partial<Record<ChantScriptKey, string>> = {};
 
 export function StatusBar(
   { doc, state, script, session, dirty, note }: {

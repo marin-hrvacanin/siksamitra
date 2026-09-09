@@ -26,28 +26,32 @@ import type { ScriptUnit } from '@siksamitra/engine';
 
 const REFERENCE = 'corpus/transliteration-reference.json';
 /**
- * Devanāgarī and Telugu are verified. The owner has confirmed the TAMIL forms
- * in the shipped chants were never reviewed, so they are not a verification
- * target — fitting the tables to them would bake in their errors.
+ * Devanāgarī and Telugu must reproduce the published forms exactly.
+ *
+ * Tamil cannot, ON PURPOSE, and is held to a different standard below.
  */
 const SCRIPTS = new Set(['deva', 'tel']);
 /**
- * Tamil is REPORTED, never failed on.
+ * TAMIL IS HELD TO A FIXED DELTA, not to the published forms.
  *
- * Leaving it unmeasured meant nobody knew how far it had drifted, and it has:
- * 215 of 15,881 syllables disagree with the engine. The shipped side is
- * demonstrably the wrong one in places — `ऽ`, the DEVANĀGARĪ avagraha, sits in
- * the Tamil field of ten syllables — and it disagrees WITH ITSELF: 43 syllables
- * are spelled two ways, `saṁ` as `ஸம்` in one place and `ஸஂ` in another inside
- * one document. Each spelling is its own row in the fixture, so the count above
- * is exact; collapsing them reported 353 where the truth is 215.
+ * The shipped documents write Sanskrit in bare Tamil letters, so `ba`, `bha`,
+ * `pa` and `pha` are all `ப` — 24, 140, 302 and 7 times — and their Tamil
+ * collides 215 ways. They are also inconsistent with themselves: 43 syllables
+ * appear spelled two ways, `நஂ` 24 times against `நம்` three, sometimes
+ * inside one document. There was never a single published spelling to preserve.
  *
- * That self-contradiction is why the corpus could not simply be carried
- * forward when the forms stopped being stored: there is no single spelling to
- * carry. The engine's is consistent, so the engine's is what a rebuilt
- * document now shows. It prints here so the number cannot grow quietly, and so
- * the list is in front of whoever reviews Tamil.
+ * So the engine now prints the convention Tamil Sanskrit is actually printed
+ * in — superscript digits for the stop series, `க க² க³ க⁴` — which is
+ * what Ramakrishna Math, Giri and most stotra publishing use. With the series
+ * marked, Tamil collides on 30 syllables over the corpus, which is exactly what
+ * Devanāgarī and Telugu collide on, and every one of those is the virāma tick
+ * rather than a letter. It round-trips 15881/15881 with NO hidden marker.
+ *
+ * The difference from the published forms is therefore expected, and its size
+ * is recorded. A NEW difference — a letter that changes for any other reason —
+ * moves the number and fails.
  */
+const TAM_EXPECTED_DELTA = 2467;
 const REPORTED = 'tam';
 const show = Number(process.argv[process.argv.indexOf('--show') + 1]) || 12;
 
@@ -81,11 +85,24 @@ for (const script of ['deva', 'tel', REPORTED]) {
   const pct = seen ? ((1 - n / seen) * 100).toFixed(2) : '0';
   console.log(`\n${script}: ${n} of ${seen} syllables disagree (${rows.length} distinct)`
     + ` — ${pct}% agree`
-    + (SCRIPTS.has(script) ? '' : '   [REPORTED, not a target — see the note in this file]'));
+    + (SCRIPTS.has(script) ? '' : `   [the convention change: ${TAM_EXPECTED_DELTA} expected]`));
   for (const e of [...rows].sort((a, b) => b.n - a.n).slice(0, show)) {
     console.log(`  ${iastOf(e.units).padEnd(10)} published ${e.want.padEnd(12)}`
       + ` engine ${e.got.padEnd(12)} ×${e.n}`);
   }
+}
+
+/*
+ * Tamil: the delta must be exactly the convention change, no more and no less.
+ * More means something else moved; fewer means the convention is not being
+ * applied everywhere it should be.
+ */
+const tamDelta = (miss[REPORTED] ?? []).reduce((a, b) => a + b.n, 0);
+if (tamDelta !== TAM_EXPECTED_DELTA) {
+  console.log(`\ntam departs from the published forms in ${tamDelta} syllables;`
+    + ` ${TAM_EXPECTED_DELTA} is the recorded convention change.`
+    + '\nSomething other than the superscript convention has moved.');
+  process.exit(1);
 }
 
 /* The fixture has to actually contain something. An empty or truncated one

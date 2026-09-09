@@ -33,17 +33,19 @@ describe('which scripts are lossless on their own', () => {
     expect(isLosslessScript('deva')).toBe(true);
     expect(isLosslessScript('tel')).toBe(true);
   });
-  it('Tamil is not, and says which letters it cannot tell apart', () => {
-    expect(isLosslessScript('tam')).toBe(false);
-    const amb = ambiguitiesIn('tam');
-    const byGlyph = new Map(amb.map((a) => [a.glyph, a.letters]));
-    // The five stop vargas collapse four ways each; `ஜ` collapses two.
-    expect(byGlyph.get('க')).toEqual(['k', 'kh', 'g', 'gh']);
-    expect(byGlyph.get('ச')).toEqual(['c', 'ch']);
-    expect(byGlyph.get('ட')).toEqual(['ṭ', 'ṭh', 'ḍ', 'ḍh']);
-    expect(byGlyph.get('த')).toEqual(['t', 'th', 'd', 'dh']);
-    expect(byGlyph.get('ப')).toEqual(['p', 'ph', 'b', 'bh']);
-    expect(byGlyph.get('ஜ')).toEqual(['j', 'jh']);
+  /**
+   * TAMIL IS, NOW.
+   *
+   * It was not, and this test said so: `க` stood for k, kh, g and gh at once
+   * and the five stop vargas each collapsed four ways. That is what NATIVE
+   * Tamil orthography does — and it is not how Tamil Sanskrit is printed.
+   * Marking the series with superscript digits, which is the convention of
+   * Ramakrishna Math, Giri and most stotra publishing, gives each member its
+   * own written form. See `tamil.test.ts`.
+   */
+  it('Tamil is too, once the stop series is marked', () => {
+    expect(isLosslessScript('tam')).toBe(true);
+    expect(ambiguitiesIn('tam')).toEqual([]);
   });
 });
 
@@ -59,13 +61,17 @@ describe('round trip — IAST → script → IAST', () => {
     });
   }
 
-  it('native Tamil is lossy, and reports exactly where', () => {
-    const there = transliterate('gaṅgā', 'tam');
-    const back = toIast(there, 'tam');
-    // `g` is written `க`, which reads back as the group's default `k`.
-    expect(back.iast).not.toBe('gaṅgā');
-    expect(back.ambiguous.length).toBeGreaterThan(0);
-    expect(back.ambiguous[0]!.alternatives).toEqual(['k', 'kh', 'g', 'gh']);
+  it('Tamil round-trips every word exactly, in PLAIN mode', () => {
+    /* It did not, and could not: `gaṅgā` came back `kaṅkā`, because `g` was
+       written `க` and read back as the group's default `k`. The printed
+       convention writes it `க³`, so the reading is unambiguous and the round
+       trip needs no marker at all. */
+    for (const w of WORDS) {
+      const there = transliterate(w, 'tam');
+      const back = toIast(there, 'tam');
+      expect(back.iast, `${w} → ${there} → ${back.iast}`).toBe(w);
+      expect(back.ambiguous).toEqual([]);
+    }
   });
 
   it('Tamil in LOSSLESS mode round-trips every word exactly', () => {
@@ -77,18 +83,26 @@ describe('round trip — IAST → script → IAST', () => {
     }
   });
 
-  it('the selectors render as nothing — stripping them gives the plain form', () => {
-    const plain = transliterate('gaṅgā', 'tam');
-    const lossless = transliterate('gaṅgā', 'tam', { lossless: true });
-    expect(hasSelectors(lossless)).toBe(true);
-    expect(hasSelectors(plain)).toBe(false);
-    expect(stripSelectors(lossless)).toBe(plain);
+  it('no registered script needs a selector any more', () => {
+    /* Tamil was the one that did. Now that the distinction is ON THE PAGE,
+       lossless mode has nothing left to add for any of them — which is the
+       better answer, because a reader can see it. */
+    for (const script of ['deva', 'tel', 'tam'] as const) {
+      const plain = transliterate('gaṅgā', script);
+      const lossless = transliterate('gaṅgā', script, { lossless: true });
+      expect(hasSelectors(plain), script).toBe(false);
+      expect(hasSelectors(lossless), script).toBe(false);
+      expect(lossless, script).toBe(plain);
+    }
   });
 
-  it('a lossless script emits no selectors even when asked', () => {
-    for (const script of ['deva', 'tel'] as const) {
-      expect(hasSelectors(transliterate('gaṅgā', script, { lossless: true }))).toBe(false);
-    }
+  it('and stripping selectors is still the inverse of adding them', () => {
+    /* The mechanism stays for the next script that needs it, so it stays
+       tested — on a string that carries one, rather than on Tamil, which no
+       longer produces any. */
+    const withSelector = `க${String.fromCodePoint(0xfe01)}`;
+    expect(hasSelectors(withSelector)).toBe(true);
+    expect(stripSelectors(withSelector)).toBe('க');
   });
 });
 

@@ -125,6 +125,7 @@ const SEQUENCE_CACHE = new Map<ScriptId, string[]>();
 onScriptReplaced((id) => {
   COLLISION_CACHE.delete(id);
   SEQUENCE_CACHE.delete(id);
+  WRITABLE_CACHE.delete(id);
 });
 
 function collisions(script: ScriptId): Map<string, string[]> {
@@ -208,6 +209,66 @@ export function sequenceAmbiguitiesIn(script: ScriptId): readonly string[] {
 }
 
 /**
+ * Every string this script can write ANOTHER way: a letter on its own, or a
+ * letter with a vowel sign on it.
+ *
+ * This is what decides whether an approximation needs a marker to be read back.
+ * `ரு` does: it is also `ர` plus the `u` sign, so a reader meeting it cannot
+ * tell `ṛ` from `ru`. `க³` does not — nothing else in the script produces it,
+ * because the superscript is not a vowel sign and no letter carries one.
+ *
+ * `sequenceAmbiguitiesFor` above answers a NARROWER question — a form spellable
+ * out of other LETTERS — and is blind to the letter-plus-sign case, which is
+ * exactly the case Tamil’s vocalic vowels fall into.
+ */
+function otherwiseWritableFor(script: ScriptId): Set<string> {
+  const module = getScript(script);
+  const out = new Set<string>();
+  if (module === undefined) return out;
+  const letters: string[] = [];
+  for (const p of PHONEME_INVENTORY) {
+    const f = formOf(module, p.id);
+    if (f === undefined || f === null || f.form === '') continue;
+    if (f.approximate !== true) out.add(f.form);
+    letters.push(f.form);
+  }
+  for (const sign of Object.values(module.signs ?? {}) as (string | null)[]) {
+    if (sign === null || sign === '') continue;
+    for (const l of letters) out.add(l + sign);
+  }
+  return out;
+}
+
+const WRITABLE_CACHE = new Map<ScriptId, Set<string>>();
+
+function otherwiseWritable(script: ScriptId): Set<string> {
+  const cached = WRITABLE_CACHE.get(script);
+  if (cached !== undefined) return cached;
+  const computed = otherwiseWritableFor(script);
+  WRITABLE_CACHE.set(script, computed);
+  return computed;
+}
+
+/**
+ * Does this approximation need a marker before it can be read back?
+ *
+ * ONE ANSWER, used by the writer and the reader. It used to be the length of
+ * the glyph, in two places: `selectorFor` emitted a marker for any
+ * multi-character approximation and the decoder demanded one. That was right
+ * while every such approximation was ambiguous, and wrong the moment Tamil
+ * marked its stop series — `க³` is two characters and means exactly one
+ * thing, and requiring an invisible marker for it cost 1616 syllables their
+ * round trip.
+ */
+export function needsApproxMarker(iast: PhonemeId, script: ScriptId): boolean {
+  const module = getScript(script);
+  if (module === undefined) return false;
+  const f = formOf(module, iast);
+  if (f === undefined || f === null || f.approximate !== true || f.form.length < 2) return false;
+  return otherwiseWritable(script).has(f.form);
+}
+
+/**
  * The selector that disambiguates `iast` when written in `script`, or `''` when
  * none is needed — either the script is unambiguous here, or this letter is the
  * group's first member and therefore the unmarked default.
@@ -223,9 +284,9 @@ export function selectorFor(iast: PhonemeId, script: ScriptId): string {
   if (glyph === undefined) return '';
   const group = collisions(script).get(glyph);
   if (group === undefined) {
-    // No glyph collision — but a multi-character approximation still needs the
-    // marker, or `ரு` (`ṛ`) is indistinguishable from `ர` + `ு` (`ru`).
-    return isApproximation(iast, script) && glyph.length > 1 ? VS_APPROX : '';
+    /* No glyph collision — but an approximation a reader could take for a
+       letter-plus-sign still needs the marker. See `needsApproxMarker`. */
+    return needsApproxMarker(iast, script) ? VS_APPROX : '';
   }
   const ordinal = group.indexOf(iast);
   if (ordinal <= 0) return '';

@@ -195,10 +195,15 @@ const index = {
   note: 'Every expectation is DERIVED — the recitation text, the holding spans, '
       + 'the resolved provenance. A reader that echoes the document fails all of '
       + 'them. See docs/INTERCHANGE.md §8.',
-  scriptsVerified: ['deva', 'tel'],
-  scriptsUnverified: ['tam', 'itrans'],
-  scriptCaveat: 'The `tam` forms asserted here are UNREVIEWED output, carried so '
-      + 'both implementations agree, not evidence that they are correct Tamil.',
+  scriptsVerified: ['deva', 'tel', 'tam'],
+  scriptsUnverified: ['itrans'],
+  scriptCaveat: 'The `itrans` forms asserted here are UNREVIEWED output, carried '
+      + 'so both implementations agree, not evidence that they are correct. `tam` '
+      + 'was in this list until it was printed the way Tamil Sanskrit is printed '
+      + '— superscript digits for the stop series — which makes it round-trip '
+      + 'exactly and collide no more than Devanagari does. It is now held to '
+      + 'properties rather than to the shipped forms, which disagreed with '
+      + 'themselves; see packages/engine/src/__tests__/tamil.test.ts.',
   fixtures: fixtures.map((f) => ({ id: f.id, construct: f.construct, file: `${f.id}.json` })),
   constructsWithoutFixture: missing,
 };

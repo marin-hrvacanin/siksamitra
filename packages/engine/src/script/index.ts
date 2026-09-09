@@ -22,8 +22,8 @@
  * which was a third more verification than exists.
  */
 import {
-  ANU, DIGRAPHS, FORM_BOUNDARY, PRANAVA, VIS, VIRAMA_TICK, ZWJ, ZWNJ,
-  isConsonant, isVowel,
+  ANU, DIGRAPHS, PRANAVA, VIS, VIRAMA_TICK, ZWJ, ZWNJ,
+  cjControl, isConsonant, isVowel,
 } from '../alphabet.js';
 import {
   ACCENT_MARKS, BY_IAST, SIGN_BY_IAST,
@@ -34,8 +34,11 @@ import { formOf, type ScriptModule } from './module.js';
 import { PHONEME_INVENTORY } from './phonemes.js';
 import { getScript, registeredScripts, requireScript } from './registry.js';
 import {
-  VS_APPROX, isApproximation, isVariationSelector, letterFromSelector, selectorFor,
+  VS_APPROX, isApproximation, isVariationSelector, letterFromSelector,
+  needsApproxMarker, selectorFor,
 } from './lossless.js';
+import { qualifiersIn, qualifiersOut } from './qualifiers.js';
+import { romanisationLossless, romanisationToIast } from './romanisation.js';
 
 export type { ScriptKey, AnyScriptKey } from './tables.js';
 export { PHONEMES, VOWEL_SIGNS, VIRAMA, PRANAVA_FORMS } from './tables.js';
@@ -115,12 +118,6 @@ function letters(s: string): string[] {
   return out;
 }
 
-/** The control character a conjunct boundary emits after the virāma. */
-function cjControl(cj: 'split' | 'join' | undefined): string {
-  if (cj === 'split') return ZWNJ;
-  if (cj === 'join') return ZWJ;
-  return '';
-}
 
 /**
  * Build one akṣara from a syllable's units.
@@ -254,7 +251,9 @@ export function transliterateSyllable(
     }
   }
 
-  return out;
+  /* The qualifiers belong at the end of the cluster, not after the bare
+     consonant they were composed onto. See `ScriptModule.qualifiers`. */
+  return module.qualifiers === undefined ? out : qualifiersOut(out, module.qualifiers);
 }
 
 /**
@@ -388,80 +387,6 @@ export interface ToIastResult {
   ambiguous: { at: number; from: string; chose: string; alternatives: string[] }[];
 }
 
-/**
- * Write a romanisation so it can be read back exactly.
- *
- * Longest-match decoding is deterministic but not automatically faithful: in
- * ITRANS `sh` is both one phoneme and `s` + `h`, and `aa` is both one vowel and
- * `a` + `a`, so the pair silently reads back as the single letter. The corpus
- * happens to contain neither sequence, which is precisely the kind of luck that
- * should not be mistaken for a property.
- *
- * So each form is appended, the result re-read, and where the reading has
- * changed a zero-width non-joiner is inserted to break the merge. ZWNJ is the
- * right character for it: invisible, inert, and already meaning "these do not
- * combine" — the same thing it means after a halanta.
- */
-function romanisationLossless(
-  units: readonly ScriptUnit[],
-  module: ScriptModule,
-): string {
-  let out = '';
-  const intended: string[] = [];
-  for (const u of units) {
-    const form = formOf(module, u.c)?.form ?? u.c;
-    intended.push(u.c);
-    const candidate = out + form;
-    // Would appending this form change how anything already written reads?
-    if (romanisationToIast(candidate, module).iast !== intended.join('')) {
-      out += FORM_BOUNDARY + form;
-    } else {
-      out = candidate;
-    }
-    if (u.cj !== undefined) out += cjControl(u.cj);
-  }
-  return out;
-}
-
-/**
- * Read a romanisation back, by longest match over its own forms.
- *
- * A romanisation has no virama and no matras: it writes vowels in line, so the
- * abugida decoder below is simply the wrong machine for it. Run against ITRANS
- * it inserted the inherent vowel after every consonant — `prā` came back as
- * `parā`, `gnim` as `ganima` — and 29 % of the corpus failed to round-trip.
- *
- * Longest match first, so a two-character form is read as itself before its
- * first character is read alone. That makes the decode DETERMINISTIC. Where a
- * form is also spellable as a sequence of shorter forms (ITRANS `sh` is both
- * one phoneme and `s` + `h`) determinism is not the same as faithfulness: the
- * longer reading wins and the sequence reading cannot be expressed. Such
- * scripts are reported by `sequenceAmbiguitiesIn` and registered
- * `reversible: false`.
- */
-function romanisationToIast(text: string, module: ScriptModule): ToIastResult {
-  const forms = PHONEME_INVENTORY
-    .map((p) => ({ id: p.id, form: formOf(module, p.id)?.form }))
-    .filter((e): e is { id: string; form: string } => e.form !== undefined && e.form !== '')
-    .sort((a, b) => b.form.length - a.form.length);
-
-  let out = '';
-  let i = 0;
-  while (i < text.length) {
-    const ch = text[i]!;
-    // The conjunct controls are carried through untouched: they are the same
-    // characters on both sides and mean the same thing.
-    // A form boundary did its job at parse time and is not part of the text.
-    if (ch === FORM_BOUNDARY) { i += 1; continue; }
-    // The conjunct controls ARE part of it: same characters, same meaning.
-    if (ch === ZWNJ || ch === ZWJ) { out += ch; i += 1; continue; }
-    const hit = forms.find((e) => text.startsWith(e.form, i));
-    if (hit === undefined) { out += ch; i += 1; continue; }
-    out += hit.id;
-    i += hit.form.length;
-  }
-  return { iast: out, ambiguous: [] };
-}
 
 export function toIast(
   text: string,
@@ -482,6 +407,10 @@ export function toIast(
   const lossless = opts?.lossless === true;
   const source = requireScript(from);
   const virama = source.virama;
+  /* Qualifiers back where they were composed from, before anything is matched:
+     `கீ³` is printed with the digit after the vowel sign and the table holds
+     `க³`. See `qualifiers.ts`. */
+  if (source.qualifiers !== undefined) text = qualifiersIn(text, source.qualifiers);
   // The praṇava ligatures are single glyphs standing for a whole syllable, so
   // they are matched before anything else. Telugu has no ligature and reverses
   // through the ordinary letter + sign path.
@@ -509,10 +438,14 @@ export function toIast(
   // A Tamil glyph that stands for several IAST letters: record the alternatives.
   const alternativesFor = (glyph: string): string[] =>
     letterEntries.filter((e) => e.glyph === glyph).map((e) => e.iast);
-  /** A multi-character approximation matches only when VS16 follows it. */
-  const matchable = (e: { glyph: string; approx: boolean }, at: number): boolean => {
-    if (!e.approx || e.glyph.length === 1) return true;
-    return text.startsWith(e.glyph + VS_APPROX, at);
+
+  /* May this entry match here? `needsApproxMarker` is the one answer, shared
+     with the writer, so the two cannot disagree about which approximations
+     carry a marker — see `lossless.ts`. */
+  const matchable = (e: { iast: string; approx: boolean }, at: number): boolean => {
+    if (!e.approx || !needsApproxMarker(e.iast, from)) return true;
+    const glyph = letterFor(BY_IAST.get(e.iast)!, from);
+    return glyph !== null && text.startsWith(glyph + VS_APPROX, at);
   };
 
   const ambiguous: ToIastResult['ambiguous'] = [];

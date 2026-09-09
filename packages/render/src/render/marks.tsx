@@ -35,9 +35,18 @@ export const DIGITS: Record<ScriptKey, string> = {
   tam: '௦௧௨௩௪௫௬௭௮௯',
 };
 
-/** The candrabindu, per script. */
+/**
+ * The candrabindu, per script.
+ *
+ * TAMIL BORROWS THE GRANTHA SIGN, U+11300, because Tamil has none of its own —
+ * exactly as this text already borrows the Grantha letters `ஜ ஷ ஸ ஹ ஶ`, which
+ * is what Tamil Sanskrit has always done. It used to fall back to the IAST
+ * combining mark U+0310, which Noto Serif Tamil has no glyph for, so the gum in
+ * `தே³வீ` drew as an empty box on the page. Measured against a control, of the
+ * four candidates only U+0310 fails in the shipped face.
+ */
 export const DEVA_CANDRA: Record<ScriptKey, string> = {
-  iast: '̐', deva: 'ँ', tel: 'ఀ', tam: '̐',
+  iast: '̐', deva: 'ँ', tel: 'ఀ', tam: '\u{11300}',
 };
 
 /**

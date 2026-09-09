@@ -54,7 +54,7 @@
       "deva": "ऋ",
       "tel": "ఋ",
       "tam": null,
-      "tamApprox": "ரு",
+      "tamApprox": "ரு'",
       "itrans": "R^i",
       "type": "vowel"
     },
@@ -63,7 +63,7 @@
       "deva": "ॠ",
       "tel": "ౠ",
       "tam": null,
-      "tamApprox": "ரூ",
+      "tamApprox": "ரூ'",
       "itrans": "R^I",
       "type": "vowel"
     },
@@ -72,7 +72,7 @@
       "deva": "ऌ",
       "tel": "ఌ",
       "tam": null,
-      "tamApprox": "லு",
+      "tamApprox": "லு'",
       "itrans": "L^i",
       "type": "vowel"
     },
@@ -81,7 +81,7 @@
       "deva": "ॡ",
       "tel": "ౡ",
       "tam": null,
-      "tamApprox": "லூ",
+      "tamApprox": "லூ'",
       "itrans": "L^I",
       "type": "vowel"
     },
@@ -131,7 +131,7 @@
       "deva": "ख",
       "tel": "ఖ",
       "tam": null,
-      "tamApprox": "க",
+      "tamApprox": "க²",
       "itrans": "kh",
       "type": "consonant",
       "varga": "ka"
@@ -141,7 +141,7 @@
       "deva": "ग",
       "tel": "గ",
       "tam": null,
-      "tamApprox": "க",
+      "tamApprox": "க³",
       "itrans": "g",
       "type": "consonant",
       "varga": "ka"
@@ -151,7 +151,7 @@
       "deva": "घ",
       "tel": "ఘ",
       "tam": null,
-      "tamApprox": "க",
+      "tamApprox": "க⁴",
       "itrans": "gh",
       "type": "consonant",
       "varga": "ka"
@@ -179,7 +179,7 @@
       "deva": "छ",
       "tel": "ఛ",
       "tam": null,
-      "tamApprox": "ச",
+      "tamApprox": "ச²",
       "itrans": "Ch",
       "type": "consonant",
       "varga": "ca"
@@ -198,7 +198,7 @@
       "deva": "झ",
       "tel": "ఝ",
       "tam": null,
-      "tamApprox": "ஜ",
+      "tamApprox": "ஜ²",
       "itrans": "jh",
       "type": "consonant",
       "varga": "ca"
@@ -226,7 +226,7 @@
       "deva": "ठ",
       "tel": "ఠ",
       "tam": null,
-      "tamApprox": "ட",
+      "tamApprox": "ட²",
       "itrans": "Th",
       "type": "consonant",
       "varga": "ta-retroflex"
@@ -236,7 +236,7 @@
       "deva": "ड",
       "tel": "డ",
       "tam": null,
-      "tamApprox": "ட",
+      "tamApprox": "ட³",
       "itrans": "D",
       "type": "consonant",
       "varga": "ta-retroflex"
@@ -246,7 +246,7 @@
       "deva": "ढ",
       "tel": "ఢ",
       "tam": null,
-      "tamApprox": "ட",
+      "tamApprox": "ட⁴",
       "itrans": "Dh",
       "type": "consonant",
       "varga": "ta-retroflex"
@@ -274,7 +274,7 @@
       "deva": "थ",
       "tel": "థ",
       "tam": null,
-      "tamApprox": "த",
+      "tamApprox": "த²",
       "itrans": "th",
       "type": "consonant",
       "varga": "ta-dental"
@@ -284,7 +284,7 @@
       "deva": "द",
       "tel": "ద",
       "tam": null,
-      "tamApprox": "த",
+      "tamApprox": "த³",
       "itrans": "d",
       "type": "consonant",
       "varga": "ta-dental"
@@ -294,7 +294,7 @@
       "deva": "ध",
       "tel": "ధ",
       "tam": null,
-      "tamApprox": "த",
+      "tamApprox": "த⁴",
       "itrans": "dh",
       "type": "consonant",
       "varga": "ta-dental"
@@ -322,7 +322,7 @@
       "deva": "फ",
       "tel": "ఫ",
       "tam": null,
-      "tamApprox": "ப",
+      "tamApprox": "ப²",
       "itrans": "ph",
       "type": "consonant",
       "varga": "pa"
@@ -332,7 +332,7 @@
       "deva": "ब",
       "tel": "బ",
       "tam": null,
-      "tamApprox": "ப",
+      "tamApprox": "ப³",
       "itrans": "b",
       "type": "consonant",
       "varga": "pa"
@@ -342,7 +342,7 @@
       "deva": "भ",
       "tel": "భ",
       "tam": null,
-      "tamApprox": "ப",
+      "tamApprox": "ப⁴",
       "itrans": "bh",
       "type": "consonant",
       "varga": "pa"
@@ -459,7 +459,7 @@
       "iast": "'",
       "deva": "ऽ",
       "tel": "ఽ",
-      "tam": null,
+      "tam": "ऽ",
       "itrans": ".a",
       "type": "special",
       "label": "avagraha"

@@ -10,6 +10,10 @@
  * group — the dialog-launcher Word puts on a group that has more to say than
  * fits. A script that is not reviewed says so there, where the choice is made,
  * rather than in a tooltip nobody opens.
+ *
+ * Tamil carried that caveat and no longer does. It is printed the way Tamil
+ * Sanskrit is printed — superscript digits for the stop series, `க க² க³ க⁴` —
+ * which makes it round-trip exactly and collide no more than Devanāgarī does.
  */
 import { useRef, useState, type ReactNode } from 'react';
 import type { ChantScriptKey } from '@siksamitra/format';
@@ -35,7 +39,7 @@ const PRIMARY: readonly Script[] = [
  *  script registry; they will appear here when they exist. */
 const MORE: readonly Script[] = [
   { k: 'tel', label: 'తెలు', name: 'Telugu' },
-  { k: 'tam', label: 'தமி', name: 'Tamil', caveat: 'these forms are unreviewed' },
+  { k: 'tam', label: 'தமி', name: 'Tamil' },
 ];
 
 export function ScriptGroup(
