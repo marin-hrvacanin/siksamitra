@@ -16,6 +16,7 @@
       "import": "./dist/theme/marks.js"
     },
     "./chant.css": "./src/chant.css",
+    "./export.css": "./src/export.css",
     "./hold-join.css": "./src/hold-join.css",
     "./print.css": "./src/print.css",
     "./mark-geometry.css": "./src/generated/mark-geometry.css"

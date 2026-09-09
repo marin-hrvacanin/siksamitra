@@ -229,7 +229,38 @@ Where the 6.56 MB goes today:
 already re-derives all 15 881 syllables in five scripts with no loss, so storing
 them buys nothing but bytes and a second thing to disagree with the text.
 
-What the new shape weighs:
+What the new shape weighs — **as first migrated**, which is not yet where it
+should end up:
+
+| | today | text + marks | gzipped |
+|---|---:|---:|---:|
+| śrī rudram | 1806 kB | 792 kB | 55 kB |
+| pūjā vidhi | 1220 kB | 283 kB | 19 kB |
+| durgā sūktam | 170 kB | 43 kB | 4 kB |
+| **whole corpus** | **6565 kB** | **1952 kB** | **141 kB** |
+
+3.4× as files, 46× compressed. Below the projection, and the reason is one
+decision: the migration **carries the syllable boundaries** as markings rather
+than recomputing them, which turns 12 635 markings into 28 705. That is what
+buys the 573-of-573 exact round trip — a conversion that also re-derives cannot
+tell a conversion fault from a derivation fault — and it is meant to be
+temporary. Once the engine is shown to reproduce a given document's boundaries,
+that document's boundary markings are dropped, and the numbers below are what
+is left:
+
+| | today | text + marks | gzipped |
+|---|---:|---:|---:|
+| śrī rudram | 1806 kB | 104 kB | 17 kB |
+| pūjā vidhi | 1220 kB | 36 kB | 7 kB |
+| durgā sūktam | 170 kB | 6 kB | 1.4 kB |
+| **whole corpus** | **6565 kB** | **252 kB** | **44 kB** |
+
+Both tables are measured, the first by `tools/migrate-audit.mjs` and the second
+by `tools/size-study.mjs`, and the gap between them is exactly the boundaries.
+The size gate is set against the first until the boundaries go, and then
+against the second; it may only ever ratchet down.
+
+The earlier projection, for reference:
 
 | | today | text + marks | gzipped |
 |---|---:|---:|---:|

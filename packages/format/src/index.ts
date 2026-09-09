@@ -46,3 +46,7 @@ export {
   marksIn, normalise, POINT_KINDS, removeMark, shiftForEdit, STAGE_OF, toggleMark,
 } from './mark.js';
 export type { Mark, MarkFault, MarkInput, MarkKind, Stage, TextEdit } from './mark.js';
+
+/* Tokens ⇄ text and markings, and the round trip that proves it loses nothing. */
+export { toTextAndMarks, toTokens } from './migrate.js';
+export type { TextAndMarks } from './migrate.js';

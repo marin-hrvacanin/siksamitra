@@ -1,0 +1,119 @@
+/**
+ * THE FRAME an exported document is set on.
+ *
+ * Four shapes and nothing else. Not one colour, face, size or leading is
+ * decided in this file: those all come from the document theme the export
+ * style names, through the `--doc-*` custom properties the token generator
+ * emits, exactly as they do on screen. That is what makes an export in the
+ * `veda-union` style the same page as the editor's — there is no second set of
+ * values that could disagree with his `.docx`.
+ *
+ * TWO OF THE FOUR FRAMES ARE NOT HERE. `page` and `web` are `FlowView`'s own
+ * two shapes and are styled by the app's `canvas.css`, which an exported file
+ * carries along with every other stylesheet the app loads. Restating them here
+ * would be the second renderer this program exists to avoid.
+ *
+ * The card's four lengths arrive as `--x-card-*`, written onto the frame
+ * element by the exporter from `CARD` in `packages/tokens/src/export-styles.ts`
+ * — where the reason for each number is recorded, because each was chosen
+ * against what WhatsApp does to an image.
+ */
+
+/* ── the root of an exported page ───────────────────────────────────────── */
+/*
+ * `min-height: 100%` rather than `height: 100%`: the app's `base.css` sizes
+ * `body` to the viewport because the editor is a fixed-height grid, and an
+ * exported page is the opposite — it is as long as the document. Without this
+ * a document of nine verses drew its ground for one screen and then ran on
+ * over the browser's default white.
+ *
+ * The `bare` frame is deliberately left out of it: that frame shrink-wraps the
+ * text so a rasteriser can clip to it, and a viewport-tall minimum would put a
+ * screenful of alpha under every transparent PNG.
+ */
+.export--page,
+.export--web,
+.export--card {
+  min-height: 100%;
+}
+
+/* ── the desk, under a sheet ────────────────────────────────────────────── */
+/*
+ * The `page` frame draws a sheet, and a sheet needs something to lie on or its
+ * white edge is invisible against the browser's white. This is the same
+ * `--chrome-desk` the editor's canvas uses, which is why an exported page
+ * looks like a screenshot of Flow view rather than a page floating in nothing.
+ */
+.export--page {
+  background: var(--chrome-desk);
+}
+
+/* ── card ───────────────────────────────────────────────────────────────── */
+/*
+ * The band around the card is the paper with a little of its own ink mixed in,
+ * so it follows the theme instead of being a colour chosen once. On the
+ * platform's vellum that is a warm biscuit; on its dark ground it is one step
+ * up from the ground. 7 % is the least that separates the two edges at the
+ * contrast a phone screen has in daylight — below that the card's corner stops
+ * reading as a corner and the rounding is wasted.
+ */
+.export--card {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: var(--x-card-mat-pad);
+  background: color-mix(in srgb, var(--doc-ink) 7%, var(--doc-bg));
+}
+
+.export__card {
+  width: 100%;
+  max-width: var(--x-card-measure);
+  padding: var(--x-card-pad);
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  border-radius: var(--x-card-radius);
+  box-shadow: var(--shadow-lg);
+}
+
+/*
+ * A card is a thing that was PREPARED for someone, so it is centred — that is
+ * the one place an export departs from the editor's left-aligned page, and it
+ * is deliberate. The hanging indent a verse carries on paper is an artefact of
+ * a measure this card does not have, so it is withdrawn here rather than
+ * leaving every first line poking out to the left of a centred block.
+ */
+.export__card .doc,
+.export__card .doc .verse,
+.export__card .doc .pada,
+.export__card .doc .pada[data-line='0'],
+.export__card .doc .doc__translation {
+  text-align: center;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  text-indent: 0;
+}
+.export__card .doc .section__title,
+.export__card .doc .doc__part,
+.export__card .doc .doc__name,
+.export__card .doc .doc__instruction,
+.export__card .doc .doc__source {
+  text-align: center;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* ── bare ───────────────────────────────────────────────────────────────── */
+/*
+ * No ground at all, and no wider than the text: a rasteriser clips to this
+ * element, and a frame that filled the viewport would put a field of alpha
+ * around every PNG. `fit-content` rather than `max-content` so a document with
+ * one very long instruction still wraps at the reading measure instead of
+ * producing an image several thousand pixels wide.
+ */
+.export--bare {
+  display: block;
+  width: fit-content;
+  max-width: var(--measure-web);
+  background: transparent;
+}

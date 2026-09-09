@@ -51,7 +51,24 @@ export type MarkKind =
   /** A superscript after the range. `v`: the letters. */
   | 'sup'
   /** A pause. A point marking. `v`: `short` | `long`. */
-  | 'pause';
+  | 'pause'
+  /**
+   * Where a syllable ends. A point marking.
+   *
+   * Division IS derivable — that is what `syllable.ts` does — and it is
+   * carried rather than recomputed all the same, because a migration that also
+   * re-derives cannot tell a conversion fault from a derivation fault. Once
+   * `tools/migrate-audit.mjs` shows the engine reproduces a document's
+   * boundaries, that document's boundary markings can be dropped; until then
+   * they are what makes the round trip exact.
+   */
+  | 'syl'
+  /** A conjunct choice on the letter: `v` is `split` or `join`. */
+  | 'cj'
+  /** Prose inside a marked stream. `v` is `fill` when the reciter supplies it. */
+  | 'plain'
+  /** A variable slot; `v` is its name. */
+  | 'slot';
 
 /** Which pass owns which kind, when the caller does not say. */
 export const STAGE_OF: Readonly<Record<MarkKind, Stage>> = {
@@ -62,10 +79,29 @@ export const STAGE_OF: Readonly<Record<MarkKind, Stage>> = {
   sbhakti: 'aids',
   sup: 'aids',
   pause: 'aids',
+  syl: 'holdings',
+  cj: 'change',
+  plain: 'aids',
+  slot: 'aids',
 };
 
+/**
+ * The kinds whose neighbours FUSE when they meet and agree.
+ *
+ * A holding is a property spread over a range: two long holdings that touch
+ * are one box, and leaving them apart draws two strokes where the author drew
+ * one. A substitution is not — two consecutive letters that were each a
+ * visarga are two substitutions, and fusing them into one `was [136,138) =
+ * "ḥ"` says the pair of them was a single `ḥ`, which loses a letter. Śrī
+ * Rudram has three verses that do exactly this, and they are what this set is
+ * for; the same reasoning covers a superscript and a conjunct choice, both of
+ * which belong to one letter each.
+ */
+export const MERGING_KINDS: ReadonlySet<MarkKind> =
+  new Set<MarkKind>(['hold', 'svara', 'candra']);
+
 /** The kinds that sit BETWEEN letters rather than over them. */
-export const POINT_KINDS: ReadonlySet<MarkKind> = new Set<MarkKind>(['sbhakti', 'pause']);
+export const POINT_KINDS: ReadonlySet<MarkKind> = new Set<MarkKind>(['sbhakti', 'pause', 'syl']);
 
 export interface Mark {
   k: MarkKind;
@@ -181,7 +217,8 @@ export function markFaults(marks: readonly Mark[], text: string): MarkFault[] {
       const here = list[i]!;
       if (here.from < prev.to) {
         say('overlap', `two ${kind} markings cover ${here.from}`, marks.indexOf(here));
-      } else if (here.from === prev.to && sameValue(prev, here)) {
+      } else if (here.from === prev.to && sameValue(prev, here)
+        && MERGING_KINDS.has(kind)) {
         say('unmerged', `two ${kind} markings meet at ${here.from} and are the same`, marks.indexOf(here));
       }
     }
@@ -207,7 +244,7 @@ export function normalise(marks: readonly Mark[]): Mark[] {
   for (let i = out.length - 1; i > 0; i -= 1) {
     const here = out[i]!;
     const prev = out[i - 1]!;
-    if (POINT_KINDS.has(here.k)) continue;
+    if (!MERGING_KINDS.has(here.k)) continue;
     if (prev.to === here.from && sameValue(prev, here)) {
       out.splice(i - 1, 2, { ...prev, to: here.to });
     }

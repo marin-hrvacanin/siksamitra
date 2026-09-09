@@ -11,7 +11,8 @@
     "./tokens.json": "./generated/tokens.json",
     "./word": "./src/word.ts",
     "./document-themes": "./src/document-themes.ts",
-    "./document-type": "./src/document-type.ts"
+    "./document-type": "./src/document-type.ts",
+    "./export-styles": "./src/export-styles.ts"
   },
   "files": [
     "generated",
