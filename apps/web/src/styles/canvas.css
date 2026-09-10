@@ -19,6 +19,38 @@
   font-style: italic;
 }
 
+/* ── ZOOM ────────────────────────────────────────────────────────────────
+   THE BROWSER ZOOMS THE SHEET. One declaration, on each of the three sheets,
+   and nothing else in the program multiplies anything by the zoom.
+
+   WHAT THIS REPLACED, and why it is the whole of it. Zoom was a multiplier
+   inside every document token — `calc(1.06rem * var(--doc-zoom))` — and it
+   was INERT: those tokens are declared on `:root` and on `[data-doc]`, and a
+   custom property's `var()` is substituted at computed-value time on the
+   element that declares it, so each one computed once against the root's zoom
+   of 1. MEASURED at 100 % and 250 %, in all three views: the mantra line
+   25.92 px both times, the translation 16 px, the heading 20.48 px, the
+   source 11.52 px, the marks unchanged. Only the column width and the picture
+   grew — those were multiplied in a rule on the column itself, where the
+   variable is live — so zooming in made the type SMALLER relative to the page
+   and left the air around a picture at its 100 % size.
+
+   `zoom` scales layout, so the column reflows exactly as it would under the
+   browser's own zoom, and every rectangle a gesture measures comes back in
+   the same space the pointer is in — which is why the caret, the selection
+   and the picture's resize handles need to know nothing about it. (A
+   `transform: scale` would have drawn the same picture and left the layout,
+   the scroll height and the hit testing at 100 %.)
+
+   The number still arrives as `--doc-zoom`, set by the view on the sheet, so
+   the page map, the picture cap and the gates read one value from one place.
+   ======================================================================== */
+.flow__column,
+.web__column,
+.page {
+  zoom: var(--doc-zoom);
+}
+
 /* Flow: a measure column on the page's own content width, so a line that fits
    here fits on paper and switching to Pages reflows nothing. */
 /*
@@ -65,31 +97,14 @@
  */
 .flow--web { display: block; padding: 0; background: var(--doc-bg); min-height: 100%; }
 /*
- * THE WEB SHAPE ZOOMS TOO — and it did not.
- *
- * `max-width: var(--measure-web)` is a FIXED 46rem, so pressing Zoom in this
- * view changed nothing at all: measured, the column stayed 736 px wide and
- * 2358 px tall at 100% and at 110%, to the pixel.
- *
- * WHY THAT IS THE FIX, and not the type sizes. The token generator writes
- * every size as `calc(x * var(--doc-zoom))`, and `document.css` says zoom is
- * "a multiplier inside every token". IT IS NOT — those tokens are declared on
- * `:root`, where a custom property's `var()` is substituted at computed-value
- * time, so `--doc-verse-size` computes ONCE as `clamp(calc(1.06rem * 1),
- * 4.286cqi, calc(1.62rem * 1))` with the root's zoom of 1, and setting
- * `--doc-zoom` on a descendant cannot re-evaluate it. Measured: the rendered
- * `.pada` is 25.92 px at every zoom, in every view.
- *
- * What really scales the text is the `4.286cqi` in the middle of that clamp —
- * a CONTAINER query unit. The flow and paged views widen their column from the
- * page geometry times the zoom, the container grows, and the type follows. The
- * web view has no page, so nothing widened. Multiplying its measure by the
- * zoom puts it on the same mechanism as the other two, which is why one line
- * is the whole change: this `calc` is declared HERE, on an element that
- * carries its own `--doc-zoom`, so it resolves against 1.1 rather than 1.
+ * THE WEB SHAPE HAS NO PAGE, so its measure is a reading width rather than a
+ * sheet. It is NOT multiplied by the zoom any more, and it used to be: that
+ * multiplication was the only thing making this view zoom at all, back when
+ * zoom was a multiplier the tokens were supposed to read and did not. See
+ * `zoom` above — the browser scales the whole sheet now, this one included.
  */
 .web__column {
-  max-width: calc(var(--measure-web) * var(--doc-zoom));
+  max-width: var(--measure-web);
   margin: 0 auto;
   padding: var(--space-9) var(--space-7) var(--space-9);
   background: var(--doc-bg);

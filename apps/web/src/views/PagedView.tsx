@@ -145,17 +145,23 @@ export function PagedView(
             <section
               className="page"
               key={p.index}
+              /*
+               * THE SHEET AT ITS OWN SIZE, and the ZOOM as a variable the
+               * stylesheet turns into the browser's `zoom` (see `canvas.css`).
+               * These used to be multiplied by the zoom here, which grew the
+               * paper while every length inside it stayed put.
+               */
               style={{
-                width: `${px(page.width, zoom)}px`,
-                height: `${px(page.height, zoom)}px`,
-                paddingTop: `${px(page.margins.top, zoom)}px`,
-                paddingRight: `${px(page.margins.right, zoom)}px`,
-                paddingBottom: `${px(page.margins.bottom, zoom)}px`,
-                paddingLeft: `${px(page.margins.left, zoom)}px`,
+                width: `${px(page.width, 1)}px`,
+                height: `${px(page.height, 1)}px`,
+                paddingTop: `${px(page.margins.top, 1)}px`,
+                paddingRight: `${px(page.margins.right, 1)}px`,
+                paddingBottom: `${px(page.margins.bottom, 1)}px`,
+                paddingLeft: `${px(page.margins.left, 1)}px`,
+                ...({ '--doc-zoom': String(zoom) } as CSSProperties),
               }}
               data-page={p.index + 1}
             >
-              {/* Zoom as a multiplier, not a font-size — see `FlowView`. */}
               <div
                 key={rebuild}
                 contentEditable={addressable}
@@ -163,9 +169,11 @@ export function PagedView(
                 spellCheck={false}
                 {...(addressable ? { role: 'textbox', 'aria-multiline': true, 'aria-label': 'The document' } : {})}
                 className="doc page__content"
+                /* The picture cap is the page's content height, in the sheet's
+                   own units — the browser's `zoom` on `.page` scales it with
+                   everything else. */
                 style={{
-                  ...({ '--doc-zoom': String(zoom) } as CSSProperties),
-                  ...({ '--doc-fig-max-h': `${px(columnHeight, zoom)}px` } as CSSProperties),
+                  ...({ '--doc-fig-max-h': `${px(columnHeight, 1)}px` } as CSSProperties),
                 }}
               >
                 <DocumentBlocks
@@ -191,9 +199,9 @@ export function PagedView(
                 className="page__head"
                 aria-hidden
                 style={{
-                  top: `${px(page.margins.top / 2, zoom)}px`,
-                  left: `${px(page.margins.left, zoom)}px`,
-                  right: `${px(page.margins.right, zoom)}px`,
+                  top: `${px(page.margins.top / 2, 1)}px`,
+                  left: `${px(page.margins.left, 1)}px`,
+                  right: `${px(page.margins.right, 1)}px`,
                 }}
               >
                 <span className="page__head-name">{doc.title}</span>

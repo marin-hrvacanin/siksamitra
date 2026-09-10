@@ -7,11 +7,17 @@
    here, which is the standing rule and also the only way a picture can be the
    same size in the flow view, on a page, on the web and in an export.
 
-   ZOOM IS A MULTIPLIER, NOT A FONT SIZE. Every document length is
-   `calc(x * var(--doc-zoom))` (see the token generator), so the fixed steps
-   here multiply too. Without it a `thumb` would stay 88 px while the page it
-   sits on doubled — the picture would shrink relative to the text at every
-   zoom but 100 %.
+   ZOOM IS NOT IN THESE LENGTHS, and it was — the stepped widths used to be
+   `calc(var(--fig-x) * var(--doc-zoom))`. Zoom is now the browser's own `zoom`
+   property, one declaration on each sheet in `canvas.css`, which scales the
+   whole subtree; multiplying here as well would square it.
+
+   And multiplying HERE while the type could not be multiplied at all is what
+   the owner was looking at. The picture and the column grew with the zoom, the
+   letters did not, and the air around the picture — `--doc-body-after`, a
+   token declared on `:root` where `--doc-zoom` is always 1 — did not either.
+   MEASURED at 250 %: the picture 2.5x, the mantra line 1.0x, the gap under the
+   picture 1.0x.
 
    WHAT IS NOT HERE: colours, faces and sizes for the caption. A caption is
    apparatus, exactly like a source note, so it is set in the document's own
@@ -53,19 +59,19 @@
    A fraction of the column, with a floor and a ceiling on the two middle
    steps. `thumb` is the one fixed width, because a thumbnail that tracked the
    column would stop being a thumbnail. */
-.fig--thumb { width: calc(var(--fig-thumb) * var(--doc-zoom)); }
+.fig--thumb { width: var(--fig-thumb); }
 .fig--small {
   width: clamp(
-    calc(var(--fig-small-min) * var(--doc-zoom)),
+    var(--fig-small-min),
     var(--fig-small),
-    calc(var(--fig-small-max) * var(--doc-zoom))
+    var(--fig-small-max)
   );
 }
 .fig--medium {
   width: clamp(
-    calc(var(--fig-medium-min) * var(--doc-zoom)),
+    var(--fig-medium-min),
     var(--fig-medium),
-    calc(var(--fig-medium-max) * var(--doc-zoom))
+    var(--fig-medium-max)
   );
 }
 .fig--large { width: var(--fig-large); }

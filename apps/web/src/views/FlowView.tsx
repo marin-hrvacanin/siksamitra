@@ -94,11 +94,12 @@ export function FlowView(
         {...(addressable ? { role: 'textbox', 'aria-multiline': true, 'aria-label': 'The document' } : {})}
         className="doc flow__column"
         /*
-         * Zoom is a MULTIPLIER the document tokens read (`--doc-zoom`), not a
-         * font-size on the column: as a font-size it scaled only the values
-         * that happened to be in `em`, so the paper grew and the mantra line
-         * stayed put. As a custom property every size, leading and indent on
-         * the page moves together, because each token is `calc(x * zoom)`.
+         * `--doc-zoom` IS THE NUMBER, and `canvas.css` turns it into the
+         * browser's own `zoom` on this element. It used to be a multiplier the
+         * document tokens were supposed to read, and could not: those tokens
+         * are declared on `:root`, where the substitution happens, so not one
+         * letter changed size at any zoom. The sheet's own width and padding
+         * are therefore its real size, at 100 %.
          */
         /*
          * The paper is the PAGE's width with the PAGE's margins as padding, so
@@ -109,11 +110,11 @@ export function FlowView(
          * every line of the document touched the edge of the sheet.
          */
         style={{
-          width: `${px(page.width, zoom)}px`,
-          paddingTop: `${px(page.margins.top, zoom)}px`,
-          paddingRight: `${px(page.margins.right, zoom)}px`,
-          paddingBottom: `${px(page.margins.bottom, zoom)}px`,
-          paddingLeft: `${px(page.margins.left, zoom)}px`,
+          width: `${px(page.width, 1)}px`,
+          paddingTop: `${px(page.margins.top, 1)}px`,
+          paddingRight: `${px(page.margins.right, 1)}px`,
+          paddingBottom: `${px(page.margins.bottom, 1)}px`,
+          paddingLeft: `${px(page.margins.left, 1)}px`,
           /*
            * THE TALLEST A PICTURE MAY BE, which is the page's content box.
            *
@@ -127,7 +128,7 @@ export function FlowView(
            * than the page.
            */
           ...({ '--doc-zoom': String(zoom) } as CSSProperties),
-          ...({ '--doc-fig-max-h': `${px(contentBox(page).height, zoom)}px` } as CSSProperties),
+          ...({ '--doc-fig-max-h': `${px(contentBox(page).height, 1)}px` } as CSSProperties),
         }}
       >
         <DocumentBlocks

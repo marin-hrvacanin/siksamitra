@@ -165,6 +165,16 @@ check('and zooming in stops at a ceiling too',
   ups[ups.length - 1] === ups[ups.length - 2],
   `ceiling at ${ups[ups.length - 1].toFixed(0)} px`);
 
+/* ── what a zoom must do to EVERYTHING ───────────────────────────────────── */
+/*
+ * THAT ZOOM SCALES THE LETTERS, THE PICTURE AND THE AIR BETWEEN THEM by one
+ * number is `tools/interaction-scale.mjs`, which is a separate gate because it
+ * has to insert a picture first and because this file reached the 400-line
+ * module limit. It is the gate that would have caught zoom moving the paper
+ * and not one letter; the checks below measure the page's own geometry, which
+ * was correct throughout.
+ */
+
 /* ── the other two views ─────────────────────────────────────────────────── */
 /*
  * THE WIDTH, not the height. Zoom widens the column and the type follows it

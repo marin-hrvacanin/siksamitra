@@ -195,11 +195,42 @@ describe('every theme carries the whole scale', () => {
     expect(missing).toEqual([]);
   });
 
-  it('the zoom multiplier is declared, or every length resolves to nothing', () => {
+  /*
+   * ZOOM IS NOT IN THESE LENGTHS, AND THIS IS WHERE THAT IS HELD.
+   *
+   * This check used to require the opposite — `--doc-verse-indent:
+   * calc(0.8875rem * var(--doc-zoom))` — with the note that "a `rem` that
+   * forgot the multiplier would make zoom move the paper and not the type".
+   * The multiplier was there and zoom moved the paper and not the type
+   * anyway: these declarations land on `:root` and on `[data-doc="…"]`, and a
+   * custom property's `var()` is substituted where it is DECLARED, so every
+   * one of them computed once against the root's zoom of 1. MEASURED in the
+   * running program at 100 % and at 250 %, in all three views: the mantra line
+   * 25.92 px both times, the translation 16 px, the heading 20.48 px, the
+   * marks unchanged.
+   *
+   * Zoom is now the browser's `zoom` property, one declaration per sheet in
+   * `canvas.css`, and a multiplier here would square it.
+   */
+  it('no length multiplies by the zoom, because the browser does the zooming', () => {
+    const multiplied = [...CSS.matchAll(/--doc-[a-z-]+: [^;]*var\(--doc-zoom\)[^;]*;/g)]
+      .map((m) => m[0]);
+    expect(multiplied).toEqual([]);
+  });
+
+  it('and the sheets hand it to the browser instead', () => {
+    /*
+     * The other half, and without it the check above passes on a build where
+     * zoom does nothing whatsoever. Read out of the stylesheet that draws the
+     * three sheets, so it is the shipped declaration rather than a claim.
+     */
+    const canvas = readFileSync('apps/web/src/styles/canvas.css', 'utf8');
+    const rule = /\.flow__column,\s*\.web__column,\s*\.page \{[^}]*zoom: var\(--doc-zoom\);/;
+    expect(canvas).toMatch(rule);
+    /* And the variable it reads has a default, or an unzoomed subtree — the
+       measuring probe, an export, a test's fragment — resolves `zoom` to
+       nothing. */
     expect(CSS).toContain('--doc-zoom: 1;');
-    // And the lengths use it: a `rem` that forgot the multiplier would make
-    // zoom move the paper and not the type.
-    expect(CSS).toMatch(/--doc-verse-indent: calc\([0-9.]+rem \* var\(--doc-zoom\)\)/);
   });
 
   it('a face role always resolves to a face', () => {

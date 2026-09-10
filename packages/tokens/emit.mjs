@@ -144,23 +144,41 @@ export function documentVars(theme, mode) {
  * rather than wrapping. A role with no floor is one fixed number, which is
  * what a facsimile of an A4 page needs.
  *
- * ZOOM IS A MULTIPLIER IN THE TOKEN, `--doc-zoom`, set by the views. So every
- * length here is a finished CSS expression — `calc(1.3333rem * var(--doc-zoom))`
- * — and the stylesheet never does arithmetic.
+ * ZOOM IS NOT IN THESE LENGTHS, and it was — every one of them used to be
+ * emitted as `calc(1.3333rem * var(--doc-zoom))`, with a paragraph here
+ * explaining why a multiplier in the token was the right answer.
  *
- * Two wrong ways were tried first, and both are instructive. Plain `rem`
- * ignores zoom, which is what the inherited stylesheet did: pressing Zoom in
- * grew the paper and left the mantra line at 19.44 pt. Plain `em` off a column
- * whose own font-size carried the zoom fixes the type but breaks the indents,
- * because a margin in `em` resolves against the ELEMENT's size — a 14.2 pt
- * hanging indent came out 18.93 pt on a 16 pt line, exactly the 1.33 ratio
- * between them. An explicit multiplier has neither failure.
+ * IT NEVER WORKED. These declarations land on `:root` and on
+ * `[data-doc="…"]`, and a custom property's `var()` is substituted at
+ * computed-value time on the element that DECLARES it — so every one of them
+ * computed once against the root's zoom of 1, and setting `--doc-zoom` on the
+ * column could not re-evaluate any of it. MEASURED in the running program at
+ * 100 % and at 250 %, in all three views: the mantra line 25.92 px both times,
+ * the translation 16 px, the heading 20.48 px, the source line 11.52 px, the
+ * leading unchanged, the marks unchanged. The column and the picture grew and
+ * not one letter did, so zooming in made the type SMALLER relative to the
+ * page. The `cqi` in a fluid clamp was doing what scaling there was, and only
+ * while the clamp was off its ceiling — at A4 it is pinned to the ceiling
+ * already at 100 %.
  *
- * The fluid middle term is NOT multiplied: `cqi` is a share of the column, and
- * the column already widens with zoom, so multiplying again would square it.
+ * ZOOM IS NOW THE BROWSER'S `zoom` PROPERTY, one declaration on each sheet in
+ * `canvas.css`. It scales the whole subtree the way the browser's own zoom
+ * does — type, leading, indents, marks, pictures and the air between them, in
+ * one operation, with no length in the program having to know about it. That
+ * is the rule about not reinventing a wheel, applied to the wheel this file
+ * spent four paragraphs building.
+ *
+ * `cqi` in a fluid clamp keeps its original job and only that job: a narrow
+ * COLUMN gives up type size rather than wrapping a pāda. The column's layout
+ * width no longer moves with zoom, so the two mechanisms cannot interfere.
  */
-/** A length in rem, times the zoom. `0` stays `0`, which reads better. */
-export const zoomed = (rem) => (rem === 0 ? '0px' : `calc(${rem}rem * var(--doc-zoom))`);
+/**
+ * A length in rem. `0` stays `0px`, which reads better.
+ *
+ * The name is kept because every role below reads as `zoomed(m.after)`, and
+ * because it is the one place to look when asking where zoom went.
+ */
+export const zoomed = (rem) => (rem === 0 ? '0px' : `${rem}rem`);
 
 export function typeVars(theme) {
   const scale = typeScaleOf(theme);

@@ -44,21 +44,28 @@
  * paper grew while the mantra line stayed 19.44 pt; and a margin in `em`
  * resolved against its own element, putting a 14.2 pt indent at 18.93 pt.
  *
- * HOW ZOOM ACTUALLY REACHES THE TYPE — and it is not what this used to say.
- * It said "zoom is `--doc-zoom`, a multiplier inside every token (see the
- * generator)". The generator does write `calc(x * var(--doc-zoom))`, and it is
+ * HOW ZOOM REACHES THE TYPE: the browser's own `zoom` property, one
+ * declaration per sheet in `canvas.css`. Nothing in this file, and nothing in
+ * the tokens, knows about zoom at all.
+ *
+ * TWO EARLIER ANSWERS ARE WRITTEN DOWN HERE BECAUSE BOTH WERE BELIEVED. The
+ * first said "zoom is `--doc-zoom`, a multiplier inside every token (see the
+ * generator)". The generator did write `calc(x * var(--doc-zoom))`, and it was
  * INERT: those tokens are declared on `:root`, where a custom property's
  * `var()` is substituted at computed-value time, so `--doc-verse-size`
- * computes once against the root's zoom of 1 and setting `--doc-zoom` on a
- * descendant cannot re-evaluate it. Measured in the running program: the
- * rendered `.pada` is 25.92 px at 100% and 25.92 px at 110%.
+ * computed once against the root's zoom of 1 and setting `--doc-zoom` on a
+ * descendant could not re-evaluate it. The second said the `cqi` in each
+ * clamp did the scaling instead — the view widens the column, the container
+ * grows, the type follows. That is true only while a clamp is off its ceiling,
+ * and at A4 it is ON the ceiling at 100 %. MEASURED at 100 % and at 250 %, in
+ * all three views: the mantra line 25.92 px both times, the translation 16 px,
+ * the heading 20.48 px, the source 11.52 px, the leading and the marks
+ * unchanged. Zoom moved the column and the picture and not one letter.
  *
- * What scales the text is `container-type: inline-size` below and the `cqi`
- * unit in each size's clamp: the view widens this column by the zoom, the
- * container grows, and the type follows. That is why the web shape had to
- * multiply its own measure by `--doc-zoom` to zoom at all
- * (`canvas.css .web__column`), and why `tools/interaction-zoom.mjs` measures
- * the COLUMN'S WIDTH rather than a font size.
+ * `container-type: inline-size` therefore keeps exactly one job, the one it
+ * was added for: a narrow COLUMN gives up type size rather than wrapping a
+ * pāda. Zoom no longer changes the column's layout width, so the two
+ * mechanisms cannot interfere.
  */
 .doc {
   container-type: inline-size;
