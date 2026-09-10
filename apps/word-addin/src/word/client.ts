@@ -45,7 +45,7 @@
  * Everything above this file is pure and tested in the fast tier.
  */
 import type { TextAndMarks } from '@siksamitra/format';
-import { styleSheet } from '../model/sheet.js';
+import { styleSheet, styleSheetFor } from '../model/sheet.js';
 import { missingStyles, specimenBody, styleIds } from '../model/setup.js';
 import { specimenMarks } from '../model/specimen-text.js';
 import { documentPartOf, flatPackage, restyle } from '../model/opc.js';
@@ -120,12 +120,28 @@ export async function locate(): Promise<Located> {
  * WHAT THIS COSTS. A comment, a bookmark or a tracked change inside the
  * paragraph does not survive the replacement, and the caret lands at the end of
  * it. Both are worth saying in the pane rather than discovering.
+ *
+ * THE RANGE IS THE PARAGRAPH'S CONTENT, NOT THE PARAGRAPH.
+ * `Paragraph.getRange('Content')` ends BEFORE the paragraph mark;
+ * `paragraph.insertOoxml(…, replace)` replaces the mark as well, and when the
+ * NEXT paragraph was empty Word coalesced the two and the document lost a
+ * paragraph. Measured against his own file in `tools/word-live.mjs`: writing
+ * twelve mantra lines took 872 paragraphs to 871, and from that write onwards
+ * every index was off by one — so `writeDocument` below, which addresses
+ * paragraphs BY INDEX, was writing mantras into the wrong lines. Replacing the
+ * content alone holds all twelve writes at 872, byte for byte. `WordApi 1.3`,
+ * which the manifest already requires.
  */
 export async function writeParagraph(tm: TextAndMarks, style: string | null): Promise<void> {
   const body = restyle(paragraphsXml(tm), style);
+  /* `styleSheetFor(body)` and never `styleSheet()`: the sheet has to define
+     every style the body NAMES. Sending the plain one omitted `Reference` and
+     Word silently dropped the style, which spliced every raised reading aid
+     into the recitation. See `model/sheet.ts`. */
+  const pkg = flatPackage(body, styleSheetFor(body));
   await Word.run(async (context) => {
     const paragraph = context.document.getSelection().paragraphs.getFirst();
-    paragraph.insertOoxml(flatPackage(body, styleSheet()), Word.InsertLocation.replace);
+    paragraph.getRange(Word.RangeLocation.content).insertOoxml(pkg, Word.InsertLocation.replace);
     await context.sync();
   });
 }
@@ -137,6 +153,23 @@ export interface DocParagraph {
   style: string | null;
 }
 
+/** What one read of the whole document saw. */
+export interface DocumentRead {
+  /** The mantra paragraphs, addressed by their index among ALL paragraphs. */
+  readonly lines: readonly DocParagraph[];
+  /**
+   * How many paragraphs there are ALTOGETHER, so the write can check.
+   *
+   * The indices above come from this read and are used against a DIFFERENT
+   * one, and the two readers are not the same code: ours is a regex over
+   * OOXML, Word's is Word. They disagreed by 26 on the owner's own file —
+   * `<w:p w14:paraId="…"/>`, an empty self-closing paragraph, was swallowed
+   * together with the paragraph after it — and 27 of his 872 paragraphs are
+   * that shape. Every index from the first one onwards was wrong.
+   */
+  readonly total: number;
+}
+
 /**
  * Every mantra paragraph in the document.
  *
@@ -145,16 +178,17 @@ export interface DocParagraph {
  * round trips are what make an add-in feel broken — the reports of `sync`
  * taking tens of seconds are all of this shape.
  */
-export async function readDocument(): Promise<DocParagraph[]> {
+export async function readDocument(): Promise<DocumentRead> {
   return Word.run(async (context) => {
     const ooxml = context.document.body.getOoxml();
     await context.sync();
-    const out: DocParagraph[] = [];
-    readParagraphs(documentPartOf(ooxml.value)).forEach((p, index) => {
+    const all = readParagraphs(documentPartOf(ooxml.value));
+    const lines: DocParagraph[] = [];
+    all.forEach((p, index) => {
       if (!isVerseParagraph(p)) return;
-      out.push({ index, tm: decodeRuns(mergeRuns(p.runs)), style: p.pStyle });
+      lines.push({ index, tm: decodeRuns(mergeRuns(p.runs)), style: p.pStyle });
     });
-    return out;
+    return { lines, total: all.length };
   });
 }
 
@@ -166,18 +200,38 @@ export async function readDocument(): Promise<DocParagraph[]> {
  * underneath us — which is the same assumption every Office add-in makes
  * between two syncs.
  */
-export async function writeDocument(changed: readonly DocParagraph[]): Promise<number> {
+export async function writeDocument(
+  changed: readonly DocParagraph[], total: number,
+): Promise<number> {
   if (changed.length === 0) return 0;
-  const sheetXml = styleSheet();
   return Word.run(async (context) => {
     const paragraphs = context.document.body.paragraphs;
     paragraphs.load('items');
     await context.sync();
+    /*
+     * THE TWO READS MUST AGREE, and this refuses rather than guesses.
+     *
+     * `changed` carries indices from a `getOoxml` read; the paragraphs here
+     * are Word's own list. If the counts differ, one index is wrong and so is
+     * every index after it — which means writing a mantra into somebody's
+     * heading. That happened: our reader answered 846 where Word answered 872,
+     * because it swallowed each empty self-closing paragraph together with the
+     * one after it. Fixed in `docx-read.ts`, and checked here because a
+     * silent mismatch costs a document and a message costs nothing.
+     */
+    if (paragraphs.items.length !== total) {
+      throw new Error(`the document changed while it was being read — `
+        + `${total} paragraphs became ${paragraphs.items.length}. `
+        + 'Nothing was written. Try again.');
+    }
     for (const one of changed) {
       const target = paragraphs.items[one.index];
       if (target === undefined) continue;
       const body = restyle(paragraphsXml(one.tm), one.style);
-      target.insertOoxml(flatPackage(body, sheetXml), Word.InsertLocation.replace);
+      /* Per body, for the reason in `model/sheet.ts` — and cached on the set
+         of styles a body names, so 434 paragraphs build a handful of sheets. */
+      target.getRange(Word.RangeLocation.content)
+        .insertOoxml(flatPackage(body, styleSheetFor(body)), Word.InsertLocation.replace);
     }
     await context.sync();
     return changed.length;
@@ -236,6 +290,11 @@ export async function documentStyles(): Promise<DocStyles> {
  * The count before and after is unambiguous.
  */
 export async function addStyles(keep: boolean): Promise<void> {
+  /* THE SPECIMEN CARRIES THE PLAIN SHEET, deliberately: what it demonstrates
+     is the vocabulary a person can apply BY HAND, which is his seventeen and
+     not the three that are ours. `styleSheetFor` would add `Reference` the
+     moment the marked line in the specimen grew a raised aid, and put a style
+     in their Styles pane named after nothing on their page. */
   const sheet = styleSheet();
   const body = specimenBody(sheet, paragraphsXml(specimenMarks()));
   const pkg = flatPackage(body, sheet);

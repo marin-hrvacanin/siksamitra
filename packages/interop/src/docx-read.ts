@@ -38,7 +38,27 @@ export interface WordParagraph {
   empty?: boolean;
 }
 
-const RE_PARA = /<w:p\b[^>]*>([\s\S]*?)<\/w:p>|<w:p\b[^>]*\/>/g;
+/**
+ * A PARAGRAPH: self-closing FIRST, and the order is the whole point.
+ *
+ * With the paired form first, `<w:p\b[^>]*>` matched a SELF-CLOSING tag too —
+ * `[^>]*` happily eats the `/` in `<w:p w14:paraId="6B1F"/>` — and then
+ * `[\s\S]*?<\/w:p>` ran on to the next close and swallowed the paragraph AFTER
+ * it as well. Two paragraphs read as one.
+ *
+ * MEASURED ON HIS OWN FILE: 872 `<w:p` opens against 845 closes, so 27 of his
+ * paragraphs are empty and self-closing — and this reader answered 846 while
+ * Word answered 872. That is not a cosmetic difference. `readDocument` and
+ * `writeDocument` in the Word add-in address paragraphs BY INDEX across two
+ * separate reads, so from the first empty paragraph onwards every index was
+ * off by one more, and a whole-document re-mark would have written mantra text
+ * into the wrong paragraphs of his document. `tools/word-live.mjs` compares
+ * the two counts against a real Word now.
+ *
+ * Self-closing first is exact rather than clever: `[^>]*\/>` can only match a
+ * tag that ends in `/>`, and an attribute value cannot contain a `>`.
+ */
+const RE_PARA = /<w:p\b[^>]*\/>|<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g;
 const RE_RUN = /<w:r\b[^>]*>([\s\S]*?)<\/w:r>/g;
 const RE_TEXT = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
 const RE_PSTYLE = /<w:pStyle\s+w:val="([^"]*)"/;

@@ -15,7 +15,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { flatPackage } from '../../apps/word-addin/src/model/opc.js';
 import { paragraphsXml } from '../../apps/word-addin/src/model/paragraph.js';
-import { styleSheet } from '../../apps/word-addin/src/model/sheet.js';
+import { styleSheet, styleSheetFor } from '../../apps/word-addin/src/model/sheet.js';
 import { specimenBody, styleIds } from '../../apps/word-addin/src/model/setup.js';
 import { specimenMarks } from '../../apps/word-addin/src/model/specimen-text.js';
 
@@ -37,8 +37,11 @@ export function writePayloads(dir = 'artifacts/word-live'): Payloads {
   const tm = specimenMarks();
   const marked = paragraphsXml(tm);
 
+  /* The specimen carries the PLAIN sheet — his vocabulary, which is what it
+     demonstrates. A marked line carries the sheet for its OWN body, which is
+     what `writeParagraph` sends and what has to define `Reference`. */
   const specimen = flatPackage(specimenBody(sheet, marked), sheet);
-  const one = flatPackage(marked, sheet);
+  const one = flatPackage(marked, styleSheetFor(marked));
   writeFileSync(join(dir, 'specimen.xml'), specimen, 'utf8');
   writeFileSync(join(dir, 'marked.xml'), one, 'utf8');
 

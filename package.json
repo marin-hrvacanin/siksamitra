@@ -107,7 +107,7 @@
     "word-addin:serve": "npm run -w @siksamitra/word-addin build && node scripts/word-publish.mjs --host local --out out/word-extension-local && node scripts/word-serve.mjs out/word-extension-local",
     "word-addin:install": "node scripts/word-install.mjs",
     "word-addin:validate": "node scripts/word-validate.mjs",
-    "check:word:live": "node tools/word-live.mjs"
+    "check:word:live": "tsx tools/word-live.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

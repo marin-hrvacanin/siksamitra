@@ -1,46 +1,75 @@
-# The landing page.
-#
-# It is `site/`, not `docs/`. Version 1 served its page out of `docs/`, which
-# then could not also hold documentation — and this branch's `docs/` is the
-# developer's: the marking guides, the command-line reference, the interchange
-# format. Two audiences, two directories, and neither has to tiptoe around the
-# other.
-#
-# IT DEPLOYS FROM `main` ONLY, and that is the point rather than an oversight.
-#
-# Until version 2 becomes `main`, the live site is version 1's and people are
-# downloading version 1 from it — so a workflow that published on every push
-# to `v2` would replace a working page with one whose download links point at
-# binaries nobody has built yet. The page is prepared here, links to the
-# release assets by their fixed names, and goes live the moment the branch is
-# swapped. `workflow_dispatch` is for looking at it before then.
-name: Pages
-
-on:
-  push:
-    branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
-  workflow_dispatch:
-
-permissions:
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+# The landing page.
+#
+# It is `site/`, not `docs/`. Version 1 served its page out of `docs/`, which
+# then could not also hold documentation — and this branch's `docs/` is the
+# developer's: the marking guides, the command-line reference, the interchange
+# format. Two audiences, two directories, and neither has to tiptoe around the
+# other.
+#
+# IT DEPLOYS FROM `main` ONLY, and that is the point rather than an oversight.
+#
+# Until version 2 becomes `main`, the live site is version 1's and people are
+# downloading version 1 from it — so a workflow that published on every push
+# to `v2` would replace a working page with one whose download links point at
+# binaries nobody has built yet. The page is prepared here, links to the
+# release assets by their fixed names, and goes live the moment the branch is
+# swapped. `workflow_dispatch` is for looking at it before then.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+      # The add-in is built into the artifact, so a change to it is a
+      # change to what the site serves.
+      - 'apps/word-addin/**'
+      - 'scripts/word-addin.mjs'
+      - 'scripts/word-publish.mjs'
+  workflow_dispatch:
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+
+      # ── the Word add-in goes up beside the page ──────────────────────────
+      #
+      # An Office add-in has no server: it is a static folder plus a manifest
+      # naming its URLs. So publishing it IS copying that folder next to the
+      # landing page, and the page's install step links straight at
+      # `word-extension/manifest.xml`.
+      #
+      # BUILT HERE RATHER THAN COMMITTED. `site/word-extension/` is in
+      # `.gitignore`: a committed copy of a bundle goes stale silently, and
+      # the symptom is a task pane running code from three weeks ago with
+      # nothing anywhere to say so. `word-publish.mjs` refuses a stale `dist`
+      # for the same reason and checks every URL the manifest names against
+      # the files in the folder.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run -w @siksamitra/word-addin build
+      - run: node scripts/word-publish.mjs --host pages --out site/word-extension
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

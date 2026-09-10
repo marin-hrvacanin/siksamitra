@@ -161,14 +161,16 @@ async function runDocument(): Promise<void> {
   await guard('the rules would not run over the document', async () => {
     const { stages, mode, profile } = request();
     say('Reading the document…');
-    const paragraphs = await readDocument();
+    const { lines, total } = await readDocument();
     let lost = 0;
-    const changed = paragraphs.map((p) => {
+    const changed = lines.map((p) => {
       const out = rerun(p.tm, { stages, mode, profile, from: 0, to: p.tm.text.length });
       lost += out.lost.length;
       return { ...p, tm: { text: out.text, marks: out.marks } };
     });
-    const written = await writeDocument(changed);
+    /* `total` travels with the indices: `writeDocument` refuses if Word's own
+       paragraph list disagrees with the read those indices came from. */
+    const written = await writeDocument(changed, total);
     say(`${written} mantra line(s) re-marked`
       + `${lost === 0 ? '' : `, ${lost} hand marking(s) could not be carried`}.`,
     lost === 0 ? 'plain' : 'warn');

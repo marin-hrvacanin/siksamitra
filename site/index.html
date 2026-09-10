@@ -158,6 +158,17 @@ figcaption{
 .dl-row a{font-family:Inter2,system-ui,sans-serif;font-size:.85rem;font-weight:600}
 .dl-row a+a{margin-left:1rem}
 
+/* Numbered steps — the Word add-in install, which is three things in order. */
+.steps{display:grid;gap:1.25rem;margin-top:1.5rem}
+.step{display:flex;gap:1rem;align-items:flex-start}
+.step .n{
+  flex:0 0 auto;width:1.7rem;height:1.7rem;border-radius:50%;
+  display:grid;place-items:center;
+  font-family:Inter2,system-ui,sans-serif;font-size:.8rem;font-weight:600;
+  background:var(--accent-soft);color:var(--accent);
+}
+.step p{font-size:.95rem;color:var(--ink-2);line-height:1.65}
+
 .note{
   background:var(--sunk);border-left:3px solid var(--accent);
   padding:1rem 1.25rem;border-radius:0 6px 6px 0;margin-top:2rem;
@@ -218,9 +229,10 @@ footer p+p{margin-top:.5rem}
 
     <p class="buttons" style="margin-top:2.5rem">
       <a class="btn" id="download" href="#downloads">Download</a>
+      <a class="btn ghost" href="#word">In Microsoft Word</a>
       <a class="btn ghost" href="https://github.com/marin-hrvacanin/siksamitra">Source</a>
     </p>
-    <p class="hint" id="platform">Free and open. Windows, macOS and Linux.</p>
+    <p class="hint" id="platform">Free and open. Windows, macOS and Linux &mdash; and a task pane inside Word.</p>
   </div>
 </header>
 
@@ -244,7 +256,7 @@ footer p+p{margin-top:.5rem}
   </div>
 </section>
 
-<section>
+<section id="marks">
   <div class="wrap">
     <p class="eyebrow">What it does</p>
     <h2 style="font-size:1.7rem">How the marking works</h2>
@@ -368,6 +380,130 @@ footer p+p{margin-top:.5rem}
   </div>
 </section>
 
+<section id="word">
+  <div class="wrap">
+    <p class="eyebrow">Inside Microsoft Word</p>
+    <h2 style="font-size:1.7rem">The same marking, in a Word document</h2>
+    <p class="lead" style="margin-top:1rem">
+      A lot of this text already lives in Word files, and moving a document
+      between two programs to mark it is not a workflow anybody keeps up. So
+      the marking runs inside Word: put the caret in a line, press Short or
+      Long, and the box Word draws is the box śikṣāmitra prints — the same
+      style sheet, to the eighth of a point.
+    </p>
+
+    <div class="things">
+      <div class="thing">
+        <h3>It edits the document, not a copy</h3>
+        <p>
+          Holdings, accents, the reading aids and the pauses, applied to the
+          paragraph the caret is in. Nothing is exported and nothing is
+          imported; the file stays a <code>.docx</code> and stays yours.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>A blank document, set up in one press</h3>
+        <p>
+          A marking <em>is</em> a style in Word, and a new file has none of
+          them. <em>Add the styles</em> puts all sixteen in and leaves nothing
+          visible behind; <em>Insert a specimen</em> puts in a short block that
+          uses each one with its name beside it, to read once and delete.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>It reads what is already marked</h3>
+        <p>
+          A document marked by hand years ago is read as it stands — the marks
+          are transcribed from the styles that are there, never recomputed. If
+          the pane finds something it cannot account for, it says so and
+          refuses to write rather than lose it.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>The rules, when you ask for them</h3>
+        <p>
+          Choose a register and run the rules over the selection or the whole
+          document. Marks placed by hand are kept unless you say otherwise,
+          and the pane says how many it could not carry.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>Word on Windows, Mac, iPad and the web</h3>
+        <p>
+          The pane uses only the parts of Word's API that exist everywhere —
+          Word 2019 and later on the desktop, Word for Mac, Word on the web
+          and on iPad. The box is a character border, which is what Word draws
+          natively rather than a picture of one.
+        </p>
+      </div>
+      <div class="thing">
+        <h3>Nothing leaves the machine</h3>
+        <p>
+          The pane is a static page with no server behind it. It sends your
+          text nowhere, stores nothing, and can be served from your own
+          computer if you would rather not load it over the internet.
+        </p>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.15rem;margin-top:3rem">Installing it</h3>
+    <p style="margin-top:.75rem;color:var(--ink-2)">
+      It is not in Microsoft's store yet — that is a submission with an
+      identity check behind it, and it is in hand. Until then it installs the
+      way every Office add-in installs before it is listed: you point Word at
+      one small file.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="n">1</span>
+        <div>
+          <p><strong>Save the manifest.</strong>
+          <a href="word-extension/manifest.xml" download>manifest.xml</a> —
+          about 6 KB. Put it in a folder of its own, anywhere; a folder called
+          <code>WordAddins</code> in your Documents is fine.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="n">2</span>
+        <div>
+          <p><strong>Tell Word about the folder.</strong>
+          <em>Windows:</em> File → Options → Trust Center → Trust Center
+          Settings → Trusted Add-in Catalogs. Paste the folder's path, press
+          <em>Add catalog</em>, tick <em>Show in Menu</em>, then OK and restart
+          Word.<br>
+          <em>Mac:</em> there is no catalog — put the file in
+          <code>~/Library/Containers/com.microsoft.Word/Data/Documents/wef</code>
+          and restart Word.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="n">3</span>
+        <div>
+          <p><strong>Open it.</strong> Insert → My Add-ins → Shared Folder →
+          śikṣāmitra. It then has its own <em>Marking</em> button on the Home
+          tab, and stays there.</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:1.5rem;color:var(--ink-2);font-size:.95rem">
+      <strong>Word on the web</strong> takes the same file: Home → Add-ins →
+      Upload My Add-in. <strong>For a whole organisation</strong>, a Microsoft
+      365 administrator can deploy it to everybody at once from the admin
+      centre's Integrated apps page, using the same manifest — nobody has to
+      install anything.
+    </p>
+    <p style="margin-top:1rem;color:var(--ink-2);font-size:.95rem">
+      <strong>Rather not load it from the internet?</strong> The pane is
+      static, so it can be served from your own machine.
+      <code>npm run word-addin:certs</code> once, then
+      <code>npm run word-addin:serve</code> and
+      <code>npm run word-addin:install -- --host local</code>. Nothing then
+      leaves the computer at all.
+    </p>
+  </div>
+</section>
 <section>
   <div class="wrap">
     <p class="eyebrow">Its own files</p>

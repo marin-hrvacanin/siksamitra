@@ -41,15 +41,25 @@ const located = {
 
 /** What the faked document reports as missing. Set per test. */
 let missing: string[] = [];
-const calls = { addStyles: [] as boolean[], writeDocument: 0, writeParagraph: 0 };
+const calls = {
+  addStyles: [] as boolean[], writeDocument: 0, writeParagraph: 0,
+  writeDocumentTotal: 0,
+};
 
 vi.mock('../../apps/word-addin/src/word/client.js', () => ({
   locate: vi.fn(async () => structuredClone(located)),
   writeParagraph: vi.fn(async () => { calls.writeParagraph += 1; }),
-  readDocument: vi.fn(async () => [
-    { index: 0, tm: { text: 'agnim', marks: [] }, style: 'Translit' },
-  ]),
-  writeDocument: vi.fn(async () => { calls.writeDocument += 1; return 1; }),
+  readDocument: vi.fn(async () => ({
+    lines: [{ index: 0, tm: { text: 'agnim', marks: [] }, style: 'Translit' }],
+    /* `total` is every paragraph, not just the mantra ones: `writeDocument`
+       compares it with Word's own count and refuses if they disagree. */
+    total: 4,
+  })),
+  writeDocument: vi.fn(async (_changed: unknown, total: number) => {
+    calls.writeDocument += 1;
+    calls.writeDocumentTotal = total;
+    return 1;
+  }),
   documentStyles: vi.fn(async () => ({ missing, total: 16 })),
   addStyles: vi.fn(async (keep: boolean) => { calls.addStyles.push(keep); missing = []; }),
 }));
@@ -85,6 +95,7 @@ beforeEach(() => {
   missing = [];
   calls.addStyles = [];
   calls.writeDocument = 0;
+  calls.writeDocumentTotal = 0;
   calls.writeParagraph = 0;
   located.from = 3;
   located.to = 8;
@@ -242,6 +253,11 @@ describe('the button that rewrites the whole document', () => {
     await settle();
     expect(calls.writeDocument).toBe(1);
     expect(all?.getAttribute('data-armed')).toBeNull();
+    /* THE PARAGRAPH COUNT TRAVELS WITH THE INDICES. `writeDocument` addresses
+       paragraphs by index from a different read than the one it writes
+       through, and it refuses when the two disagree — so the pane has to hand
+       it the number, and a pane that dropped it would disable that check. */
+    expect(calls.writeDocumentTotal).toBe(4);
   });
 
   it('and forgets the question if it is left unanswered', async () => {
