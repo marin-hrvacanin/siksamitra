@@ -23,6 +23,8 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { workspaceAliases } from '../../tools/workspace-alias.mjs';
+// @ts-expect-error -- plain JS, and the one place these values live.
+import { addinDefines } from '../../scripts/word-addin.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 
@@ -49,6 +51,15 @@ export default defineConfig({
    * on a shared host.
    */
   base: './',
+  /*
+   * WHAT THE PANE KNOWS ABOUT ITSELF — its version, and where the notation is
+   * written down. From `package.json` and `scripts/word-addin.mjs`, which are
+   * the same two files the manifest and the publish tool read. `vitest.config.ts`
+   * injects the identical set, because a constant the bundler replaces is
+   * `undefined` in a test and the suite then fails to LOAD. See
+   * `src/version.ts` for why the version is on screen at all.
+   */
+  define: addinDefines(readFileSync, join(here, 'package.json')) as Record<string, string>,
   publicDir: join(here, 'assets'),
   /*
    * The workspace packages resolve to SOURCE, as they do for `apps/web` and

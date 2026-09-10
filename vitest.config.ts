@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
 import { workspaceAliases } from './tools/workspace-alias.mjs';
+// @ts-expect-error -- plain JS, and the one place the add-in's constants live.
+import { addinDefines } from './scripts/word-addin.mjs';
 
 /**
  * Shared config for every tier. The tiers themselves are in
@@ -26,6 +29,16 @@ const alias = workspaceAliases();
 
 export default defineConfig({
   resolve: { alias },
+  /*
+   * WHAT THE WORD ADD-IN'S BUNDLER INJECTS, injected here too.
+   *
+   * `apps/word-addin/src/version.ts` reads two constants that Vite replaces at
+   * build time. A test importing that module gets `undefined` instead — and
+   * not as a wrong value but as a suite that will not LOAD, with
+   * "__ADDIN_VERSION__ is not defined" and no test names at all. One source
+   * for both: `scripts/word-addin.mjs`.
+   */
+  define: addinDefines(readFileSync) as Record<string, string>,
   /*
    * The automatic JSX runtime, so a component test can write JSX without
    * importing React. Without it the classic runtime is used and every test

@@ -6,7 +6,7 @@
  * was written. See `export.ts` for what makes a Word file lossless, and
  * `parts.ts` for the one place in the format Word cannot throw away.
  */
-export { documentXml } from './body.js';
+export { documentXml, styledParagraph, styledRun } from './body.js';
 
 export { exportWord } from './export.js';
 export type { WordExportInput } from './export.js';

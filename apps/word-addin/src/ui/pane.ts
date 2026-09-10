@@ -19,18 +19,12 @@ import { STAGES, rerun } from '@siksamitra/engine';
 import { locate, readDocument, writeDocument, writeParagraph } from '../word/client.js';
 import type { Located } from '../word/client.js';
 import { GROUPS, type Control } from './controls.js';
+import { arming, el } from './dom.js';
+import { setupGroup, type SetupGroup } from './setup-group.js';
+import { ADDIN_VERSION, GUIDE_URL } from '../version.js';
 
 /** What the pane is currently looking at. Re-read, never cached across an edit. */
 let at: Located | null = null;
-
-const el = <K extends keyof HTMLElementTagNameMap>(
-  tag: K, attrs: Record<string, string> = {}, ...kids: (Node | string)[]
-): HTMLElementTagNameMap[K] => {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
-  node.append(...kids);
-  return node;
-};
 
 const where = el('div', { class: 'where', 'data-state': 'none' });
 const note = el('div', { class: 'note' });
@@ -44,6 +38,9 @@ function say(text: string, kind: 'plain' | 'warn' = 'plain', lines: string[] = [
     note.append(el('ul', {}, ...lines.map((l) => el('li', {}, l))));
   }
 }
+
+/** The document group, built with the pane. */
+let setup: SetupGroup | null = null;
 
 /** Everything the caller can get wrong reaches the reader as one line. */
 async function guard(what: string, run: () => Promise<void>): Promise<void> {
@@ -113,6 +110,16 @@ async function press(control: Control): Promise<void> {
     say(result.note, undrawable.length === 0 ? 'plain' : 'warn',
       undrawable.map((l) => l.why));
     await refresh();
+    /*
+     * A marking brings the style it needs with it, so a document that had
+     * none of them now has one or two. The line in "This document" would
+     * otherwise still say "none of the seventeen".
+     *
+     * ONLY WHILE SOMETHING IS MISSING. Reading it means `Body.getOoxml()` over
+     * the WHOLE document — Śrī Rudram is megabytes of it — and doing that after
+     * every press is what makes an add-in feel broken.
+     */
+    if (setup !== null && !setup.ready()) await setup.refresh();
   });
 }
 
@@ -199,8 +206,18 @@ function rulesGroup(): HTMLElement {
   }
   const here = el('button', { type: 'button' }, 'Run over the selection');
   here.addEventListener('click', () => { void runHere(); });
-  const all = el('button', { type: 'button' }, 'Run over the document');
-  all.addEventListener('click', () => { void runDocument(); });
+  /*
+   * THE DESTRUCTIVE ONE, AND IT ASKS FIRST. It rewrites every mantra paragraph
+   * in the file, and `insertOoxml` over a paragraph replaces the whole
+   * paragraph — so a comment, a bookmark or a tracked change inside one does
+   * not survive, and one Ctrl+Z does not bring back four hundred of them.
+   */
+  const all = el('button', { type: 'button', id: 'sm-run-all' });
+  arming(all, {
+    calm: 'Run over the document',
+    ask: 'Rewrite every mantra line?',
+    run: runDocument,
+  });
 
   return el('div', { class: 'group' },
     el('h2', {}, 'The rules'),
@@ -211,9 +228,32 @@ function rulesGroup(): HTMLElement {
     el('div', { class: 'row' }, here, all));
 }
 
+/**
+ * The line at the bottom: which build this is, and where the notation is
+ * written down.
+ *
+ * The version because a task pane is a CACHED web page — Word holds one for
+ * days — and "which version am I looking at" is otherwise unanswerable from
+ * inside it. The link because the pane's tooltips can say what a button does
+ * and cannot say what a holding IS.
+ */
+function footer(): HTMLElement {
+  const link = el('a', {
+    href: GUIDE_URL, target: '_blank', rel: 'noopener noreferrer',
+  }, 'What the marks mean');
+  return el('div', { class: 'foot' }, link, el('span', {}, `v${ADDIN_VERSION}`));
+}
+
 export function build(root: HTMLElement): void {
+  const group = setupGroup({ say, guard, changed: refresh });
+  setup = group;
   root.replaceChildren(
-    el('div', { class: 'pane' }, where, ...markGroups(), rulesGroup(), note),
+    el('div', { class: 'pane' },
+      where, ...markGroups(), rulesGroup(), group.element, note, footer()),
   );
   paint();
+  /* Asked once, at startup. A document's style table does not change under
+     us — only the two buttons in that group change it, and they re-read it
+     themselves. */
+  void group.refresh();
 }

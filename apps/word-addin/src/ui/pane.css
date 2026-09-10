@@ -157,3 +157,60 @@ select {
   margin: var(--space-2) 0 0;
   padding-inline-start: var(--space-6);
 }
+
+/* ── this document ─────────────────────────────────────────────────────── */
+
+/*
+ * WHILE ANYTHING IS MISSING, THE GROUP COMES FIRST.
+ *
+ * The pane is one flex column, so `order` moves it without the DOM changing —
+ * which matters because moving a node re-creates it and a button mid-press
+ * would lose its handler. A fresh Word document has none of the seventeen
+ * styles, and "prepare the document" is the first thing that happens in it;
+ * once that is done the group is one quiet line and belongs at the bottom,
+ * where it is built.
+ */
+.group[data-group='document'][data-ready='false'] {
+  order: -1;
+}
+
+.says {
+  margin: 0;
+  color: var(--chrome-ink-soft);
+  line-height: var(--doc-leading);
+}
+
+.group[data-group='document'][data-ready='false'] .says {
+  color: var(--chrome-ink);
+}
+
+/*
+ * A BUTTON THAT HAS ASKED A QUESTION, and is waiting for the second press.
+ *
+ * It wears the danger colour rather than an accent because what it is asking
+ * about is a rewrite of every mantra paragraph in the file — `insertOoxml`
+ * replaces a whole paragraph, so a comment or a bookmark inside one does not
+ * come back, and one Ctrl+Z does not undo four hundred of them.
+ */
+button[data-armed='yes'] {
+  color: var(--chrome-danger);
+  border-color: currentcolor;
+  background: var(--chrome-sunk);
+}
+
+/* ── which build this is ───────────────────────────────────────────────── */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--chrome-gap);
+  justify-content: space-between;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--chrome-line); /* token-exempt: a hairline is 1 device pixel, not a scale step */
+  color: var(--chrome-ink-mute);
+  font-size: var(--text-ui-sm);
+}
+
+.foot a {
+  color: var(--chrome-accent);
+}

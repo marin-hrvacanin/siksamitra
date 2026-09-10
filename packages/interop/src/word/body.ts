@@ -74,14 +74,30 @@ export interface WordPictures {
   readonly columnEmu: number;
 }
 
+/**
+ * ONE RUN OF TEXT, in a character style.
+ *
+ * Module-level and exported, rather than a closure inside `documentXml`,
+ * because the Word add-in needs it too: its style specimen has to write a run
+ * in `VedicAnusvara`, which is a style this writer READS out of the owner's
+ * file and never produces, so there is no marked text that would emit one. A
+ * second helper over there would be a second answer to what a run is — and
+ * `w:rPr`'s children are a schema SEQUENCE, so a second answer is a file Word
+ * calls corrupted.
+ */
+export const styledRun = (text: string, rStyle: string | null, sup = false): string =>
+  `<w:r>${rStyle === null && !sup ? '' : `<w:rPr>${rStyle === null ? '' : `<w:rStyle w:val="${rStyle}"/>`}${sup ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr>`}`
+  + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
+
+/** One paragraph, in a paragraph style. Exported for the same reason. */
+export const styledParagraph = (style: string | null, runs: string): string =>
+  `<w:p>${style === null ? '' : `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`}${runs}</w:p>`;
+
 /** Write the body. `tail` is appended inside `<w:body>` — see the return. */
 export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): string {
   const paras: string[] = [];
-  const p = (style: string | null, runs: string) =>
-    `<w:p>${style === null ? '' : `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`}${runs}</w:p>`;
-  const run = (text: string, rStyle: string | null, sup = false) =>
-    `<w:r>${rStyle === null && !sup ? '' : `<w:rPr>${rStyle === null ? '' : `<w:rStyle w:val="${rStyle}"/>`}${sup ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr>`}`
-    + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
+  const p = styledParagraph;
+  const run = styledRun;
 
   /* A part heading is drawn where the part CHANGES — it names a run of steps,
      not a step — and a section with no part ends the run. `DocumentBlocks`

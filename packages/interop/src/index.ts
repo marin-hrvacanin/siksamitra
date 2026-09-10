@@ -75,7 +75,7 @@ export type {
 export {
   HIDDEN_MARKER, PARA_STYLE_OF, SM_ITEM_ID, SM_NS, WORD_FORMAT, WORD_PARTS,
   WORD_VERSION, WordError, customXmlPart, documentFromCustomXml, documentXml, exportWord,
-  familiesOf, holdStroke,
+  familiesOf, holdStroke, styledParagraph, styledRun,
   importWord, isSiksamitraDocx, roleColor, sectPr, stylesXml, wordFamily,
 } from './word/index.js';
 export type {

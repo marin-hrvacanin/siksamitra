@@ -27,15 +27,27 @@
  * which is what measures where the selection starts. That is Word 2019 on the
  * desktop, Word on the web, and Word for Mac 15.32.
  *
- * NONE OF THIS IS TESTED. There is no headless Word, and `office-addin-mock`
- * does not mock collections — `paragraphs` is one. Every function here is a
- * thin call sequence over logic that IS tested; if one of them is wrong it is
- * wrong in the call, not in the marking.
+ * WHAT TESTS THIS. There is no headless Word and `office-addin-mock` does not
+ * mock collections — `paragraphs` is one — so none of these functions can be
+ * unit-tested. `npm run check:word:live` measures them against a REAL Word
+ * over COM instead: `Range.InsertXML` and `Range.WordOpenXML` are the same two
+ * operations as `insertOoxml` and `getOoxml`, over the same flat OPC package,
+ * so what Word does there is what Word does here. Three things it established
+ * that the documentation does not say:
+ *
+ *   - `getOoxml` DOES return `/word/styles.xml`, which is how `documentStyles`
+ *     below can tell a prepared document from a fresh one.
+ *   - a style definition that arrives with an insertion SURVIVES the inserted
+ *     text being deleted again. That is what lets `addStyles` put the whole
+ *     vocabulary in and leave no visible trace.
+ *   - a fresh document declares none of the seventeen.
+ *
+ * Everything above this file is pure and tested in the fast tier.
  */
 import type { TextAndMarks } from '@siksamitra/format';
-import { stylesXml } from '@siksamitra/interop';
-import type { ExportStyle } from '@siksamitra/tokens/export-styles';
-import { documentThemeOf, exportStyle, styleStacks } from '@siksamitra/tokens/export-styles';
+import { styleSheet } from '../model/sheet.js';
+import { missingStyles, specimenBody, styleIds } from '../model/setup.js';
+import { specimenMarks } from '../model/specimen-text.js';
 import { documentPartOf, flatPackage, restyle } from '../model/opc.js';
 import { decodeRuns, isVerseParagraph, paragraphsXml, unresolvedIn } from '../model/paragraph.js';
 import type { Unaccounted } from '../model/paragraph.js';
@@ -57,27 +69,6 @@ export interface Located {
   unresolved: Unaccounted[];
 }
 
-/**
- * The style sheet every insertion carries.
- *
- * `veda-union` is his own document, and `stylesXml` is the `.docx` exporter's
- * own generator — so a box drawn by the add-in is the box the exporter prints
- * and the page shows, to the eighth of a point. Built once: it is 8 kB of XML
- * and it does not depend on the paragraph.
- */
-let sheet: string | null = null;
-export function styleSheet(style: ExportStyle = exportStyle('veda-union')): string {
-  if (sheet === null) {
-    const stacks = styleStacks(style);
-    sheet = stylesXml({
-      theme: documentThemeOf(style),
-      mode: style.mode,
-      textStack: stacks.text,
-      uiStack: stacks.ui,
-    });
-  }
-  return sheet;
-}
 
 /**
  * Where the selection is, and what the paragraph around it says.
@@ -190,5 +181,78 @@ export async function writeDocument(changed: readonly DocParagraph[]): Promise<n
     }
     await context.sync();
     return changed.length;
+  });
+}
+
+/* ── preparing a document ─────────────────────────────────────────────────
+ *
+ * A marking IS a style in Word, and a blank document has none of ours. Every
+ * insertion carries the style sheet, so the buttons work in a fresh document
+ * anyway — but the person cannot APPLY a holding themselves, cannot restyle
+ * one, and cannot see what the vocabulary is. See `model/setup.ts`.
+ */
+
+/** What the open document has of the add-in's vocabulary. */
+export interface DocStyles {
+  /** Style ids the document has not got. Empty means it is ready. */
+  readonly missing: readonly string[];
+  /** How many the add-in knows about, `Normal` included. */
+  readonly total: number;
+}
+
+/**
+ * Which of our styles this document is missing.
+ *
+ * `Body.getOoxml()` returns the whole flat package, `/word/styles.xml`
+ * included — which is the document's own style table, not a copy of ours. So
+ * this is a real answer and not a guess: a document prepared once reports
+ * nothing missing forever, and one the add-in has never touched reports all
+ * of them.
+ */
+export async function documentStyles(): Promise<DocStyles> {
+  const sheet = styleSheet();
+  return Word.run(async (context) => {
+    const ooxml = context.document.body.getOoxml();
+    await context.sync();
+    return {
+      missing: missingStyles(ooxml.value, sheet),
+      total: styleIds(sheet).filter((x) => x.id !== 'Normal').length,
+    };
+  });
+}
+
+/**
+ * Put the vocabulary into the document.
+ *
+ * `keep` leaves the specimen where a person can read it; without it the block
+ * is inserted and then deleted again, and the styles stay behind. That the
+ * styles stay is not an assumption — it is measured against a real Word in
+ * `tools/word-live.mjs`, because Word is documented to merge the styles an
+ * insertion USES and says nothing about what happens when the use goes away.
+ *
+ * WHY THE PARAGRAPHS ARE COUNTED RATHER THAN THE RANGE KEPT. `insertOoxml`
+ * answers with a range, and a range over content that has just been rewritten
+ * by the host is not something to hand back to the host and ask it to delete.
+ * The count before and after is unambiguous.
+ */
+export async function addStyles(keep: boolean): Promise<void> {
+  const sheet = styleSheet();
+  const body = specimenBody(sheet, paragraphsXml(specimenMarks()));
+  const pkg = flatPackage(body, sheet);
+  await Word.run(async (context) => {
+    const before = context.document.body.paragraphs;
+    before.load('items');
+    await context.sync();
+    const had = before.items.length;
+
+    context.document.body.insertOoxml(pkg, Word.InsertLocation.end);
+    await context.sync();
+    if (keep) return;
+
+    const after = context.document.body.paragraphs;
+    after.load('items');
+    await context.sync();
+    for (const paragraph of after.items.slice(had)) paragraph.delete();
+    await context.sync();
   });
 }

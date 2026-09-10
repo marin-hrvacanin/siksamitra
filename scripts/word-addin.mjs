@@ -46,6 +46,20 @@ export function manifestVersion(semver) {
 }
 
 /**
+ * The landing page, and the two places on it the add-in itself links to.
+ *
+ * Here rather than in the add-in's own source because the manifest, the
+ * publish tool, the install page and the task pane's own footer all name them,
+ * and four copies of a URL is three that go stale. `vite.config.ts` injects
+ * these into the bundle at build time — see `src/version.ts`.
+ */
+export const SITE = 'https://marin-hrvacanin.github.io/siksamitra';
+/** What the marks MEAN — which a tooltip cannot say and a pane must not try. */
+export const GUIDE_URL = `${SITE}/#marks`;
+/** How to get the add-in into Word. Where the folder's own index.html points. */
+export const INSTALL_URL = `${SITE}/#word`;
+
+/**
  * The hosts, in the order the publish tool writes them.
  *
  * `base` has NO trailing slash: every URL in the manifest is `base` + `/…`,
@@ -65,7 +79,7 @@ export const ADDIN_HOSTS = {
   },
   pages: {
     label: 'GitHub Pages',
-    base: 'https://marin-hrvacanin.github.io/siksamitra/word-extension',
+    base: `${SITE}/word-extension`,
     id: '8a41d0f6-25b7-4c93-9e12-6b0d7fa3c584',
     name: 'śikṣāmitra',
     what: 'published beside the landing page by .github/workflows/pages.yml',
@@ -190,3 +204,19 @@ export function manifestFaults(xml, host) {
 
 /** `manifest.local.xml`, `manifest.pages.xml`, … — what the publish tool writes. */
 export const manifestName = (key) => `manifest.${key}.xml`;
+
+/**
+ * What the pane is told about itself, as Vite/Vitest `define` entries.
+ *
+ * Here, and not in each config, because BOTH the build and the test runner
+ * have to inject them: a constant the bundler replaces is `undefined` in a
+ * test that imports the same module, and the whole suite fails to load with
+ * "__ADDIN_VERSION__ is not defined" — which says nothing about the tests.
+ * See `apps/word-addin/src/version.ts`.
+ */
+export function addinDefines(readFileSync, pkgPath = 'apps/word-addin/package.json') {
+  return {
+    __ADDIN_VERSION__: JSON.stringify(JSON.parse(readFileSync(pkgPath, 'utf8')).version),
+    __GUIDE_URL__: JSON.stringify(GUIDE_URL),
+  };
+}

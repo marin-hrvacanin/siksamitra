@@ -5,6 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>śikṣāmitra</title>
     <!--
+      A DELIBERATELY NARROW CONTENT SECURITY POLICY — three directives, and
+      not the ones a web page would start with.
+
+      WHAT IS HERE. `object-src 'none'` (no plugin content), `base-uri 'none'`
+      (nothing can retarget every relative URL on the page) and
+      `form-action 'none'` (the pane has no form, so nothing may post one).
+      All three are primitives an injected script would reach for, and all
+      three are things this pane genuinely never does — so they cost nothing
+      and can be verified by reading the source.
+
+      WHAT IS DELIBERATELY NOT HERE, AND WHY. `script-src` and `connect-src`
+      are absent because office.js is a LOADER: Microsoft's bridge fetches
+      further scripts and opens channels to hosts that are not documented,
+      differ between Word on the desktop and Word on the web, and change
+      without notice. A `script-src` that is one host short does not warn —
+      Office fails to initialise and the pane is a blank white rectangle. So
+      the defence against injection here is that there is no injection
+      surface: `src/ui/dom.ts` builds every node with `createElement` and
+      appends strings as text, there is no `innerHTML` in the add-in, and
+      `tests/component/word-pane.test.ts` fails if that changes.
+
+      `frame-ancestors` is not here because a `<meta>` CSP cannot set it — and
+      it must not be set anyway: being framed BY WORD is the whole point.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <!--
       office.js from the CDN, not from npm. Microsoft ships fixes to the host
       bridge continuously and a pinned copy goes out of step with the Word it is
       running inside; the requirement-set documentation says to reference the

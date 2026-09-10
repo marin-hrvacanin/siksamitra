@@ -2,12 +2,10 @@
   "note": "Files over 400 lines. Inherited monoliths may only SHRINK; new files must not appear here at all. See tools/check-modules.mjs.",
   "limit": 400,
   "files": {
-    "packages/render/src/ChantReader.tsx": 1926,
-    "packages/cli/src/main.ts": 947,
-    "packages/render/src/chant.css": 841,
-    "packages/format/src/chant.ts": 805,
-    "packages/interop/src/docx.ts": 691,
-    "packages/engine/src/script/index.ts": 592,
-    "packages/render/src/modules/sankalpa.ts": 543
+    "packages/render/src/ChantReader.tsx": 1861,
+    "packages/cli/src/main.ts": 875,
+    "packages/render/src/chant.css": 819,
+    "packages/render/src/modules/sankalpa.ts": 543,
+    "packages/engine/src/script/index.ts": 525
   }
 }

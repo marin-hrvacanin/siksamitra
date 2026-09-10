@@ -30,15 +30,12 @@ import {
 import { readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import {
-  ADDIN_HOSTS, manifestFaults, manifestFor, manifestVersion,
+  ADDIN_HOSTS, INSTALL_URL, manifestFaults, manifestFor, manifestVersion,
 } from './word-addin.mjs';
 
 const ADDIN = 'apps/word-addin';
 const DIST = join(ADDIN, 'dist');
 const TEMPLATE = join(ADDIN, 'manifest.xml');
-
-/** Where the instructions live, on whichever host is serving the landing page. */
-const INSTRUCTIONS = 'https://marin-hrvacanin.github.io/siksamitra/#word';
 
 const argv = process.argv.slice(2);
 const flag = (name) => {
@@ -86,14 +83,14 @@ const landingPage = (host) => `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>śikṣāmitra for Microsoft Word</title>
-<meta http-equiv="refresh" content="0; url=${INSTRUCTIONS}">
-<link rel="canonical" href="${INSTRUCTIONS}">
+<meta http-equiv="refresh" content="0; url=${INSTALL_URL}">
+<link rel="canonical" href="${INSTALL_URL}">
 </head>
 <body style="font:16px/1.6 system-ui,sans-serif;max-width:34rem;margin:4rem auto;padding:0 1.5rem">
 <h1 style="font-weight:400">śikṣāmitra for Microsoft Word</h1>
 <p>This folder is the add-in itself — the task pane Word loads, served from
 ${host.label}. There is nothing here to read.</p>
-<p><a href="${INSTRUCTIONS}">How to install it</a> &middot;
+<p><a href="${INSTALL_URL}">How to install it</a> &middot;
 <a href="manifest.xml">manifest.xml</a></p>
 </body>
 </html>
@@ -146,6 +143,24 @@ function publish(key, out) {
   if (absolute.length > 0) {
     throw new Error('taskpane.html asks for root-relative files, which a folder-hosted '
       + `add-in cannot have: ${absolute.join(', ')}`);
+  }
+
+  /*
+   * AND WHAT THE PUBLISHED PAGE PROMISES ABOUT ITSELF.
+   *
+   * Two things that are true of the source and have to stay true of the
+   * BUILD, because the build is what people load: no inline script (the pane
+   * is a module and a bundler that inlined one would be a new execution
+   * surface), and the content security policy still in the head. A bundler
+   * option or a plugin can quietly remove either.
+   */
+  if (!html.includes("object-src 'none'")) {
+    throw new Error('taskpane.html has lost its Content-Security-Policy');
+  }
+  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
+    .filter((m) => (m[1] ?? '').trim() !== '');
+  if (inline.length > 0) {
+    throw new Error(`taskpane.html carries ${inline.length} inline script(s)`);
   }
 
   const files = [];
