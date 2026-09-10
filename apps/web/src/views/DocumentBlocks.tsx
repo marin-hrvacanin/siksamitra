@@ -48,10 +48,16 @@ const FONT_STACK = 'var(--doc-verse-face)';
  * consequence of the column width.
  */
 function VerseLines(
-  { verse, script, showMarks, addressable, number }: {
+  { verse, script, showMarks, addressable, number, range }: {
     verse: ChantVerse; script: ChantScriptKey; showMarks: boolean; addressable: boolean;
     /** The page's own verse number, drawn in the gutter of the FIRST line. */
     number?: string;
+    /**
+     * Which lines this copy draws, `[first, last]` inclusive — the page map's
+     * `lineRange`, for a verse a page break runs through. Absent means all of
+     * them, which is every view but the paged one.
+     */
+    range?: readonly [number, number];
   },
 ): ReactNode {
   // Split at `br`: a recitation line is a BREATH, so it is a real unit of the
@@ -78,6 +84,15 @@ function VerseLines(
       {lines.map((line, li) => {
         const base = offset;
         offset += unitsBefore(line, line.length);
+        /*
+         * A line outside this copy's range is skipped, but the unit counter
+         * above it is NOT — `base` is an offset into the whole verse, so the
+         * second half of a split verse must count the first half's letters
+         * even though it does not draw them. `data-line` likewise stays the
+         * line's index in the VERSE: a recording addresses a pāda by it
+         * (`useRecording`), and renumbering per page would play the wrong line.
+         */
+        if (range !== undefined && (li < range[0] || li > range[1])) return null;
         return (
           <div className="pada" data-line={li} key={li}>
             {/*
@@ -153,7 +168,7 @@ export const figureBlockProps = (p: FigureBlockProps): FigureBlockProps => ({
 
 function DocumentBlocksInner(
   {
-    doc, script, showMarks, only, addressable = false,
+    doc, script, showMarks, only, slices, addressable = false,
     selectedFigure, onFigure, onFigureResize, onFigureGrab,
   }: FigureBlockProps & {
     doc: ChantDoc;
@@ -161,6 +176,20 @@ function DocumentBlocksInner(
     showMarks: boolean;
     /** Render only these block ids — how the paged view draws one page. */
     only?: ReadonlySet<string>;
+    /**
+     * For a block a page break runs THROUGH, which of its lines this copy
+     * draws — the page map's `lineRange`, by block id.
+     *
+     * WHY THIS EXISTS. `paginate` has always been able to split a verse
+     * between its lines and has always said so, in `lineRange`,
+     * `continuesFrom` and `continuesOnto`. Nothing read them: the paged view
+     * filtered by block ID alone, and a split verse's id is on BOTH pages —
+     * so the whole verse was drawn twice, once overflowing the foot of one
+     * page and once from the top of the next. Measured on the sample document
+     * at A4: verse `v-4` drawn on two pages, eight pādas where the verse has
+     * four, one of them past the paper's edge.
+     */
+    slices?: ReadonlyMap<string, readonly [number, number]>;
     /**
      * The editor is drawing: letters carry `data-u` and verses `data-verse`.
      *
@@ -240,6 +269,16 @@ function DocumentBlocksInner(
               if (item.t !== 'verse') return null;
               const id = blockId.verse(section.id, item.id);
               if (!wanted(id)) return null;
+              const range = slices?.get(id);
+              /*
+               * WHAT A VERSE CARRIES UNDER ITS LINES goes with its LAST line
+               * and nowhere else. A translation drawn on both halves of a
+               * split verse is the same sentence twice; drawn on the first
+               * half it sits above lines it translates. `useMeasure` counts
+               * its height into the last line for the same reason.
+               */
+              const lineCount = item.tokens.filter((t) => t.t === 'br').length + 1;
+              const tail = range === undefined || range[1] >= lineCount - 1;
               return (
                 <div
                   className="verse"
@@ -278,15 +317,16 @@ function DocumentBlocksInner(
                     showMarks={showMarks}
                     addressable={addressable}
                     {...(item.n == null ? {} : { number: `${item.n}` })}
+                    {...(range === undefined ? {} : { range })}
                   />
-                  {(item.instructions ?? []).map((ins, k) => (
+                  {tail && (item.instructions ?? []).map((ins, k) => (
                     // eslint-disable-next-line react/no-array-index-key
                     <p className="doc__instruction" key={k}>{ins.text.en}</p>
                   ))}
-                  {item.translation !== undefined && (
+                  {tail && item.translation !== undefined && (
                     <p className="doc__translation">{item.translation.en}</p>
                   )}
-                  {item.source !== undefined && (
+                  {tail && item.source !== undefined && (
                     <p className="doc__source">{item.source}</p>
                   )}
                   {/*
@@ -297,7 +337,7 @@ function DocumentBlocksInner(
                     draws both; drawing only the section's would lose a picture
                     silently.
                   */}
-                  {(item.figures ?? []).map((fig) => (
+                  {tail && (item.figures ?? []).map((fig) => (
                     <Figure key={fig.id} fig={fig} />
                   ))}
                 </div>

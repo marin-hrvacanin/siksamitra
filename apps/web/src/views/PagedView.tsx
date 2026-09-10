@@ -74,6 +74,30 @@ export function PagedView(
     page,
   ), [measured, page]);
 
+  /**
+   * What each page draws, derived ONCE per page map.
+   *
+   * `DocumentBlocks` is memoised for a reason — an arrow key used to rebuild
+   * every verse of Śrī Rudram — and a `new Set` built inside the render made
+   * that memo useless on every page of this view, because the prop was a
+   * different object each time. Derived here, the references are as stable as
+   * the map is, and the map only changes when the content or the page does.
+   *
+   * THE SLICES, and the page map has always had them: a block a break runs
+   * through appears on both pages with a `lineRange` each. This is the only
+   * place that difference can be drawn, and until it was read here the id
+   * alone put the WHOLE verse on both pages.
+   */
+  const perPage = useMemo(() => map.pages.map((p) => {
+    const slices = new Map<string, readonly [number, number]>();
+    for (const b of p.blocks) if (b.lineRange !== undefined) slices.set(b.id, b.lineRange);
+    return {
+      page: p,
+      ids: new Set(p.blocks.map((b) => b.id)),
+      ...(slices.size === 0 ? {} : { slices: slices as ReadonlyMap<string, readonly [number, number]> }),
+    };
+  }), [map]);
+
   return (
     <div className="paged">
       {/*
@@ -111,9 +135,7 @@ export function PagedView(
       {measured.length === 0 ? (
         <p className="paged__measuring">Measuring…</p>
       ) : (
-        map.pages.map((p) => {
-          const ids = new Set(p.blocks.map((b) => b.id));
-          return (
+        perPage.map(({ page: p, ids, slices }) => (
             <section
               className="page"
               key={p.index}
@@ -145,6 +167,7 @@ export function PagedView(
                   script={script}
                   showMarks={showMarks}
                   only={ids}
+                  {...(slices === undefined ? {} : { slices })}
                   addressable={addressable}
                   {...pictureProps}
                 />
@@ -171,8 +194,7 @@ export function PagedView(
                 <span className="page__folio">{p.index + 1}</span>
               </header>
             </section>
-          );
-        })
+        ))
       )}
     </div>
   );
