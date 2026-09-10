@@ -1,0 +1,11 @@
+import puppeteer from 'puppeteer-core';
+import { browserPath } from './_browser.mjs';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+const b = await puppeteer.launch({ executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'] });
+const p = await b.newPage();
+await p.setViewport({ width: 1400, height: 1100, deviceScaleFactor: 1 });
+await p.goto(pathToFileURL(resolve('site/index.html')).href, { waitUntil: 'load' });
+await new Promise((r) => setTimeout(r, 1500));
+await p.screenshot({ path: 'artifacts/site-hero.png' });
+await b.close();

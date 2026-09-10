@@ -66,6 +66,17 @@ export interface DocFile {
   readonly ref: string | null;
   /** The name for the title bar — a file's own, or the document's title. */
   readonly name: string;
+  /**
+   * WHERE THE OPEN DOCUMENT CAME FROM.
+   *
+   * The title bar needs it: the second line is there to say which FILE you are
+   * editing, and a library document's `name` is the slug it was fetched by, so
+   * showing it read "durgā sūktam / durga-suktam" — one name twice. Comparing
+   * the two strings instead would mean knowing that `purusha-suktam` is
+   * `puruṣa sūktam`, which is a transliteration table nobody should invent.
+   * See `title-names.ts`.
+   */
+  readonly kind: 'file' | 'library' | 'new';
   readonly dirty: boolean;
   readonly recents: readonly RecentDoc[];
   /** Whether a recents row can be opened again on this host. */
@@ -363,6 +374,7 @@ export function useDocFile(onNote: (message: string) => void): DocFile {
     error,
     ref: open?.ref ?? null,
     name,
+    kind: open?.kind ?? 'new',
     dirty,
     recents: recents.list,
     canReopen: (row) => (row.kind === 'library' ? true : files.reopenable(row.ref)),

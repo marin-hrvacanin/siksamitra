@@ -15,10 +15,20 @@
 import type { ReactNode } from 'react';
 import { TitleBar } from './TitleBar.js';
 import { Icon } from '../ui/Icon.js';
+import { titleBarNames } from './title-names.js';
 import type { DocFile } from './useDocFile.js';
 
 export function AppTitleBar({ file }: { file: DocFile }): ReactNode {
   const { doc, session } = file;
+  /*
+   * THE FILE'S NAME ONLY WHEN IT SAYS SOMETHING THE TITLE DOES NOT — see
+   * `title-names.ts`. A library document's file name IS its title, so the bar
+   * read "durgā sūktam durgā sūktam".
+   */
+  const names = titleBarNames(
+    doc === null ? null : { title: doc.title, name: file.name, kind: file.kind },
+    file.dirty,
+  );
   return (
     <TitleBar
       /*
@@ -28,8 +38,8 @@ export function AppTitleBar({ file }: { file: DocFile }): ReactNode {
        * nothing at all. Nothing else in this bar changes while typing, so the
        * dot appearing is the whole signal.
        */
-      title={doc === null ? 'śikṣāmitra' : `${file.dirty ? '• ' : ''}${doc.title}`}
-      subtitle={doc === null ? 'śikṣāmitra' : file.name}
+      title={names.title}
+      subtitle={names.subtitle}
       leading={<span className="tbar__mark" aria-hidden>śi</span>}
       trailing={(
         <>
