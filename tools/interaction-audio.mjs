@@ -45,6 +45,8 @@
  *   node tools/interaction-audio.mjs
  *   MEDIA=http://localhost:5174 node tools/interaction-audio.mjs
  */
+import http from 'node:http';
+import https from 'node:https';
 import puppeteer from 'puppeteer-core';
 import { browserPath } from './_browser.mjs';
 import { APP_URL } from './_ui.mjs';
@@ -72,17 +74,79 @@ console.log(`  media origin: ${MEDIA}\n`);
  * being served perfectly well. An `<audio>` element is not bound by that rule,
  * which is exactly why the app can play what the probe could not read.
  */
-async function reachable(path) {
-  try {
-    const r = await fetch(`${MEDIA}${path}`, { headers: { Range: 'bytes=0-99' } });
-    return { status: r.status, type: r.headers.get('content-type') ?? '' };
-  } catch (e) {
-    return { status: 0, type: String(e?.message ?? e) };
-  }
+/*
+ * `node:http` RATHER THAN `fetch`, and not for style. `fetch` keeps its socket
+ * in a pool, and a `process.exit(0)` while that pool is open aborts the
+ * process on Windows — `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)`
+ * — with exit code 127. Which is how a SKIP became a failure again, in CI, for
+ * a reason that has nothing to do with audio. An agent with no keep-alive and
+ * a destroyed response leaves nothing behind to abort on.
+ */
+function reachable(path) {
+  const url = new URL(`${MEDIA}${path}`);
+  const client = url.protocol === 'https:' ? https : http;
+  return new Promise((resolve) => {
+    const req = client.request(
+      url,
+      { method: 'GET', headers: { Range: 'bytes=0-99' }, agent: new client.Agent({ keepAlive: false }) },
+      (res) => {
+        const answer = { status: res.statusCode ?? 0, type: res.headers['content-type'] ?? '' };
+        res.resume();
+        res.on('end', () => resolve(answer));
+        res.on('close', () => resolve(answer));
+      },
+    );
+    req.on('error', (e) => resolve({ status: 0, type: String(e?.message ?? e) }));
+    req.end();
+  });
 }
 const head = await reachable('/tests/durga-suktam/audio/durga-1.mp3');
+
+/*
+ * NO RECITATIONS ON THIS MACHINE IS NOT A FAILURE, and telling the two apart
+ * is the whole of this block.
+ *
+ * The clips are not in this repository. `vite-corpus.ts` serves them from a
+ * sibling checkout of the platform — `../vedaunion/app/client/public/tests`,
+ * or wherever `SM_MEDIA_DIR` says — because the files that answer those paths
+ * come back `cross-origin-resource-policy: same-origin` from vedaunion.org and
+ * no other origin may EMBED them, `<audio>` included. So a machine without the
+ * platform checked out has no audio, which the plugin's own comment calls "the
+ * honest outcome and not a broken one".
+ *
+ * IT WAS NOT HONEST HERE. This gate failed on the missing directory, so the
+ * `Check` workflow was RED on every push to `main` — 8 of 17 checks failing on
+ * a runner that cannot have the media, while the same command passes on a
+ * machine that does. A gate that is red for a reason nobody can fix is a gate
+ * people learn to ignore, and then it is no longer a gate at all.
+ *
+ * WHAT IS NOT SKIPPED: a 404 on a machine that HAS the tree. `reachable`
+ * distinguishes them — a served directory answers 200 or 206, an absent one
+ * answers 404 for every path in it, and the gate checks a SECOND document's
+ * clip before deciding. Two independent 404s mean the tree is not there; one
+ * would be a missing file, which is a fault and still fails.
+ */
+const second = await reachable('/tests/bhagya-suktam/audio/bhagya-suktam-1.mp3');
+/*
+ * AND IT MUST BE AUDIO. A dev server answers an unknown path with the app's
+ * own `index.html` at 200 — measured while checking this very block, which
+ * reported a served clip for a path that does not exist. A clip is 200 or 206
+ * with an audio content type; anything else is not a clip however cheerful its
+ * status line.
+ */
+const served = (r) => (r.status === 200 || r.status === 206)
+  && /^(audio\/|application\/octet-stream)/.test(r.type);
+if (!served(head) && !served(second)) {
+  console.log('  SKIPPED — no recitation media on this machine.');
+  console.log(`    ${MEDIA}/tests/… answers ${head.status} ${head.type || '(no type)'} for`);
+  console.log('    every clip, so the platform is not checked out beside this');
+  console.log('    repository. Point SM_MEDIA_DIR at a copy of its');
+  console.log('    `public/tests` to run these.');
+  console.log('\nAUDIO INTERACTION SKIPPED\n');
+  process.exit(0);
+}
 check('the recitation is where the document says it is',
-  head.status === 200 || head.status === 206, `HTTP ${head.status} ${head.type}`);
+  served(head), `HTTP ${head.status} ${head.type}`);
 
 const browser = await puppeteer.launch({
   executablePath: browserPath(),

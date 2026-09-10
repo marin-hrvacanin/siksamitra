@@ -57,6 +57,19 @@ export interface ExportOptions {
   /** Fixed by a gate so two exports of one document can be compared. */
   savedAt?: string;
   engine?: string;
+  /**
+   * WHICH PAPER. The page size the person is looking at, and it was not passed.
+   *
+   * `documentView` hard-coded `pageGeometry(DEFAULT_PAGE)`, so choosing A5 or
+   * Letter in the ribbon and pressing Export gave an A4 document — the sheet in
+   * the `.html`, the `sectPr` in the `.docx` and the paper the PDF prints on,
+   * all A4, while the screen showed something else. It became easier to hit
+   * the moment the page size started persisting between sessions.
+   *
+   * A page-size ID from `PAGE_SIZES`, not a geometry, because that is what the
+   * view state holds and what a command line passes.
+   */
+  page?: string;
 }
 
 export interface ExportedPage {
@@ -78,13 +91,13 @@ export interface ExportedPage {
  * and hand it straight to the frame `export.css` draws.
  */
 export function documentView(
-  doc: ChantDoc, style: ExportStyle, script: ChantScriptKey,
+  doc: ChantDoc, style: ExportStyle, script: ChantScriptKey, page = DEFAULT_PAGE,
 ): string {
   const props = { doc, script, showMarks: true };
   if (style.frame === 'page' || style.frame === 'web') {
     return renderToStaticMarkup(createElement(FlowView, {
       ...props,
-      page: pageGeometry(DEFAULT_PAGE),
+      page: pageGeometry(page),
       zoom: 1,
       web: style.frame === 'web',
     }));
@@ -124,7 +137,7 @@ export async function buildExportPage(
     );
   }
   const shown = sliceChantDoc(doc, selection);
-  const view = documentView(shown, style, script);
+  const view = documentView(shown, style, script, options.page ?? DEFAULT_PAGE);
 
   const theme = documentThemeOf(style);
   /* Both stacks come from `styleStacks`, which the `.docx` exporter also calls

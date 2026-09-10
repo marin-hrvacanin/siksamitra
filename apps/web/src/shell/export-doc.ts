@@ -17,6 +17,7 @@ import {
   type ChantDoc, type ChantScriptKey,
 } from '@siksamitra/format';
 import { CLIP_SELECTOR, RASTER_ATTR, svgDocument, toBase64 } from '@siksamitra/interop';
+import { pageGeometry } from '@siksamitra/layout';
 import {
   exportStyle, styleStacks, type ExportStyle,
 } from '@siksamitra/tokens/export-styles';
@@ -94,7 +95,18 @@ const io: ExportIo = {
  */
 export async function exportDocumentWord(
   doc: ChantDoc,
-  options: { style: string; script?: ChantScriptKey; select?: string; slug?: string },
+  options: {
+    style: string; script?: ChantScriptKey; select?: string; slug?: string;
+    /**
+     * WHICH PAPER — the page size the person is looking at.
+     *
+     * REQUIRED, deliberately. It was not passed at all, so `exportWord` fell
+     * back to A4 and a person working on A5 got an A4 `.docx` with an A4
+     * `sectPr`. Optional, that is a mistake anybody can make again; required,
+     * the compiler asks.
+     */
+    page: string;
+  },
 ): Promise<{ bytes: Uint8Array; style: ExportStyle }> {
   const { exportWord } = await import('@siksamitra/interop');
   const style = exportStyle(options.style);
@@ -105,6 +117,7 @@ export async function exportDocumentWord(
   );
   const bytes = await exportWord({
     doc: shown,
+    page: pageGeometry(options.page),
     style,
     textStack: stacks.text,
     uiStack: stacks.ui,
@@ -119,7 +132,11 @@ export async function exportDocumentWord(
 /** One self-contained `.html`: the page, and the document inside it. */
 export function exportDocumentHtml(
   doc: ChantDoc,
-  options: { style: string; script?: ChantScriptKey; select?: string; slug?: string },
+  options: {
+    style: string; script?: ChantScriptKey; select?: string; slug?: string;
+    /** WHICH PAPER. Required for the same reason as the `.docx`'s. */
+    page: string;
+  },
 ): Promise<ExportedPage> {
   return buildExportPage(doc, { ...options, engine: ENGINE }, io);
 }

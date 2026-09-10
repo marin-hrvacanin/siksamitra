@@ -182,7 +182,7 @@ export function FileGroup(
     setBusy(true);
     try {
       const { exportDocumentHtml } = await import('./export-doc.js');
-      const page = await exportDocumentHtml(doc, { style });
+      const page = await exportDocumentHtml(doc, { style, page: ctx.pageSize });
       download(fileNameFor(doc.title, 'html'), page.html, 'text/html;charset=utf-8');
       onNote(`Exported as ${page.style.name} — the document travels inside the page, `
         + `with ${page.fonts.faces} font file(s) and nothing to fetch.`);
@@ -198,7 +198,7 @@ export function FileGroup(
     setBusy(true);
     try {
       const { exportDocumentHtml, exportDocumentPng } = await import('./export-doc.js');
-      const page = await exportDocumentHtml(doc, { style });
+      const page = await exportDocumentHtml(doc, { style, page: ctx.pageSize });
       /* Twice the size it is laid out at: a card is read on a phone, where the
          screen has two device pixels to a CSS one, and a 1x image of a mantra
          is soft exactly where the marks are. */
@@ -217,7 +217,9 @@ export function FileGroup(
     setBusy(true);
     try {
       const { exportDocumentWord } = await import('./export-doc.js');
-      const word = await exportDocumentWord(doc, { style, slug: fileNameFor(doc.title, 'docx') });
+      const word = await exportDocumentWord(doc, {
+        style, page: ctx.pageSize, slug: fileNameFor(doc.title, 'docx'),
+      });
       download(
         fileNameFor(doc.title, 'docx'),
         word.bytes,

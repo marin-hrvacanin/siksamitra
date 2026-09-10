@@ -37,6 +37,7 @@ import { useScrollAnchor } from './state/useScrollAnchor.js';
 import { useElementSize } from './state/useElementWidth.js';
 import { useAppearance } from './state/useAppearance.js';
 import { useIast } from './editor/useIast.js';
+import { usePrintPaper } from './state/usePrintPaper.js';
 
 export function App() {
   const viewport = useViewport();
@@ -112,6 +113,9 @@ export function App() {
    * a character reaches the document by. See `editor/iast.ts`.
    */
   const iast = useIast({ insert: session.insert, editing: session.editing });
+  /* The print dialog is told which paper the document is for — see
+     `usePrintPaper`. Without it, Print offered the printer's own size. */
+  usePrintPaper(state.page);
   /* What is open, folded and expanded — see `shell/useShellState.ts`. */
   const {
     folded, setFolded, navOpen, setNavOpen, navRows, setNavRows, fileOpen, setFileOpen,

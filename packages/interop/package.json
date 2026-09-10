@@ -22,6 +22,7 @@
     "@siksamitra/edit": "2.0.0-alpha.0",
     "@siksamitra/engine": "2.0.0-alpha.0",
     "@siksamitra/format": "2.0.0-alpha.0",
+    "@siksamitra/layout": "2.0.0-alpha.0",
     "@siksamitra/tokens": "2.0.0-alpha.0",
     "fflate": "^0.8.3",
     "xz-decompress": "^0.2.3"
