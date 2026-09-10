@@ -100,6 +100,35 @@ export const MERGING_KINDS: ReadonlySet<MarkKind> =
 /** The kinds that sit BETWEEN letters rather than over them. */
 export const POINT_KINDS: ReadonlySet<MarkKind> = new Set<MarkKind>(['sbhakti', 'pause', 'syl']);
 
+/**
+ * THE KINDS THAT BELONG TO THE LETTERS THEY COVER, and to no others.
+ *
+ * A HOLDING IS A SPAN. It is a box drawn over a stretch of text, so a letter
+ * typed at its edge belongs inside it — that is what bold does, and typing in
+ * the middle of a held word must not leave a hole in its box.
+ *
+ * A SVARA IS NOT. It is an accent ON a letter: the letter is `a` and it is
+ * `anudātta`. A letter typed beside it is a different letter and has no accent
+ * of its own until somebody gives it one. The owner's report: "when I type,
+ * that new character also carries a svara."
+ *
+ * The same is true of `was` (this letter was a `ṁ`), `sup` (a superscript
+ * after this letter) and `cj` (this letter's conjunct choice). Each is a
+ * property of particular letters, and taking in a neighbour makes it a
+ * statement about a letter nobody made it about.
+ *
+ * WHAT READS THIS, and it is why the set is here rather than in either of
+ * them: `shiftForEdit` uses it to decide whether an insertion at a marking's
+ * edge grows it or pushes it along, and `MarkedTextNode.canInsertTextBefore`
+ * uses it to answer Lexical's version of the same question. Two mechanisms,
+ * one policy — see rule 1.
+ *
+ * `slot` and `plain` are spans like a holding: a variable slot and a stretch
+ * of prose both grow with what is typed into them.
+ */
+export const LETTER_KINDS: ReadonlySet<MarkKind> =
+  new Set<MarkKind>(['was', 'svara', 'sup', 'cj']);
+
 export interface Mark {
   k: MarkKind;
   /** Half-open over the verse's text. `from === to` for a point marking. */

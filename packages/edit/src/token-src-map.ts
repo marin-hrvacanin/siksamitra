@@ -26,18 +26,35 @@
  * letter when it cannot. This only answers "which letter is that".
  */
 import type { SrcMap } from '@siksamitra/engine';
-import type { ChantToken, ChantVerse } from '@siksamitra/format';
+import type { ChantDoc, ChantSection, ChantToken, ChantVerse } from '@siksamitra/format';
 import { linesFromTokens } from './sync.js';
 
 /**
- * A source map over a transcribed verse's own recited text.
+ * A source map over a verse's own recited text — ANY verse.
  *
- * Returns null for a verse that HAS a source layer — that one has a real map
- * and must use it, or a mark would be addressed against the wrong text.
+ * IT USED TO REFUSE A VERSE THAT HAD A SOURCE LAYER, on the reasoning that
+ * such a verse "has a real map and must use it, or a mark would be addressed
+ * against the wrong text". That was true when `src` was the thing being
+ * edited. It is not any more: the caret edits the text that is SHOWN, and
+ * `sourcesOf` returns `toTextAndMarks(v).text` for every verse without asking
+ * whether it has a source.
+ *
+ * SO THE REFUSAL BECAME THE BUG. `srcMapFor` preferred the source-derived map
+ * wherever there was one, which is most of the corpus, so the caret addressed
+ * the shown text through a map of the TYPED text — two coordinate systems in
+ * one flat string, which is the exact thing the migration removed from
+ * `sourcesOf` and left here. And because `src` does not change when the text
+ * does, the map went stale on the first keystroke: press Enter in the middle
+ * of a pāda and `{line: 1, column: 0}` resolved to the first letter of the
+ * line that USED to be second, so the caret was painted a line below the text.
+ * Measured: unit 29 where unit 4 was wanted. The owner: "I pressed enter, it
+ * put it in the next line but my cursor was shown 2 lines below."
+ *
+ * A derivation is still a derivation and this is still not one — nothing is
+ * derived from this map, and an override is still addressed through
+ * `verseSrcMap`. This answers "which letter is that", for every verse.
  */
 export function tokenSrcMap(verse: ChantVerse): SrcMap | null {
-  if (verse.src !== undefined) return null;
-
   const lines = linesFromTokens(verse);
   const units: SrcMap['units'] = [];
 
@@ -75,4 +92,43 @@ export function tokenSrcMap(verse: ChantVerse): SrcMap | null {
   walk(verse.tokens);
 
   return { units, lines };
+}
+
+/** The source map for one verse — how a rendered letter finds its offset. */
+export function srcMapFor(
+  doc: ChantDoc,
+  sectionId: string,
+  verseId: string,
+): SrcMap | null {
+  const section: ChantSection | undefined = doc.sections.find((s) => s.id === sectionId);
+  const verse = section?.verses.find((v: ChantVerse) => v.id === verseId);
+  if (verse === undefined) return null;
+  /*
+   * THE CARET'S MAP IS OVER THE TEXT THAT IS SHOWN. Always, for every verse.
+   *
+   * This used to prefer `verseSrcMap` — a map derived from the verse's `src`,
+   * the typed input — and fall back to `tokenSrcMap` only for a transcribed
+   * verse with no source at all. Both halves were wrong once the document
+   * became text + markings:
+   *
+   *   THE SPACE. `sourcesOf` gives the caret `toTextAndMarks(v).text` for
+   *   every verse. A map built from `src` addresses a different string, so a
+   *   verse with a source layer had the caret's offsets resolved through the
+   *   wrong text — two coordinate systems in one flat string, which is
+   *   precisely what the migration removed from `sourcesOf` (see its note
+   *   there) and did not remove from here.
+   *
+   *   THE STALENESS. `src` does not change when the text changes, so the map
+   *   could not follow an edit. Press Enter in the middle of a pāda and
+   *   `{line: 1, column: 0}` resolved to unit 29 — the first letter of the
+   *   line that used to be second — so the caret was PAINTED a line below the
+   *   line the text went into, and every keystroke after that acted where the
+   *   person was not looking.
+   *
+   * `verseSrcMap` is still what an OVERRIDE is addressed through
+   * (`apply-mark.ts`, `adopt-source.ts`): storing a mark against the typed
+   * source is a different question from finding the letter under the caret,
+   * and it is the one place a real derivation is required.
+   */
+  return tokenSrcMap(verse);
 }

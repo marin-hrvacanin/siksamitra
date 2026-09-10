@@ -25,11 +25,11 @@ import {
 } from './caret.js';
 import { replaceRange } from './range.js';
 import { clearText, markText, patchToMark } from './mark-text.js';
-import { tokenSrcMap } from './token-src-map.js';
+export { srcMapFor } from './token-src-map.js';
 import {
   refusalForOutside,
 } from './rule-zero.js';
-import { profileChain, verseSrcMap, type VerseReport } from './derive-verse.js';
+import { profileChain, type VerseReport } from './derive-verse.js';
 import { recompute } from './recompute.js';
 import {
   changedVerses, rederive, sourcesOf, writeSources, type LostMark,
@@ -75,29 +75,6 @@ const quiet = (state: EditState): EditState => ({
 
 const sectionOf = (doc: ChantDoc, id: string): ChantSection | undefined =>
   doc.sections.find((s) => s.id === id);
-
-/** The source map for one verse — how a rendered letter finds its offset. */
-export function srcMapFor(
-  doc: ChantDoc,
-  sectionId: string,
-  verseId: string,
-): ReturnType<typeof verseSrcMap> {
-  const section = sectionOf(doc, sectionId);
-  const verse = section?.verses.find((v) => v.id === verseId);
-  if (section === undefined || verse === undefined) return null;
-  /*
-   * A TRANSCRIBED VERSE IS STILL ADDRESSABLE.
-   *
-   * `verseSrcMap` answers null for one, because there is no source to derive
-   * from — and every caller read that as "these letters have no addresses",
-   * so a drag across the first verse of Durgā Sūktam produced no selection at
-   * all and the holding button had nothing to mark. The letters are on the
-   * page and can be pointed at; `tokenSrcMap` maps them onto the same recited
-   * text the caret already uses.
-   */
-  return verseSrcMap(verse, section, doc.profile, doc.overrides ?? [])
-    ?? tokenSrcMap(verse);
-}
 
 const refuse = (state: EditState, history: History, why: string): Applied => ({
   state: { ...quiet(state), refusals: [why] },

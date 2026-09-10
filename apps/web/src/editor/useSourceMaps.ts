@@ -17,7 +17,7 @@
  * one of the two impure things it owns; this is that one, whole.
  */
 import { useCallback, useRef } from 'react';
-import type { ChantDoc, ChantSection } from '@siksamitra/format';
+import type { ChantDoc, ChantSection, ChantVerse } from '@siksamitra/format';
 import type { SrcMap } from '@siksamitra/engine';
 import { flatten, sourcesOf, srcMapFor, type FlatSource } from '@siksamitra/edit';
 
@@ -63,18 +63,41 @@ export function useSourceMaps(live: ChantDoc, sectionId: string): SourceMaps {
     return flat;
   }, [live]);
 
-  /** Source maps, cached by section, verse and the verse's own source text. */
-  const cache = useRef(new Map<string, { key: string; map: SrcMap | null }>());
+  /**
+   * Source maps, cached by section and verse — KEYED ON THE VERSE OBJECT.
+   *
+   * It was keyed on `verse.src.lines`, and that is a cache that could not
+   * expire. `src` is the accented witness and the declared departures — where
+   * the verse came FROM — and since the document model became text + markings
+   * it is no longer what the caret edits, so it does not change when the text
+   * does. For a verse with no `src` at all the key was `''`, forever.
+   *
+   * WHAT THAT COST, measured: press Enter in the middle of a pāda and the
+   * caret is drawn on the line BELOW the one the text went into. The split is
+   * correct, the model's address is correct — and the map that turns that
+   * address into a letter was built when the document was opened, so
+   * `{line: 1, column: 0}` resolved to unit 29, the first letter of the line
+   * that USED to be second. Every keystroke after that acted where the person
+   * was not looking. The owner: "I pressed enter, it put it in the next line
+   * but my cursor was shown 2 lines below."
+   *
+   * The verse OBJECT is the honest key, for the reason `flatFor` above already
+   * gives about sections: an edit gives the verse a new identity, so the entry
+   * falls out of date exactly when the text does and never a moment later. A
+   * verse an edit did not touch keeps its identity — `retext` returns the same
+   * object when the text is unchanged — so the cache still does its job, which
+   * is not re-flattening 198 verses on every `selectionchange`.
+   */
+  const cache = useRef(new Map<string, { of: ChantVerse; map: SrcMap | null }>());
   const srcMapIn = useCallback((where: string, verseId: string): SrcMap | null => {
     const found = live.sections.find((s) => s.id === where);
     const verse = found?.verses.find((v) => v.id === verseId);
     if (found === undefined || verse === undefined) return null;
-    const key = (verse.src?.lines ?? []).join('\n');
     const at = `${where}/${verseId}`;
     const hit = cache.current.get(at);
-    if (hit !== undefined && hit.key === key) return hit.map;
+    if (hit !== undefined && hit.of === verse) return hit.map;
     const map = srcMapFor(live, found.id, verseId);
-    cache.current.set(at, { key, map });
+    cache.current.set(at, { of: verse, map });
     return map;
   }, [live]);
 

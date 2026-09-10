@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest';
 import { adoptSource, unitsOf } from '../adopt-source.js';
 import { markUnits } from '../mark-tokens.js';
 import { tokenSrcMap } from '../token-src-map.js';
+import { linesFromTokens } from '../sync.js';
 import { holdingProblems } from '../holdings.js';
 import { emptyHistory } from '../history.js';
 import { apply, newState } from '../session.js';
@@ -142,8 +143,46 @@ describe('a transcribed verse can be pointed at', () => {
     }
   });
 
-  it('a verse WITH a source gets no stand-in map, because it has a real one', () => {
-    expect(tokenSrcMap(verse('v-1', ['agnim īḷe']))).toBeNull();
+  /*
+   * A VERSE WITH A SOURCE GETS ONE TOO, and this test used to assert the
+   * opposite: `tokenSrcMap` refused such a verse "because it has a real one".
+   *
+   * That was true when `src` was the thing being edited. The caret edits the
+   * text that is SHOWN now — `sourcesOf` returns `toTextAndMarks(v).text` for
+   * every verse — so a map derived from the typed source addresses a different
+   * string, and `src` does not change when the text does, so it went stale on
+   * the first keystroke. Measured: Enter in the middle of a pāda painted the
+   * caret a line below the text, because `{line: 1, column: 0}` resolved
+   * through the pre-edit source.
+   *
+   * An override is still addressed through `verseSrcMap`, which IS a
+   * derivation. This answers "which letter is that".
+   */
+  it('a verse WITH a source gets one as well, over the text that is shown', () => {
+    const withSource = verse('v-1', ['agnim īḷe']);
+    const map = tokenSrcMap(withSource);
+    expect(map).not.toBeNull();
+    const units = unitsOf(withSource.tokens);
+    expect(map!.units).toHaveLength(units.length);
+    /* And it is over the SHOWN letters: each span names the letter it spans,
+       checked against the map's own lines rather than against the arithmetic
+       that produced the span. */
+    for (const [i, span] of map!.units.entries()) {
+      const line = map!.lines[span.line] ?? '';
+      expect(line.slice(span.start, span.end)).toBe(units[i]!.c);
+    }
+  });
+
+  it('and its lines are the lines a person sees, not the lines that were typed', () => {
+    /*
+     * THE DISTINCTION THAT WAS COSTING THE CARET ITS PLACE. A source line and
+     * a shown line are not the same string — the rules replace letters — so a
+     * map of one cannot address the other. This asserts the map's lines are
+     * the drawn ones.
+     */
+    const withSource = verse('v-1', ['agnim īḷe purohitaṁ']);
+    const map = tokenSrcMap(withSource)!;
+    expect(map.lines).toEqual(linesFromTokens(withSource));
   });
 });
 

@@ -12,7 +12,7 @@
  * runs after every one of these in the callers that can afford it.
  */
 import {
-  compareMarks, MERGING_KINDS, sameValue,
+  compareMarks, LETTER_KINDS, MERGING_KINDS, sameValue,
   type Mark, type MarkKind,
 } from './mark.js';
 
@@ -162,6 +162,32 @@ export function shiftForEdit(
     return edit.from + Math.min(at - edit.from, edit.inserted);
   };
 
+  /**
+   * A MARKING'S START, when the marking must not take in what was typed.
+   *
+   * `move` leaves an offset alone at `edit.from` and pushes everything after
+   * it, so a marking whose START is exactly the insertion point keeps its
+   * start and gains its end: it GROWS over the new letters. For a holding
+   * that is right — typing at the edge of a box belongs in the box, which is
+   * bold's behaviour.
+   *
+   * For an accent it is wrong, and it is the owner's report: "when I type,
+   * that new character also carries a svara". A svara is a property OF a
+   * letter, so the marking has to move along with the letter it is about.
+   * `<` rather than `<=`, which is the whole difference: at the insertion
+   * point the start moves too.
+   *
+   * Only a pure insertion differs. For a deletion or a replacement the middle
+   * branch answers, and it answers the same for both. Which kinds are which is
+   * `LETTER_KINDS`, and it is stated once because Lexical asks the same
+   * question through `canInsertTextBefore`.
+   */
+  const moveStart = (at: number): number => {
+    if (at < edit.from) return at;
+    if (at >= edit.to) return at + delta;
+    return edit.from + Math.min(at - edit.from, edit.inserted);
+  };
+
   for (const m of marks) {
     if (m.from === m.to) {
       /* A point marking inside the replaced range has lost its place. */
@@ -174,7 +200,7 @@ export function shiftForEdit(
       dropped.push(m);
       continue;
     }
-    const from = move(m.from);
+    const from = LETTER_KINDS.has(m.k) ? moveStart(m.from) : move(m.from);
     const to = move(m.to);
     if (to <= from) { dropped.push(m); continue; }
     kept.push({ ...m, from, to });

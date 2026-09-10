@@ -53,7 +53,7 @@ export type { FigureAt, FigureCaptionAt, FigureCrop, FigureFrame } from './figur
  */
 export {
   assertMarks, compareMarks, mark, markFaults,
-  MERGING_KINDS, POINT_KINDS, sameValue, STAGE_OF,
+  LETTER_KINDS, MERGING_KINDS, POINT_KINDS, sameValue, STAGE_OF,
 } from './mark.js';
 export type { Mark, MarkFault, MarkInput, MarkKind, Stage } from './mark.js';
 export {

@@ -183,22 +183,37 @@ if (svaraAt !== null) {
   await wait(600);
 
   /*
-   * WHICH LETTERS CARRY A SVARA NOW, read off the page. The two just typed
-   * must not: `k` and `a` were plain when they were typed.
+   * WHICH LETTERS CARRY A SVARA NOW, by INDEX — and that precision matters.
+   *
+   * This first asked whether any svara'd letter's text was `k` or `a`, which
+   * every `a` in the verse already answered yes to: the check reported the bug
+   * as unfixed after it was fixed. The two letters just typed sit at the
+   * caret's own unit and the one after it, and those are the two that must be
+   * clean.
    */
-  const spread = await page.evaluate((args) => {
+  const svaras = await page.evaluate((args) => {
     const [verse] = args;
-    const letters = [...document.querySelectorAll(`[data-verse="${verse}"] [data-u]`)]
-      .filter((e) => e.closest('.paged__probe') === null);
-    return letters
+    return [...document.querySelectorAll(`[data-verse="${verse}"] [data-u]`)]
+      .filter((e) => e.closest('.paged__probe') === null)
       .map((e, i) => ({ i, text: e.textContent, svara: /\bsv-/.test(e.className) }))
       .filter((l) => l.svara)
-      .map((l) => `${l.i}:${l.text}`);
+      .map((l) => ({ at: l.i, text: l.text }));
   }, [svaraAt.verse]);
-  const typedCarries = spread.some((l) => /:k$|:a$/.test(l));
+  const typedAt = [svaraAt.unit, svaraAt.unit + 1];
+  const inherited = svaras.filter((l) => typedAt.includes(l.at));
   check('a letter typed beside a svara does NOT inherit it',
-    !typedCarries,
-    `letters with a svara: ${spread.join(' ') || 'none'}`);
+    inherited.length === 0,
+    inherited.length === 0
+      ? `the two typed letters at ${typedAt.join(' and ')} are plain; `
+        + `the svara stayed on "${svaras[0]?.text ?? '?'}" at ${svaras[0]?.at ?? -1}`
+      : `${inherited.map((l) => `${l.at}:${l.text}`).join(' ')} inherited it`);
+
+  /* AND THE SVARA IS STILL THERE, on the letter it was placed on. Losing it
+     would also pass the check above, and losing somebody's accent is worse
+     than spreading it. */
+  check('and the svara it was placed on is still there, two letters along',
+    svaras.some((l) => l.at === svaraAt.unit + 2),
+    `svaras at ${svaras.map((l) => l.at).slice(0, 6).join(', ')}; expected one at ${svaraAt.unit + 2}`);
 
   for (let i = 0; i < 4; i += 1) {
     await page.keyboard.down('Control');

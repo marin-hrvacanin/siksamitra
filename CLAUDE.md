@@ -228,7 +228,7 @@ Not style preferences. Each one is here because its absence cost something.
     longer true.** `FlowView.tsx` and `PagedView.tsx` both set
     `contentEditable={addressable}` on the column, so the browser delivers
     `beforeinput` while React owns the children — a hybrid, and the fragile
-    part of the program. It is why Enter misbehaves. The intended end state is
+    part of the program. The intended end state is
     **Lexical owning the surface**: the bridge is written
     (`apps/web/src/editor/lexical/`) and proven headlessly over the whole
     corpus by `tests/integration/lexical-bridge.test.ts`, but **no application
@@ -268,7 +268,9 @@ Not style preferences. Each one is here because its absence cost something.
     Lexical was chosen for exactly this reason and the bridge is built and
     proven headlessly over the whole corpus — but `EditorSurface.tsx` is still
     a hand-written caret over a `contenteditable`, so Enter, selection and
-    input are OUR code, and they behave like it. See
+    input are OUR code. Three faults he reported came out of exactly that, and
+    are fixed (`check:edit:typing` holds them); ~1,800 lines of caret,
+    selection, DOM-mapping and key handling are still ours to be wrong in. See
     `openspec/changes/text-and-marks/`.
 
     So: when a defect is in a mechanism the library would own, the fix is to
@@ -364,15 +366,7 @@ npm run dev                     # in another terminal, first
 CHROME=<path> npm run check:document    # the page against his .docx, in points
 CHROME=<path> npm run check:responsive  # 15 widths x 3 tabs: nothing clipped
 CHROME=<path> npm run check:themes      # 84 theme combinations resolve
-CHROME=<path> npm run check:edit        # gestures, views, and no reflow
-CHROME=<path> npm run check:edit:typing # ENTER, a svara, Backspace — FAILS ON
-                                        #   PURPOSE until Lexical owns the
-                                        #   surface. Written first; green is
-                                        #   what the handover has to earn, and
-                                        #   the run says which of the four
-                                        #   readings still disagree. Add it to
-                                        #   `check:edit` in the commit that
-                                        #   makes it pass.
+CHROME=<path> npm run check:edit        # gestures, views, typing, zoom, no reflow
 CHROME=<path> node tools/walkthrough.mjs   # 24 screenshots, to LOOK at
 CHROME=<path> node tools/shot-marking.mjs  # mark five letters and look at the box
 ```
