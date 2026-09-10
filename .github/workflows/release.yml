@@ -135,23 +135,19 @@ jobs:
           path: out/*
           if-no-files-found: error
 
-  publish:
-    needs: build
-    # `always()` so a release still happens when one platform failed; the
-    # matrix is not fail-fast for the same reason.
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          path: incoming
-      - name: Gather
-        run: |
-          mkdir -p out
-          find incoming -type f -exec cp {} out/ \;
-          ls -la out
-      - name: Publish
+      # EACH PLATFORM PUBLISHES ITS OWN, and that is the fix for a coupling
+      # this file already argued against. The matrix is not fail-fast because
+      # "a release with two of the three is worth far more than a release with
+      # none" — and then a single `publish` job with `needs: build` waited for
+      # ALL of them anyway. Measured: a `macos-13` runner sat queued for
+      # thirty-eight minutes while a finished Windows installer, a finished
+      # `.deb` and a finished Apple-silicon `.dmg` waited behind it.
+      #
+      # `--clobber`, because `latest` is a ROLLING tag: the page links
+      # `releases/latest/download/<name>` and that has to keep meaning the
+      # newest build of that name. Two runners uploading different names at
+      # once do not collide.
+      - name: Publish this platform's installers
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -163,13 +159,8 @@ jobs:
           # that as "the newest release that is NOT a prerelease" — so a
           # `latest` tag created as a prerelease answers 404 for every asset in
           # it. The one that exists is not marked prerelease, which is why the
-          # links work at all; this branch runs only when the release does not
-          # exist yet, and it used to pass `--prerelease` for exactly the tag
-          # the page depends on.
+          # links work at all.
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --latest --title "śikṣāmitra $TAG" --notes "Built from ${{ github.sha }}."
           fi
-          # `--clobber`, because `latest` is a ROLLING tag: the page links to
-          # `releases/latest/download/<name>` and that has to keep meaning the
-          # newest build of that name.
           gh release upload "$TAG" out/* --clobber
