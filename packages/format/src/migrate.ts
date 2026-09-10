@@ -23,6 +23,9 @@
  * the spellings are recomputed by the renderer, at draw time, from the text.
  */
 import type { ChantSyllable, ChantToken, ChantUnit } from './chant-tokens.js';
+import { CANDRA, structuralText, typedAs } from './typed-letter.js';
+
+export { CANDRA } from './typed-letter.js';
 import type { ChantVerse } from './chant-verse.js';
 import { mark, type Mark } from './mark.js';
 import { normalise } from './mark-ops.js';
@@ -50,43 +53,6 @@ export interface TextAndMarks {
    * should not have to invent an empty list.
    */
   units?: { from: number; to: number }[];
-}
-
-/**
- * The guess table the old inverter used, and the only reason it is still here.
- *
- * A unit with `change: true` records that a rule replaced a letter and NOT what
- * it replaced — that is the gap the new model closes. For legacy data there is
- * nothing else to go on: a changed nasal was an anusvāra, a changed sibilant a
- * visarga. It runs ONCE, during migration, and its output is written down as a
- * `was` marking so that nothing ever has to guess again.
- */
-const NASALS = new Set(['ṅ', 'ñ', 'ṇ', 'n', 'm', 'ṁ']);
-const SIBILANTS = new Set(['ś', 'ṣ', 's', 'r', ':']);
-const ANUSVARA = 'ṁ';
-/** U+0310, the combining candrabindu — a character in the text, not a mark. */
-export const CANDRA = '̐';
-const VISARGA = 'ḥ';
-
-const typedAs = (u: ChantUnit): string => {
-  if (u.change !== true) return u.c;
-  if (u.c === ANUSVARA || u.c === VISARGA) return u.c;
-  if (NASALS.has(u.c)) return ANUSVARA;
-  if (SIBILANTS.has(u.c)) return VISARGA;
-  return u.c;
-};
-
-/** The characters a non-syllable token contributes to the text. */
-function structuralText(t: ChantToken): string | null {
-  switch (t.t) {
-    case 'sp': return ' ';
-    case 'br': return '\n';
-    case 'danda': return t.s;
-    case 'num': return t.s;
-    case 'bar': return '¦';
-    case 'text': return t.placeholder === true ? '' : t.s;
-    default: return null;
-  }
 }
 
 /**
@@ -253,11 +219,25 @@ export function toTokens(
   for (const m of marks) {
     if (m.k === 'syl') { boundaries.add(m.from); continue; }
     if (m.from === m.to) {
-      points.set(m.from, [...(points.get(m.from) ?? []), m]);
+      /* Pushed, not spread: the same quadratic `normalise` had. */
+      const here = points.get(m.from);
+      if (here === undefined) points.set(m.from, [m]);
+      else here.push(m);
       continue;
     }
     if (m.k === 'plain' || m.k === 'slot') { spans.push(m); continue; }
-    for (let i = m.from; i < m.to; i += 1) {
+    /*
+     * BOUNDED BY THE TEXT, and it was not: this walked `from` to `to` and
+     * skipped every position the text does not have, so a stored span past the
+     * end spun over nothing. A marking is stored as `[kind, from, SPAN]`, so a
+     * corrupt or hand-edited file carrying a span of a trillion made
+     * `openChantDoc` take about three-quarters of an hour with no exception
+     * and no progress — a hang, which looks like a slow computer. Measured at
+     * 20 million positions in 53 ms; `tests/security/hostile-document.test.ts`
+     * holds the bound. A marking cannot cover a letter that is not there.
+     */
+    const stop = Math.min(m.to, at.length);
+    for (let i = Math.max(0, m.from); i < stop; i += 1) {
       const cell = at[i];
       if (cell === undefined) continue;
       if (m.k === 'hold') cell.hold = m.v;

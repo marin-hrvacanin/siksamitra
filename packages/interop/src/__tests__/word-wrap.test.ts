@@ -149,3 +149,53 @@ describe('and the reader gets back what the writer said', () => {
     expect(seen.size).toBe(4);
   });
 });
+
+describe('a width no drag would produce still writes a .docx Word can open', () => {
+  /*
+   * `widthPct` is floored at 5 and capped at 100 by the drag that produces it,
+   * and by `figureBlockers` for a document being validated — and neither guard
+   * is on the EXPORT path. A `.json` is a file a person can edit.
+   *
+   * `cx="-2880000"` and `cx="NaN"` are both a package Word offers to REPAIR
+   * rather than open, so one bad number costs the whole document, and the only
+   * report of it is "the file appears to be corrupted".
+   */
+  const cxOf = (xml: string): string => /<wp:extent cx="([^"]*)"/.exec(xml)?.[1] ?? 'absent';
+
+  const bad: readonly { what: string; widthPct: number }[] = [
+    { what: 'negative', widthPct: -50 },
+    { what: 'zero', widthPct: 0 },
+    { what: 'past a hundred', widthPct: 400 },
+    { what: 'not a number', widthPct: Number.NaN },
+    { what: 'infinite', widthPct: Number.POSITIVE_INFINITY },
+  ];
+
+  for (const { what, widthPct } of bad) {
+    it(`a ${what} width is drawn as a real number of EMU`, () => {
+      const cx = cxOf(drawingFor(fig({ widthPct })));
+      expect(cx, `cx="${cx}"`).toMatch(/^[1-9][0-9]*$/);
+      expect(Number(cx)).toBeGreaterThan(0);
+      expect(Number(cx)).toBeLessThanOrEqual(COLUMN);
+    });
+  }
+
+  it('and a sensible width is untouched — the control', () => {
+    /* Without this, clamping everything to one value would pass every case
+       above and make every picture the same size. */
+    const half = Number(cxOf(drawingFor(fig({ widthPct: 50 }))));
+    const quarter = Number(cxOf(drawingFor(fig({ widthPct: 25 }))));
+    expect(half).toBeCloseTo(COLUMN / 2, -3);
+    expect(quarter).toBeCloseTo(COLUMN / 4, -3);
+    expect(half).toBeGreaterThan(quarter);
+  });
+
+  it('and the height keeps the picture shape whatever the width was', () => {
+    /* A clamped width with an unclamped height is a stretched picture. */
+    const xml = drawingFor(fig({ widthPct: -50 }));
+    const cx = Number(cxOf(xml));
+    const cy = Number(/<wp:extent[^>]*cy="([^"]*)"/.exec(xml)?.[1] ?? '0');
+    expect(cy).toBeGreaterThan(0);
+    /* 240x160 bytes, `crop: auto` — so the drawn ratio is the file's. */
+    expect(cy / cx).toBeCloseTo(160 / 240, 1);
+  });
+});

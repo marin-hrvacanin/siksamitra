@@ -30,7 +30,17 @@ import {
  */
 export function normalise(marks: readonly Mark[]): Mark[] {
   const byKind = new Map<MarkKind, Mark[]>();
-  for (const m of marks) byKind.set(m.k, [...(byKind.get(m.k) ?? []), m]);
+  /*
+   * PUSHED, NOT SPREAD. This was `byKind.set(m.k, [...(byKind.get(m.k) ?? []), m])`,
+   * which copies the whole group for every marking in it — quadratic in the
+   * number of markings of one kind. Measured: 2 000 markings 19 ms, 8 000
+   * 159 ms, 20 000 2 559 ms, and this runs on the save path.
+   */
+  for (const m of marks) {
+    const group = byKind.get(m.k);
+    if (group === undefined) byKind.set(m.k, [m]);
+    else group.push(m);
+  }
 
   const out: Mark[] = [];
   for (const [kind, list] of byKind) {

@@ -107,9 +107,28 @@ export function mediaFor(
   return out;
 }
 
-/** How big the picture is drawn, in EMU, keeping its own aspect ratio. */
+/**
+ * How big the picture is drawn, in EMU, keeping its own aspect ratio.
+ *
+ * THE WIDTH IS CLAMPED HERE, and it has to be somewhere. `widthPct` is floored
+ * at 5 and capped at 100 by the drag that produces it, and by `figureBlockers`
+ * for a document being validated — but a `.json` is a file a person can edit,
+ * and neither guard is on the EXPORT path. A `widthPct` of `-50` wrote
+ * `cx="-2880000"` and a non-numeric one wrote `cx="NaN"`, both of which are a
+ * `.docx` Word offers to repair rather than open: a whole document lost to one
+ * bad number, and the only report of it is Word's own "the file appears to be
+ * corrupted".
+ *
+ * A picture cannot be narrower than nothing or wider than the column it is in,
+ * so those are the bounds, and `EMU_MIN` is one point — small enough to be a
+ * mistake a person can see, large enough that Word draws something.
+ */
 function extent(fig: ChantFigure, columnEmu: number): { cx: number; cy: number } {
-  const cx = Math.round(figureWidth(fig, columnEmu, EMU_PER_POINT * 12));
+  const asked = figureWidth(fig, columnEmu, EMU_PER_POINT * 12);
+  const EMU_MIN = EMU_PER_POINT;
+  const cx = Number.isFinite(asked)
+    ? Math.round(Math.min(Math.max(asked, EMU_MIN), Math.max(columnEmu, EMU_MIN)))
+    : Math.round(Math.min(columnEmu, EMU_PER_INCH));
   /* The intrinsic ratio, which `figureFaults` requires a `crop: auto` figure to
      carry. A figure with a fixed crop is drawn to that shape instead, exactly
      as `figure.css` does with `aspect-ratio`. */
