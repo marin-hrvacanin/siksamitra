@@ -20,9 +20,24 @@
  */
 import {
   encodeMarks, toTextAndMarks,
-  type ChantSection, type ChantVerse, type Stage,
+  type ChantSection, type ChantVerse, type Mark, type Stage,
 } from '@siksamitra/format';
 import { hydrateVerse, rerun, type Profile, type ReRunMode } from '@siksamitra/engine';
+
+/**
+ * A comparable form of a marking list.
+ *
+ * Sorted, because two runs may produce the same markings in a different order
+ * and "different" would then mean "reordered". Only the four fields that say
+ * WHAT the marking is — a re-run rewrites `by` and `stage` on every marking it
+ * touches even when the marking itself is identical, and treating that as a
+ * change would make every re-run a change.
+ */
+const markKey = (marks: readonly Mark[]): string =>
+  [...marks]
+    .map((m) => `${m.k}:${m.from}:${m.to}:${m.v ?? ''}`)
+    .sort()
+    .join('|');
 
 export interface RecomputeReport {
   verseId: string;
@@ -31,6 +46,21 @@ export interface RecomputeReport {
   /** Markings placed by hand that the re-derivation could not carry. */
   lost: number;
   warnings: string[];
+  /**
+   * Did the verse actually come out different?
+   *
+   * A RE-RUN THAT CHANGES NOTHING IS NOT AN UNDO STEP, and telling that apart
+   * needs the engine's own answer rather than a guess: running the rules over
+   * a verse they already agree with rewrites the same text and the same
+   * markings. Without this, pressing the button on a settled document filled
+   * the undo history with steps that restore an identical document — so
+   * Ctrl+Z appeared to do nothing, repeatedly, which is how "undo is broken"
+   * gets reported.
+   *
+   * It is also worth saying to the person: "nothing changed" is a better
+   * answer than silence.
+   */
+  changed: boolean;
 }
 
 export interface Recomputed {
@@ -77,6 +107,10 @@ function recomputeVerse(
   /* Through the codec, because `hydrateVerse` reads the STORED shape. One
      encoder and one decoder, wherever markings cross that boundary. */
   const next = hydrateVerse({ ...verse, text: out.text, marks: encodeMarks(out.marks) });
+  /* Compared against what went IN, on the text and the markings — the two
+     things a verse is. Cheap: one string compare and one walk of a list that
+     is at most a few hundred long. */
+  const wasMarks = markKey(tm.marks);
   return {
     verse: next,
     report: {
@@ -84,6 +118,7 @@ function recomputeVerse(
       note: out.note,
       lost: out.lost.length,
       warnings: out.warnings,
+      changed: out.text !== tm.text || markKey(out.marks) !== wasMarks,
     },
   };
 }

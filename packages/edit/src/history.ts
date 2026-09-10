@@ -195,9 +195,10 @@ export interface Effect {
  * the cost of typing. A `replace` reports which verses it changed, added and
  * removed; a command with no targets has nothing to do by inspection.
  *
- * STILL RECORDED, and said rather than hidden: a `recompute` over real verses
- * that happens to change none of them. Telling that apart needs the engine's
- * own report of what it wrote, which is `text-and-marks` §10.1's business.
+ * AND A RE-RUN THAT REWROTE NOTHING is caught too, from the engine's own
+ * answer rather than a guess: `RecomputeReport.changed` compares the text and
+ * the markings a verse went in with against the ones it came out with, so
+ * pressing the button on a settled document is not an undo step either.
  */
 export function changesNothing(
   command: { readonly k: string; readonly targets?: readonly unknown[]; readonly verseIds?: readonly unknown[] },
@@ -207,7 +208,8 @@ export function changesNothing(
     return effect.touched === 0 && effect.removed === 0 && !effect.overridesReplaced;
   }
   if (command.k === 'mark' || command.k === 'unmark') return (command.targets ?? []).length === 0;
-  if (command.k === 'recompute') return (command.verseIds ?? []).length === 0;
+  /* A re-run reports which verses it actually rewrote — see `touched`. */
+  if (command.k === 'recompute') return effect.touched === 0;
   return false;
 }
 

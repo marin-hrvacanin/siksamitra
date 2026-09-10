@@ -87,6 +87,32 @@ describe('a command that changed nothing is not an undo step', () => {
     });
   }
 
+  it('a re-run that rewrites NOTHING records none either', () => {
+    /*
+     * Pressing Recompute on a document the rules already agree with rewrites
+     * the same text with the same markings. It used to be an undo step all the
+     * same, so Ctrl+Z afterwards restored an identical document — and a person
+     * presses it again, and again.
+     *
+     * TWICE IS THE TEST. The first run may genuinely change something (these
+     * fixtures are derived, so usually not, but the rules are the rules); the
+     * SECOND cannot, because the first left the verses where the rules want
+     * them. So the second must record no step, whatever the first did.
+     */
+    const state = start();
+    const verseIds = section1(state).verses.map((v) => v.id);
+    const command = {
+      k: 'recompute' as const, sectionId: id, verseIds,
+      stages: ['holdings' as const, 'svara' as const], mode: 'keep' as const,
+    };
+    const once = apply(state, emptyHistory(), command);
+    const settled = canonicalJson(once.state.doc);
+    const twice = apply(once.state, once.history, command);
+    expect(canonicalJson(twice.state.doc), 'the second run changed something').toBe(settled);
+    expect(twice.history.past.length, 'the second run recorded a step')
+      .toBe(once.history.past.length);
+  });
+
   it('and a real edit IS recorded — the control', () => {
     /*
      * Without this, refusing every step would pass all five cases above and

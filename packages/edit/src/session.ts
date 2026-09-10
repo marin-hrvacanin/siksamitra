@@ -243,9 +243,14 @@ export function apply(state: EditState, history: History, command: EditCommand):
      *
      * It is not an edit to the text, so nothing is rebased and nothing is
      * re-derived afterwards: `recompute` returns the verses already rebuilt.
-     * `touched` stays empty on purpose — handing these to `rederive` would run
-     * the whole engine over them a second time and undo the mode the person
-     * chose.
+     * Nothing is handed to `rederive` either — it is called with an empty set
+     * below, which is what stops the whole engine running over them a second
+     * time and undoing the mode the person chose.
+     *
+     * `touched` IS SET, from the engine's own answer. It used to stay empty on
+     * purpose, back when it was what `rederive` was given; it is now only read
+     * to decide whether this was an undo step, and a re-run that rewrote the
+     * same text with the same markings is not one. See `RecomputeReport.changed`.
      */
     const here = new Set(section.verses.map((v) => v.id));
     const outside = command.verseIds.filter((id) => !here.has(id));
@@ -260,6 +265,7 @@ export function apply(state: EditState, history: History, command: EditCommand):
     );
     working = done.section;
     nextSources = sourcesOf(working);
+    touched = new Set(done.reports.filter((r) => r.changed).map((r) => r.verseId));
     blockedMarks.push(...done.refusals);
     for (const r of done.reports) {
       if (r.lost > 0) {
