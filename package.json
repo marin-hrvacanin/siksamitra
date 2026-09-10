@@ -108,7 +108,8 @@
     "word-addin:install": "node scripts/word-install.mjs",
     "word-addin:validate": "node scripts/word-validate.mjs",
     "check:word:live": "tsx tools/word-live.mjs",
-    "check:word:pane": "tsx tools/word-pane.mjs"
+    "check:word:pane": "tsx tools/word-pane.mjs",
+    "word-addin:store": "node scripts/word-store.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

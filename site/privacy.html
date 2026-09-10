@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>śikṣāmitra — privacy</title>
+<meta name="description" content="What śikṣāmitra does with your text: nothing. It has no server, no account requirement and no analytics.">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<!--
+  ITS OWN SMALL STYLESHEET, and not the landing page's.
+
+  The landing page inlines 200 lines of CSS and self-hosts two font families
+  for the diacritics it shows. This page is four hundred words of prose with
+  no Sanskrit in it, so it borrows nothing and duplicates nothing: system
+  fonts, the same palette tokens, and no request beyond the HTML.
+
+  IT EXISTS BECAUSE THE STORE REQUIRES IT. AppSource asks for a
+  privacy-policy URL and a terms-of-use URL before an add-in can be listed,
+  and a page that says something true is the only kind worth writing.
+-->
+<style>
+:root{
+  --ink:#1b1b1f; --ink-2:#5c5c66; --bg:#f4f4f6; --line:#dedee4; --accent:#a9741f;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --ink:#e8e8ec; --ink-2:#a5a5b0; --bg:#141416; --line:#2e2e34; --accent:#d8a54a }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font:17px/1.7 Georgia,'Times New Roman',serif;
+  background:var(--bg);color:var(--ink);
+  max-width:36rem;margin:0 auto;padding:4rem 1.5rem;
+}
+h1{font-size:1.9rem;font-weight:400;letter-spacing:-.01em}
+h2{font-size:1.15rem;font-weight:400;margin:2.5rem 0 .5rem}
+p{margin-top:1rem;color:var(--ink-2)}
+p.lead{color:var(--ink);font-size:1.1rem}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+a:hover{border-bottom-color:currentColor}
+ul{margin:1rem 0 0 1.25rem;color:var(--ink-2)}
+li+li{margin-top:.4rem}
+.when{font:600 .72rem/1 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+hr{border:0;border-top:1px solid var(--line);margin:3rem 0 1.5rem}
+</style>
+</head>
+<body>
+
+<p class="when">Privacy · 10 September 2026</p>
+<h1>What śikṣāmitra does with your text</h1>
+
+<p class="lead">Nothing. It has no server to send it to.</p>
+
+<p>
+  That is the whole policy, and the rest of this page is only the detail. Both
+  the program and the Word add-in run entirely on your own machine.
+</p>
+
+<h2>The Word add-in</h2>
+<p>
+  The task pane is a static web page. Word loads it, and from then on
+  everything it does happens between the pane and the document open in front
+  of you. It reads the paragraph the caret is in, works out the markings, and
+  writes the paragraph back.
+</p>
+<ul>
+  <li>Your document, or any part of it, is never transmitted anywhere.</li>
+  <li>Nothing is stored — not on a server, not in the browser, not on disk.</li>
+  <li>There is no account, no sign-in and no licence check.</li>
+  <li>There is no analytics, no telemetry and no error reporting.</li>
+  <li>No cookies are set.</li>
+</ul>
+<p>
+  The page itself is fetched from wherever you installed it from — GitHub
+  Pages, vedaunion.org, or your own computer — and that server sees an ordinary
+  request for a web page: a date, an address, a browser name. Nothing about
+  your document is in it. If you would rather not make even that request, the
+  add-in can be served from your own machine; the instructions are on the
+  <a href="./#word">install page</a>.
+</p>
+<p>
+  Word itself loads Microsoft's <code>office.js</code> from Microsoft's servers,
+  because that is the bridge every Office add-in is built on and Microsoft
+  requires the production copy rather than a pinned one. What Microsoft does
+  with that request is covered by their own privacy statement, not this one.
+</p>
+
+<h2>The desktop program</h2>
+<p>
+  The same answer. Documents are files on your disk; there is no
+  synchronisation and no cloud. It can optionally sign in to
+  <a href="https://vedaunion.org">vedaunion.org</a> to fetch or publish a
+  document, and that is a deliberate act each time — nothing happens until you
+  ask for it, and the program works completely without it.
+</p>
+
+<h2>If any of that changes</h2>
+<p>
+  It will be said here first, with a date, and the program is open source: the
+  claim above is checkable rather than promised. Every network request either
+  program can make is in
+  <a href="https://github.com/marin-hrvacanin/siksamitra">the source</a>, and
+  there are not many.
+</p>
+
+<hr>
+<p>
+  <a href="./">śikṣāmitra</a> ·
+  <a href="terms.html">Terms of use</a> ·
+  <a href="https://github.com/marin-hrvacanin/siksamitra/issues">Support</a>
+</p>
+
+</body>
+</html>
