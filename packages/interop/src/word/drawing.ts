@@ -295,6 +295,16 @@ export function figureDrawing(
 export const figurePlaceholderText = (fig: ChantFigure): string =>
   (fig.alt.trim() === '' ? '[picture]' : `[${fig.alt.trim()}]`);
 
+/**
+ * And what a `figure` item whose `ref` names NOTHING says.
+ *
+ * There is no figure and therefore no alternative text, so the only true thing
+ * to say is which name was not found. It used to say nothing at all, and a
+ * `.docx` silently missing a step's picture is a document somebody sends on.
+ */
+export const missingFigureText = (ref: string): string =>
+  (ref === '' ? '[picture missing: this step names none]' : `[picture missing: "${ref}"]`);
+
 /** The decoded size of every picture written, for the export's own report. */
 export const mediaBytes = (figures: readonly ChantFigure[]): number =>
   figures.reduce((n, f) => n + figureBytes(f.src), 0);

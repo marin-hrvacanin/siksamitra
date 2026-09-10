@@ -188,3 +188,67 @@ describe('the letters keep their addresses across the break', () => {
     expect(Number(at(whole, 2))).toBeGreaterThan(0);
   });
 });
+
+describe('a picture the document names and does not have', () => {
+  /*
+   * IT USED TO DRAW NOTHING. A `figure` item can point into `ChantDoc.figures`
+   * by `ref`, and a `ref` that names nothing was skipped by every reader in
+   * the program — the page, the platform reader, the Word exporter, the
+   * validator and the editor's hook. A manual with a step missing and nothing
+   * on the page to say so is the worst of the outcomes, because nobody looks
+   * for it.
+   */
+  const withRef = (ref: string | undefined, figures?: unknown[]): HTMLElement => {
+    const host = document.createElement('div');
+    host.className = 'canvas doc';
+    const one = {
+      title: 'refs',
+      titleForms: { iast: 'refs' },
+      sections: [{
+        id: 's1',
+        verses: [],
+        items: [ref === undefined ? { t: 'figure' } : { t: 'figure', ref }],
+      }],
+      ...(figures === undefined ? {} : { figures }),
+    } as unknown as ChantDoc;
+    host.innerHTML = renderToString(
+      <DocumentBlocks doc={one} script="iast" showMarks addressable />,
+    );
+    document.body.append(host);
+    return host;
+  };
+
+  it('is drawn as a plate that names what was not found', () => {
+    const host = withRef('fig-ghost');
+    const plate = host.querySelector('.fig--absent');
+    expect(plate).not.toBeNull();
+    expect(plate?.textContent).toContain('missing');
+    expect(plate?.textContent).toContain('fig-ghost');
+  });
+
+  it('and it keeps the block id, so the page map still knows where it is', () => {
+    /* A block the map has heard of and the renderer draws nothing for is a
+       page with a gap in the arithmetic. */
+    expect(withRef('fig-ghost').querySelector('.fig--absent')?.getAttribute('data-block-id'))
+      .toBe('f:s1:0');
+  });
+
+  it('an item naming no picture at all says that instead', () => {
+    expect(withRef(undefined).querySelector('.fig--absent')?.textContent)
+      .toContain('names no picture');
+  });
+
+  it('and a ref that DOES resolve draws the picture — the control', () => {
+    /*
+     * Without this, drawing the plate for every figure item would pass every
+     * case above and replace all 22 pictures of the pūjā manual with a notice.
+     */
+    const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ'
+      + 'AAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    const host = withRef('fig-lamp', [{
+      id: 'fig-lamp', src: png, alt: 'A lit brass lamp.', width: 240, height: 160,
+    }]);
+    expect(host.querySelector('.fig--absent')).toBeNull();
+    expect(host.querySelector('.fig__img')?.getAttribute('alt')).toBe('A lit brass lamp.');
+  });
+});

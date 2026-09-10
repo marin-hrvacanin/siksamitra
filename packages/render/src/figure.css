@@ -216,6 +216,15 @@
    Dashed, because a dashed edge is the convention for "this stands in for
    something", and it cannot be mistaken for the `thin` frame a real figure
    may carry. */
+/*
+ * A `figure` item whose `ref` names nothing has no picture and no alt text, so
+ * it has no aspect box either — `MissingFigure` draws the plate on its own.
+ * Given a minimum height so it reads as a reserved place rather than as a line
+ * of grey text: this is the case that used to draw NOTHING AT ALL.
+ */
+.fig--absent { width: 100%; }
+.fig--absent .fig__missing { min-height: calc(4 * var(--doc-body-size)); }
+
 .fig__missing {
   display: flex;
   flex-direction: column;

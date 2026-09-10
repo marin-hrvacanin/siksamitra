@@ -198,6 +198,42 @@ function Picture({ fig, url }: { fig: ChantFigure; url: string | null }): ReactN
 }
 
 /**
+ * WHAT A DOCUMENT SHOWS WHERE A PICTURE IT NAMES IS NOT THERE AT ALL.
+ *
+ * Not the same thing as `Picture`'s plate, which is for a figure whose BYTES
+ * the document does not carry — the pūjā manual names 22 that live on the
+ * platform, and those have alternative text to draw, because the alt text is
+ * the instruction. This is a `figure` item whose `ref` names nothing: there is
+ * no figure, so there is no alt text either, and the only true thing to say is
+ * which name was not found.
+ *
+ * IT USED TO DRAW NOTHING, in every one of the six places that resolved a ref.
+ * A manual with a step missing and nothing on the page to say so is the worst
+ * of the three outcomes — worse than a wrong picture, because nobody looks for
+ * it.
+ */
+export function MissingFigure({ ref_, blockId }: {
+  /** The name the document gave, or `''` when it gave none. */
+  ref_: string;
+  blockId?: string;
+}): ReactNode {
+  return (
+    <figure
+      className="fig fig--absent"
+      contentEditable={false}
+      {...(blockId === undefined ? {} : { 'data-block-id': blockId })}
+    >
+      <div className="fig__missing">
+        <span className="fig__missing-eyebrow">picture missing from this document</span>
+        <span className="fig__missing-alt">
+          {ref_ === '' ? 'this step names no picture at all' : `named "${ref_}"`}
+        </span>
+      </div>
+    </figure>
+  );
+}
+
+/**
  * One figure, drawn.
  *
  * `<figure>`/`<figcaption>`, so the caption is ASSOCIATED with the picture

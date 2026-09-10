@@ -27,13 +27,15 @@
  * be written in eight export styles.
  */
 import type { ChantDoc, ChantFigure, ChantToken, ChantUnit } from '@siksamitra/format';
-import { FIGURE_DEFAULTS } from '@siksamitra/format';
+import { FIGURE_DEFAULTS, figureItem } from '@siksamitra/format';
 import { CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
 import { ROLE_OF_ELEMENT } from '@siksamitra/tokens/document-type';
 import { xmlEscape } from '../xml.js';
 import { BAR_GLYPH, SVARA_CHAR, holdingStyle } from '../word-styles.js';
 import { PARA_STYLE_OF } from './styles.js';
-import { figureDrawing, figurePlaceholderText, type WordMedia } from './drawing.js';
+import {
+  figureDrawing, figurePlaceholderText, missingFigureText, type WordMedia,
+} from './drawing.js';
 
 /**
  * Which Word style each of the page's elements is written in.
@@ -286,7 +288,12 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
         continue;
       }
       if (item.t === 'figure') {
-        picture(item.figure ?? (item.ref === undefined ? undefined : library.get(item.ref)));
+        /* One resolution, in the format, and the miss is WRITTEN rather than
+           skipped: a `.docx` silently missing a step's picture is a document
+           somebody sends on. See `figureItem`. */
+        const read = figureItem(item, library);
+        if (read.figure === undefined) paras.push(p(null, run(missingFigureText(read.missingRef), 'Comment')));
+        else picture(read.figure);
         continue;
       }
       if (item.t !== 'verse') continue;

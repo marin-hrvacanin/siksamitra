@@ -33,7 +33,7 @@ import { Fragment, memo, type MouseEvent, type ReactNode } from 'react';
 import type {
   ChantDoc, ChantScriptKey, ChantToken, ChantVerse,
 } from '@siksamitra/format';
-import { Figure, holdJoins } from '@siksamitra/render';
+import { Figure, MissingFigure, holdJoins } from '@siksamitra/render';
 import { blockId, figureOf, headingOf, itemsOf, sourceOf } from './blocks.js';
 import type { GrabPoint } from '../editor/figure-drag.js';
 import { renderToken, unitsBefore, type TokenContext } from './token-renderers.js';
@@ -246,8 +246,17 @@ function DocumentBlocksInner(
               if (item.t === 'figure') {
                 const id = blockId.figure(section.id, at);
                 if (!wanted(id)) return null;
-                const fig = figureOf(item, library);
-                if (fig === undefined) return null;
+                const read = figureOf(item, library);
+                /*
+                 * A PICTURE THE DOCUMENT NAMES AND DOES NOT HAVE IS SAID, not
+                 * skipped. This returned `null` — so a `ref` naming nothing
+                 * drew nothing, on a page that had reserved a block for it,
+                 * and the only evidence was a step that was not there.
+                 */
+                if (read.figure === undefined) {
+                  return <MissingFigure key={id} ref_={read.missingRef} blockId={id} />;
+                }
+                const fig = read.figure;
                 return (
                   <Figure
                     key={id}

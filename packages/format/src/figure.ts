@@ -259,6 +259,40 @@ export function figureBlockers(fig: ChantFigure, where = 'a figure'): string[] {
    Finding them
    ========================================================================== */
 
+/**
+ * WHAT A `figure` ITEM POINTS AT, once the library has been consulted.
+ *
+ * ONE resolution, and it used to be six. `item.figure ?? library.get(item.ref)`
+ * was written out in `figuresOf`, in the reader, in the Word body, in the
+ * editor's figure commands, in the web app's block list and in its figure
+ * hook — and five of the six treated "not found" as nothing at all, which is
+ * how a picture came to vanish without a word. Only `edit/figures.ts` said so,
+ * and only for an edit.
+ *
+ * The `missingRef` arm is what makes the difference: a reader cannot forget to
+ * handle a case the type makes it name.
+ */
+export type FigureItemRead =
+  | { readonly figure: ChantFigure; readonly ref?: string; readonly missingRef?: undefined }
+  /** The item names a picture this document does not have. `''` when it names
+   *  nothing at all — an item with neither a `figure` nor a `ref`. */
+  | { readonly figure?: undefined; readonly missingRef: string };
+
+/** The document's shared picture library, by id. */
+export const figureLibrary = (doc: ChantDoc): Map<string, ChantFigure> =>
+  new Map((doc.figures ?? []).map((f) => [f.id, f]));
+
+/** Resolve one `figure` item against the library. */
+export function figureItem(
+  item: { readonly figure?: ChantFigure | undefined; readonly ref?: string | undefined },
+  library: ReadonlyMap<string, ChantFigure>,
+): FigureItemRead {
+  if (item.figure !== undefined) return { figure: item.figure };
+  if (item.ref === undefined) return { missingRef: '' };
+  const found = library.get(item.ref);
+  return found === undefined ? { missingRef: item.ref } : { figure: found, ref: item.ref };
+}
+
 /** A figure, and the item that put it there. */
 export interface FigureAt {
   readonly figure: ChantFigure;
@@ -279,21 +313,18 @@ export interface FigureAt {
  * would be three chances to miss the library.
  */
 export function figuresOf(doc: ChantDoc): FigureAt[] {
-  const library = new Map<string, ChantFigure>();
-  for (const f of doc.figures ?? []) library.set(f.id, f);
+  const library = figureLibrary(doc);
 
   const out: FigureAt[] = [];
   for (const section of doc.sections) {
     const items: readonly ChantItem[] = section.items ?? [];
     items.forEach((item, at) => {
       if (item.t === 'figure') {
-        const figure = item.figure ?? (item.ref === undefined
-          ? undefined
-          : library.get(item.ref));
-        if (figure !== undefined) {
+        const read = figureItem(item, library);
+        if (read.figure !== undefined) {
           out.push({
-            figure, sectionId: section.id, at,
-            ...(item.ref === undefined ? {} : { ref: item.ref }),
+            figure: read.figure, sectionId: section.id, at,
+            ...(read.ref === undefined ? {} : { ref: read.ref }),
           });
         }
         return;
@@ -307,9 +338,49 @@ export function figuresOf(doc: ChantDoc): FigureAt[] {
   return out;
 }
 
+/**
+ * Every figure item that names a picture the document does not have.
+ *
+ * THE LOSS WAS SILENT, and that is the only reason this exists. A `figure`
+ * item can carry its picture inline or point into `ChantDoc.figures` by `ref`,
+ * and a `ref` that names nothing was skipped by every reader in the program:
+ * `figuresOf` dropped it, so the validator said the document was sound; the
+ * page drew nothing at all; the Word exporter wrote nothing. The document says
+ * "a picture belongs here" and five different pieces of code agreed to say
+ * nothing about it. A person opening such a file sees a manual with a step
+ * missing and no way to find out why.
+ *
+ * It is not the same thing as a picture whose BYTES the document does not
+ * carry — the pūjā manual names 22 that live on the platform, and those are
+ * drawn as a plate carrying their alternative text, because the alt text is
+ * the instruction. A dangling `ref` has no figure at all, so it has no alt
+ * text either; what can be said is which name was not found.
+ */
+export function danglingFigures(doc: ChantDoc): string[] {
+  const library = figureLibrary(doc);
+  const out: string[] = [];
+  for (const section of doc.sections) {
+    (section.items ?? []).forEach((item, at) => {
+      if (item.t !== 'figure') return;
+      const read = figureItem(item, library);
+      if (read.figure !== undefined) return;
+      out.push(read.missingRef === ''
+        ? `${section.id}/${at}: a figure item with neither a picture nor a ref`
+        : `${section.id}/${at}: no picture named "${read.missingRef}" in this document`);
+    });
+  }
+  return out;
+}
+
 /** What every figure in a document is wrong about. The gate's whole job. */
 export function documentFigureFaults(doc: ChantDoc): string[] {
-  return figuresOf(doc).flatMap(
-    (f) => figureFaults(f.figure, `${f.sectionId}/${f.figure.id}`),
-  );
+  return [
+    /* A picture that is not there at all comes first, because it is the fault
+       a person cannot see: `figuresOf` skips it, so every check downstream of
+       this one is checking a document with one fewer picture in it. */
+    ...danglingFigures(doc),
+    ...figuresOf(doc).flatMap(
+      (f) => figureFaults(f.figure, `${f.sectionId}/${f.figure.id}`),
+    ),
+  ];
 }

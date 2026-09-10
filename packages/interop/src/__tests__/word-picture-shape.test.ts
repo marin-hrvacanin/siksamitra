@@ -26,7 +26,9 @@
 import { describe, expect, it } from 'vitest';
 import type { ChantFigure } from '@siksamitra/format';
 import { figureWidth, pictureWidth } from '@siksamitra/tokens/figure';
-import { figureDrawing, mediaFor, EMU_PER_INCH } from '../word/drawing.js';
+import {
+  figureDrawing, mediaFor, missingFigureText, EMU_PER_INCH,
+} from '../word/drawing.js';
 
 /** A one-pixel PNG, so there are real bytes to embed. */
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ'
@@ -139,5 +141,32 @@ describe('a caption beside the picture takes its share', () => {
        beside the picture to make room for. */
     const empty = extentOf(fig({ size: 'full', captionAt: 'beside', caption: { en: '' } })).cx;
     expect(empty).toBe(extentOf(fig({ size: 'full' })).cx);
+  });
+});
+
+describe('a picture the document names and does not have', () => {
+  /*
+   * The Word body wrote NOTHING for a `figure` item whose `ref` names nothing,
+   * and a `.docx` silently missing a step's picture is a document somebody
+   * sends on. There is no figure and therefore no alternative text, so the
+   * only true thing to say is which name was not found.
+   */
+  it('says which name was not found', () => {
+    expect(missingFigureText('fig-ghost')).toContain('fig-ghost');
+    expect(missingFigureText('fig-ghost')).toContain('missing');
+  });
+
+  it('and says so differently when the item names nothing at all', () => {
+    expect(missingFigureText('')).toContain('missing');
+    expect(missingFigureText('')).not.toContain('""');
+  });
+
+  it('it is bracketed, like every other placeholder the body writes', () => {
+    /* `[…]` is how the page and the `.docx` both mark apparatus that stands in
+       for something — see `figurePlaceholderText`. */
+    for (const ref of ['fig-ghost', '']) {
+      expect(missingFigureText(ref).startsWith('[')).toBe(true);
+      expect(missingFigureText(ref).endsWith(']')).toBe(true);
+    }
   });
 });

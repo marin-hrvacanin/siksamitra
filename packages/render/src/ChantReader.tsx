@@ -29,6 +29,8 @@ import {
 /* `openChantDoc`, not `normalizeChantDoc`: a stored verse is text and markings,
    and its tokens are rebuilt on open. The reader draws tokens, so it opens. */
 import { openChantDoc } from "@siksamitra/engine";
+import { figureItem } from "@siksamitra/format";
+import { MissingFigure } from "./render/figure.js";
 import {
   DEFAULT_SANKALPA_OPTIONS,
   DEITIES,
@@ -1323,8 +1325,12 @@ export default function ChantReader({
                         : null;
                     }
                     if (it.t === "figure") {
-                      const fig = it.figure ?? figureById.get(it.ref ?? "");
-                      return fig ? <FigureView key={`f-${ii}`} fig={fig} /> : null;
+                      /* One resolution, in the format — and it NAMES the miss
+                         rather than dropping it. See `figureItem`. */
+                      const read = figureItem(it, figureById);
+                      return read.figure !== undefined
+                        ? <FigureView key={`f-${ii}`} fig={read.figure} />
+                        : <MissingFigure key={`f-${ii}`} ref_={read.missingRef} />;
                     }
                     if (it.t === "embed") {
                       return (

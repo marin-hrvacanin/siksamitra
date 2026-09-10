@@ -37,6 +37,15 @@ const GENERATED = [
   // Vendored font stylesheets: 642 machine-written @font-face rules whose
   // literals are the font pipeline's business, not a design decision.
   '/public/fonts/', '/assets/fonts/',
+  /*
+   * BUILD OUTPUT, and the desktop's in particular. `cargo` writes the bundled
+   * web assets into `src-tauri/target/`, stylesheets included, so running
+   * `npm run desktop:build` made this gate fail on a file the build had just
+   * produced from the sources it had already scanned — a literal counted
+   * twice, in a directory nobody edits. It said "1 file gained literal design
+   * values" and named a path with a hash in it.
+   */
+  '/target/', '/src-tauri/gen/', '/build/release/', '/.vite/',
 ];
 
 const NAMED_COLOURS = [

@@ -17,9 +17,10 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FIGURE_MAX_BYTES, FIGURE_MEDIA_TYPES, figureBytes, imageDataUri, toTextAndMarks,
-  type ChantFigure, type ChantFigureFlow, type ChantFigureSize, type ChantFigureWrap,
-  type ChantSection,
+  FIGURE_MAX_BYTES, FIGURE_MEDIA_TYPES, figureBytes, figureItem, figureLibrary,
+  imageDataUri, toTextAndMarks,
+  type ChantDoc, type ChantFigure, type ChantFigureFlow, type ChantFigureSize,
+  type ChantFigureWrap, type ChantSection,
 } from '@siksamitra/format';
 import {
   figureIdsIn, nextFigureId, withFigureDefaults, type EditCommand,
@@ -150,8 +151,8 @@ function figureAt(
 ): ChantFigure | null {
   const item = doc.sections.find((s) => s.id === sectionId)?.items?.[at];
   if (item === undefined || item.t !== 'figure') return null;
-  return item.figure
-    ?? (item.ref === undefined ? null : doc.figures?.find((f) => f.id === item.ref) ?? null);
+  /* One resolution, in the format — see `figureItem`. */
+  return figureItem(item, figureLibrary(doc as ChantDoc)).figure ?? null;
 }
 
 /** Where a picture with this id IS, searched for rather than remembered. */

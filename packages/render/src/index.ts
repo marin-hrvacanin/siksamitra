@@ -46,7 +46,7 @@ export { applyRate, SEG_LEAD, startAt } from './transport.js';
 export type { StartAt } from './transport.js';
 
 // ── a picture in a document: ONE component, every surface ───────────────────
-export { EMBEDDED_ONLY, Figure, figureClassName } from './render/figure.js';
+export { EMBEDDED_ONLY, Figure, MissingFigure, figureClassName } from './render/figure.js';
 export type { FigureProps, ResolveFigureSrc } from './render/figure.js';
 
 // ── the primitives the editor renders with ──────────────────────────────────

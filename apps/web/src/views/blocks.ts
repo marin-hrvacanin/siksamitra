@@ -11,8 +11,9 @@
  * `check:modules` holds new code to. The division is the honest one: an id is a
  * fact about the document, and a `<figure>` element is a fact about the page.
  */
+import { figureItem } from '@siksamitra/format';
 import type {
-  ChantDoc, ChantFigure, ChantItem, ChantSection,
+  ChantDoc, ChantFigure, ChantItem, ChantSection, FigureItemRead,
 } from '@siksamitra/format';
 
 export interface BlockRef {
@@ -54,17 +55,20 @@ export function itemsOf(section: ChantSection): readonly ChantItem[] {
  *
  * A drawing used at five steps of the pūjā manual ships once in
  * `ChantDoc.figures` and is addressed by `ref`, so resolving the reference is
- * part of reading the item — not an optimisation a renderer may skip. A `ref`
- * that resolves to nothing draws nothing: the document is naming a figure it
- * does not have, and inventing a placeholder for a figure with no alt text
- * would be inventing the alt text too.
+ * part of reading the item — not an optimisation a renderer may skip.
+ *
+ * `figureItem` FROM THE FORMAT does the resolving now, and the reason is what
+ * this comment used to say: "a `ref` that resolves to nothing draws nothing …
+ * inventing a placeholder for a figure with no alt text would be inventing the
+ * alt text too." Drawing nothing is not the alternative to inventing alt text
+ * — SAYING SO is. Six pieces of code resolved a ref and five of them dropped
+ * the miss in silence, so a document naming a picture it does not have showed
+ * a manual with a step missing and no way to find out why.
  */
-export function figureOf(
+export const figureOf = (
   item: Extract<ChantItem, { t: 'figure' }>,
   library: ReadonlyMap<string, ChantFigure>,
-): ChantFigure | undefined {
-  return item.figure ?? (item.ref === undefined ? undefined : library.get(item.ref));
-}
+): FigureItemRead => figureItem(item, library);
 
 /** The heading text of a section: its printed number and its name. */
 export function headingOf(section: ChantSection): string | undefined {

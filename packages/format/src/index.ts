@@ -37,12 +37,15 @@ export * from './chant-vars.js';
 /* A picture in a document — the vocabularies, the byte rules and the walk that
    finds every one. See `figure.ts` for why the bytes are inside the file. */
 export {
-  documentFigureFaults, figureBytes, figureFaults, figuresOf, imageDataUri,
+  danglingFigures, documentFigureFaults, figureBytes, figureFaults, figureItem,
+  figureLibrary, figuresOf, imageDataUri,
   imageMediaType, isEmbeddedImage,
   FIGURE_CAPTION_AT, FIGURE_CROPS, FIGURE_DEFAULTS, FIGURE_FLOWS, FIGURE_FRAMES,
   FIGURE_MAX_BYTES, FIGURE_MEDIA_TYPES, FIGURE_SIZES,
 } from './figure.js';
-export type { FigureAt, FigureCaptionAt, FigureCrop, FigureFrame } from './figure.js';
+export type {
+  FigureAt, FigureCaptionAt, FigureCrop, FigureFrame, FigureItemRead,
+} from './figure.js';
 
 /*
  * ONE TEXT AND MARKINGS ON IT — see `openspec/changes/text-and-marks`.
