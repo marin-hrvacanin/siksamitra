@@ -37,6 +37,18 @@ function devCerts(): { key: Buffer; cert: Buffer } | undefined {
 
 export default defineConfig({
   root: here,
+  /*
+   * RELATIVE ASSET PATHS, because the add-in is served from three places and
+   * only one of them is a domain root. Vite's default writes
+   * `src="/assets/taskpane-<hash>.js"`, which resolves to
+   * `https://vedaunion.org/assets/…` when the pane is published at
+   * `/siksamitra/word-extension/` — a 404, and Word reports a 404 in a task
+   * pane as a blank white rectangle with no message anywhere. `./` makes every
+   * reference relative to `taskpane.html`, so the same bundle works at
+   * `localhost:3000`, under a GitHub Pages project path, and under any folder
+   * on a shared host.
+   */
+  base: './',
   publicDir: join(here, 'assets'),
   /*
    * The workspace packages resolve to SOURCE, as they do for `apps/web` and

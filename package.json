@@ -67,7 +67,7 @@
     "desktop:icons": "npm run -w @siksamitra/desktop icons",
     "build:edit": "npm run -w @siksamitra/edit build",
     "check:web": "npm run build:web",
-    "check:word-addin": "npm run -w @siksamitra/word-addin build",
+    "check:word-addin": "npm run -w @siksamitra/word-addin build && node scripts/word-publish.mjs --all",
     "check:edit": "npm-run-all --serial check:edit:gestures check:edit:figure check:edit:views check:edit:ribbon check:edit:audio check:edit:zoom check:edit:scale check:edit:typing check:edit:iast check:edit:pages check:reflow",
     "check:reflow": "node tools/no-reflow.mjs",
     "check:marking": "tsx tools/adopt-safety.mjs",
@@ -101,7 +101,13 @@
     "check:export:word": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-word.mjs",
     "check:export:pdf": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-pdf.mjs",
     "check:size": "node tools/size.mjs",
-    "check:open": "node tools/check-open.mjs"
+    "check:open": "node tools/check-open.mjs",
+    "word-addin:certs": "npm run -w @siksamitra/word-addin certs",
+    "word-addin:publish": "node scripts/word-publish.mjs",
+    "word-addin:serve": "npm run -w @siksamitra/word-addin build && node scripts/word-publish.mjs --host local --out out/word-extension-local && node scripts/word-serve.mjs out/word-extension-local",
+    "word-addin:install": "node scripts/word-install.mjs",
+    "word-addin:validate": "node scripts/word-validate.mjs",
+    "check:word:live": "node tools/word-live.mjs"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.12.0",

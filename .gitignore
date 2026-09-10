@@ -104,3 +104,16 @@ dist-types/
 # The Lexical spike bundles itself; the bundle and its font are build products.
 /tools/spike-lexical/spike.js
 /tools/spike-lexical/*.woff2
+
+# === The Word add-in, assembled for upload ===
+#
+# `out/` is what `scripts/word-publish.mjs` and the release build write: a copy
+# of `apps/word-addin/dist` with one host's manifest beside it. Build output,
+# reproducible from source in one command, and the reason it is named here is
+# that it is a FOLDER OF A FOLDER — `dist/` above already covers the bundle,
+# and the assembled copy is not called dist.
+/out/
+# The landing page's copy of the same folder. Written by the Pages workflow
+# just before it uploads, so the deployed site has the add-in beside it; there
+# is nothing to commit and a committed copy would go stale silently.
+/site/word-extension/

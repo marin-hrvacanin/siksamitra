@@ -33,11 +33,12 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="śikṣāmitra"/>
   <Description DefaultValue="Mark Vedic recitation text in Word: holdings, svaras, reading aids and pauses, in the same notation and the same styles as the śikṣāmitra editor."/>
-  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+  <IconUrl DefaultValue="https://localhost:3000/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/icon-80.png"/>
   <SupportUrl DefaultValue="https://vedaunion.org/"/>
 
   <AppDomains>
+    <AppDomain>https://localhost:3000</AppDomain>
     <AppDomain>https://vedaunion.org</AppDomain>
   </AppDomains>
 
@@ -109,9 +110,9 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="sm.Icon.16" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
-        <bt:Image id="sm.Icon.32" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
-        <bt:Image id="sm.Icon.80" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+        <bt:Image id="sm.Icon.16" DefaultValue="https://localhost:3000/icon-16.png"/>
+        <bt:Image id="sm.Icon.32" DefaultValue="https://localhost:3000/icon-32.png"/>
+        <bt:Image id="sm.Icon.80" DefaultValue="https://localhost:3000/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="sm.Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
