@@ -8,9 +8,21 @@
  * where pages break, and the export would be the first — which is precisely the
  * arrangement that lets a preview lie.
  *
- * Instead: one page map, computed here, used by BOTH the paged view and the
- * export. The preview is exact by construction rather than by coincidence, and
- * an integration test asserts the two agree.
+ * The intention was one page map, computed here, used by BOTH the paged view
+ * and the export — exact by construction rather than by coincidence.
+ *
+ * THAT IS NOT WHERE IT STANDS, and this header claimed otherwise for a long
+ * time, including that "an integration test asserts the two agree". There is
+ * no such test and there was no such sharing: `paginate` has one caller,
+ * `apps/web/src/views/PagedView.tsx`. The PDF is the HTML export printed by
+ * the host's browser, which paginates it itself from the `break-inside` rules
+ * in `packages/render/src/export.css`; the `.docx` is paginated by Word from
+ * `w:keepLines` and `w:keepNext`. Three mechanisms.
+ *
+ * What holds them together today is that all three are told the same thing
+ * about the one case where they could visibly disagree — a verse is not split
+ * — and the view is the one that had to be taught it. Sharing the map for real
+ * is open work; `openspec/changes/bootstrap-v2/tasks.md` says so.
  *
  * Everything is in points, so the result does not depend on zoom (geometry.ts).
  */

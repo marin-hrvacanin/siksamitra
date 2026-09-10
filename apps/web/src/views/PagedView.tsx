@@ -1,10 +1,21 @@
 /**
- * The paged view — "exactly how it will export".
+ * The paged view — where the breaks fall.
  *
- * The promise is narrow and worth stating: the pages drawn here come from the
- * SAME page map the exporter uses. Not a similar calculation, the same one. So
- * the preview cannot drift from the export, because there is nothing to drift
- * between.
+ * WHAT THIS IS NOT, and the comment that used to be here said the opposite:
+ * "the pages drawn here come from the SAME page map the exporter uses. Not a
+ * similar calculation, the same one." That was not true and had never been
+ * true. `paginate` has exactly one caller in the program — this file. The
+ * printed page is the HTML export put through the host browser's own print
+ * pagination (`packages/interop/src/pdf/`), and the `.docx` is paginated by
+ * Word. Three mechanisms, not one, and no test compared them.
+ *
+ * SO THE AGREEMENT IS KEPT BY RULE INSTEAD, and there is one rule to keep: a
+ * verse does not split. His `Translit` style carries `w:keepLines`, `export.css`
+ * says `break-inside: avoid` on `.verse` when printing, and this view now
+ * splits one only when it cannot fit a page by itself — see `mayBreak`, which
+ * is where the measurement of what that divergence cost is written down.
+ * Making the three genuinely share a map is `openspec/changes/bootstrap-v2/
+ * tasks.md`, not a comment here.
  *
  * How it works, in order:
  *   1. A hidden probe renders the document at the page's content width, at
@@ -24,6 +35,7 @@ import {
   DocumentBlocks, figureBlockProps, type FigureBlockProps,
 } from './DocumentBlocks.js';
 import { KEEP_WITH_NEXT } from './blocks.js';
+import { mayBreak, pageContent } from './page-slices.js';
 import { useMeasuredBlocks } from './useMeasure.js';
 
 /**
@@ -66,13 +78,17 @@ export function PagedView(
       id: m.id,
       height: m.height,
       keepWithNext: isHeading(m.id),
-      // A verse may split between its lines; a heading may not split at all.
-      ...(isHeading(m.id) || m.lines === undefined
+      /*
+       * A VERSE IS KEPT WHOLE unless it cannot fit a page by itself — his own
+       * `Translit` style's `w:keepLines`, which is also what `export.css` says
+       * to the browser when it prints. See `mayBreak`. A heading never splits.
+       */
+      ...(isHeading(m.id) || m.lines === undefined || !mayBreak(m.height, columnHeight)
         ? {}
         : { breakable: true, lines: m.lines }),
     })),
     page,
-  ), [measured, page]);
+  ), [measured, page, columnHeight]);
 
   /**
    * What each page draws, derived ONCE per page map.
@@ -82,21 +98,11 @@ export function PagedView(
    * that memo useless on every page of this view, because the prop was a
    * different object each time. Derived here, the references are as stable as
    * the map is, and the map only changes when the content or the page does.
-   *
-   * THE SLICES, and the page map has always had them: a block a break runs
-   * through appears on both pages with a `lineRange` each. This is the only
-   * place that difference can be drawn, and until it was read here the id
-   * alone put the WHOLE verse on both pages.
    */
-  const perPage = useMemo(() => map.pages.map((p) => {
-    const slices = new Map<string, readonly [number, number]>();
-    for (const b of p.blocks) if (b.lineRange !== undefined) slices.set(b.id, b.lineRange);
-    return {
-      page: p,
-      ids: new Set(p.blocks.map((b) => b.id)),
-      ...(slices.size === 0 ? {} : { slices: slices as ReadonlyMap<string, readonly [number, number]> }),
-    };
-  }), [map]);
+  const perPage = useMemo(
+    () => map.pages.map((p) => ({ page: p, ...pageContent(p) })),
+    [map],
+  );
 
   return (
     <div className="paged">

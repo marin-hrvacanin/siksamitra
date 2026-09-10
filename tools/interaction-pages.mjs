@@ -1,17 +1,30 @@
 #!/usr/bin/env node
 /**
- * A VERSE A PAGE BREAK RUNS THROUGH.
+ * WHAT IS ACTUALLY ON A PAGE.
  *
- * `paginate` has always been able to split a verse between its recitation
- * lines, and has always SAID which lines went where — `lineRange`,
- * `continuesFrom`, `continuesOnto`, in the page map both the preview and the
- * export read. Nothing read them. The paged view filtered blocks by id, and a
- * split verse's id is on both pages, so the WHOLE verse was drawn twice: once
- * hanging past the foot of one page and once again from the top of the next.
+ * Two faults, both of them the page map and the drawn page disagreeing.
  *
- * MEASURED, before the fix, on the sample document at A4: verse `v-4` drawn on
- * two pages, eight pādas where the verse has four, one of them below the
- * paper's edge. At Letter the same for `v-7`.
+ * A VERSE A PAGE BREAK RAN THROUGH WAS DRAWN TWICE. `paginate` splits a verse
+ * between its recitation lines and says which lines went where — `lineRange`,
+ * `continuesFrom`, `continuesOnto`. Nothing read them: the view filtered
+ * blocks by id, and a split verse's id is on both pages. MEASURED before the
+ * fix, on the sample document at A4: verse `v-4` on two pages, eight pādas
+ * where the verse has four, one below the paper's edge; at Letter the same for
+ * `v-7`.
+ *
+ * AND A PAGE HELD MORE THAN IT COULD. A block's measured height was its border
+ * box, which excludes every margin, so the map filled a page with the sum of
+ * the boxes and the browser drew the boxes AND the gaps between them.
+ * MEASURED: 40 to 101 px unaccounted per page, 16 of 58 A4 pages of Śrī Rudram
+ * over the foot of their text column.
+ *
+ * A VERSE IS NOW KEPT WHOLE unless it cannot fit a page by itself — his
+ * `Translit` style's `w:keepLines`, and `break-inside: avoid` in the print
+ * sheet. So nothing in the corpus splits any more, and the splitting machinery
+ * is tested where a verse taller than the paper can be constructed:
+ * `tests/integration/paged-map.test.ts` and
+ * `tests/component/paged-slices.test.tsx`. What is left for a real browser is
+ * what only a real browser can see — the rectangles.
  *
  * WHAT THIS COMPARES AGAINST, and it is not the program. How many lines a
  * verse has comes from the DOCUMENT'S OWN BYTES — `text.split('\n')`, fetched
@@ -20,9 +33,10 @@
  * drawn lines are the view's, and the expected count is the file's: three
  * different things, which is what makes the check able to fail.
  *
- * AND IT MUST NOT BE VACUOUS. A build where no verse splits at all would
- * satisfy every count below, so the last check asserts that splits HAPPENED —
- * that this document at this page size actually exercises the thing.
+ * AND IT MUST NOT BE VACUOUS. Every count below is satisfied by a page that
+ * drew nothing, so each is paired with the number it came from and the last
+ * two check the totals: that every verse of the file was found, and that the
+ * documents really do run to many pages.
  *
  *   npm run dev            # or serve a built bundle
  *   node tools/interaction-pages.mjs
@@ -54,7 +68,7 @@ await setView(page, 'Pages');
 await page.waitForSelector('.page [data-block-id]');
 await wait(1400);
 
-console.log('\n── the pages, and the verses the breaks run through\n');
+console.log('\n── what is actually on a page\n');
 
 /* ── what the document itself says ──────────────────────────────────────── */
 /*
@@ -154,7 +168,7 @@ const openDoc = async (title) => {
 
 /*
  * TWO DOCUMENTS AND THREE PAGE SIZES. Śrī Rudram is here because it is the one
- * long enough for breaks to fall in interesting places — 58 pages at A4 — and
+ * long enough for breaks to fall in interesting places — 64 pages at A4 — and
  * the small document is here because a bug that only shows at scale is usually
  * a bug that shows at three pages too, and it runs in a second.
  */
@@ -163,7 +177,8 @@ const SUBJECTS = [
   { title: 'Śrī Rudram', slug: 'sri-rudram' },
 ];
 
-let splitsSeen = 0;
+let versesSeen = 0;
+let pagesSeen = 0;
 let combinations = 0;
 
 for (const { title, slug } of SUBJECTS) {
@@ -175,7 +190,6 @@ for (const { title, slug } of SUBJECTS) {
   for (const size of ['a4', 'a5', 'letter']) {
     await setSize(size);
     const { per, overflowing, pastPaper, worst, pages } = await drawn();
-    combinations += 1;
     const where = `${title} / ${size}`;
 
     /* Every verse the file has is on some page, exactly once over. */
@@ -227,17 +241,34 @@ for (const { title, slug } of SUBJECTS) {
     check(`${where}: and nothing past the edge of the paper`, pastPaper === 0,
       `${pastPaper} elements past the sheet`);
 
-    splitsSeen += names.filter((id) => per[id] !== undefined && per[id].pages > 1).length;
+    /*
+     * AND NONE OF THEM IS SPLIT. A verse that fits a page is kept whole, which
+     * is what Word does with `w:keepLines` and what a printing browser does
+     * with `break-inside: avoid`. The view was the only one of the three that
+     * split a verse for tidiness — 22 of Śrī Rudram's at A4 — so the three
+     * files of one document disagreed about what was on the page.
+     */
+    const split = names
+      .filter((id) => per[id] !== undefined && per[id].pages > 1)
+      .map((id) => `${id} on ${per[id].pages} pages`);
+    check(`${where}: a verse that fits a page is kept whole`, split.length === 0,
+      split.slice(0, 4).join(' | '));
+
+    versesSeen += names.filter((id) => per[id] !== undefined).length;
+    pagesSeen += pages;
+    combinations += 1;
   }
 }
 
 /*
- * THE CONTROL. Every count above is satisfied by a build where no verse ever
- * splits, so without this the whole file could pass while testing nothing —
- * which is exactly how a conformance suite here once passed 90 assertions.
+ * THE TWO CONTROLS. Every check above is about what is NOT on a page, and a
+ * build that drew nothing at all would pass all of them — which is how a
+ * conformance suite here once passed 90 assertions while testing nothing.
  */
-check('and verses really were split — otherwise none of the above tested anything',
-  splitsSeen > 0, `${splitsSeen} split verses over ${combinations} page sizes`);
+check('every verse of both documents was actually examined',
+  versesSeen === (9 + 198) * 3, `${versesSeen} of ${(9 + 198) * 3}`);
+check('and they ran to real numbers of pages',
+  pagesSeen > 200, `${pagesSeen} pages over ${combinations} page sizes`);
 
 console.log(`\n  ${passed} passed, ${failures.length} failed.`);
 console.log(`  console errors: ${errors.length === 0 ? 'none' : errors.slice(0, 3).join(' | ')}`);
