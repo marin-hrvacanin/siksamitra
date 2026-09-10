@@ -220,6 +220,77 @@ await page.evaluate(() => [...document.querySelectorAll('.rbb')]
   .find((x) => x.textContent?.trim() === 'Flow')?.click());
 await wait(600);
 
+/* ── the choices a person made, after the program is closed and opened ──── */
+/*
+ * WHICH VIEW, WHAT PAPER, WHAT ZOOM — all three were React state and nothing
+ * else, so all three reset on every start: an author working in Pages on A5 at
+ * 90 % was put back in Flow on A4 at 100 % each time the program opened.
+ * `useAppearance` had already written down why that is not acceptable.
+ *
+ * A RELOAD IS THE TEST, because it is the only thing in a browser that is the
+ * same event as closing and reopening the program: the React tree is gone and
+ * whatever comes back came from storage.
+ */
+const viewShape = () => page.evaluate(() => {
+  const d = [...document.querySelectorAll('.doc')].find((e) => e.closest('.paged__probe') === null);
+  return {
+    pages: document.querySelectorAll('.page').length,
+    pageW: Math.round(document.querySelector('.page')?.getBoundingClientRect().width ?? -1),
+    zoom: d === undefined ? -1 : Number(getComputedStyle(d).getPropertyValue('--doc-zoom')) || -1,
+  };
+});
+const pickSize = (id) => page.evaluate((want) => {
+  const el = document.querySelector('[aria-label="Page size"]');
+  if (el === null) throw new Error('no page-size control');
+  const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+  set.call(el, want);
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}, id);
+const ribbon = (label, tab) => page.evaluate((args) => {
+  const [want, t] = args;
+  if (t !== null) document.querySelector(`#rbn-tab-${t}`)?.click();
+  const el = [...document.querySelectorAll('.rbb')].find((b) => (b.textContent ?? '').trim() === want);
+  if (el === undefined) throw new Error(`no ribbon button "${want}"`);
+  el.click();
+}, [label, tab ?? null]);
+
+await ribbon('Pages', 'view');
+await wait(1400);
+await pickSize('a5');
+await wait(1200);
+await ribbon('Zoom out', 'view');
+await wait(1000);
+const chose = await viewShape();
+check('a view, a paper size and a zoom were chosen', chose.pages > 0 && chose.zoom > 0,
+  `${chose.pages} A5 pages, ${chose.pageW} px wide, zoom ${chose.zoom}`);
+
+/* The document has been typed into by now, so the unload guard fires; accept
+   it, because throwing the edit away is the point of the restart. And
+   `domcontentloaded` rather than `networkidle0`: the dev server's own hot-reload
+   socket never lets a reload reach zero connections. */
+page.on('dialog', (d) => { void d.accept(); });
+await page.reload({ waitUntil: 'domcontentloaded' });
+await page.waitForSelector('[data-block-id]');
+await wait(2200);
+const back = await viewShape();
+check('THE VIEW, THE PAPER AND THE ZOOM COME BACK after a restart',
+  back.pages > 0 && back.pageW === chose.pageW && Math.abs(back.zoom - chose.zoom) < 0.001,
+  `${back.pages} pages, ${back.pageW} px wide (was ${chose.pageW}), zoom ${back.zoom}`);
+
+/*
+ * THE CONTROL. Without it, a build that simply always opened in Pages on A5
+ * would pass — so the storage is cleared and the same reload must give the
+ * defaults back: Flow, which draws no pages at all.
+ */
+await page.evaluate(() => { localStorage.removeItem('siksamitra.view'); });
+await page.reload({ waitUntil: 'domcontentloaded' });
+await page.waitForSelector('[data-block-id]');
+await wait(2000);
+const fresh = await viewShape();
+check('and with nothing stored it opens in Flow at actual size — the defaults',
+  fresh.pages === 0 && Math.abs(fresh.zoom - 1) < 0.001,
+  `${fresh.pages} pages, zoom ${fresh.zoom}`);
+
 /* ── the invariant the whole design rests on ────────────────────────────── */
 const drift = await page.evaluate(() => {
   /* Every letter the browser can see must still be one the renderer drew.

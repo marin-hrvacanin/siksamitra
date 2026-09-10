@@ -7,12 +7,13 @@
  * one place is what stops each surface inventing its own answer.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DEFAULT_PAGE, DEFAULT_VIEW, PT_TO_PX, nextView, pageGeometry, resolveZoom, stepZoom,
   themeFor, viewMode,
   type PageGeometry, type ViewKind, type ViewMode, type Viewport, type ZoomMode,
 } from '@siksamitra/layout';
+import { readViewChoices, writeViewChoices } from './view-store.js';
 
 export interface ViewState {
   readonly view: ViewMode;
@@ -35,8 +36,14 @@ export function useViewState(
   preferredTheme: string,
   initial: ViewKind = DEFAULT_VIEW,
 ): ViewState {
-  const [kind, setKind] = useState<ViewKind>(initial);
-  const [pageId, setPageId] = useState<string>(DEFAULT_PAGE);
+  /*
+   * WHAT THE PERSON LAST CHOSE, if anything. Read once, and validated in
+   * `view-store.ts` — a stored page size this build no longer has would reach
+   * `pageGeometry`, which throws by design, and the program would not start.
+   */
+  const [stored] = useState(readViewChoices);
+  const [kind, setKind] = useState<ViewKind>(stored.view ?? initial);
+  const [pageId, setPageId] = useState<string>(stored.page ?? DEFAULT_PAGE);
 
   const page = useMemo(() => pageGeometry(pageId), [pageId]);
   const view = viewMode(kind);
@@ -55,7 +62,7 @@ export function useViewState(
    * enough either: the window that is open now is the one that matters, not
    * the one it opened in.
    */
-  const [chosen, setChosen] = useState<ZoomMode | null>(null);
+  const [chosen, setChosen] = useState<ZoomMode | null>(stored.zoom ?? null);
   const zoomMode: ZoomMode = chosen ?? (
     viewport.width < (page.width * PT_TO_PX) + 48
       ? { kind: 'fit-width' }
@@ -81,6 +88,22 @@ export function useViewState(
    * Otherwise pressing zoom-in while fitted does nothing visible — the fit
    * recomputes and lands on the same number — and the control appears broken.
    */
+  /*
+   * KEPT FOR NEXT TIME. The three of them together, because they are one
+   * decision about how the document is being looked at, and a person who moves
+   * to Pages on A5 has not asked to be put back in Flow on A4 tomorrow.
+   *
+   * `chosen` and not `zoom`: the resolved number would freeze the automatic
+   * fit that applies until a person takes the zoom over. See `ViewChoices`.
+   */
+  useEffect(() => {
+    writeViewChoices({
+      view: kind,
+      page: pageId,
+      ...(chosen === null ? {} : { zoom: chosen }),
+    });
+  }, [kind, pageId, chosen]);
+
   const step = useCallback((direction: 1 | -1) => {
     /* From the CURRENT zoom, whether that came from a choice or from the
        window — so a step out of the automatic fit lands where the eye is. */
