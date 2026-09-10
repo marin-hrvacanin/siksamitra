@@ -3,11 +3,40 @@
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,
+    /* EVERY WORKSPACE PACKAGE, TO SOURCE — not the four this used to list.
+
+       Those four are what the add-in IMPORTS, and the rest resolved through
+       `node_modules` to `dist/index.d.ts` instead. That works on a machine
+       where the packages have been built and fails on a clean checkout: the
+       Pages workflow, which builds only this app, died with "Cannot find
+       module @siksamitra/edit" and "@siksamitra/layout" — reached not by the
+       add-in but by `interop` on its way through. Two of these entries are
+       subpaths the add-in does import (`tokens/export-styles`) and had gone
+       the same way unnoticed.
+
+       The list mirrors `tools/workspace-alias.mjs`, which reads the packages'
+       own `exports` maps and is what the two Vite configs and the test runner
+       use. TypeScript cannot call a script, so this is a copy — and the whole
+       set is listed rather than the ones needed today, because the failure
+       mode of a missing entry is a build that works here and not in CI. */
     "paths": {
+      "@siksamitra/account": ["../../packages/account/src/index.ts"],
+      "@siksamitra/audio": ["../../packages/audio/src/index.ts"],
+      "@siksamitra/edit": ["../../packages/edit/src/index.ts"],
       "@siksamitra/engine": ["../../packages/engine/src/index.ts"],
       "@siksamitra/format": ["../../packages/format/src/index.ts"],
       "@siksamitra/interop": ["../../packages/interop/src/index.ts"],
+      "@siksamitra/layout": ["../../packages/layout/src/index.ts"],
+      "@siksamitra/render": ["../../packages/render/src/index.ts"],
+      "@siksamitra/render/theme": ["../../packages/render/src/theme/marks.ts"],
+      "@siksamitra/storage": ["../../packages/storage/src/index.ts"],
       "@siksamitra/tokens": ["../../packages/tokens/generated/tokens.ts"],
+      "@siksamitra/tokens/document-themes": ["../../packages/tokens/src/document-themes.ts"],
+      "@siksamitra/tokens/document-type": ["../../packages/tokens/src/document-type.ts"],
+      "@siksamitra/tokens/export-styles": ["../../packages/tokens/src/export-styles.ts"],
+      "@siksamitra/tokens/figure": ["../../packages/tokens/src/figure.ts"],
+      "@siksamitra/tokens/fonts": ["../../packages/tokens/src/fonts.ts"],
+      "@siksamitra/tokens/source": ["../../packages/tokens/src/source.ts"],
       "@siksamitra/tokens/word": ["../../packages/tokens/src/word.ts"]
     },
     /* `node` because `@siksamitra/interop` reaches for `Buffer` where a
