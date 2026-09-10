@@ -78,6 +78,14 @@ export function setupGroup(deps: SetupDeps): SetupGroup {
       await addStyles(keep);
       state = await documentStyles();
       paint();
+      /*
+       * THE REDRAW FIRST, THEN THE MESSAGE. `changed()` re-reads the selection
+       * and clears the note line as it goes — it owns that line, and a note
+       * about a paragraph the person has left is worse than none. Saying this
+       * before the redraw meant the redraw wiped it, which is what the
+       * component test caught.
+       */
+      await deps.changed();
       deps.say(state.missing.length === 0
         ? `${state.total} styles are in the document now.${keep
           ? ' The specimen is at the end — delete it when you have read it; '
@@ -85,7 +93,6 @@ export function setupGroup(deps: SetupDeps): SetupGroup {
           : ''}`
         : `Still missing: ${state.missing.join(', ')}.`,
       state.missing.length === 0 ? 'plain' : 'warn');
-      await deps.changed();
     });
   };
 

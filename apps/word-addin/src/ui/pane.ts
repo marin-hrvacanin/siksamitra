@@ -18,7 +18,7 @@ import { notCarried } from '../model/carry.js';
 import { STAGES, rerun } from '@siksamitra/engine';
 import { locate, readDocument, writeDocument, writeParagraph } from '../word/client.js';
 import type { Located } from '../word/client.js';
-import { GROUPS, type Control } from './controls.js';
+import { GROUPS, STAGE_LABEL, type Control } from './controls.js';
 import { arming, el } from './dom.js';
 import { setupGroup, type SetupGroup } from './setup-group.js';
 import { ADDIN_VERSION, GUIDE_URL } from '../version.js';
@@ -80,12 +80,19 @@ export async function refresh(): Promise<void> {
     at = await locate();
     paint();
     const lost = at.unresolved.filter((u) => u.lossy);
+    /* Advisory notes are left out — see `Unaccounted.advisory`. A box over two
+       letters is normal, fires on most lines of a real document, and quoting
+       a specification reference about it every time is what makes a person
+       stop reading this line at all. */
+    const notes = at.unresolved.filter((u) => u.advisory !== true);
     if (lost.length > 0) {
       say('This paragraph carries text the reader cannot place. Marking it '
         + 'would delete that text, so the buttons are refused here.',
       'warn', lost.map((u) => `${u.what}: ${u.raw}`));
-    } else if (at.unresolved.length > 0) {
-      say('Read, with a note:', 'plain', at.unresolved.map((u) => `${u.what}: ${u.raw}`));
+    } else if (notes.length > 0) {
+      say('Read, with a note:', 'plain', notes.map((u) => `${u.what}: ${u.raw}`));
+    } else {
+      say('');
     }
   });
 }
@@ -204,7 +211,9 @@ function rulesGroup(): HTMLElement {
   for (const stage of STAGES) {
     const box = el('input', { type: 'checkbox', checked: '' });
     stageBoxes.set(stage, box);
-    stages.append(el('label', {}, box, stage));
+    /* The stage's NAME, not its identifier: `change` is not "change", it is a
+       letter the rules replaced. See `STAGE_LABEL`. */
+    stages.append(el('label', {}, box, STAGE_LABEL[stage] ?? stage));
   }
   const here = el('button', { type: 'button' }, 'Run over the selection');
   here.addEventListener('click', () => { void runHere(); });

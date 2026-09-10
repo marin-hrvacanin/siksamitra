@@ -178,6 +178,25 @@ export interface Unaccounted {
   /** The letters it was about. */
   raw: string;
   /**
+   * Worth writing down in an audit, and not worth saying in a task pane.
+   *
+   * One of the three things the importer reports is a HOLDING BOX OVER MORE
+   * THAN ONE LETTER, and it is neither a loss nor a fault: 387 of the corpus's
+   * 4 788 boxes cover two letters, so it fires on most paragraphs of a real
+   * document. It reached the pane as
+   *
+   *     Read, with a note:
+   *     • a holding box covers 5 letters — narrowing needs the same-point
+   *       test (02A H26): agnim
+   *
+   * which quotes a specification reference at somebody who is marking a
+   * mantra, on almost every line, about something they cannot act on. A note
+   * that appears every time is a note nobody reads, and it trains people to
+   * ignore the line that ALSO carries the refusals. So the pane omits these
+   * and `importDocx`'s report keeps them.
+   */
+  advisory?: boolean;
+  /**
    * Its letters are NOT in the decoded text, so writing the paragraph back
    * would delete them.
    *
@@ -205,5 +224,8 @@ export function unresolvedIn(paras: readonly WordParagraph[]): Unaccounted[] {
     what: u.what,
     raw: u.raw,
     lossy: u.raw.trim() !== '' && !decoded.includes(u.raw.trim()),
+    /* Matched on the message because that is where the importer states it, and
+       the importer's audience is an audit. See `advisory` above. */
+    ...(u.what.startsWith('a holding box covers') ? { advisory: true } : {}),
   }));
 }

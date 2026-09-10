@@ -36,7 +36,9 @@ const located = {
   to: 8,
   style: 'Translit' as string | null,
   isVerse: true,
-  unresolved: [] as { what: string; raw: string; lossy: boolean }[],
+  unresolved: [] as {
+    what: string; raw: string; lossy: boolean; advisory?: boolean;
+  }[],
 };
 
 /** What the faked document reports as missing. Set per test. */
@@ -157,6 +159,44 @@ describe('the document’s text is displayed and never interpreted', () => {
       }
     });
   }
+
+  it('and a note about a paragraph does not outlive that paragraph', async () => {
+    /*
+     * The note line belongs to the SELECTION. A note left over from a
+     * paragraph the person has moved off is worse than no note — it reads as
+     * a complaint about the line they are on now.
+     */
+    located.unresolved = [{ what: 'inline comment', raw: 'a note', lossy: true }];
+    await mount();
+    await refresh();
+    await settle();
+    expect(text()).toContain('cannot place');
+    located.unresolved = [];
+    await refresh();
+    await settle();
+    expect(text()).not.toContain('cannot place');
+  });
+
+  it('and an advisory note is not shown at all', async () => {
+    /*
+     * A holding box over more than one letter is normal — 387 of the corpus's
+     * 4 788 boxes cover two — so the importer's note about it fires on most
+     * lines of a real document, quoting a specification reference ("02A H26")
+     * at somebody marking a mantra. A note that appears every time is a note
+     * nobody reads, and this line also carries the refusals.
+     */
+    located.unresolved = [{
+      what: 'a holding box covers 5 letters — narrowing needs the same-point test (02A H26)',
+      raw: 'agnim',
+      lossy: false,
+      advisory: true,
+    }];
+    await mount();
+    await refresh();
+    await settle();
+    expect(text()).not.toContain('02A H26');
+    expect(text()).not.toContain('Read, with a note');
+  });
 
   it('and so does what the importer could not account for', async () => {
     /* The other string that comes out of the document: the importer's own

@@ -12,6 +12,7 @@
  * makes the removal survive a re-run is written without anybody learning the
  * word "none" — see `model/command.ts`.
  */
+import type { Stage } from '@siksamitra/format';
 import type { MarkCommand } from '../model/command.js';
 
 export interface Control {
@@ -122,3 +123,25 @@ export const GROUPS: readonly Group[] = [
     ],
   },
 ];
+
+/**
+ * THE FIVE STAGES, in the pane's words rather than the engine's.
+ *
+ * `Stage` is `sandhi | change | holdings | svara | aids` — identifiers, and
+ * the pane printed them as they are: five lowercase words in a row beside
+ * five checkboxes, three of which mean nothing to a reader. `svara` is a
+ * technical term the audience knows; `change` is not, and it does not mean
+ * "change" — it means a letter the rules REPLACED.
+ *
+ * Here rather than in `packages/format`, because it is display text for this
+ * pane and the engine has no business holding English. A stage with no label
+ * falls back to its id and `setup.test.ts` fails, so adding one to the engine
+ * makes somebody write a word for it.
+ */
+export const STAGE_LABEL: Readonly<Record<Stage, string>> = {
+  sandhi: 'Sandhi',
+  change: 'Substitutions',
+  holdings: 'Holdings',
+  svara: 'Accents',
+  aids: 'Reading aids',
+};
