@@ -27,8 +27,13 @@
  * own content column — the one `sectPr` writes — rather than against a number
  * typed in here. A picture is then the same fraction of the column in Word
  * that it is on the page.
+ *
+ * `pictureWidth` and not `figureWidth`: a caption set BESIDE the picture takes
+ * a share of the figure and the picture gets the rest. And the drawing is
+ * always the PICTURE'S own shape — see `extent`, which is where a fixed crop
+ * used to stretch it.
  */
-import { figureWidth } from '@siksamitra/tokens/figure';
+import { pictureWidth } from '@siksamitra/tokens/figure';
 import {
   FIGURE_DEFAULTS, figureBytes, imageMediaType, isEmbeddedImage, type ChantFigure,
 } from '@siksamitra/format';
@@ -108,7 +113,74 @@ export function mediaFor(
 }
 
 /**
- * How big the picture is drawn, in EMU, keeping its own aspect ratio.
+ * How big the picture is drawn, in whatever unit the column is given in.
+ *
+ * EXPORTED so a gate can ask for the number without generating a whole
+ * `.docx`: `tools/export/gate-figures.mjs` compares it with the box the
+ * browser actually drew, which is the only way to know the page and Word agree
+ * about a picture.
+ *
+ * THE WIDTH IS CLAMPED HERE, and it has to be somewhere. `widthPct` is floored
+ * at 5 and capped at 100 by the drag that produces it, and by `figureBlockers`
+ * for a document being validated — but a `.json` is a file a person can edit,
+ * and neither guard is on the EXPORT path. A `widthPct` of `-50` wrote
+ * `cx="-2880000"` and a non-numeric one wrote `cx="NaN"`, both of which are a
+ * `.docx` Word offers to repair rather than open: a whole document lost to one
+ * bad number, and the only report of it is Word's own "the file appears to be
+ * corrupted".
+ *
+ * A picture cannot be narrower than nothing or wider than the column it is in,
+ * so those are the bounds, and `EMU_MIN` is one point — small enough to be a
+ * mistake a person can see, large enough that Word draws something.
+ */
+export function pictureExtent(
+  fig: ChantFigure, column: number, rem: number,
+): { w: number; h: number; ratio: number } {
+  /*
+   * `pictureWidth` AND NOT `figureWidth`. A caption set BESIDE the picture
+   * takes a share of the figure's width and the picture gets the rest, so the
+   * figure's width is not the drawing's. Asking for the figure's drew a
+   * picture about 47 % wider in Word than the page draws it, with the caption
+   * underneath — one document, two pictures. The share is a token, read by
+   * `figure.css` and by this, so neither can drift.
+   */
+  const asked = pictureWidth(fig, column, rem);
+  const boxW = Number.isFinite(asked) ? Math.max(asked, 0) : Math.min(column, rem * 4);
+
+  /*
+   * THE PICTURE'S OWN SHAPE, ALWAYS — a fixed crop reserves a BOX and the page
+   * fits the picture inside it (`object-fit: contain`), so the empty band is
+   * around the picture rather than in it.
+   *
+   * THIS USED TO STRETCH. `cy` was `cx * cropRatio` and a `<a:stretch>` fill
+   * fills whatever extent it is given, so a 400x300 rectangle with
+   * `crop: square` came out of Word 1:1 — the same picture, a third again as
+   * tall as it is, with every face in it wrong. On the page the identical
+   * figure was letterboxed. A distorted picture is not a difference of layout;
+   * it is the wrong picture.
+   *
+   * `auto` — where the crop IS the picture's ratio — comes out unchanged,
+   * which is the overwhelming case.
+   */
+  const crop = fig.crop ?? FIGURE_DEFAULTS.crop;
+  const intrinsic = fig.width !== undefined && fig.height !== undefined && fig.width > 0
+    ? fig.height / fig.width
+    : 3 / 4;
+  const box = crop === 'square' ? 1
+    : crop === 'portrait' ? 4 / 3
+      : crop === 'wide' ? 9 / 16
+        : intrinsic;
+  /* Taller than its box: the height binds and the picture comes in narrower.
+     Otherwise the width binds, which is what `auto` always does. */
+  const w = intrinsic > box ? (boxW * box) / intrinsic : boxW;
+  /* `ratio` is the PICTURE's, reported separately so a clamped width still has
+     a shape to keep: `w` and `h` can both be nothing when a hand-edited
+     `widthPct` is negative, and `h / w` is then no ratio at all. */
+  return { w, h: w * intrinsic, ratio: intrinsic };
+}
+
+/**
+ * The same, in EMU and clamped to something Word will open.
  *
  * THE WIDTH IS CLAMPED HERE, and it has to be somewhere. `widthPct` is floored
  * at 5 and capped at 100 by the drag that produces it, and by `figureBlockers`
@@ -124,22 +196,14 @@ export function mediaFor(
  * mistake a person can see, large enough that Word draws something.
  */
 function extent(fig: ChantFigure, columnEmu: number): { cx: number; cy: number } {
-  const asked = figureWidth(fig, columnEmu, EMU_PER_POINT * 12);
   const EMU_MIN = EMU_PER_POINT;
-  const cx = Number.isFinite(asked)
-    ? Math.round(Math.min(Math.max(asked, EMU_MIN), Math.max(columnEmu, EMU_MIN)))
+  const { w, ratio } = pictureExtent(fig, columnEmu, EMU_PER_POINT * 12);
+  const cx = Number.isFinite(w)
+    ? Math.round(Math.min(Math.max(w, EMU_MIN), Math.max(columnEmu, EMU_MIN)))
     : Math.round(Math.min(columnEmu, EMU_PER_INCH));
-  /* The intrinsic ratio, which `figureFaults` requires a `crop: auto` figure to
-     carry. A figure with a fixed crop is drawn to that shape instead, exactly
-     as `figure.css` does with `aspect-ratio`. */
-  const crop = fig.crop ?? FIGURE_DEFAULTS.crop;
-  const ratio = crop === 'square' ? 1
-    : crop === 'portrait' ? 4 / 3
-      : crop === 'wide' ? 9 / 16
-        : fig.width !== undefined && fig.height !== undefined && fig.width > 0
-          ? fig.height / fig.width
-          : 3 / 4;
-  return { cx, cy: Math.round(cx * ratio) };
+  /* The height follows the width that was actually WRITTEN and the picture's
+     own ratio, so a clamp cannot leave a stretched picture behind. */
+  return { cx: Math.max(1, cx), cy: Math.max(1, Math.round(cx * ratio)) };
 }
 
 /** The `<a:graphic>` half, which is identical inline and anchored. */

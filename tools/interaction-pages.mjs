@@ -242,6 +242,25 @@ for (const { title, slug } of SUBJECTS) {
       `${pastPaper} elements past the sheet`);
 
     /*
+     * AND IT HAS STOPPED MOVING. The page map is built from a measurement of
+     * an off-screen probe, and a measurement taken before the document has
+     * settled — a font still loading, a picture still decoding — is a
+     * measurement of a different document. The heights used to be read two
+     * frames after the mount and never again, so whatever the probe was at
+     * that instant is what the pages were built from for ever; the symptom is
+     * a page holding more than it can, on some runs and not others.
+     *
+     * Read twice, a second apart. Anything still moving is either a map that
+     * settled late (and the first reading was wrong) or one that never
+     * settles.
+     */
+    await wait(1000);
+    const settled = await drawn();
+    check(`${where}: and the page map has stopped moving`,
+      settled.pages === pages && settled.overflowing === 0,
+      `${pages} pages then ${settled.pages}, ${settled.overflowing} over`);
+
+    /*
      * AND NONE OF THEM IS SPLIT. A verse that fits a page is kept whole, which
      * is what Word does with `w:keepLines` and what a printing browser does
      * with `break-inside: avoid`. The view was the only one of the three that

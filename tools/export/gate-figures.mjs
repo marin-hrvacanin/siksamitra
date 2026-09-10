@@ -34,6 +34,12 @@
  *      width and its drawn height compared with the page's content box, which
  *      comes from `@siksamitra/layout` rather than from the stylesheet under
  *      test. Without the cap it measured 8 063 px on a 934 px page.
+ *   8. THE PAGE AND WORD DRAW THE SAME PICTURE. The drawn width of the image
+ *      is compared with what `pictureWidth` tells the `.docx`, for a caption
+ *      below and beside and for two crops — and the drawn SHAPE is compared
+ *      with the picture's own, because a stretched picture is not a resized
+ *      one. A caption beside it used to be ignored by the exporter (47 % too
+ *      wide in Word) and a fixed crop used to stretch it there.
  *   7. THE CORPUS IS SOUND. `documentFigureFaults` over all eleven documents:
  *      every figure has alternative text, a legal size and a reserved box.
  *
@@ -45,6 +51,7 @@ import { join } from 'node:path';
 import { canonicalJson, documentFigureFaults, figuresOf } from '@siksamitra/format';
 import { importHtml } from '@siksamitra/interop';
 import { DEFAULT_PAGE, contentBox, pageGeometry } from '@siksamitra/layout';
+import { pageAgainstWord } from './figure-shape.mjs';
 import { buildPage, loadDoc } from './page.mjs';
 import { toPng, withBrowser } from './raster.mjs';
 import { analyse } from './pixels.mjs';
@@ -353,6 +360,9 @@ await withBrowser(async (browser) => {
   console.log(`  a picture can never outgrow a page       ${drawn} px drawn, `
     + `${room} px of page (4000 px of picture)`);
 });
+
+console.log('');
+await pageAgainstWord(fail);
 
 /* ==========================================================================
    7 · the corpus

@@ -187,9 +187,25 @@
   margin: var(--fig-cap-gap) 0 0;
 }
 .fig--cap-above .fig__cap { margin: 0 0 var(--fig-cap-gap); }
+/*
+ * A CAPTION BESIDE THE PICTURE SPLITS THE FIGURE'S WIDTH, and the split is a
+ * FIXED share rather than a negotiation.
+ *
+ * It was `flex: 1 1 auto` on the box against `flex: 1 1 40%` on the caption,
+ * so where the picture ended up depended on the caption's own text and on the
+ * image's intrinsic width — a number nothing outside the browser could know.
+ * The exporter therefore asked `figureWidth` (the FIGURE's width) and drew the
+ * picture about 47 % wider than the page draws it. Fixed at the token's share,
+ * `pictureWidth` in `@siksamitra/tokens/figure` computes the same number for
+ * the `.docx` and the PDF from the same two tokens.
+ *
+ * `min-width: 0` on the box because a flex item's default minimum is its
+ * content, and an image's content is its intrinsic width — without it a wide
+ * photograph pushed the caption out of the figure.
+ */
 .fig--cap-beside { display: flex; gap: var(--fig-cap-beside-gap); align-items: center; }
-.fig--cap-beside .fig__box { flex: 1 1 auto; }
-.fig--cap-beside .fig__cap { flex: 1 1 var(--fig-cap-beside-w); margin: 0; }
+.fig--cap-beside .fig__box { flex: 1 1 auto; min-width: 0; }
+.fig--cap-beside .fig__cap { flex: 0 0 var(--fig-cap-beside-w); margin: 0; }
 
 /* ── a picture this file does not carry ───────────────────────────────────
    Not an error and not silent. A document may legitimately name a picture the

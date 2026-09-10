@@ -22,9 +22,13 @@
  * is 184 px and readable, and on a phone's 20rem it is 80 px, which is a
  * thumbnail nobody asked for.
  *
- * Every one of these is multiplied by `--doc-zoom` where it is used
- * (`figure.css`), because a picture that held its pixel size while the page
- * doubled would shrink against the text at every zoom but 100 %.
+ * ZOOM IS NOT IN ANY OF THESE, and this comment used to say the opposite —
+ * "every one of these is multiplied by `--doc-zoom` where it is used". Three
+ * of them were, in `figure.css`, and that was the trouble: the picture grew
+ * with the zoom while the type could not, because the type's tokens are
+ * declared on `:root` where `--doc-zoom` is always 1. Zoom is now the
+ * browser's own `zoom` property, one declaration per sheet in `canvas.css`,
+ * and it scales these along with everything else.
  */
 export const FIGURE = {
   /* The corner grab handle on a selected picture: big enough to hit with a
@@ -111,3 +115,43 @@ export function figureWidth(
       return clamped(FIGURE['fig-medium'], FIGURE['fig-medium-min'], FIGURE['fig-medium-max']);
   }
 }
+
+/**
+ * How wide the PICTURE is, which is not always how wide the figure is.
+ *
+ * A caption set BESIDE the picture takes a share of the figure's width, so the
+ * picture gets the rest. `figure.css` splits it with flex; a `.docx` and a PDF
+ * have to be told a number, and a number worked out in an exporter is a second
+ * opinion about the same layout.
+ *
+ * MEASURED AS THE FAULT: the exporter asked `figureWidth`, which is the
+ * FIGURE's width, so a picture with a caption beside it was drawn in Word at
+ * the full step — about 47 % wider than the page draws it — with the caption
+ * underneath. One document, two pictures.
+ *
+ * The share is `fig-cap-beside-w` and the space between them is
+ * `fig-cap-beside-gap`, both from the table above, so moving either moves the
+ * page and Word together.
+ */
+export function pictureWidth(
+  fig: {
+    size?: string | undefined;
+    widthPct?: number | undefined;
+    captionAt?: string | undefined;
+    caption?: { en?: string | undefined } | undefined;
+  },
+  columnPx: number,
+  remPx = 16,
+): number {
+  const whole = figureWidth(fig, columnPx, remPx);
+  const text = fig.caption?.en ?? '';
+  if (fig.captionAt !== 'beside' || text.trim() === '') return whole;
+  const share = parseFloat(FIGURE['fig-cap-beside-w']) / 100;
+  const gap = parseFloat(FIGURE['fig-cap-beside-gap']) * remPx;
+  /* Never negative and never nothing: a thumbnail with a caption beside it is
+     a small picture, not a missing one. */
+  return Math.max(remPx, whole * (1 - share) - gap);
+}
+
+/** The share of a figure's width a caption beside it takes. */
+export const CAPTION_BESIDE_SHARE = parseFloat(FIGURE['fig-cap-beside-w']) / 100;

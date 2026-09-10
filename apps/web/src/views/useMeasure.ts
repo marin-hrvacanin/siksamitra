@@ -98,6 +98,16 @@ export function measureBlocks(root: HTMLElement): MeasuredBlock[] {
   return out;
 }
 
+/** Do two measurements say the same thing about every block? */
+function same(a: readonly MeasuredBlock[], b: readonly MeasuredBlock[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((m, i) => {
+    const other = b[i]!;
+    return m.id === other.id && Math.abs(m.height - other.height) < 0.01
+      && (m.lines?.length ?? 0) === (other.lines?.length ?? 0);
+  });
+}
+
 /**
  * Keep a measurement of the probe subtree up to date.
  *
@@ -106,6 +116,22 @@ export function measureBlocks(root: HTMLElement): MeasuredBlock[] {
  * NOT re-measure on zoom: that is the invariant the paged view rests on, and
  * re-measuring on zoom would quietly break it by letting rounding at one zoom
  * level change a height.
+ *
+ * AND IT WATCHES THE PROBE, because a measurement taken too early is not a
+ * measurement. The heights were read two frames after the mount and never
+ * again — so whatever the document was at that instant is what the page map
+ * was built from, for ever. A document font that had not loaded yet is
+ * measured in the fallback face, which is SHORTER, and every page then holds
+ * more than it can: measured on Śrī Rudram at A4, eight elements past the foot
+ * of the text column and one past the edge of the paper — on some runs and not
+ * others, which is what a race looks like from outside. A picture decoding
+ * after the mount is the same fault with a different cause.
+ *
+ * A `ResizeObserver` on the probe is the browser's own answer to "tell me when
+ * this changed size", and it does not care WHY it changed — fonts, images, a
+ * stylesheet arriving late. Re-measuring is cheap and idempotent: the pages
+ * are only re-rendered when a height actually moved, so a probe that settles
+ * costs one extra pass and then goes quiet.
  */
 export function useMeasuredBlocks(
   probe: React.RefObject<HTMLElement | null>,
@@ -115,26 +141,47 @@ export function useMeasuredBlocks(
   const [blocks, setBlocks] = useState<readonly MeasuredBlock[]>([]);
   const columnPt = contentBox(page).width;
   const last = useRef('');
+  /* The state, readable from inside the observer without making it a
+     dependency — an observer torn down and rebuilt on every measurement would
+     never see the change that comes after it. */
+  const held = useRef<readonly MeasuredBlock[]>([]);
+  held.current = blocks;
 
   useEffect(() => {
     const el = probe.current;
     if (el === null) return;
     const key = `${contentKey}|${columnPt}`;
-    if (last.current === key && blocks.length > 0) return;
 
-    // Two frames: one for the browser to lay out the probe, one to read it.
-    // Reading in the same frame as the render returns pre-layout zeroes.
+    let raf1 = 0;
     let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => {
-        const measured = measureBlocks(el);
-        if (measured.length > 0) {
+    /** Read the probe two frames from now — one to lay out, one to read. */
+    const take = (): void => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => {
+          const measured = measureBlocks(el);
+          if (measured.length === 0) return;
           last.current = key;
-          setBlocks(measured);
-        }
+          if (!same(measured, held.current)) setBlocks(measured);
+        });
       });
-    });
+    };
+
+    if (last.current !== key || blocks.length === 0) take();
+
+    /* Whatever changes the probe's shape after that — a font, a picture, a
+       late stylesheet — is a new measurement, not a stale one. */
+    const observer = new ResizeObserver(() => take());
+    observer.observe(el);
+    /* And the fonts explicitly, because a face that loads without changing the
+       probe's own box still changes the lines inside it. */
+    let cancelled = false;
+    void document.fonts.ready.then(() => { if (!cancelled) take(); });
+
     return () => {
+      cancelled = true;
+      observer.disconnect();
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
     };

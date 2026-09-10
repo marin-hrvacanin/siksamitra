@@ -17,7 +17,7 @@
  * not values read back out of it.
  */
 import { describe, expect, it } from 'vitest';
-import { FIGURE, figureWidth } from '../figure.js';
+import { CAPTION_BESIDE_SHARE, FIGURE, figureWidth, pictureWidth } from '../figure.js';
 
 /** An A4 text column at 25 mm margins, in CSS pixels — the corpus's own. */
 const COLUMN = 605;
@@ -98,5 +98,62 @@ describe('the size table', () => {
     expect(sizes.sort()).toEqual(
       ['fig-full', 'fig-large', 'fig-medium', 'fig-small', 'fig-thumb'],
     );
+  });
+});
+
+describe('how wide the PICTURE is, which is not always the figure', () => {
+  /*
+   * A caption set BESIDE the picture takes a share of the figure's width, so
+   * the picture gets the rest. The exporter asked `figureWidth` — the FIGURE's
+   * width — and drew the picture about 47 % wider in Word than the page draws
+   * it, with the caption underneath: one document and two pictures.
+   *
+   * The numbers here are arithmetic done by hand from the table: the caption
+   * takes 40 % and the gap between them is 0.9 rem.
+   */
+  const BESIDE = { captionAt: 'beside', caption: { en: 'A lit brass lamp.' } };
+
+  it('with the caption below, the picture IS the figure', () => {
+    for (const size of ['thumb', 'small', 'medium', 'large', 'full']) {
+      expect(pictureWidth({ size, captionAt: 'below', caption: { en: 'x' } }, COLUMN), size)
+        .toBeCloseTo(figureWidth({ size }, COLUMN), 6);
+    }
+  });
+
+  it('and with it beside, the picture is the figure less the caption and the gap', () => {
+    const whole = figureWidth({ size: 'full' }, COLUMN);
+    expect(pictureWidth({ size: 'full', ...BESIDE }, COLUMN))
+      .toBeCloseTo(whole * 0.6 - 0.9 * 16, 6);
+    /* Which is a real difference, not a rounding: 605 -> 348.6 px. */
+    expect(pictureWidth({ size: 'full', ...BESIDE }, COLUMN)).toBeLessThan(whole * 0.65);
+  });
+
+  it('the share comes from the token, not from a number typed here', () => {
+    /* `figure.css` splits the flex line with the same token, so moving it
+       moves the page and Word together. */
+    expect(CAPTION_BESIDE_SHARE).toBeCloseTo(parseFloat(FIGURE['fig-cap-beside-w']) / 100, 6);
+  });
+
+  it('a caption that is EMPTY takes no share, because it is not drawn', () => {
+    /* `Figure` renders no `figcaption` for an empty caption, so the flex line
+       has one item and the picture is the whole figure. Reserving 40 % for a
+       caption nobody typed would shrink the picture for nothing. */
+    expect(pictureWidth({ size: 'full', captionAt: 'beside' }, COLUMN))
+      .toBeCloseTo(figureWidth({ size: 'full' }, COLUMN), 6);
+    expect(pictureWidth({ size: 'full', captionAt: 'beside', caption: { en: '  ' } }, COLUMN))
+      .toBeCloseTo(figureWidth({ size: 'full' }, COLUMN), 6);
+  });
+
+  it('and a thumbnail with a caption beside it is small, never nothing', () => {
+    /* 5.5rem is 88 px; 60 % of that less a 14.4 px gap is 38.4 px, which is
+       still a picture. The floor is there for a narrower column, where the
+       arithmetic would go negative and Word would refuse the file. */
+    expect(pictureWidth({ size: 'thumb', ...BESIDE }, COLUMN)).toBeGreaterThan(0);
+    expect(pictureWidth({ size: 'thumb', ...BESIDE }, 40)).toBeGreaterThanOrEqual(16);
+  });
+
+  it('a dragged per cent still wins, and still gives the caption its share', () => {
+    expect(pictureWidth({ widthPct: 50, ...BESIDE }, COLUMN))
+      .toBeCloseTo((COLUMN * 0.5) * 0.6 - 0.9 * 16, 6);
   });
 });
