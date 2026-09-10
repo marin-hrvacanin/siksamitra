@@ -34,7 +34,9 @@ import { recompute } from './recompute.js';
 import {
   changedVerses, rederive, sourcesOf, writeSources, type LostMark,
 } from './sync.js';
-import { record, restore, snapshot, type History, type Snapshot } from './history.js';
+import {
+  changesNothing, record, restore, snapshot, type History, type Snapshot,
+} from './history.js';
 import { setProfile } from './set-profile.js';
 import { applyFigureCommand, figureSectionsTouched } from './figures.js';
 
@@ -135,7 +137,10 @@ export function apply(state: EditState, history: History, command: EditCommand):
    */
   let working: ChantSection = section;
   const sources = sourcesOf(section);
-  let overrides: readonly ChantOverride[] = state.doc.overrides ?? [];
+  /* Held separately so the end of this function can ask whether the command
+     replaced the array at all — see `changedNothing`. */
+  const overridesBefore: readonly ChantOverride[] = state.doc.overrides ?? [];
+  let overrides: readonly ChantOverride[] = overridesBefore;
   let nextSources: readonly VerseSource[] = sources;
   /* For a verse a text edit CREATED, the old verse its text was carved out of
      — so `writeSources` can carry the markings across a split. See `range.ts`. */
@@ -322,13 +327,19 @@ export function apply(state: EditState, history: History, command: EditCommand):
   };
   return {
     state: next,
-    history: record(history, {
-      before,
-      after: snapshot(doc, [section.id], selection),
-      ...(command.k === 'replace' && command.coalesce !== undefined
-        ? { coalesce: command.coalesce }
-        : {}),
-    }),
+    history: changesNothing(command, {
+      touched: touched.size,
+      removed: orphaned.length,
+      overridesReplaced: overrides !== overridesBefore,
+    })
+      ? history
+      : record(history, {
+        before,
+        after: snapshot(doc, [section.id], selection),
+        ...(command.k === 'replace' && command.coalesce !== undefined
+          ? { coalesce: command.coalesce }
+          : {}),
+      }),
   };
 }
 

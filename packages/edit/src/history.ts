@@ -61,6 +61,26 @@ export interface History {
 
 export const emptyHistory = (): History => ({ past: [], future: [] });
 
+/**
+ * HOW FAR BACK UNDO GOES, and why it has a limit at all.
+ *
+ * A step holds a snapshot of the section BEFORE and AFTER it, and a section is
+ * not small: measured, the largest in Śrī Rudram is 182 kB and the largest in
+ * Durgā Sūktam 157 kB. Nothing trimmed the list, so 200 separate edits — a few
+ * minutes of typing with pauses — came to 24 MB of history, and an afternoon's
+ * work would have come to hundreds. That is a tab that gets slower all day and
+ * then stops.
+ *
+ * A hundred STEPS, not a hundred keystrokes: a burst of typing coalesces into
+ * one, so this is a hundred distinct acts — far more than the "about twenty"
+ * Word is documented to keep, and about 12 MB at the corpus's worst case.
+ *
+ * The oldest step is dropped, which is what every editor does. The alternative
+ * — refusing to record once full — would make the most recent edit the one you
+ * cannot take back, which is exactly the wrong end to lose.
+ */
+export const HISTORY_DEPTH = 100;
+
 export const snapshot = (
   doc: ChantDoc,
   sectionIds: readonly string[],
@@ -132,7 +152,63 @@ export function record(history: History, step: Step): History {
       future: [],
     };
   }
-  return { past: [...history.past, step], future: [] };
+  /* Capped from the OLD end — see `HISTORY_DEPTH`. */
+  const past = [...history.past, step];
+  return {
+    past: past.length > HISTORY_DEPTH ? past.slice(past.length - HISTORY_DEPTH) : past,
+    future: [],
+  };
+}
+
+/**
+ * WHAT AN APPLIED COMMAND DID, in the three numbers that decide whether it was
+ * a change at all.
+ */
+export interface Effect {
+  /** How many verses the command changed or added. */
+  readonly touched: number;
+  /** How many it removed. */
+  readonly removed: number;
+  /** Whether it replaced the document's override array. */
+  readonly overridesReplaced: boolean;
+}
+
+/**
+ * DID THIS COMMAND CHANGE NOTHING? Then it is not an undo step.
+ *
+ * MEASURED: four of five degenerate commands recorded one. A `replace` of
+ * nothing over nothing, a `replace` of a range with the text it already had, a
+ * `mark` with no targets, an `unmark` with no targets and a `recompute` of no
+ * verses each left the document byte-identical and each pushed a step.
+ *
+ * WHAT THAT IS FROM THE OUTSIDE. Press a marking button with nothing selected
+ * and Ctrl+Z afterwards appears to do nothing — it restores an identical
+ * document — so a person presses it again, and again, each press spending a
+ * no-op, until they finally reach the edit they wanted back. "Undo does
+ * nothing" is the report, and the history is the reason.
+ *
+ * AND IT IS MEMORY: see `HISTORY_DEPTH` for what 200 steps came to.
+ *
+ * THE TESTS ARE THE COMMAND'S OWN ARGUMENTS AND THE WORK ALREADY DONE, not a
+ * comparison of two documents. `canonicalJson` of one section costs 7-11 ms —
+ * as much as the edit itself — so comparing on every keystroke would double
+ * the cost of typing. A `replace` reports which verses it changed, added and
+ * removed; a command with no targets has nothing to do by inspection.
+ *
+ * STILL RECORDED, and said rather than hidden: a `recompute` over real verses
+ * that happens to change none of them. Telling that apart needs the engine's
+ * own report of what it wrote, which is `text-and-marks` §10.1's business.
+ */
+export function changesNothing(
+  command: { readonly k: string; readonly targets?: readonly unknown[]; readonly verseIds?: readonly unknown[] },
+  effect: Effect,
+): boolean {
+  if (command.k === 'replace') {
+    return effect.touched === 0 && effect.removed === 0 && !effect.overridesReplaced;
+  }
+  if (command.k === 'mark' || command.k === 'unmark') return (command.targets ?? []).length === 0;
+  if (command.k === 'recompute') return (command.verseIds ?? []).length === 0;
+  return false;
 }
 
 export const canUndo = (h: History): boolean => h.past.length > 0;

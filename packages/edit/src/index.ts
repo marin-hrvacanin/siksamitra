@@ -73,7 +73,10 @@ export type { LostMark, WriteResult } from './sync.js';
 
 export { accentsIn, carryWitness, editWitness } from './witness.js';
 
-export { canRedo, canUndo, emptyHistory, record, restore, snapshot } from './history.js';
+export {
+  HISTORY_DEPTH, canRedo, canUndo, changesNothing, emptyHistory, record, restore,
+  snapshot,
+} from './history.js';
 export type { History, Snapshot, Step } from './history.js';
 
 export { apply, newState, redo, select, srcMapFor, undo } from './session.js';
