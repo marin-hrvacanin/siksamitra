@@ -168,6 +168,23 @@ figcaption{
   background:var(--accent-soft);color:var(--accent);
 }
 .step p{font-size:.95rem;color:var(--ink-2);line-height:1.65}
+/*
+  THE STEPS RAN OFF A PHONE, 552 px of them in a 390 px screen — measured,
+  by `npm run check:site`, which fails on it when either line below is gone.
+
+  Two causes, and each of these lines answers one. A flex child will not
+  SHRINK below its content unless `min-width:0` says it may; and the content
+  in question is unbreakable —
+  `~/Library/Containers/com.microsoft.Word/Data/Documents/wef` is one word to
+  a browser — so it is allowed to break anywhere. Either line alone happens
+  to be enough today; both are here because they are answers to different
+  questions and the next long string will find the missing one.
+
+  Not cosmetic: this is the block somebody follows three instructions from,
+  and a clipped instruction is a wrong one.
+*/
+.step>div{min-width:0}
+.step code,.step p{overflow-wrap:anywhere}
 
 .note{
   background:var(--sunk);border-left:3px solid var(--accent);
