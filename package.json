@@ -90,6 +90,7 @@
     "check:edit:ribbon": "node tools/interaction-ribbon.mjs",
     "check:edit:audio": "node tools/interaction-audio.mjs",
     "check:edit:zoom": "node tools/interaction-zoom.mjs",
+    "check:edit:typing": "node tools/interaction-typing.mjs",
     "export": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/cli.mjs",
     "check:export:html": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-html.mjs",
     "check:export:image": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/export/gate-image.mjs",

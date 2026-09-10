@@ -365,6 +365,14 @@ CHROME=<path> npm run check:document    # the page against his .docx, in points
 CHROME=<path> npm run check:responsive  # 15 widths x 3 tabs: nothing clipped
 CHROME=<path> npm run check:themes      # 84 theme combinations resolve
 CHROME=<path> npm run check:edit        # gestures, views, and no reflow
+CHROME=<path> npm run check:edit:typing # ENTER, a svara, Backspace — FAILS ON
+                                        #   PURPOSE until Lexical owns the
+                                        #   surface. Written first; green is
+                                        #   what the handover has to earn, and
+                                        #   the run says which of the four
+                                        #   readings still disagree. Add it to
+                                        #   `check:edit` in the commit that
+                                        #   makes it pass.
 CHROME=<path> node tools/walkthrough.mjs   # 24 screenshots, to LOOK at
 CHROME=<path> node tools/shot-marking.mjs  # mark five letters and look at the box
 ```
