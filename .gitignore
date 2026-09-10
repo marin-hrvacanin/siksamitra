@@ -70,6 +70,9 @@ design-preview.html
 # writes. `site/shots/` is the landing page's own content and is committed.
 /shots/
 /.shots/
+# A gate's scratch copy of a round-tripped `.docx`. Anchoring the rule above
+# stopped covering this, which is a real path something writes.
+tools/.shots/
 
 # === Portable packages are build output, not source ===
 *.vuchant
