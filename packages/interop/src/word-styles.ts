@@ -31,7 +31,24 @@ export type WordMarkRole =
   | 'pause'
   | 'comment'
   | 'dirgha'
-  | 'name'
+  /**
+   * A little superscripted number beside a word — a counting mark.
+   *
+   * WAS `name`, WHICH SAID NOTHING. His template carries `Name` and `Nma`,
+   * both of them UNRESOLVED and used nowhere in the corpus, and the owner
+   * explained what they are: "a style for little superscripted number in
+   * texts like LS where we want to have shlokas, but within the shlokas we
+   * are counting something... so barely visible little info next to the
+   * word", one for the recitation text and one for the translation. And then
+   * asked the right question: "it seems a bit ridiculous to have a separate
+   * style for every single use case, right?"
+   *
+   * It does. The format already has ONE marking for it — `sup`, "a
+   * superscript after the range" — so his two styles are read as this one
+   * role and it lands on the preceding letter's `sup`. We write ONE style,
+   * `Reference`. See `WORD_MARKS.reference`.
+   */
+  | 'reference'
   | 'ignore';
 
 export interface WordCharStyle {
@@ -113,8 +130,21 @@ export const WORD_CHAR_STYLES: readonly WordCharStyle[] = [
     id: 'Long', role: 'dirgha', color: WORD_MARKS.dirgha.color, sz: 36, seen: 12,
     note: 'UNRESOLVED — almost certainly the dīrgha overline (00 §5.1)',
   },
-  { id: 'Name', role: 'name', color: '0070C0', seen: 0, note: 'UNRESOLVED (00 §5.1)' },
-  { id: 'Nma', role: 'name', color: '0070C0', sz: 12, italic: true, seen: 0, note: 'UNRESOLVED' },
+  /*
+   * HIS TWO, AND OURS, ALL READ AS ONE THING. `Name` is the marker in the
+   * recitation text and `Nma` the same marker in a translation; both are his,
+   * both are `seen: 0` — defined in the template and used nowhere — and both
+   * are a little superscripted counting number. `Reference` is what we write.
+   */
+  { id: 'Name', role: 'reference', color: '0070C0', seen: 0, note: 'his, in the mantra' },
+  {
+    id: 'Nma', role: 'reference', color: '0070C0', sz: 12, italic: true, seen: 0,
+    note: 'his, the same marker in a translation',
+  },
+  {
+    id: 'Reference', role: 'reference', color: '808080', seen: 0,
+    note: 'OURS — one style for the one `sup` marking, superscripted',
+  },
   // Word's own linked character styles — no meaning of ours.
   ...(['DefaultParagraphFont', 'HeaderChar', 'FooterChar', 'Heading1Char', 'Heading2Char',
     'Heading3Char', 'Heading4Char', 'Hyperlink', 'TranslitChar', 'TOC2Char',

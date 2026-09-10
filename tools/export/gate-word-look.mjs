@@ -70,25 +70,46 @@ export function compareLook(mine, his, fail) {
   }
 
   /*
-   * AND NO STYLE HE DOES NOT HAVE. `HoldingChange` and `2HoldingChange` were
-   * invented here for a letter that is both held and substituted — a real
-   * problem, since a Word run carries ONE character style — but his documents
-   * have no such letter, so they appeared in the Styles pane of every file we
-   * wrote, named after nothing on the page. They are written now only when the
-   * body actually references them.
+   * AND NO STYLE HE DOES NOT HAVE — except the three that are OURS ON PURPOSE.
+   *
+   * `HoldingChange` and `2HoldingChange` were invented here for a letter that
+   * is both held and substituted — a real problem, since a Word run carries
+   * ONE character style — but his documents have no such letter, so they
+   * appeared in the Styles pane of every file we wrote, named after nothing on
+   * the page.
+   *
+   * `Reference` is the third, and it REPLACES two of his. `Name` and `Nma` are
+   * both "a little superscripted number... barely visible little info next to
+   * the word" — one in the mantra, one in a translation — and the owner asked
+   * the right question about them: "it seems a bit ridiculous to have a
+   * separate style for every single use case, right?... we can just add our own
+   * (more general) style, such as `reference`". The format has one marking for
+   * it (`sup`), so there is one style; his two are READ as it.
+   *
+   * All three are written only when the body actually references them, so a
+   * document without the case does not carry the style. That rule is what the
+   * allowance rests on, and this is the check that it is still one style per
+   * marking rather than a growing pile.
    */
+  const OURS_BY_DESIGN = new Set(['HoldingChange', '2HoldingChange', 'Reference']);
   const invented = Object.values(mine)
     .filter((s) => s.kind === 'character' && his[s.id] === undefined)
     .map((s) => s.id);
-  if (invented.length > 0) {
-    fail('styles his vocabulary does not have', invented.join(', '));
+  const unexplained = invented.filter((id) => !OURS_BY_DESIGN.has(id));
+  if (unexplained.length > 0) {
+    fail('styles his vocabulary does not have', unexplained.join(', '));
   }
 
   /*
-   * A STYLE OF HIS WE DO NOT WRITE AT ALL is reported, not failed. `Long`,
-   * `Name` and `Nma` are in his vocabulary and carry two thousand runs of the
-   * lalitā sahasranāma between them, and this program has no marking that
-   * produces them yet. Saying so on every run is how it stays known.
+   * A STYLE OF HIS WE DO NOT WRITE AT ALL is reported, not failed.
+   *
+   * `Long` is the one left: the dīrgha overline, and this program has no
+   * marking that produces it yet. `Name` and `Nma` are also never written, and
+   * that is now deliberate rather than a gap — both are READ as the `sup`
+   * marking and `Reference` is what we write in their place. They carry two
+   * thousand runs of the lalitā sahasranāma between them, so what used to
+   * happen to that document was that its counting numbers were spliced into
+   * the mantra as ordinary text.
    */
   const missing = OURS_TO_MATCH.filter((id) => his[id] !== undefined && mine[id] === undefined);
   console.log(`\n  ${compared} styles compared on face, weight, italic and colour; `

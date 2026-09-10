@@ -232,7 +232,40 @@ export function tokensFromRuns(
       continue;
     }
 
-    if (role === 'dirgha' || role === 'name') {
+    /*
+     * A LITTLE SUPERSCRIPTED COUNTING NUMBER — his `Name` and `Nma`, and our
+     * own `Reference`.
+     *
+     * IT USED TO BE LOST. Both of his styles were read as a role called
+     * `name`, which "has no home in the format yet", and the letters were
+     * added to the mantra as ordinary text — so a document that counted
+     * something inside its ślokas imported with the counting numbers spliced
+     * into the recitation. The format has had a home for it all along: `sup`,
+     * "a superscript after the range", which is what this program's own
+     * exporter writes and what the page draws as `<sup>`.
+     *
+     * IT LANDS ON THE LETTER BEFORE IT, because that is what `sup` means. A
+     * marker with nothing before it — a run at the very start of a line — has
+     * no letter to belong to, and is reported rather than guessed at.
+     */
+    if (role === 'reference') {
+      bump('reference');
+      const host = lastUnit();
+      const text = run.text.trim();
+      if (host === undefined || text === '') {
+        report.unresolved.push({
+          at: where,
+          what: `a "${run.rStyle ?? ''}" marker with no letter before it`,
+          raw: run.text.trim(),
+        });
+        continue;
+      }
+      /* Appended, not replaced: two marker runs in a row are one marker. */
+      host.sup = (host.sup ?? '') + text;
+      continue;
+    }
+
+    if (role === 'dirgha') {
       bump(role);
       report.unresolved.push({
         at: where,

@@ -262,6 +262,39 @@ export const WORD_MARKS = {
   dirgha: { color: '4472C4', size: fromHalfPoints(36) },
   /** `Comment` — a source note under a section. Times New Roman in his file. */
   comment: { color: '808080', size: fromHalfPoints(22), italic: true },
+  /**
+   * `Reference` — OURS, and it replaces two of his that had no home.
+   *
+   * THE QUESTION THE OWNER ASKED. His template carries `Name` and `Nma`, both
+   * of them "a little superscripted number in texts like LS where we want to
+   * have shlokas, but within the shlokas we are counting something... so
+   * barely visible little info next to the word" — one for the recitation
+   * text and one for the translation. His own reading of that: "it seems a
+   * bit ridiculous to have a separate style for every single use case,
+   * right?... we can just add our own (more general) style, such as
+   * `reference`".
+   *
+   * He is right, and the format already agreed with him: `sup` is one
+   * marking, "a superscript after the range", and one marking wants one
+   * style. So this is that style, `Name` and `Nma` are both READ as it, and
+   * nothing writes either of them again.
+   *
+   * THE COLOUR IS THE THEME'S `quiet`, not his blue, and that is a choice
+   * rather than a measurement. Both of his specify `0070C0` — but blue means
+   * "the letter actually recited" everywhere else in his vocabulary
+   * (`Anusvara`, `VedicAnusvara`), so a counting number in it reads as a
+   * substitution. Neither style appears anywhere in the corpus (`seen: 0`), so
+   * there is no page of his to match. `quiet` is the register the document
+   * already has for exactly this — "verse numbers, folios: present but not
+   * read" — which is his own description of the thing: "barely visible little
+   * info next to the word". Being a `var()`, it follows every theme instead of
+   * being one grey.
+   *
+   * NO SIZE OF ITS OWN. `w:vertAlign="superscript"` already scales a run to
+   * about two thirds; his `Nma` also asks for 6 pt, which superscripted is
+   * smaller than the paper can print.
+   */
+  reference: { color: 'var(--doc-quiet)', superscript: true },
 } as const;
 
 /**

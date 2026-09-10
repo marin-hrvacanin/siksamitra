@@ -89,7 +89,11 @@ export function charStyles(
   const ink = (
     id: string,
     color: string,
-    opts: { sz?: number; italic?: boolean; face?: string; bold?: boolean } = {},
+    opts: {
+      sz?: number; italic?: boolean; face?: string; bold?: boolean;
+      /** `w:vertAlign`, which comes AFTER `w:sz` in `CT_RPr`'s sequence. */
+      superscript?: boolean;
+    } = {},
   ): string =>
     `<w:style w:type="character" w:customStyle="1" w:styleId="${id}"><w:name w:val="${id}"/>`
     + '<w:uiPriority w:val="1"/><w:qFormat/><w:rPr>'
@@ -99,6 +103,7 @@ export function charStyles(
     + `${opts.bold === true ? '<w:b/>' : ''}${opts.italic === true ? '<w:i/>' : ''}`
     + `<w:color w:val="${wordHex(color)}"/>`
     + (opts.sz === undefined ? '' : `<w:sz w:val="${opts.sz}"/><w:szCs w:val="${opts.sz}"/>`)
+    + (opts.superscript === true ? '<w:vertAlign w:val="superscript"/>' : '')
     + '</w:rPr></w:style>';
 
   const comment = scale.comment;
@@ -122,6 +127,17 @@ export function charStyles(
     ...(used.has('HoldingChange') ? [box('HoldingChange', 'short', mode.hold, mode.change)] : []),
     ...(used.has('2HoldingChange')
       ? [box('2HoldingChange', 'long', mode.holdLong, mode.change)] : []),
+    /*
+     * `Reference` IS OURS TOO, so it follows the same rule: written only when
+     * the body references it. A document with no superscript marker should not
+     * carry a style in its Styles pane named after nothing on its page — which
+     * is the report the owner made about `2holdingchange`.
+     */
+    ...(used.has('Reference')
+      ? [ink('Reference', roleColor(WORD_MARKS.reference.color, mode), {
+        superscript: WORD_MARKS.reference.superscript,
+      })]
+      : []),
   ];
 
   return [

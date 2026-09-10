@@ -184,8 +184,16 @@ export function linesOf(documentXml) {
        * line has it as a row of its own too, and a comparison that left it in
        * the line's text could never match. Kept apart rather than dropped,
        * because how many there are is worth comparing.
+       *
+       * AND THE STYLE COUNTS, NOT ONLY THE RUN. `Reference` — the one style
+       * for the `sup` marking — declares the superscript in the STYLE, which
+       * is what makes it usable by hand in Word. This test looked only at the
+       * run's own formatting, so the moment the `vertAlign` moved into the
+       * style the upadhmānīya `f` came back into the line's text and the
+       * comparison with the PDF failed on `sanahfparsada` against
+       * `sanahparsada`. What decides is what the run MEANS.
        */
-      const isUp = /vertAlign[^>]*superscript/.test(run);
+      const isUp = /vertAlign[^>]*superscript/.test(run) || rStyle === 'Reference';
       for (const t of run.matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)) {
         const text = t[1]
           .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');

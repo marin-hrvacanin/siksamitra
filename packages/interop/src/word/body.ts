@@ -159,7 +159,19 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
     const trailing = (u: ChantUnit): string => {
       let r = '';
       if (u.svara !== undefined) r += run(SVARA_CHAR.get(u.svara) ?? '', 'Svara');
-      if (u.sup !== undefined) r += run(u.sup, 'Anusvara', true);
+      /*
+       * `Reference`, AND IT USED TO BE `Anusvara`. A `sup` is "a superscript
+       * after the range" — the little counting number the owner described as
+       * "barely visible little info next to the word" — and it was written in
+       * the style named after the SUBSTITUTION blue, with the superscript
+       * bolted onto the run. So the Styles pane said `Anusvara` for something
+       * that is not one, and a reader could not tell the two apart.
+       *
+       * `Reference` is one style of ours for one marking of the format's, and
+       * it answers the owner's own question about his `Name` and `Nma`. The
+       * superscript is IN the style now, not on the run.
+       */
+      if (u.sup !== undefined) r += run(u.sup, 'Reference');
       return r;
     };
     /**
