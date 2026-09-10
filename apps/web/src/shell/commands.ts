@@ -209,6 +209,28 @@ export const commandsIn = (group: CommandGroup): readonly Command[] =>
   COMMANDS.filter((c) => c.group === group);
 
 /**
+ * Keys whose glyph is produced WITH Shift on the layouts this program is used
+ * on, and the accelerator they therefore also answer to.
+ *
+ * WHY THIS IS NOT A STYLE POINT. `Ctrl` and plus is the zoom-in gesture in
+ * every browser and every editor, and on a US or Croatian layout typing `+`
+ * means holding Shift. This file already said as much — "`Ctrl+=` and `Ctrl++`
+ * are the same gesture on most layouts" — and then compared `Shift` for
+ * equality one line above, so the gesture the comment described could not
+ * match. MEASURED in the running program: `Ctrl+=` took the page from 100 % to
+ * 110 %, `Ctrl+Shift++` and `Ctrl+Shift+=` did nothing at all, and the same
+ * for `Ctrl+Shift+_` against `Ctrl+-`.
+ *
+ * The table is explicit rather than a rule about punctuation, because the two
+ * pairs this program has accelerators for are the two pairs a person actually
+ * reaches for. A key not in it compares Shift exactly, as before.
+ */
+const SHIFTED_TWINS: Readonly<Record<string, readonly string[]>> = {
+  '=': ['=', '+'],
+  '-': ['-', '_'],
+};
+
+/**
  * Does this keyboard event match an accelerator?
  *
  * Deliberately small and literal. A general parser would be more impressive
@@ -221,11 +243,13 @@ export function matches(key: string, e: KeyboardEvent): boolean {
   const needShift = parts.includes('Shift');
   const needAlt = parts.includes('Alt');
   if (needCtrl !== (e.ctrlKey || e.metaKey)) return false;
-  if (needShift !== e.shiftKey) return false;
   if (needAlt !== e.altKey) return false;
   const pressed = e.key.toLowerCase();
-  // `Ctrl+=` and `Ctrl++` are the same gesture on most layouts.
-  if (main === '=' && (pressed === '=' || pressed === '+')) return true;
+  const twins = needShift ? undefined : SHIFTED_TWINS[main];
+  /* Shift is not compared for a twinned key: it is how the glyph is typed, not
+     part of the gesture. Everything else compares it exactly. */
+  if (twins !== undefined) return twins.includes(pressed);
+  if (needShift !== e.shiftKey) return false;
   return pressed === main;
 }
 

@@ -133,6 +133,57 @@ describe('the keyboard', () => {
     expect(press({ key: 'q', ctrlKey: true }).fired).toBe(false);
   });
 
+  /*
+   * CTRL AND PLUS, WHICH IS SHIFT AND EQUALS.
+   *
+   * `Ctrl+=` is the accelerator, and on a US or Croatian layout typing `+`
+   * means holding Shift — so the gesture every browser and editor uses for
+   * zoom-in arrives as `Ctrl+Shift+=`. `matches` compared Shift for equality
+   * and refused it, one line above a comment saying the two were the same
+   * gesture. MEASURED in the running program: `Ctrl+=` took the page from
+   * 100 % to 110 %, and `Ctrl+Shift++` and `Ctrl+Shift+=` did nothing.
+   */
+  it('zooms in for Ctrl and plus, however the layout produces a plus', () => {
+    for (const init of [
+      { key: '=', ctrlKey: true },
+      { key: '+', ctrlKey: true },
+      { key: '+', ctrlKey: true, shiftKey: true },
+      { key: '=', ctrlKey: true, shiftKey: true },
+    ]) {
+      const { fired, calls } = press(init);
+      expect(fired, JSON.stringify(init)).toBe(true);
+      expect(calls, JSON.stringify(init)).toEqual(['zoomIn']);
+    }
+  });
+
+  it('and out for Ctrl and minus, underscore included', () => {
+    for (const init of [
+      { key: '-', ctrlKey: true },
+      { key: '_', ctrlKey: true, shiftKey: true },
+    ]) {
+      const { fired, calls } = press(init);
+      expect(fired, JSON.stringify(init)).toBe(true);
+      expect(calls, JSON.stringify(init)).toEqual(['zoomOut']);
+    }
+  });
+
+  it('but Shift is still compared for every other accelerator', () => {
+    /*
+     * THE CONTROL. Ignoring Shift everywhere would make Ctrl+Shift+S — save a
+     * copy — fire plain save as well, and would let a marking shortcut answer
+     * to a gesture that is not it. Ctrl+M toggles the marks; Ctrl+Shift+M is
+     * nobody's.
+     */
+    expect(press({ key: 'm', ctrlKey: true }).fired).toBe(true);
+    expect(press({ key: 'm', ctrlKey: true, shiftKey: true }).fired).toBe(false);
+  });
+
+  it('and a twinned key still needs its modifier', () => {
+    /* A bare `+` is a character, not a command. */
+    expect(press({ key: '+', ctrlKey: false, shiftKey: true }).fired).toBe(false);
+    expect(press({ key: '=', ctrlKey: false }).fired).toBe(false);
+  });
+
   it('stands down while the editor has the keyboard, where they collide', () => {
     /*
      * Ctrl+Shift+V is paste-as-plain-text everywhere. It was cycling the view

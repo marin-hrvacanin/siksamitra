@@ -300,6 +300,77 @@ const paged = await atTop();
 check('and switching into Pages does not throw the reader back to the top',
   paged !== null && paged.index > 5, `block ${paged?.index ?? -1} of ${paged?.total ?? -1}`);
 
+/* ── the keyboard, as a browser delivers it ──────────────────────────────── */
+/*
+ * CTRL AND PLUS. On a US or Croatian layout typing `+` means holding Shift, so
+ * the gesture every browser and editor uses for zoom-in arrives as
+ * `Ctrl+Shift+=`. `matches` compared Shift for equality and refused it — one
+ * line above a comment saying the two were the same gesture. MEASURED here
+ * before the fix: `Ctrl+=` took the page from 100 % to 110 % and
+ * `Ctrl+Shift++` did nothing at all.
+ *
+ * Driven through `page.keyboard`, so the modifiers and the `key` are the
+ * BROWSER'S, not an object this script made up — a synthetic event is the
+ * shape the unit test already covers.
+ */
+await pressButton('Actual size');
+await wait(900);
+const beforeKeys = await zoomOf();
+check('the keyboard test starts from actual size', Math.abs(beforeKeys - 1) < 0.001,
+  `zoom ${beforeKeys}`);
+
+const chord = async (keys) => {
+  for (const k of keys) await page.keyboard.down(k);
+  for (const k of [...keys].reverse()) await page.keyboard.up(k);
+  await wait(700);
+};
+
+await chord(['Control', '=']);
+const afterPlain = await zoomOf();
+check('Ctrl and equals zooms in', afterPlain > beforeKeys + 0.001,
+  `${beforeKeys} → ${afterPlain}`);
+
+await chord(['Control', 'Shift', '=']);
+const afterShifted = await zoomOf();
+check('AND SO DOES CTRL AND PLUS, which is Shift and equals on this keyboard',
+  afterShifted > afterPlain + 0.001, `${afterPlain} → ${afterShifted}`);
+
+await chord(['Control', '-']);
+const afterMinus = await zoomOf();
+check('Ctrl and minus zooms out', afterMinus < afterShifted - 0.001,
+  `${afterShifted} → ${afterMinus}`);
+
+/*
+ * THE CONTROL. Ignoring Shift for every accelerator would make Ctrl+Shift+M
+ * toggle the marks as well as Ctrl+M, so a gesture that belongs to nobody
+ * would start doing something. The marks button says whether it happened.
+ */
+const marksBefore = await page.evaluate(() => {
+  const el = [...document.querySelectorAll('.rbb')].find((b) => (b.textContent ?? '').trim() === 'Marks');
+  return el === undefined ? null : el.getAttribute('aria-pressed');
+});
+await chord(['Control', 'Shift', 'm']);
+const marksAfter = await page.evaluate(() => {
+  const el = [...document.querySelectorAll('.rbb')].find((b) => (b.textContent ?? '').trim() === 'Marks');
+  return el === undefined ? null : el.getAttribute('aria-pressed');
+});
+check('the Marks toggle was found, so the control below means something',
+  marksBefore !== null, `aria-pressed ${marksBefore}`);
+check('and Shift is still compared for accelerators that are not a punctuation pair',
+  marksBefore !== null && marksAfter === marksBefore,
+  `Marks ${marksBefore} → ${marksAfter}`);
+
+/* And Ctrl+M alone DOES toggle it — otherwise the check above would pass on a
+   build where no accelerator worked at all. */
+await chord(['Control', 'm']);
+const marksPlain = await page.evaluate(() => {
+  const el = [...document.querySelectorAll('.rbb')].find((b) => (b.textContent ?? '').trim() === 'Marks');
+  return el === undefined ? null : el.getAttribute('aria-pressed');
+});
+check('while Ctrl+M on its own does toggle the marks', marksPlain !== marksBefore,
+  `Marks ${marksBefore} → ${marksPlain}`);
+await chord(['Control', 'm']);
+
 await page.screenshot({ path: 'artifacts/zoom-gate.png' });
 console.log(`\n  ${passed} passed, ${failures.length} failed.`);
 console.log(`  console errors: ${errors.length === 0 ? 'none' : errors.slice(0, 3).join(' | ')}`);
