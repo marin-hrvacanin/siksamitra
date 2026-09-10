@@ -25,11 +25,19 @@ import type { Session } from '../editor/useSession.js';
 const UNVERIFIED: Partial<Record<ChantScriptKey, string>> = {};
 
 export function StatusBar(
-  { doc, state, script, session, dirty, note }: {
+  { doc, state, script, session, iastArmed = false, dirty, note }: {
     doc: ChantDoc | null;
     state: ViewState;
     script: ChantScriptKey;
     session: Session;
+    /**
+     * The F9 leader is waiting for its second key.
+     *
+     * SAID, because a modal key with no feedback is how a person concludes a
+     * shortcut is broken: they press F9, nothing happens — nothing should —
+     * and they press it again.
+     */
+    iastArmed?: boolean;
     /** Whether the document has changes that are not on disk. */
     dirty: boolean;
     /** What just happened — an open, an export, a refusal. The status bar is
@@ -71,6 +79,7 @@ export function StatusBar(
         </>
       )}
       <span className="status__gap" />
+      {iastArmed && <span className="status__armed">F9 — press a letter</span>}
       <EditStatus session={session} />
       {caveat !== undefined && <span className="status__warn">{caveat}</span>}
       <span>{state.view.label}</span>

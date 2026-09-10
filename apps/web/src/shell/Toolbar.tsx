@@ -32,6 +32,7 @@ import { ScriptGroup } from './ScriptGroup.js';
 import { RegisterGroup } from './RegisterGroup.js';
 import { PictureFormatGroup } from './PictureGroup.js';
 import { InsertGroup } from './InsertGroup.js';
+import type { Iast } from '../editor/useIast.js';
 import { BoundaryGroup, MappingGroup, SpeedGroup, TransportGroup } from './AudioGroup.js';
 import type { Recording } from '../audio/useRecording.js';
 import type { Mapping } from '../audio/useMapping.js';
@@ -46,13 +47,15 @@ import type { Session } from '../editor/useSession.js';
 
 export function Toolbar(
   {
-    ctx, onSwitchView, look, session,
+    ctx, onSwitchView, look, session, iast,
     onImport, onNote, tab, onTab, folded, onFolded, onFile, audio, mapping,
   }: {
     ctx: CommandContext;
     onSwitchView: (k: ViewKind) => void;
     look: Appearance;
     session: Session;
+    /** The IAST leader and its palette — see `useIast`. */
+    iast: Iast;
     onImport: (doc: ChantDoc, name: string) => void;
     onNote: (message: string) => void;
     tab: string;
@@ -224,7 +227,14 @@ export function Toolbar(
   const insert: RibbonGroup[] = [
     {
       id: 'insert', label: 'Insert', icon: 'image', priority: 0,
-      content: <InsertGroup session={session} onNote={onNote} onAudio={() => onTab('audio')} />,
+      content: (
+        <InsertGroup
+          session={session}
+          iast={iast}
+          onNote={onNote}
+          onAudio={() => onTab('audio')}
+        />
+      ),
     },
   ];
 

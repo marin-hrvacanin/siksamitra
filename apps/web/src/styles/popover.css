@@ -231,3 +231,77 @@
   cursor: pointer;
 }
 .ap__reset:hover { background: var(--chrome-sunk); color: var(--chrome-ink); }
+
+/* ── the IAST keyboard ─────────────────────────────────────────────────────
+   v1's `dialog-iast.html`, recreated in a popover: the varṇamālā in eight
+   groups by place of articulation. The characters and the arrangement are
+   `editor/iast.ts`'s; this is only how they are laid out.
+
+   TWO COLUMNS, as his dialog had — eight groups in one column is a list
+   nobody scans. `auto-fit` rather than a fixed two, so a narrow window gets
+   one and nothing is cut off. */
+.iast__pad {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--menu-min), 1fr));
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+.iast__grp { min-width: 0; }
+.iast__lbl {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-ui-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chrome-ink-mute);
+}
+.iast__keys { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+/*
+ * A KEY IS BIG ENOUGH TO HIT. `--control-h` is the shell's own control height
+ * — the same number a ribbon field is — and a key is a square of it, because a
+ * palette of 12px glyphs is a palette for a mouse on a good day and these are
+ * pressed in bursts.
+ *
+ * THE CHARACTER IS SET IN THE DOCUMENT'S OWN FACE. A `ṭh` drawn in the
+ * interface font is not the `ṭh` that will appear on the page, and this
+ * palette is how a person checks they are inserting the right letter.
+ */
+.iast__key {
+  position: relative;
+  min-width: var(--control-h);
+  min-height: var(--control-h);
+  display: grid;
+  place-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  cursor: pointer;
+}
+.iast__key:hover { border-color: var(--chrome-accent); background: var(--chrome-sunk); }
+.iast__key:active { background: var(--chrome-sunk); }
+.iast__ch {
+  font-family: var(--doc-verse-face);
+  font-size: var(--text-ui-lg);
+  line-height: 1;
+}
+/* The F9 letter, in the corner: the shortcut is learned by using the palette,
+   which is the whole reason it is drawn at all. */
+.iast__f9 {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  font-size: var(--text-ui-sm);
+  line-height: 1;
+  color: var(--chrome-ink-mute);
+}
+.iast__tip {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--space-2) var(--space-1) 0;
+  border-top: var(--border-hair) solid var(--chrome-line);
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-mute);
+}
+

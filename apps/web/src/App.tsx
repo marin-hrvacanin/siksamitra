@@ -36,6 +36,7 @@ import { useViewport } from './state/useViewport.js';
 import { useScrollAnchor } from './state/useScrollAnchor.js';
 import { useElementSize } from './state/useElementWidth.js';
 import { useAppearance } from './state/useAppearance.js';
+import { useIast } from './editor/useIast.js';
 
 export function App() {
   const viewport = useViewport();
@@ -105,6 +106,12 @@ export function App() {
    * the waveform and the mapper read the same 8 kHz buffer.
    */
   const mapping = useMapping(doc, session.setRecording, setNote);
+  /*
+   * TYPING IAST. The F9 leader is his own binding from v1 and the palette is
+   * his own dialog; both insert through `session.insert`, which is the one path
+   * a character reaches the document by. See `editor/iast.ts`.
+   */
+  const iast = useIast({ insert: session.insert, editing: session.editing });
   /* What is open, folded and expanded — see `shell/useShellState.ts`. */
   const {
     folded, setFolded, navOpen, setNavOpen, navRows, setNavRows, fileOpen, setFileOpen,
@@ -248,6 +255,7 @@ export function App() {
         onSwitchView={switchView}
         look={look}
         session={session}
+        iast={iast}
         onImport={file.adopt}
         onNote={setNote}
         tab={tab}
@@ -376,6 +384,7 @@ export function App() {
         state={state}
         script={script}
         session={session}
+        iastArmed={iast.armed}
         dirty={file.dirty}
         note={note}
       />

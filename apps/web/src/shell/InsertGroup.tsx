@@ -24,12 +24,16 @@
 import { useRef, type ReactNode } from 'react';
 import { FIGURE_MEDIA_TYPES } from '@siksamitra/format';
 import { RibbonButton } from './RibbonButton.js';
+import { IastPalette } from './IastPalette.js';
 import { readImageFile } from '../editor/useFigures.js';
 import type { Session } from '../editor/useSession.js';
+import type { Iast } from '../editor/useIast.js';
 
 export function InsertGroup(
-  { session, onNote, onAudio }: {
+  { session, iast, onNote, onAudio }: {
     session: Session;
+    /** The IAST leader and the palette's insertion — one path, see `useIast`. */
+    iast: Iast;
     onNote: (note: string) => void;
     /** Open the Audio tab, which is where a recording is attached. */
     onAudio: () => void;
@@ -81,6 +85,12 @@ export function InsertGroup(
         title="Attach a recording to this document, and line it up with the text"
         onClick={onAudio}
       />
+      {/*
+        THE CHARACTERS THE KEYBOARD DOES NOT HAVE. On Insert because that is
+        what it is — putting a thing into the document — and beside the picture
+        and the recording for the same reason.
+      */}
+      <IastPalette insert={iast.insert} armed={iast.armed} enabled={session.editing} />
     </div>
   );
 }

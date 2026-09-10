@@ -39,6 +39,7 @@
  * That is worth the gate on its own: the check that would have "fixed"
  * Backspace was about to chase something that was not broken.
  *
+ *
  *   npm run dev
  *   node tools/interaction-typing.mjs
  */
@@ -280,6 +281,13 @@ for (let i = 0; i < 4 && (await lettersOf('v-2')).length !== lettersBefore.lengt
   await page.keyboard.up('Control');
   await wait(320);
 }
+
+/* ── TYPING IAST ─────────────────────────────────────────────────────────── */
+/*
+ * HIS F9 LEADER AND HIS CHARACTER PALETTE are `tools/interaction-iast.mjs`,
+ * their own gate — a separate subject, and this file had reached the 400-line
+ * module limit, which is the signal to split rather than to raise.
+ */
 
 console.log(`\n  ${passed} passed, ${failures.length} failed.`);
 console.log(`  console errors: ${errors.length === 0 ? 'none' : errors.slice(0, 3).join(' | ')}`);

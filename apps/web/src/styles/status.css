@@ -38,6 +38,19 @@
 }
 .status__warn { color: var(--chrome-accent); }
 
+/*
+ * THE F9 LEADER IS ARMED. A modal key with no feedback is how a person
+ * concludes a shortcut is broken — they press F9, nothing happens (nothing
+ * should), and they press it again. Accented, because it is a state that will
+ * end with the next key rather than a note about the document.
+ */
+.status__armed {
+  color: var(--chrome-accent-on);
+  background: var(--chrome-accent);
+  border-radius: var(--chrome-radius);
+  padding: 0 var(--space-2);
+}
+
 /* What just happened: an open, an export, a refusal. Quiet, and never a dialog. */
 .status__note {
   color: var(--chrome-ink);

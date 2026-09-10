@@ -11,6 +11,12 @@
  * is what makes dead keys, an on-screen keyboard, an IME and a paste all work
  * without one line of special handling each. Trying to reconstruct text from
  * key codes is how an editor ends up unable to type `ā`.
+ *
+ * NOR IS THE F9 LEADER, and it is named here so that the one place to look for
+ * a binding still lists it. F9 is MODAL — the meaning of the next key depends
+ * on it — and a table of independent rows cannot express that, so the machine
+ * is `editor/useIast.ts` and the table it reads is `editor/iast.ts`
+ * (`IAST_LEADER_KEY`). Both are his own binding from v1.
  */
 import type { Session } from './useSession.js';
 import type { IconName } from '../ui/Icon.js';
