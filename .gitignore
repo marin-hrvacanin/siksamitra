@@ -56,8 +56,20 @@ apps/web/public/fonts/
 
 # === Generated previews ===
 design-preview.html
-shots/
-.shots/
+#
+# `shots/` WAS UNANCHORED, AND IT ATE THE LANDING PAGE'S PICTURES.
+#
+# A pattern without a leading slash matches a directory of that name ANYWHERE,
+# so `site/shots/` was ignored too — the three screenshots the download page
+# shows had never been committed, the deployed artifact did not contain them,
+# and every one of them answered 404 on the live site while `site/logo.png`
+# beside them answered 200. The owner's report was "images are not visible on
+# the site", and this line is the whole of it.
+#
+# Anchored to the root, which is where `tools/walkthrough.mjs --out shots`
+# writes. `site/shots/` is the landing page's own content and is committed.
+/shots/
+/.shots/
 
 # === Portable packages are build output, not source ===
 *.vuchant
