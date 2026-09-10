@@ -43,10 +43,10 @@
 - [x] 5.1 Move Word import and export and the measured style table
 - [x] 5.2 Move the portable package reader and writer
 - [x] 5.3 Move the two calibrated Python PDF readers into `tools/chant/`
-- [ ] 5.4 Write the v1 container reader (LZMA, zlib, plain JSON, selected by magic bytes)
-- [ ] 5.5 Write the v1 markup-to-token converter, recovering implicit hierarchy
-- [ ] 5.6 Extract v1 embedded audio to package assets
-- [ ] 5.7 Score the v1 importer against texts that exist in both formats and record the baseline
+- [x] 5.4 Write the v1 container reader (`smdoc/container.ts` — `SMDI` xz, `SMDC` zlib, plain JSON, selected by magic bytes)
+- [x] 5.5 Write the v1 markup-to-token converter, recovering implicit hierarchy (`smdoc/content.ts` + `html.ts`)
+- [x] 5.6 Extract v1 embedded audio to package assets (`smdoc/import.ts` — `assets/audio/<id>.<ext>`, no longer inline)
+- [ ] 5.7 **Score the v1 importer against texts that exist in both formats and record the baseline.** The importer is built and has 20 integration checks, but every fixture is HAND-BUILT: `smdoc-v1.test.ts` says it in its own header — "it was tested only against the owner's own Library, which is not in this repository — so on any other machine the importer was untested". Until this is scored, "opens every version 1 document" is a claim with no measurement behind it, which is why the download page no longer says it.
 
 ## 6. The CLI package
 

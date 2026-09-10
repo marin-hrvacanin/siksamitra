@@ -23,16 +23,11 @@ import { execSync } from 'node:child_process';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { platform } from 'node:os';
+import { TARGETS, bundlesFor } from './bundles.mjs';
 
 const all = process.argv.includes('--all');
 const skipChecks = process.argv.includes('--skip-checks');
 const host = platform();
-
-const TARGETS = {
-  win32: { name: 'Windows', bundles: 'nsis,msi', out: 'an .exe installer and an .msi' },
-  darwin: { name: 'macOS', bundles: 'app,dmg', out: 'an .app bundle and a .dmg' },
-  linux: { name: 'Linux', bundles: 'deb,appimage', out: 'a .deb and an .AppImage' },
-};
 
 function run(cmd) {
   console.log(`\n  $ ${cmd}\n`);
@@ -76,9 +71,7 @@ run('node scripts/copy-fonts.mjs');
 run('npm run build:web');
 
 // 4. The shell.
-const bundles = all
-  ? [...new Set(Object.values(TARGETS).flatMap((t) => t.bundles.split(',')))].join(',')
-  : target.bundles;
+const bundles = bundlesFor(host, all);
 run(`npx --workspace @siksamitra/desktop tauri build --bundles ${bundles}`);
 
 /*

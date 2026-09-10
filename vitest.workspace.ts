@@ -25,6 +25,16 @@ export default defineWorkspace([
       include: [
         'packages/*/src/**/__tests__/**/*.test.ts?(x)',
         'apps/*/src/**/__tests__/**/*.test.ts?(x)',
+        /*
+         * `scripts/` too, for the same reason `apps/` was added: a unit test
+         * is defined by what would make it fail, not by which directory the
+         * file happens to sit in. `scripts/package.mjs` decides which bundle
+         * formats Tauri is asked for, and getting that wrong meant no release
+         * build could succeed on any platform — which nobody found out for
+         * months, because nothing there was tested.
+         */
+        'scripts/**/__tests__/**/*.test.?(m)ts?(x)',
+        'scripts/**/__tests__/**/*.test.?(m)js',
       ],
       environment: 'node',
     },
