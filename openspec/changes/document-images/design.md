@@ -93,30 +93,59 @@ silently.
 
 | Word's wrap | Here |
 |---|---|
-| In line with text | as `block` |
-| **Square**, left / right | **`start` / `end`** |
-| **Top and bottom** | **`block`** |
-| Tight, Through | refused — they need a per-shape outline, and there is no shape editor here to draw one |
-| Behind / In front of text | refused, above |
+| In line with text | `flow: block`, `wrap: top-bottom` |
+| **Square**, left / right | **`flow: start` / `end`, `wrap: square`** |
+| **Top and bottom** | **`wrap: top-bottom`, at whichever `flow` names** |
+| Tight, Through | read as `square` on the way in; not offered on the way out, because they need a per-shape outline and there is no shape editor here to draw one |
+| Behind / In front of text | refused — the text runs OVER the picture, which has no equivalent here |
 
-And then the rule that matters:
+**The side and the wrap are two properties, because Word asks them
+separately.** They were one — `flow` meant both "which side" and "let the text
+run beside it" — and there was no way to put a picture against the right margin
+while keeping a mantra's line whole.
 
-> **A float never runs beside a pāda.** `figure.css` clears the float at every
-> verse.
+### What a float costs a pāda, and why `top-bottom` is the DEFAULT
 
 A pāda is a metrical line. Text narrowed by a picture wraps where the picture
 ends rather than where the metre does — and because the pagination measures one
 `[data-line]` element as one line, the same picture also moves a page break for
 a reason that has nothing to do with the text.
 
-**This was measured, with the control.** Durgā Sūktam at A4 in the flow view, a
-`medium` picture floated left:
+**Measured**, Durgā Sūktam at A4 in the flow view, a `medium` picture on the
+left, with each wrap:
 
-| | as it ships | control (`clear: none`) |
+| | `top-bottom` | `square` |
 |---|---:|---:|
 | room beside the picture | — | 303 px of a 605 px column |
-| pādas level with the picture | 0 | 4 |
+| the picture floats | no | yes |
+| pādas level with it | 0 | 6 |
 | of those, wrapped onto a second line | 0 | **3** |
+
+`tools/export/gate-figures.mjs` takes both readings on every run, and the
+`square` column IS the control: if asking for Square narrows nothing, Square
+does not work.
+
+### It is a default, not a prohibition — and that was the owner's call
+
+It used to be enforced for every picture (`.verse { clear: both }`,
+unconditionally), which meant `top-bottom` was the only behaviour the program
+had, and Left and Right looked inert in a chant because almost every block is a
+verse.
+
+It was also **not what Word does**. Word's wrap is a property of the picture:
+ask for Square and it narrows whatever is beside it, mantra included. Asked
+directly whether option 1 matched Word "for the shlokas", the answer was no —
+so the rule became a default with the options exposed, which is Word's
+behaviour plus a sensible starting point:
+
+> "Okay, so I would go with allow it. By default make it so that it 'before and
+> after' or whatever the name is, but also in the picture options that should be
+> somewhere, the icons for that and options... So that you can shift it if you
+> want to."
+
+The Picture tab has the two wraps as buttons with icons, beside the three
+sides. The hint on Square says what it costs, so the consequence is stated
+rather than discovered.
 
 One of the three broke mid-word — `asmānth svastibhira-ti du / rgāṇi viśvā` —
 and another left its closing `‖` alone on a line. `tools/export/gate-figures.mjs`

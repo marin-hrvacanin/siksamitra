@@ -18,7 +18,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FIGURE_MAX_BYTES, FIGURE_MEDIA_TYPES, figureBytes, imageDataUri, toTextAndMarks,
-  type ChantFigure, type ChantFigureFlow, type ChantFigureSize, type ChantSection,
+  type ChantFigure, type ChantFigureFlow, type ChantFigureSize, type ChantFigureWrap,
+  type ChantSection,
 } from '@siksamitra/format';
 import {
   figureIdsIn, nextFigureId, withFigureDefaults, type EditCommand,
@@ -91,6 +92,8 @@ export interface Figures {
   readonly remove: () => void;
   readonly setSize: (size: ChantFigureSize) => void;
   readonly setFlow: (flow: ChantFigureFlow) => void;
+  /** Word's wrap — what the TEXT does about the picture. */
+  readonly setWrap: (wrap: ChantFigureWrap) => void;
 }
 
 /**
@@ -368,5 +371,6 @@ export function useFigures(
       [patch],
     ),
     setFlow: useCallback((flow: ChantFigureFlow) => patch({ flow }), [patch]),
+    setWrap: useCallback((wrap: ChantFigureWrap) => patch({ wrap }), [patch]),
   };
 }

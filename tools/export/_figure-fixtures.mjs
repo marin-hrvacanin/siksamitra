@@ -123,7 +123,7 @@ export const withPictures = () => ({
  * Durgā Sūktam rather than a made-up verse, because the question is whether a
  * PĀDA fits, and only a real pāda has a real length.
  */
-export function withFloat() {
+export function withFloat({ wrap = 'square' } = {}) {
   const it = loadDoc(join(CORPUS, 'durga-suktam.json'));
   const items = [...it.sections[0].items];
   const at = items.findIndex((x, i) => i > 1 && x.t === 'verse');
@@ -131,7 +131,14 @@ export function withFloat() {
     t: 'figure',
     figure: {
       id: 'fig-float', src: SRC, alt: ALT, width: 400, height: 300,
-      size: 'medium', flow: 'start', captionAt: 'none', crop: 'portrait',
+      /*
+       * `wrap` IS THE PARAMETER, because it is now the picture's own answer to
+       * "may the text run beside me" — and the gate needs both readings. The
+       * default here is `square`, so a caller asking for a float gets one;
+       * `top-bottom` is what the APPLICATION defaults to, and the gate takes
+       * that reading too.
+       */
+      size: 'medium', flow: 'start', wrap, captionAt: 'none', crop: 'portrait',
       frame: 'thin', rounded: true,
     },
   }, {

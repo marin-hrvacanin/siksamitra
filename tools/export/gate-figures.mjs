@@ -148,19 +148,33 @@ await withBrowser(async (browser) => {
 });
 
 /* ==========================================================================
-   5 · a float, and the pada beside it
+   5 · the wrap, which is now the PICTURE's to decide
    ========================================================================== */
+/*
+ * WHAT A FLOAT COSTS A PĀDA, measured on both settings.
+ *
+ * A pāda is a metrical line, and text narrowed by a picture breaks at a WIDTH
+ * instead of at the metre. That used to be enforced for every picture —
+ * `.verse { clear: both }`, unconditionally — which made `top-bottom` the only
+ * behaviour the program had, and a picture set to Left had nothing beside it.
+ * It also was not Word, whose wrap is a property of the picture.
+ *
+ * So the picture decides, and both readings are taken here:
+ *
+ *   top-bottom (the DEFAULT)  no pāda wraps, and the picture does not float
+ *                             at all — there is nothing to clear.
+ *   square (asked for)        pādas DO wrap. This is the control, and it is
+ *                             the real feature rather than an injected
+ *                             `!important`: if asking for Square changes
+ *                             nothing, Square does not work.
+ */
 
 console.log('');
 await withBrowser(async (browser) => {
-  const page = await browser.newPage();
-  const built = await buildPage(withFloat(), { style: 'veda-union', savedAt: FIXED });
-  await page.setContent(built.html, { waitUntil: 'domcontentloaded' });
-  await page.evaluate(() => document.fonts.ready);
-
-  /** How many pādas level with the float are taller than one line. */
-  const read = () => page.evaluate(() => {
-    const box = document.querySelector('.fig--flow-start').getBoundingClientRect();
+  /** How many pādas level with the picture are taller than one line. */
+  const read = (page) => page.evaluate(() => {
+    const fig = document.querySelector('.fig');
+    const box = fig.getBoundingClientRect();
     const column = document.querySelector('.flow__column');
     const pad = getComputedStyle(column);
     const padas = [...document.querySelectorAll('.pada')];
@@ -172,6 +186,7 @@ await withBrowser(async (browser) => {
       return r.top < box.bottom && r.bottom > box.top;
     });
     return {
+      float: getComputedStyle(fig).float,
       room: Math.round(column.clientWidth - parseFloat(pad.paddingLeft)
         - parseFloat(pad.paddingRight) - box.width),
       beside: beside.length,
@@ -179,30 +194,44 @@ await withBrowser(async (browser) => {
     };
   });
 
-  const shipped = await read();
-  await page.evaluate(() => {
-    const s = document.createElement('style');
-    s.textContent = '.verse { clear: none !important; }';
-    document.head.appendChild(s);
-  });
-  const control = await read();
-  await page.close();
+  const open = async (wrap) => {
+    const page = await browser.newPage();
+    const made = await buildPage(withFloat({ wrap }), { style: 'veda-union', savedAt: FIXED });
+    await page.setContent(made.html, { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => document.fonts.ready);
+    const seen = await read(page);
+    await page.close();
+    return seen;
+  };
 
-  if (shipped.wrapped !== 0) {
-    fail('a float beside a verse', `${shipped.wrapped} pāda(s) wrap as it ships`);
+  const band = await open('top-bottom');
+  const square = await open('square');
+
+  if (band.wrapped !== 0) {
+    fail('top and bottom', `${band.wrapped} pāda(s) wrap beside a banded picture`);
   }
   /*
-   * THE CONTROL HAS TO FAIL. If removing the clear changes nothing, the rule is
-   * defending against nothing on this page and the measurement behind it has
-   * gone stale — which is worth knowing, and is not something a green
-   * assertion would ever say.
+   * AND IT IS NOT A FLOAT AT ALL. Top-and-bottom used to be a float that every
+   * verse then cleared; it is a block with a side now, so nothing downstream
+   * has to know a float happened.
    */
-  if (control.wrapped === 0) {
-    fail('the control', 'no pāda wrapped with `clear: none`, so this measures nothing');
+  if (band.float !== 'none') {
+    fail('top and bottom', `the picture still floats (${band.float})`);
   }
-  console.log(`  a float never narrows a pāda             ${shipped.wrapped} wrapped, `
-    + `${control.wrapped} of ${control.beside} with the clear off `
-    + `(${control.room} px beside the picture)`);
+  /*
+   * THE CONTROL, and it is the feature itself. If asking for Square narrows
+   * nothing, either Square does not work or this page has no pāda level with
+   * the picture — and both are worth failing for.
+   */
+  if (square.wrapped === 0) {
+    fail('square', `nothing wrapped beside a squared picture (${square.beside} pāda(s) level with it)`);
+  }
+  if (square.float !== 'left') {
+    fail('square', `the picture does not float (${square.float})`);
+  }
+  console.log(`  top and bottom: no pāda wraps           ${band.wrapped} wrapped, float ${band.float}`);
+  console.log(`  square: the text really runs beside it   ${square.wrapped} of ${square.beside} wrapped, `
+    + `${square.room} px beside the picture`);
 });
 
 /* ==========================================================================
@@ -229,12 +258,14 @@ await withBrowser(async (browser) => {
 console.log('');
 await withBrowser(async (browser) => {
   const page = await browser.newPage();
-  const built = await buildPage(withFloat(), { style: 'veda-union', savedAt: FIXED });
+  /* SQUARE, explicitly: this check is about the prose that IS allowed to flow
+     beside a picture, which only happens when the picture asks for it. */
+  const built = await buildPage(withFloat({ wrap: 'square' }), { style: 'veda-union', savedAt: FIXED });
   await page.setContent(built.html, { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => document.fonts.ready);
 
   const read = () => page.evaluate(() => {
-    const fig = document.querySelector('.fig--flow-start') ?? document.querySelector('.fig');
+    const fig = document.querySelector('.fig--wrap-square') ?? document.querySelector('.fig');
     const box = fig.getBoundingClientRect();
     const column = document.querySelector('.flow__column');
     const pad = getComputedStyle(column);

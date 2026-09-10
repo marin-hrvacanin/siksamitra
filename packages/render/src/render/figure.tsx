@@ -139,6 +139,9 @@ export function figureClassName(fig: ChantFigure, selected = false): string {
     'fig',
     `fig--${fig.size ?? FIGURE_DEFAULTS.size}`,
     `fig--flow-${fig.flow ?? FIGURE_DEFAULTS.flow}`,
+    /* WHICH SIDE and WHAT THE TEXT DOES are two classes, because they are two
+       questions — Word asks them separately and so does the Picture tab. */
+    `fig--wrap-${fig.wrap ?? FIGURE_DEFAULTS.wrap}`,
     `fig--cap-${captionAt}`,
     `fig--frame-${fig.frame ?? FIGURE_DEFAULTS.frame}`,
     fig.rounded === false ? 'fig--square-corners' : 'fig--rounded',

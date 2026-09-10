@@ -43,6 +43,15 @@ export const SYMBOL = {
   image: 'image',
   'new-document': 'note_add',
 
+  /* A PICTURE'S WRAP, in Word's own vocabulary — the two questions it asks
+     separately. `wrap-*` is what the TEXT does; `side-*` is which side the
+     picture is on. They were one control and it could only ever mean both. */
+  'wrap-top-bottom': 'view_agenda',
+  'wrap-square': 'wrap_text',
+  'side-start': 'format_image_left',
+  'side-centre': 'align_horizontal_center',
+  'side-end': 'format_image_right',
+
   /* mode */
   'mode-read': 'visibility',
   'mode-write': 'ink_pen',

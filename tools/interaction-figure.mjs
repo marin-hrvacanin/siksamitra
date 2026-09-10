@@ -186,8 +186,15 @@ await wait(200);
 await pressTab('Picture');
 await pressButton('Right');
 await wait(500);
+/*
+ * RIGHT IS THE SIDE, NOT THE WRAP — and that is the change. It used to float,
+ * and every verse then cleared the float, so the button moved the picture and
+ * a person saw nothing flow beside it either way. Now Right puts it against
+ * the right margin and `Square` is what lets text beside it.
+ */
 const floated = await (await visibleFig()).evaluate((f) => getComputedStyle(f).float);
-check('the Right button floats the picture right', floated === 'right', floated);
+check('the Right button does not float it — Square is what does that',
+  floated === 'none', `float ${floated}`);
 
 const wrap = await page.evaluate((drawn) => {
   // eslint-disable-next-line no-eval
@@ -225,20 +232,59 @@ check('and the picture really is at the right edge of the column',
   `${wrap.width} px picture, ${wrap.gap} px to the column edge of ${wrap.column} px`);
 
 /*
- * AND THE VERSE STILL GETS THE WHOLE COLUMN. `.verse { clear: both }` is the
- * standing rule and it is the opposite of a bug: text narrowed by a picture
- * wraps where the picture ends rather than at the metre, so a pada beside a
- * float breaks in the wrong place. Measured in `gate-figures.mjs` against the
- * control; measured HERE as the thing a person would see, which is that the
- * verse starts below the picture instead of beside it.
+ * AND THE VERSE STILL GETS THE WHOLE COLUMN, because the picture has not been
+ * asked to let text beside it. `Right` is the SIDE; `Square` is the wrap, and
+ * they are two controls now — a picture set to Right used to float and then
+ * have every verse clear it, so the button did nothing a person could see.
  */
-check('and the verse below it still gets the whole column, as the rule says',
+check('a side alone does not let text beside it — the verse keeps the column',
   wrap.verseTop !== null && wrap.verseTop >= -1,
   `the verse begins ${wrap.verseTop} px below the picture`);
 
+/*
+ * AND SQUARE ACTUALLY WRAPS — the owner's decision, and the thing the old
+ * behaviour made impossible. Measured as the pāda's HEIGHT: a wrapped line is
+ * still one block, and what changes is that it takes two lines instead of one.
+ */
+const padaHeight = () => page.evaluate((drawn) => {
+  // eslint-disable-next-line no-eval
+  const ok = eval(drawn);
+  const fig = [...document.querySelectorAll('.fig')].find(ok);
+  const box = fig.getBoundingClientRect();
+  const padas = [...document.querySelectorAll('.pada')].filter(ok);
+  const one = Math.min(...padas.map((p) => p.getBoundingClientRect().height));
+  const beside = padas.filter((p) => {
+    const r = p.getBoundingClientRect();
+    return r.top < box.bottom && r.bottom > box.top;
+  });
+  return {
+    float: getComputedStyle(fig).float,
+    beside: beside.length,
+    wrapped: beside.filter((p) => p.getBoundingClientRect().height > one * 1.5).length,
+  };
+}, DRAWN);
+
+const banded = await padaHeight();
+check('and by default the picture does not float at all', banded.float === 'none',
+  `float ${banded.float}, ${banded.wrapped} of ${banded.beside} pāda(s) wrapped`);
+
+await pressButton('Square');
+await wait(600);
+const squared = await padaHeight();
+check('Square floats it and the text really runs beside it',
+  squared.float === 'right' && squared.wrapped > 0,
+  `float ${squared.float}, ${squared.wrapped} of ${squared.beside} pāda(s) wrapped`);
+
+await pressButton('Top and bottom');
+await wait(600);
+const rebanded = await padaHeight();
+check('and Top and bottom gives the mantra its column back',
+  rebanded.float === 'none' && rebanded.wrapped === 0,
+  `float ${rebanded.float}, ${rebanded.wrapped} wrapped`);
+
 await pressButton('Centre');
 await wait(400);
-check('and Centre puts it back on its own line',
+check('and Centre puts it back in the middle of its own line',
   (await (await visibleFig()).evaluate((f) => getComputedStyle(f).float)) === 'none');
 
 /* ── the Size list, AFTER a drag ─────────────────────────────────────────── */

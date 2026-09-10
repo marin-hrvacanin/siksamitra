@@ -336,7 +336,7 @@ const pictures = await pictureProblems(
 for (const p of pictures) problems.push(p);
 if (pictures.length === 0) {
   console.log('  three pictures, one file       inline + two square-wrapped anchors');
-  console.log('  and back through importDocx    bytes, alt text, side and order');
+  console.log('  and back through importDocx    bytes, alt text, side, wrap and order');
 }
 
 /* A Word file the owner typed has the text and not the document, and saying so

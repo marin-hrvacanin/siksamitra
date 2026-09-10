@@ -268,6 +268,7 @@ export function removeFigure(section: ChantSection, at: number): FigureResult {
 export const withFigureDefaults = (fig: ChantFigure): ChantFigure => ({
   size: FIGURE_DEFAULTS.size,
   flow: FIGURE_DEFAULTS.flow,
+  wrap: FIGURE_DEFAULTS.wrap,
   captionAt: FIGURE_DEFAULTS.captionAt,
   crop: FIGURE_DEFAULTS.crop,
   frame: FIGURE_DEFAULTS.frame,

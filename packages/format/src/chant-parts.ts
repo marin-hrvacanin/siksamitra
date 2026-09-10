@@ -56,14 +56,34 @@ export interface ChantInstruction {
   appliesTo?: 'step' | 'each-verse';
 }
 
-/** How the step's text moves around a figure. `aside` is a margin rail (≥1024
- *  only); everything degrades to `block` on a phone.
- *
- *  A float NEVER runs beside a pāda: a pāda is a metrical line, and text
- *  narrowed by a picture wraps where the picture ends rather than where the
- *  metre does. `figure.css` clears the float at every verse, and
- *  `openspec/changes/document-images/design.md` has the measurement. */
+/** WHICH SIDE a figure sits on. `aside` is a margin rail (>=1024 only);
+ *  everything degrades to `block` on a phone. What the text does about it is
+ *  `ChantFigureWrap`, which is a separate question — Word asks them
+ *  separately too, and conflating them is why "Left" used to mean two
+ *  different things. */
 export type ChantFigureFlow = 'block' | 'start' | 'end' | 'aside';
+
+/**
+ * WHAT THE TEXT DOES ABOUT THE PICTURE — Word's wrap, as the two that matter.
+ *
+ * `top-bottom` is the default: the picture gets a band of its own and the text
+ * resumes below it, aligned to whichever side `flow` names. `square` lets the
+ * text run BESIDE it, which is Word's "Square".
+ *
+ * TOP-AND-BOTTOM IS THE DEFAULT FOR A MEASURED REASON, not a cautious one. A
+ * pāda is a metrical line, and text narrowed by a picture wraps where the
+ * picture ends rather than where the metre does. Measured on Durgā Sūktam at
+ * A4 with a medium picture floated left: the column is 605 px, the picture and
+ * its gutter take 320, and of the four pādas level with it THREE wrap — one
+ * mid-word (`asmānth svastibhira-ti du / rgāṇi viśvā`) and one leaving its
+ * closing `‖` alone on a line.
+ *
+ * But it is a DEFAULT and not a prohibition, because that is not what Word
+ * does: Word's wrap is a property of the picture, and if you ask for Square it
+ * narrows whatever is beside it, mantra included. So `square` is offered, it
+ * really wraps, and the consequence is the person's to choose.
+ */
+export type ChantFigureWrap = 'top-bottom' | 'square';
 /** Width as a fraction of the step column — never free-form pixels. The same
  *  document is drawn in an A4 column, a web measure and a card, so a picture
  *  set at 340 px is a third of one and two thirds of another. */
@@ -102,6 +122,8 @@ export interface ChantFigure {
   alt: string;
   caption?: { en: string };
   flow?: ChantFigureFlow;
+  /** Word's wrap. Absent means `top-bottom` — see `ChantFigureWrap`. */
+  wrap?: ChantFigureWrap;
   size?: ChantFigureSize;
   /**
    * A width in PER CENT of the column, when a person has dragged a corner.

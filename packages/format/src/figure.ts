@@ -34,7 +34,9 @@
  * than a broken image — see `packages/render/src/render/figure.tsx`.
  */
 import type { ChantDoc, ChantItem } from './chant-structure.js';
-import type { ChantFigure, ChantFigureFlow, ChantFigureSize } from './chant-parts.js';
+import type {
+  ChantFigure, ChantFigureFlow, ChantFigureSize, ChantFigureWrap,
+} from './chant-parts.js';
 
 /* ==========================================================================
    The vocabularies — the closed sets a figure's four axes may take
@@ -54,6 +56,8 @@ export const FIGURE_SIZES: readonly ChantFigureSize[] = [
  * `block` until a margin rail exists, which is a degradation and not a lie.
  */
 export const FIGURE_FLOWS: readonly ChantFigureFlow[] = ['block', 'start', 'end', 'aside'];
+/** Word's two wraps. `top-bottom` is the default — see `ChantFigureWrap`. */
+export const FIGURE_WRAPS: readonly ChantFigureWrap[] = ['top-bottom', 'square'];
 
 export const FIGURE_CAPTION_AT = ['below', 'above', 'beside', 'none'] as const;
 export const FIGURE_CROPS = ['auto', 'square', 'portrait', 'wide'] as const;
@@ -68,6 +72,7 @@ export type FigureFrame = (typeof FIGURE_FRAMES)[number];
 export const FIGURE_DEFAULTS = {
   size: 'medium',
   flow: 'block',
+  wrap: 'top-bottom',
   captionAt: 'below',
   crop: 'auto',
   frame: 'none',
@@ -225,6 +230,7 @@ export function figureBlockers(fig: ChantFigure, where = 'a figure'): string[] {
   }
   inSet(fig.size, FIGURE_SIZES, 'size');
   inSet(fig.flow, FIGURE_FLOWS, 'flow');
+  inSet(fig.wrap, FIGURE_WRAPS, 'wrap');
   inSet(fig.captionAt, FIGURE_CAPTION_AT, 'caption position');
   inSet(fig.crop, FIGURE_CROPS, 'crop');
   inSet(fig.frame, FIGURE_FRAMES, 'frame');

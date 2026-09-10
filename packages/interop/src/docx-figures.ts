@@ -39,8 +39,18 @@ export interface DocxDrawing {
   /** Drawn size in EMU. */
   readonly cx: number;
   readonly cy: number;
-  /** Which side an anchored picture is aligned to, when it wraps text. */
+  /** Which side an anchored picture is aligned to. */
   readonly side?: 'start' | 'end';
+  /**
+   * What the TEXT does about it, as Word's own wrap element says.
+   *
+   * `wrapSquare`, `wrapTight` and `wrapThrough` all put text beside the
+   * picture; `wrapTopAndBottom` gives it a band of its own. Read separately
+   * from the side, because they are separate in Word and now separate here —
+   * a picture aligned right with a top-and-bottom wrap used to come back as a
+   * square wrap, and then flowed text beside a mantra it was never meant to.
+   */
+  readonly wrap?: 'square' | 'top-bottom';
 }
 
 const RE_DRAWING = /<w:drawing\b[\s\S]*?<\/w:drawing>/g;
@@ -48,6 +58,7 @@ const RE_EMBED = /<a:blip\b[^>]*r:embed="([^"]+)"/;
 const RE_EXTENT = /<wp:extent\b[^>]*cx="(\d+)"[^>]*cy="(\d+)"/;
 const RE_DESCR = /<wp:docPr\b[^>]*descr="([^"]*)"/;
 const RE_WRAP = /<wp:wrap(Square|Tight|Through)\b/;
+const RE_WRAP_BAND = /<wp:wrapTopAndBottom\b/;
 const RE_ALIGN_H = /<wp:positionH\b[\s\S]*?<wp:align>(left|right|center|inside|outside)<\/wp:align>/;
 const RE_OFFSET_H = /<wp:positionH\b[\s\S]*?<wp:posOffset>(-?\d+)<\/wp:posOffset>/;
 
@@ -68,12 +79,14 @@ export function readDrawings(paragraphXml: string): DocxDrawing[] {
     if (relId === undefined) continue;
     const extent = RE_EXTENT.exec(xml);
     const side = sideOf(xml);
+    const wrap = wrapOf(xml);
     out.push({
       relId,
       alt: xmlText(RE_DESCR.exec(xml)?.[1] ?? ''),
       cx: Number(extent?.[1] ?? 0),
       cy: Number(extent?.[2] ?? 0),
       ...(side === undefined ? {} : { side }),
+      ...(wrap === undefined ? {} : { wrap }),
     });
   }
   return out;
@@ -94,8 +107,33 @@ export function readDrawings(paragraphXml: string): DocxDrawing[] {
  * column is the dividing line, which is the only reading that does not need
  * the page width.
  */
+/**
+ * What the text does about an anchored picture.
+ *
+ * `undefined` for an inline drawing, which has no wrap: it sits in the text
+ * line, and `top-bottom` is what that becomes on our page.
+ */
+function wrapOf(xml: string): 'square' | 'top-bottom' | undefined {
+  if (!xml.includes('<wp:anchor')) return undefined;
+  if (RE_WRAP.test(xml)) return 'square';
+  if (RE_WRAP_BAND.test(xml)) return 'top-bottom';
+  return undefined;
+}
+
 function sideOf(xml: string): 'start' | 'end' | undefined {
-  if (!xml.includes('<wp:anchor') || !RE_WRAP.test(xml)) return undefined;
+  /*
+   * An anchor with a REAL WRAP — which now includes top-and-bottom, because a
+   * picture in a band of its own is still aligned left or right within it, and
+   * reading the side only for square wraps sent every one of them back to the
+   * centre.
+   *
+   * `wrapNone` is still no side, and that is not a detail: it means the text
+   * runs OVER the picture — a watermark. There is no such thing on our page,
+   * so it becomes an ordinary centred block rather than a lie about the
+   * layout, and a test holds that line.
+   */
+  if (!xml.includes('<wp:anchor')) return undefined;
+  if (!RE_WRAP.test(xml) && !RE_WRAP_BAND.test(xml)) return undefined;
   const align = RE_ALIGN_H.exec(xml)?.[1];
   if (align === 'right' || align === 'outside') return 'end';
   if (align === 'left' || align === 'inside') return 'start';
@@ -238,6 +276,7 @@ export function figureFromDrawing(
     height: measured.height,
     ...(pct === undefined ? {} : { widthPct: pct }),
     flow: drawing.side ?? 'block',
+    wrap: drawing.wrap ?? 'top-bottom',
     size: 'medium',
     captionAt: 'below',
     crop: 'auto',

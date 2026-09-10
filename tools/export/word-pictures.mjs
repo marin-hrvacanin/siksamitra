@@ -35,19 +35,28 @@ import { solidPng } from './_figure-fixtures.mjs';
 
 const EMU_PER_INCH = 914400;
 
-/** Three pictures, one of each wrap, in one step. */
+/**
+ * Pictures covering every shape the `.docx` can hold, in one step.
+ *
+ * The SIDE and the WRAP are separate now — Word asks them separately — so a
+ * picture aligned right can be a square wrap or a band, and both have to
+ * survive. This used to be three pictures on the assumption that a side
+ * implied a square wrap, and that assumption was the bug: a document that
+ * deliberately kept text off a mantra arrived in Word with it flowing.
+ */
 export function withThreePictures(png) {
   const src = `data:image/png;base64,${png.toString('base64')}`;
-  const fig = (id, flow, alt) => ({
+  const fig = (id, flow, alt, wrap = 'square') => ({
     t: 'figure',
     figure: {
       id, src, alt, width: 400, height: 300,
-      size: 'medium', flow, captionAt: 'below', crop: 'auto', frame: 'none', rounded: true,
+      size: 'medium', flow, wrap, captionAt: 'below', crop: 'auto', frame: 'none',
+      rounded: true,
       caption: { en: `Caption for ${id}` },
     },
   });
   return {
-    title: 'Three pictures',
+    title: 'Four pictures',
     titleForms: {},
     version: 3,
     sections: [{
@@ -55,10 +64,14 @@ export function withThreePictures(png) {
       title: 'Dīpa',
       verses: [],
       items: [
-        fig('fig-1', 'block', 'A lamp held at the level of the heart.'),
+        fig('fig-1', 'block', 'A lamp held at the level of the heart.', 'top-bottom'),
         { t: 'instruction', instruction: { text: { en: 'Circle the lamp three times.' } } },
-        fig('fig-2', 'start', 'The añjali mudrā, seen from the front.'),
-        fig('fig-3', 'end', 'The vessel set down to the right.'),
+        fig('fig-2', 'start', 'The añjali mudrā, seen from the front.', 'square'),
+        fig('fig-3', 'end', 'The vessel set down to the right.', 'square'),
+        /* A SIDE WITH A BAND — the shape that was unrepresentable, and the one
+           a chant actually wants: against a margin, with the mantra keeping
+           its whole column. */
+        fig('fig-4', 'end', 'The bell, set to the right of the tray.', 'top-bottom'),
       ],
     }],
   };
@@ -75,6 +88,11 @@ export async function pictureProblems(write) {
 
   const png = solidPng(400, 300, [255, 0, 255]);
   const doc = withThreePictures(png);
+  /* The figures as they went in, in order — what every check below compares
+     against, rather than a list retyped beside it. */
+  const expected = doc.sections[0].items
+    .filter((it) => it.t === 'figure')
+    .map((it) => it.figure);
   const bytes = await write(doc);
   const zip = unzipSync(bytes);
   const documentXml = strFromU8(zip['word/document.xml']);
@@ -94,8 +112,8 @@ export async function pictureProblems(write) {
 
   /* ── the plumbing ──────────────────────────────────────────────────────── */
   const embeds = [...documentXml.matchAll(/<a:blip[^>]*r:embed="([^"]+)"/g)].map((m) => m[1]);
-  if (embeds.length !== 3) {
-    fail('the drawings', `${embeds.length} <a:blip> in document.xml, expected 3`);
+  if (embeds.length !== expected.length) {
+    fail('the drawings', `${embeds.length} <a:blip> in document.xml, expected ${expected.length}`);
   }
   const targets = new Map(
     [...rels.matchAll(/<Relationship[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/g)]
@@ -122,18 +140,34 @@ export async function pictureProblems(write) {
     fail('the drawing ids', `${ids.join(', ')} — a repeated docPr id loses its alt text`);
   }
 
-  /* ── the wrap ──────────────────────────────────────────────────────────── */
+  /*
+   * ── the wrap, which is the PICTURE'S and not the side's ─────────────────
+   *
+   * A centred band is `wp:inline`, Word's own default. A picture that names a
+   * side is anchored, and what the TEXT does is `wp:wrapSquare` or
+   * `wp:wrapTopAndBottom` depending on what the picture asked for. Every one
+   * of them used to be written as a square wrap.
+   */
   if (!documentXml.includes('<wp:inline')) fail('the inline picture', 'no <wp:inline>');
   const anchors = [...documentXml.matchAll(/<wp:anchor[\s\S]*?<\/wp:anchor>/g)].map((m) => m[0]);
-  if (anchors.length !== 2) {
-    fail('the floated pictures', `${anchors.length} <wp:anchor>, expected 2`);
+  const wanted = expected.filter((f) => f.flow === 'start' || f.flow === 'end');
+  if (anchors.length !== wanted.length) {
+    fail('the anchored pictures', `${anchors.length} <wp:anchor>, expected ${wanted.length}`);
   } else {
-    for (const [i, want] of ['left', 'right'].entries()) {
-      if (!anchors[i].includes('<wp:wrapSquare')) {
-        fail('a float', `the ${want} one has no <wp:wrapSquare>, so no text runs beside it`);
+    for (const [i, want] of wanted.entries()) {
+      const side = want.flow === 'start' ? 'left' : 'right';
+      const element = want.wrap === 'square' ? '<wp:wrapSquare' : '<wp:wrapTopAndBottom';
+      const other = want.wrap === 'square' ? '<wp:wrapTopAndBottom' : '<wp:wrapSquare';
+      if (!anchors[i].includes(element)) {
+        fail('a wrap', `the ${side} ${want.wrap} one has no ${element}>`);
       }
-      if (!anchors[i].includes(`<wp:align>${want}</wp:align>`)) {
-        fail('a float', `the ${want} one is not aligned ${want}`);
+      /* AND NOT THE OTHER ONE. Asserting only that the wanted element is
+         present would pass a writer that emitted both. */
+      if (anchors[i].includes(other)) {
+        fail('a wrap', `the ${side} ${want.wrap} one also has ${other}>`);
+      }
+      if (!anchors[i].includes(`<wp:align>${side}</wp:align>`)) {
+        fail('a wrap', `the ${side} one is not aligned ${side}`);
       }
     }
   }
@@ -160,8 +194,8 @@ export async function pictureProblems(write) {
   /* ── and back, through the reader for files we did not write ───────────── */
   const back = importDocx(bytes, 'again');
   const got = figuresOf(back.doc).map((f) => f.figure);
-  if (got.length !== 3) {
-    fail('re-reading', `${got.length} picture(s) came back, of 3`);
+  if (got.length !== expected.length) {
+    fail('re-reading', `${got.length} picture(s) came back, of ${expected.length}`);
     return problems;
   }
   const put = figuresOf(doc).map((f) => f.figure);
@@ -172,6 +206,12 @@ export async function pictureProblems(write) {
     if ((figure.flow ?? 'block') !== put[i].flow) {
       fail('re-reading', `picture ${i + 1} came back as ${String(figure.flow)}, `
         + `not ${put[i].flow}`);
+    }
+    /* AND THE WRAP, which is the half that used to be lost: every anchored
+       picture came back `square` whatever it went in as. */
+    if ((figure.wrap ?? 'top-bottom') !== (put[i].wrap ?? 'top-bottom')) {
+      fail('re-reading', `picture ${i + 1} came back wrapped ${String(figure.wrap)}, `
+        + `not ${String(put[i].wrap)}`);
     }
     const recovered = Buffer.from(figure.src.split(',')[1], 'base64');
     if (Buffer.compare(recovered, png) !== 0) {
@@ -187,8 +227,9 @@ export async function pictureProblems(write) {
      BETWEEN them: a reader that appended figures rather than placing them
      would pass every check above. */
   const kinds = (back.doc.sections[0]?.items ?? []).map((i) => i.t).join(',');
-  if (kinds !== 'figure,instruction,figure,figure') {
-    fail('the order', `the step came back as ${kinds}`);
+  const wantKinds = doc.sections[0].items.map((i) => i.t).join(',');
+  if (kinds !== wantKinds) {
+    fail('the order', `the step came back as ${kinds}, not ${wantKinds}`);
   }
   return problems;
 }

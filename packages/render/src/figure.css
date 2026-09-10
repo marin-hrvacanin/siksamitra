@@ -78,17 +78,34 @@
    is a degradation rather than a lie. */
 .fig--flow-block,
 .fig--flow-aside { margin-left: auto; margin-right: auto; }
-.fig--flow-start {
+
+/*
+ * TWO QUESTIONS, TWO CLASSES — which SIDE, and what the TEXT does.
+ *
+ * `flow` is the side; `wrap` is Word's wrap. They used to be one axis, so
+ * "Left" meant both "put it on the left" and "make the text flow round it",
+ * and there was no way to ask for the first without the second.
+ *
+ * TOP AND BOTTOM (the default) does not float at all. It is not a float that
+ * everything then clears — it is a block with a side, which is what Word's
+ * "Top and Bottom" is, and it means nothing downstream has to know a float
+ * happened. `margin-inline` puts it on its side within its own band.
+ */
+.fig--wrap-top-bottom.fig--flow-start { margin-right: auto; margin-left: 0; }
+.fig--wrap-top-bottom.fig--flow-end { margin-left: auto; margin-right: 0; }
+
+/* SQUARE is a real float, and the text really does run beside it. */
+.fig--wrap-square.fig--flow-start {
   float: left;
   margin: var(--fig-float-lead) var(--fig-float-gap) var(--fig-float-after) 0;
 }
-.fig--flow-end {
+.fig--wrap-square.fig--flow-end {
   float: right;
   margin: var(--fig-float-lead) 0 var(--fig-float-after) var(--fig-float-gap);
 }
 
 /*
- * A FLOAT NEVER RUNS BESIDE A PĀDA.
+ * WHAT A FLOAT COSTS A PĀDA — the reason `top-bottom` is the DEFAULT.
  *
  * A pāda is a metrical line. Text narrowed by a picture wraps where the
  * picture ends, so a float beside a verse breaks the line at a width rather
@@ -96,24 +113,26 @@
  * one line, so the same picture also moves a page break for a reason that has
  * nothing to do with the text.
  *
- * MEASURED, with the control. Durgā Sūktam at A4, a `medium` picture floated
- * left in the flow view: the content column is 605 px, the picture and its
- * gutter take 320, and 285 px are left. Four pādas fall level with it, and with
- * `clear: none` — the control, applied in the browser — THREE of the four wrap,
- * one of them mid-word (`asmānth svastibhira-ti du / rgāṇi viśvā`) and one
- * leaving its closing `‖` alone on a line. As it ships: none.
- * `tools/export/gate-figures.mjs` takes both readings on every run, and
- * FAILS if the control stops wrapping — a rule that defends nothing is a
- * rule whose measurement has gone stale.
+ * MEASURED. Durgā Sūktam at A4, a `medium` picture floated left in the flow
+ * view: the content column is 605 px, the picture and its gutter take 320, and
+ * 285 px are left. Four pādas fall level with it and THREE of the four wrap,
+ * one mid-word (`asmānth svastibhira-ti du / rgāṇi viśvā`) and one leaving its
+ * closing `‖` alone on a line.
  *
- * So the float clears at the verse: it runs beside the step's instructions,
- * which are prose and wrap wherever they like, and the mantra gets the whole
- * column.
+ * SO IT IS A DEFAULT AND NOT A PROHIBITION, and that changed on the owner's
+ * decision. It used to be `.verse { clear: both }` unconditionally — every
+ * float cleared at every verse, so in a chant, where almost every block IS a
+ * verse, a picture set to Left or Right had nothing beside it and the buttons
+ * looked inert. It also was not Word: Word's wrap is a property of the
+ * PICTURE, and if you ask for Square it narrows whatever is beside it, mantra
+ * included.
  *
- * This is Word's "top and bottom" wrap applied where it is needed and its
- * "square" wrap kept everywhere else — not a refusal to wrap.
+ * So the picture decides. `top-bottom` does not float, so there is nothing to
+ * clear and the mantra keeps the whole column; `square` floats and the text
+ * runs beside it, pāda or not. Both readings are taken on every run by
+ * `tools/export/gate-figures.mjs` — a rule that defends nothing is a rule
+ * whose measurement has gone stale.
  */
-.verse { clear: both; }
 
 /* ── the box, which reserves the space before the bytes arrive ────────────
    A figure landing mid-step must never push the mantra being read down the

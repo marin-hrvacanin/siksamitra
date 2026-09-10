@@ -160,8 +160,15 @@ export function figureDrawing(
   const size = `<wp:extent cx="${cx}" cy="${cy}"/>`
     + '<wp:effectExtent l="0" t="0" r="0" b="0"/>';
   const flow = fig.flow ?? FIGURE_DEFAULTS.flow;
+  const wrap = fig.wrap ?? FIGURE_DEFAULTS.wrap;
 
-  if (flow !== 'start' && flow !== 'end') {
+  /*
+   * INLINE only when the picture is CENTRED AND top-and-bottom — Word's own
+   * default, where the drawing sits in the text line and nothing flows beside
+   * it. A picture that names a side has to be anchored, because `wp:inline`
+   * has nowhere to put one.
+   */
+  if (wrap === 'top-bottom' && flow !== 'start' && flow !== 'end') {
     return `<w:drawing xmlns:wp="${WP_NS}">`
       + '<wp:inline distT="0" distB="0" distL="0" distR="0">'
       + size + docPr + graphic(fig, media, id, cx, cy)
@@ -169,21 +176,33 @@ export function figureDrawing(
   }
 
   /*
-   * FLOATED, with square wrap. The gutter is on the TEXT side only — the same
-   * asymmetry `figure.css` gives a float, where the margin is a full gutter
-   * towards the text and nothing towards the margin.
+   * ANCHORED. The wrap is the PICTURE'S, exactly as it is on the page:
+   *
+   *   square       `wp:wrapSquare` — the text runs beside it.
+   *   top-bottom   `wp:wrapTopAndBottom` — it gets a band of its own, and is
+   *                aligned to its side within that band. This is the case that
+   *                used to be unrepresentable: every picture with a side was
+   *                written as a square wrap, so a document whose text was
+   *                never meant to flow beside a mantra arrived in Word with it
+   *                flowing anyway.
+   *
+   * The gutter is on the TEXT side only — the same asymmetry `figure.css`
+   * gives a float, where the margin is a full gutter towards the text and
+   * nothing towards the margin. Top-and-bottom has no text beside it, so it
+   * takes no side gutter at all.
    */
   const gutter = Math.round(EMU_PER_INCH / 8);
-  const align = flow === 'start' ? 'left' : 'right';
+  const beside = wrap === 'square';
+  const align = flow === 'end' ? 'right' : flow === 'start' ? 'left' : 'center';
   return `<w:drawing xmlns:wp="${WP_NS}">`
-    + `<wp:anchor distT="0" distB="0" distL="${flow === 'start' ? 0 : gutter}" `
-    + `distR="${flow === 'start' ? gutter : 0}" simplePos="0" relativeHeight="2" `
+    + `<wp:anchor distT="0" distB="0" distL="${beside && flow === 'end' ? gutter : 0}" `
+    + `distR="${beside && flow === 'start' ? gutter : 0}" simplePos="0" relativeHeight="2" `
     + 'behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">'
     + '<wp:simplePos x="0" y="0"/>'
     + `<wp:positionH relativeFrom="margin"><wp:align>${align}</wp:align></wp:positionH>`
     + '<wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>'
     + size
-    + '<wp:wrapSquare wrapText="bothSides"/>'
+    + (beside ? '<wp:wrapSquare wrapText="bothSides"/>' : '<wp:wrapTopAndBottom/>')
     + docPr + graphic(fig, media, id, cx, cy)
     + '</wp:anchor></w:drawing>';
 }

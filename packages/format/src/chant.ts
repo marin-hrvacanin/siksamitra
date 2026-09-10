@@ -49,7 +49,7 @@ export type {
 } from './chant-verse.js';
 
 export type {
-  ChantInstructionKind, ChantInstruction, ChantFigureFlow, ChantFigureSize,
+  ChantInstructionKind, ChantInstruction, ChantFigureFlow, ChantFigureSize, ChantFigureWrap,
   ChantFigure, ChantEmbedSrc, ChantEmbedFallback, ChantEmbed, ChantEmbedProblem,
 } from './chant-parts.js';
 

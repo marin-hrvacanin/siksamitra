@@ -125,6 +125,21 @@ const alignedRight = '<w:drawing><wp:anchor behindDoc="0">'
   + '<wp:docPr id="2" name="Picture 2" descr="The a&#241;jali mudr&#257;."/>' // token-exempt: XML character entities — Word's own spelling of a non-ASCII description, and the input under test
   + `${BLIP}</wp:anchor></w:drawing>`;
 
+/**
+ * WORD'S TOP-AND-BOTTOM WRAP, aligned right.
+ *
+ * The shape this reader could not see. It came back as a square wrap — so a
+ * picture whose text was never meant to flow beside it arrived with text
+ * flowing beside it — and, because a side was only read from a square wrap, it
+ * lost its alignment as well.
+ */
+const bandRight = '<w:drawing><wp:anchor behindDoc="0">'
+  + '<wp:positionH relativeFrom="margin"><wp:align>right</wp:align></wp:positionH>'
+  + '<wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>'
+  + '<wp:extent cx="1371600" cy="914400"/><wp:wrapTopAndBottom/>'
+  + '<wp:docPr id="9" name="Picture 9" descr="A lamp."/>'
+  + `${BLIP}</wp:anchor></w:drawing>`;
+
 /** And Word's other float: a TIGHT wrap positioned by an offset in EMU. */
 const offsetLeft = '<w:drawing><wp:anchor behindDoc="0">'
   + '<wp:positionH relativeFrom="column"><wp:posOffset>0</wp:posOffset></wp:positionH>'
@@ -167,6 +182,39 @@ describe('reading the drawings out of a paragraph', () => {
     /* `wrapNone` means the text runs over it. There is no such thing here, so
        it becomes an ordinary block rather than a lie about the layout. */
     expect(readDrawings(behind)[0]?.side).toBeUndefined();
+  });
+
+  /* ── the wrap, which is a SEPARATE question from the side ──────────────── */
+
+  it('reads a square wrap as text running beside the picture', () => {
+    expect(readDrawings(alignedRight)[0]?.wrap).toBe('square');
+  });
+
+  it('reads a tight wrap the same way — text is still beside it', () => {
+    expect(readDrawings(offsetLeft)[0]?.wrap).toBe('square');
+  });
+
+  it('reads a top-and-bottom wrap as a band, NOT as a square wrap', () => {
+    /*
+     * The fault this exists for. Both of Word's wraps came back as `square`,
+     * so a document that deliberately kept text off a mantra arrived with the
+     * text flowing beside it.
+     */
+    expect(readDrawings(bandRight)[0]?.wrap).toBe('top-bottom');
+  });
+
+  it('and a top-and-bottom picture keeps the side it is aligned to', () => {
+    /* The second half: the side used to be read only from a square wrap, so
+       every banded picture came back centred whatever Word said. */
+    expect(readDrawings(bandRight)[0]?.side).toBe('end');
+  });
+
+  it('an inline drawing has no wrap at all, because it is in the line', () => {
+    expect(readDrawings(inlineDrawing)[0]?.wrap).toBeUndefined();
+  });
+
+  it('and a watermark has no wrap either — `wrapNone` is not a wrap', () => {
+    expect(readDrawings(behind)[0]?.wrap).toBeUndefined();
   });
 
   it('skips a drawing that is not a picture', () => {
