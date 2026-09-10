@@ -183,7 +183,8 @@ export const sameValue = (a: Mark, b: Mark): boolean =>
 /* ── the invariants ───────────────────────────────────────────────────────── */
 
 export interface MarkFault {
-  code: 'out-of-range' | 'split-character' | 'reversed' | 'overlap' | 'unmerged' | 'unsorted';
+  code: 'out-of-range' | 'split-character' | 'reversed' | 'overlap' | 'unmerged'
+  | 'unsorted' | 'unknown-kind';
   message: string;
   at: number;
 }
@@ -216,6 +217,26 @@ export function markFaults(marks: readonly Mark[], text: string): MarkFault[] {
   };
 
   for (const [i, m] of marks.entries()) {
+    /*
+     * A KIND THIS BUILD DOES NOT KNOW — said, rather than silently dropped.
+     *
+     * `toTokens` has a branch per kind and no default, so a marking of an
+     * unrecognised kind survives in a document's bytes and disappears the
+     * first time the verse is edited. Measured: a `gargle` marking is in the
+     * canonical bytes before one keystroke and gone after, with no report
+     * anywhere.
+     *
+     * The realistic guard against ever meeting one is the format VERSION — a
+     * document newer than the reader is an explicit "update needed" rather
+     * than a partial read — so this is a hand-edited or corrupt file, and the
+     * point is not to rescue the marking but to stop the loss being silent.
+     * That is this repository's whole standing rule about failure.
+     */
+    if (STAGE_OF[m.k] === undefined) {
+      say('unknown-kind', `"${String(m.k)}" is not a kind this build knows, and `
+        + 'will be dropped when the verse is next edited', i);
+      continue;
+    }
     if (m.to < m.from) say('reversed', `${m.k} ends before it starts`, i);
     if (m.from < 0 || m.to > text.length) {
       say('out-of-range', `${m.k} covers ${m.from}..${m.to} of ${text.length} characters`, i);
