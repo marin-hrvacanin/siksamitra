@@ -157,11 +157,17 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ env.TAG }}"
+          # `--prerelease` ON A FRESH `latest` WOULD BREAK EVERY DOWNLOAD LINK.
+          #
+          # The page links `releases/latest/download/<name>`, and GitHub reads
+          # that as "the newest release that is NOT a prerelease" — so a
+          # `latest` tag created as a prerelease answers 404 for every asset in
+          # it. The one that exists is not marked prerelease, which is why the
+          # links work at all; this branch runs only when the release does not
+          # exist yet, and it used to pass `--prerelease` for exactly the tag
+          # the page depends on.
           if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" \
-              --title "śikṣāmitra $TAG" \
-              --notes "Built from ${{ github.sha }}." \
-              ${{ env.TAG == 'latest' && '--prerelease' || '' }}
+            gh release create "$TAG" --latest --title "śikṣāmitra $TAG" --notes "Built from ${{ github.sha }}."
           fi
           # `--clobber`, because `latest` is a ROLLING tag: the page links to
           # `releases/latest/download/<name>` and that has to keep meaning the
