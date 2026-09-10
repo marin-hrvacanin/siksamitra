@@ -34,6 +34,7 @@ import { DrawnBlockNode } from '../../apps/web/src/editor/lexical/DrawnBlock.jsx
 import {
   $readDocument, $writeDocument, docBlocksOf, pointMarksIn, type DocBlock,
 } from '../../apps/web/src/editor/lexical/document.js';
+import { blockRefs } from '../../apps/web/src/views/blocks.js';
 
 const DIR = 'corpus/chants';
 const FILES = readdirSync(DIR).filter((f) => f.endsWith('.json')).sort();
@@ -155,3 +156,39 @@ describe('a verse’s translation is not read back as a line of the mantra', () 
     }
   });
 });
+
+describe('the editor’s tree and the page’s blocks are the same list', () => {
+  /*
+   * THREE THINGS NOW WALK A DOCUMENT'S BLOCKS: `blockRefs` (the page map, the
+   * navigation outline and the exporter read it), `outlineOf` (the navigation
+   * tree), and `docBlocksOf` (the editor's tree). `blockRefs` says in its own
+   * header that `outlineOf` "draws the same tree and must agree with this
+   * list", and `outline.test.ts` holds it to that.
+   *
+   * `docBlocksOf` is the third and it was compared only with ITSELF — a round
+   * trip proves the bridge is invertible, not that it agrees with the page.
+   * The order and the ids come from `itemsOf` and `blockId`, so they agree BY
+   * CONSTRUCTION; what is restated rather than shared is the rule that a part
+   * heading is drawn where the part CHANGES, and a copy of a rule is a copy
+   * that can drift. If it did, the page map would place a block the editor
+   * does not have, or the editor would hold one the page never draws.
+   */
+  for (const file of FILES) {
+    it(`${file}: the same ids, in the same order`, () => {
+      const document = load(file);
+      const fromEditor = docBlocksOf(document).map((b) => (b.t === 'verse'
+        ? `verse:${b.verse.id}`
+        : b.drawn.blockId));
+      const fromPage = blockRefs(document).map((r) => (r.kind === 'verse'
+        ? `verse:${r.verseId ?? ''}`
+        : r.id));
+      expect(fromEditor).toEqual(fromPage);
+    });
+  }
+
+  it('and it is a real list, not two empty ones — the control', () => {
+    const n = FILES.reduce((total, f) => total + blockRefs(load(f)).length, 0);
+    expect(n).toBeGreaterThan(700);
+  });
+});
+

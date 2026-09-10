@@ -55,10 +55,43 @@ const buffers = await Promise.all(icoSizes.map((s) =>
   sharp(svg, { density: 384 }).resize(s, s).png().toBuffer()));
 writeFileSync(join(OUT, 'icon.ico'), await pngToIco(buffers));
 
-// macOS wants .icns. `iconutil` is macOS-only, so on other platforms the 1024
-// PNG is written and the real .icns is produced on the Mac that builds the dmg.
 await sharp(svg, { density: 512 }).resize(1024, 1024).png()
   .toFile(join(OUT, 'icon-1024.png'));
+
+/*
+ * AND THE `.icns`, ON EVERY PLATFORM.
+ *
+ * This used to say "`iconutil` is macOS-only, so the real .icns is produced on
+ * the Mac that builds the dmg" — and nothing produced it, on any Mac or
+ * anywhere else. `tauri.conf.json` lists `icons/icon.icns` in `bundle.icon`,
+ * and EVERY bundler reads that list, not just macOS's: the first release build
+ * that got as far as bundling died on Linux with
+ *
+ *     failed to bundle project: Failed to create icon files:
+ *     resource path `icons/icon.icns` doesn't exist
+ *
+ * after the `.deb` had already been written. So the missing file was not a
+ * macOS gap; it was why there has never been an installer of any kind.
+ *
+ * `iconutil` IS NOT NEEDED. A modern `.icns` is a container of PNGs: the magic
+ * `icns`, the total length, then one chunk per size — a four-byte type, a
+ * four-byte length that INCLUDES its own header, and the PNG bytes. Writing it
+ * here means the file exists on the machine that builds each installer rather
+ * than on one particular machine that never ran.
+ */
+const ICNS = [['ic11', 32], ['ic12', 64], ['ic07', 128], ['ic08', 256], ['ic09', 512], ['ic10', 1024]];
+const chunks = await Promise.all(ICNS.map(async ([type, size]) => {
+  const png = await sharp(svg, { density: 512 }).resize(size, size).png().toBuffer();
+  const head = Buffer.alloc(8);
+  head.write(type, 0, 'ascii');
+  head.writeUInt32BE(png.byteLength + 8, 4);
+  return Buffer.concat([head, png]);
+}));
+const body = Buffer.concat(chunks);
+const icns = Buffer.alloc(8);
+icns.write('icns', 0, 'ascii');
+icns.writeUInt32BE(body.byteLength + 8, 4);
+writeFileSync(join(OUT, 'icon.icns'), Buffer.concat([icns, body]));
 
 /*
  * The document icon, in the sizes each platform's association wants:
