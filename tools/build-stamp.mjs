@@ -20,8 +20,11 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { join, relative, sep, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const ROOT = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+/* fileURLToPath, not `.pathname`: under a non-ASCII path (a user folder with
+   `ć` in it) `.pathname` comes back percent-encoded and nothing is found. */
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 /**
  * What the page is built out of.
@@ -155,6 +158,6 @@ if (args[0] === '--write') {
   const stamp = { source: await sourceHash(), when: new Date().toISOString() };
   await writeFile(join(ROOT, dist, 'build-stamp.json'), `${JSON.stringify(stamp, null, 2)}\n`);
   console.log(`  build stamp ${stamp.source} -> ${dist}/build-stamp.json`);
-} else if (args.length === 0 && import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}`) {
+} else if (args.length === 0 && process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   console.log(await sourceHash());
 }

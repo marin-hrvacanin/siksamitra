@@ -72,7 +72,7 @@ check:tokens             3 theme axes generated, in step
 check:literals           430 literals, ratcheted; ZERO in the app
 check:fixtures           19 interchange fixtures current
 check:conformance        152 DERIVED assertions
-check:transliteration    31 762 / 31 762  (Devanāgarī + Telugu)
+check:transliteration    47 643 / 47 643  (Devanāgarī + Telugu + Tamil)
 check:lossless           5 of 5 scripts round-trip exactly
 check:engine             15 678 / 15 980 syllables = 98.11 %, 11 documents
 ```
@@ -96,9 +96,12 @@ tools/theme-matrix.mjs   84 chrome × document × mode combinations, all legible
 tools/smoke.mjs          flow, pages and web views, no console errors
 ```
 
-Read the transliteration figure precisely: 15 881 syllables in **two** verified
-scripts, two assertions each. **Tamil is carried and unreviewed** — the owner has
-confirmed those forms were never checked. ITRANS is registered read-only.
+Read the transliteration figure precisely: 15 881 syllables in three scripts.
+Devanāgarī and Telugu match the published forms exactly. **Tamil matches them in
+its convention** — superscript digits for the stop series, `'` after vocalic ṛ,
+`ऽ` for the avagraha, `ஂ` for the anusvāra (commit 214764f): 13 414 syllables
+exactly as published, 2 467 as published plus exactly those marks, and any other
+difference fails row by row. ITRANS is registered read-only.
 
 **Built:** the format, the engine, the renderer, the layout engine (pagination,
 zoom, anchoring), the three-axis design system, Word and `.vuchant` interop, the
