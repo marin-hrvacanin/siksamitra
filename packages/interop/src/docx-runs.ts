@@ -236,12 +236,19 @@ export function tokensFromRuns(
 
     if (role === 'dirgha') {
       bump(role);
-      report.unresolved.push({
-        at: where,
-        what: `the "${run.rStyle ?? ''}" style has no home in the format yet (00 §5.1)`,
-        raw: run.text.trim(),
-      });
-      addLetters(run.text, () => {});
+      /*
+       * THE ṚGVEDIC OVERLINE (U+0305) belongs to the vowel before it, as a
+       * combining mark does — it is how his `Long` style lengthens a short
+       * svarita (`yu̅̍vase`). Added as a LETTER it split nothing and joined
+       * everything: `yu̅va` became one syllable, and the svarita that follows
+       * it landed on the overline instead of the vowel. What else the style
+       * holds in his sādhanā — a bracket, twice — is ordinary text.
+       */
+      for (const ch of run.text) {
+        const host = ch === '̅' ? lastUnit() : undefined;
+        if (host !== undefined) host.c += ch;
+        else addLetters(ch, () => {});
+      }
       continue;
     }
 

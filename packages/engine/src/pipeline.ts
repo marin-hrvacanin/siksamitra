@@ -15,7 +15,7 @@ import { emitWithSpans } from './emit.js';
 import type { EmitOptions } from './emit.js';
 import { DEFAULT_PROFILE } from './profile.js';
 import type { Profile } from './profile.js';
-import { RULES, STAGE_ORDER, isEnabled } from './rules/index.js';
+import { AFTER_SVARA, RULES, STAGE_ORDER, isEnabled } from './rules/index.js';
 import { SVARA_PLANS, applySvaraPlan } from './rules/svara.js';
 import { applyAttestedSvara } from './rules/witness.js';
 import { applyOverrides } from './overrides.js';
@@ -126,6 +126,14 @@ export function derive(
       applySvaraPlan(ctx, SVARA_PLANS[meter], {
         allowUnverified: opts?.allowUnverifiedPlan === true,
       });
+    }
+  }
+
+  for (const stage of AFTER_SVARA) {
+    for (const rule of RULES) {
+      if (rule.stage !== stage) continue;
+      if (!isEnabled(rule, profile)) continue;
+      rule.apply(ctx);
     }
   }
 

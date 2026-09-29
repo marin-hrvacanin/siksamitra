@@ -21,6 +21,7 @@
 import type { ChantSyllable, ChantToken, ChantUnit } from '@siksamitra/format';
 import type { Elem, SrcSpan } from './lex.js';
 import { syllabify } from './syllable.js';
+import { VIRAMA_TICK } from './alphabet.js';
 import { transliterateSyllable } from './script/index.js';
 import type { ScriptKey, ScriptOptions } from './script/index.js';
 
@@ -46,7 +47,10 @@ export function attachHyphen(last: ChantSyllable): void {
 }
 
 export function unitOf(l: Elem): ChantUnit {
-  const u: ChantUnit = { c: l.ch };
+  /* The Ṛgvedic overline is a CHARACTER, U+0305 after the vowel, as the
+     candrabindu is — which is how his Word files hold it (the `Long` style
+     over `̅`) and how a run of text can draw it. */
+  const u: ChantUnit = { c: l.dirgha === true ? `${l.ch}̅` : l.ch };
   if (l.hold !== undefined) {
     u.hold = l.hold;
     if (l.hg !== undefined) u.hg = l.hg;
@@ -196,8 +200,14 @@ export function emitWithSpans(elems: Elem[], opts?: EmitOptions): EmitResult {
        * did not have it (`॥3॥` became `॥ 3 ॥`), and the comparison that was
        * supposed to catch that had been loosened to tolerate it instead.
        */
+      /* …EXCEPT AFTER THE VIRĀMA TICK: `tamamˎ।`, not `tamamˎ ।` — 58 of the
+         corpus's 68 ticks before a daṇḍa have no space, where a letter has one
+         793 times in 796. The ten that do keep theirs: the space is
+         presentation (`isPresentationalSpace`), and an original keeps its own. */
       const last = tokens[tokens.length - 1];
-      if (last !== undefined && last.t === 'syl') tokens.push({ t: 'sp' });
+      if (last !== undefined && last.t === 'syl' && !last.iast.endsWith(VIRAMA_TICK)) {
+        tokens.push({ t: 'sp' });
+      }
       const text = e.text ?? '|';
       tokens.push({ t: 'danda', s: text.length >= 2 ? '॥' : '।' });
       continue;

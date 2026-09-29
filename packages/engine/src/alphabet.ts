@@ -193,12 +193,22 @@ export const READING_AIDS: ReadonlyArray<readonly [readonly [string, string], st
 export const SBHAKTI_AFTER = 'r';
 export const SBHAKTI_TRIGGERS = new Set(['ś', 'ṣ', 'h']);
 
+/**
+ * The marks that RIDE on a letter without changing which letter it is: the
+ * Ṛgvedic overline (U+0305), the svarita and dīrgha-svarita strokes, the
+ * anudātta bar, the candrabindu. `u̅` is still the vowel `u` — reading it as
+ * something else split the syllables of every overlined word in his Ṛgveda.
+ */
+const RIDING = /[̱̅̍̎̐]/g;
+export const bareLetter = (ch: string): string => ch.replace(RIDING, '');
+
 export function isVowel(ch: string): boolean {
-  return VOWELS.has(ch);
+  return VOWELS.has(bareLetter(ch));
 }
 
 export function isConsonant(ch: string): boolean {
-  return CONSONANTS.has(ch) || ch === ANU || ch === VIS;
+  const b = bareLetter(ch);
+  return CONSONANTS.has(b) || b === ANU || b === VIS;
 }
 
 /** `kh` → `k`, `dh` → `d`; anything else unchanged. */

@@ -149,7 +149,9 @@ function attachWith(
         report.already += 1;
         return verse;
       }
-      const source = invertVerse(verse.tokens);
+      /* Read back under the register being tried: a Ṛgveda verse's typed
+         accent is the plain svarita, and `unlengthen` recovers it. */
+      const source = invertVerse(verse.tokens, { recension: profile.recension });
       if (source.lines.length === 0) {
         report.refused.push({ verseId: verse.id, why: 'no letters to invert' });
         return verse;

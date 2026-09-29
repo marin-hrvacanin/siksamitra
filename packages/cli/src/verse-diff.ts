@@ -26,6 +26,7 @@
  *   corpus was written by a different emitter, so `{c, change, candra, sup}`
  *   compared as different from `{c, change, sup, candra}`.
  */
+import { VIRAMA_TICK } from '@siksamitra/engine';
 import type { ChantSyllable, ChantToken, ChantUnit } from '@siksamitra/format';
 
 /** The mark fields an override may carry — `hg` excluded, being a label. */
@@ -96,46 +97,55 @@ const stable = (u: ChantUnit): string => {
  * everything it produces; an original keeps its own (`keepSpacingOf` in
  * `attach-src.ts`) — so the space is neither a difference here nor lost there.
  *
- * Narrow on purpose: only between the mark and a SYLLABLE. `॥3॥` against
- * `॥ 3 ॥` is still a difference.
+ * The same holds between a daṇḍa and the verse number after it: his current
+ * documents set `॥ 1॥`, the corpus `॥1॥`. What stays a difference is a
+ * space the engine WRITES wrongly — before a closing daṇḍa after the number
+ * (`॥ 3 ॥`), which is what the 176-verse regression was.
  */
 export function isPresentationalSpace(tokens: readonly ChantToken[], i: number): boolean {
   const prev = tokens[i - 1];
   const next = tokens[i + 1];
-  return tokens[i]?.t === 'sp' && next?.t === 'syl'
-    && (prev?.t === 'danda' || prev?.t === 'pause');
+  if (tokens[i]?.t !== 'sp') return false;
+  if (next?.t === 'syl' && (prev?.t === 'danda' || prev?.t === 'pause')) return true;
+  /* Before a daṇḍa after the virāma tick: `tamamˎ।` or `tamamˎ ।`. */
+  if (next?.t === 'danda' && prev?.t === 'syl' && prev.iast.endsWith(VIRAMA_TICK)) return true;
+  return next?.t === 'num' && prev?.t === 'danda';
 }
 
 /**
- * `derived`, with the presentational spaces the ORIGINAL had — so a document
- * that gains a source layer keeps its own spacing byte for byte. The two have
- * the same shape (`diffVerse` said so), so their daṇḍas and pauses pair up
- * one for one, in order.
+ * `derived`, with the ORIGINAL's spacing wherever the spacing is presentation
+ * — so a document that gains a source layer keeps its own spacing byte for
+ * byte, and the engine's convention everywhere else. The two have the same
+ * shape (`diffVerse` said so), so their non-space tokens pair one for one;
+ * each gap between two of them takes the original's spaces when a space there
+ * would be presentational, and the derived spaces otherwise.
  */
 export function keepSpacingOf(
   derived: readonly ChantToken[],
   original: readonly ChantToken[],
 ): ChantToken[] {
-  const marks = (t: ChantToken): boolean => t.t === 'danda' || t.t === 'pause';
-  const spaced: boolean[] = [];
-  original.forEach((t, i) => {
-    if (marks(t)) spaced.push(isPresentationalSpace(original, i + 1));
-  });
-  const out: ChantToken[] = [];
-  let k = 0;
-  for (let i = 0; i < derived.length; i += 1) {
-    const t = derived[i]!;
-    out.push(t);
-    if (!marks(t)) continue;
-    const want = spaced[k] ?? false;
-    k += 1;
-    if (isPresentationalSpace(derived, i + 1)) {
-      if (!want) i += 1;              // the original had none: drop it
-    } else if (want && derived[i + 1]?.t === 'syl') {
-      out.push({ t: 'sp' });           // the original had one: keep it
+  const skeleton = (ts: readonly ChantToken[]) => {
+    const out: { t: ChantToken; after: number }[] = [];
+    let lead = 0;
+    for (const t of ts) {
+      if (t.t === 'sp') {
+        if (out.length === 0) lead += 1; else out[out.length - 1]!.after += 1;
+      } else out.push({ t, after: 0 });
     }
-  }
-  return out;
+    return { out, lead };
+  };
+  const d = skeleton(derived);
+  const o = skeleton(original);
+  if (d.out.length !== o.out.length) return [...derived];
+  const result: ChantToken[] = Array.from({ length: d.lead }, () => ({ t: 'sp' as const }));
+  d.out.forEach(({ t, after }, j) => {
+    result.push(t);
+    const next = d.out[j + 1]?.t;
+    const presentational = next !== undefined && isPresentationalSpace([t, { t: 'sp' }, next], 1);
+    const n = presentational ? o.out[j]!.after : after;
+    for (let k = 0; k < n; k += 1) result.push({ t: 'sp' });
+  });
+  return result;
 }
 
 function shape(tokens: readonly ChantToken[]): string {

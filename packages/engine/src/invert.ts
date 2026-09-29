@@ -30,6 +30,7 @@
  * Everything else on a unit — `sup`, `sbhakti`, `candra`, `hold` — is derived,
  * and none of it belongs in the letters.
  */
+import { unlengthen } from './rules/rigveda.js';
 import type { ChantSvara, ChantToken, ChantUnit } from '@siksamitra/format';
 import { ANU, VIS } from './alphabet.js';
 import { norm } from './normalize.js';
@@ -57,7 +58,17 @@ export interface InvertedSource {
 }
 
 /** Reconstruct a verse's source from its tokens. */
-export function invertVerse(tokens: readonly ChantToken[]): InvertedSource {
+export interface InvertOptions {
+  /**
+   * The recension the verse was marked in. A Ṛgveda verse is read back through
+   * `unlengthen`: the accent a person TYPES is the plain svarita on the vowel,
+   * and the dīrgha-svarita and the overline are what the rules made of it.
+   */
+  recension?: string;
+}
+
+export function invertVerse(tokens: readonly ChantToken[], opts: InvertOptions = {}): InvertedSource {
+  if (opts.recension === 'rigveda') tokens = unlengthenTokens(tokens);
   const lines: string[] = [];
   const accented: string[] = [];
   let plain = '';
@@ -95,7 +106,11 @@ export function invertVerse(tokens: readonly ChantToken[]): InvertedSource {
           accents += 1;
         }
       }
-    } else if (t.t === 'sp') put(' ');
+    }
+    /* One space, however many the stream has: a pause the rules placed stands
+       between two (`rya ␣ | ␣ ā`), and it is not in what was typed, so taking
+       it out must not leave `rya  ā` behind. */
+    else if (t.t === 'sp') { if (!plain.endsWith(' ')) put(' '); }
     else if (t.t === 'br') {
       lines.push(norm(plain));
       accented.push(norm(witnessLine(witness)));
@@ -116,4 +131,22 @@ export function invertVerse(tokens: readonly ChantToken[]): InvertedSource {
   flush();
 
   return { lines, accented, accents };
+}
+
+/** Every syllable's units through `unlengthen`, as one sequence — rule 2 moves
+ *  an accent from a nasal back to the vowel before it, which may be the last
+ *  letter of the previous syllable. */
+function unlengthenTokens(tokens: readonly ChantToken[]): ChantToken[] {
+  const flat = tokens.flatMap((t) => (t.t === 'syl' ? t.units.map((u) => ({ ...u })) : []));
+  const back = unlengthen(flat);
+  let k = 0;
+  return tokens.map((t) => {
+    if (t.t !== 'syl') return t;
+    const units = t.units.map((u) => {
+      const b = back[k++]!;
+      const { svara: _drop, ...rest } = u;
+      return { ...rest, c: b.c, ...(b.svara === undefined ? {} : { svara: b.svara as ChantSvara }) };
+    });
+    return { ...t, units };
+  });
 }

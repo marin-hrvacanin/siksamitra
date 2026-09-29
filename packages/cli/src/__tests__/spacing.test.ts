@@ -26,8 +26,11 @@ describe('which space is presentation', () => {
   it('NOT before the mark — that one the engine always writes', () => {
     expect(isPresentationalSpace([syl('oṁ'), sp, pause], 1)).toBe(false);
   });
-  it('NOT between a daṇḍa and a verse number: ॥3॥ and ॥ 3 ॥ are different documents', () => {
-    expect(isPresentationalSpace([danda, sp, num, danda], 1)).toBe(false);
+  it('between a daṇḍa and the verse number after it — his `॥ 1॥` against the corpus `॥1॥`', () => {
+    expect(isPresentationalSpace([danda, sp, num, danda], 1)).toBe(true);
+  });
+  it('but NOT between the number and the closing daṇḍa: `॥ 3 ॥` is still wrong', () => {
+    expect(isPresentationalSpace([danda, num, sp, danda], 2)).toBe(false);
   });
   it('NOT an ordinary space between words — the control', () => {
     expect(isPresentationalSpace([syl('na'), sp, syl('ma')], 1)).toBe(false);
@@ -47,8 +50,11 @@ describe('the comparison', () => {
   it('but a MISSING pause is still a difference — the control', () => {
     expect(diffVerse(file, [syl('oṁ'), sp, syl('bhūr'), sp, danda], { tamil: false }).kind).toBe('text');
   });
-  it('and a space inside ॥ 3 ॥ is still a difference', () => {
-    expect(diffVerse([danda, num, danda], [danda, sp, num, sp, danda], { tamil: false }).kind).toBe('text');
+  it('and a space before the closing daṇḍa, `॥3 ॥`, is still a difference', () => {
+    expect(diffVerse([danda, num, danda], [danda, num, sp, danda], { tamil: false }).kind).toBe('text');
+  });
+  it('while `॥ 1॥` and `॥1॥` are the same verse', () => {
+    expect(diffVerse([danda, sp, num, danda], [danda, num, danda], { tamil: false }).kind).toBe('same');
   });
 });
 
@@ -73,6 +79,10 @@ describe('keeping the original spacing', () => {
   it('touches nothing that is not presentational: a final daṇḍa, a verse number', () => {
     const t = [syl('a'), sp, danda, num, danda];
     expect(cells(keepSpacingOf(t, t))).toBe(cells(t));
+  });
+  it('keeps the original `॥ 1॥` when the engine writes `॥1॥`', () => {
+    const out = keepSpacingOf([syl('a'), sp, danda, num, danda], [syl('a'), sp, danda, sp, num, danda]);
+    expect(cells(out)).toBe('a␣<danda>␣<num><danda>');
   });
   it('an empty verse is an empty verse', () => {
     expect(keepSpacingOf([], [])).toEqual([]);

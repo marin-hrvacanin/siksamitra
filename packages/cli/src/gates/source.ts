@@ -26,6 +26,7 @@ import { join } from 'node:path';
 import { derive, resolveProfile } from '@siksamitra/engine';
 import { profileChain } from '@siksamitra/edit';
 import { canonicalJson } from '@siksamitra/format';
+import { keepSpacingOf } from '../verse-diff.js';
 import { openChantDoc } from '@siksamitra/engine';
 import type { ChantDoc, ChantToken } from '@siksamitra/format';
 
@@ -120,8 +121,11 @@ for (const file of readdirSync(DIR).filter((f) => f.endsWith('.json'))) {
         { verseId: verse.id, verseN: verse.n ?? null, overrides, trace: false },
       );
 
+      /* Byte for byte — after the ORIGINAL's presentational spacing is put
+         on the derivation (`keepSpacingOf`), because a document keeps its own
+         spacing around a daṇḍa and nowhere else may differ at all. */
       const want = withCanonicalGroups(verse.tokens);
-      const got = withCanonicalGroups(result.tokens);
+      const got = withCanonicalGroups(keepSpacingOf(result.tokens, verse.tokens));
       if (canonicalJson(got) === canonicalJson(want)) {
         row.ok += 1;
         continue;

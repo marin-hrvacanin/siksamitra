@@ -650,8 +650,29 @@ order to follow by hand or in a generator:
 5. **holdings**
 6. **anusvāra**
 7. **visarga**
-8. recension-specific svarita adjustments (Ṛgveda)
-9. svara — attested transcription, or the positional preset (§3)
+8. svara — attested transcription, or the positional preset (§3)
+9. recension-specific svarita adjustments (Ṛgveda) — AFTER the svaras, which
+   they adjust, and after the holdings, which rule 3 below reads (§5c)
+
+## 5c. The Ṛgveda's svarita — `svara.rigveda` (`rules/rigveda.ts`)
+
+v1's `applyRigvedaSvaritaRules` (`editor-quill.js` L9468-9560), confirmed
+case by case against the owner's own marked Ṛgveda — the sādhanā's ṚV 10.191
+and 8.81 sections and agnimīḻe sūktam. Each svarita, once:
+
+| # | where | becomes | his examples |
+| --- | --- | --- | --- |
+| 1 | on a long vowel | dīrgha-svarita | `viśvā̎ni` `manā̎ṁsi` `pūrve̎` `tvā̎` |
+| 2 | on a short vowel followed, in the word, by a nasal that is followed by a consonant or ends the word | the nasal takes it, as dīrgha-svarita | `kṣumanta*ñ̎` `ditsan̎tam` `rayan̎te` `svarājam̎` |
+| 3 | on any other short vowel, unless the next cluster is held | the vowel takes the overline, U+0305 (his `Long` style) | `yu̅̍vase` `bha̅̍ra` `dakṣi̅̍ṇena` — but `sami̍[dh]yase` |
+
+A nasal that only opens the next syllable does not take it (`dakṣi̅̍ṇena`).
+The overline is a CHARACTER in the text, as the candrabindu is.
+`svara.lengthening` in the register turns the step off, and it is off where
+the document is accented but not recited this way: the anukramaṇī of ṚV
+10.191, and the two shipped documents that take the `rigveda` register for
+its anusvāra treatment only (Lakṣmī Aṣṭottara, Pūjā Vidhi). Reading a marked
+Ṛgveda back (`invertVerse`, recension `rigveda`) undoes all three.
 
 Holdings run **before** the anusvāra/visarga substitutions, so a box lands on
 the letter as written; the substitutions then recolour letters without moving

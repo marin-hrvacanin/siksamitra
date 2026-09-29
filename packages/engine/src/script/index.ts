@@ -31,6 +31,7 @@ import {
 } from './tables.js';
 import type { ScriptKey } from './tables.js';
 import { formOf, type ScriptModule } from './module.js';
+import { splitRiding } from './riding.js';
 import { PHONEME_INVENTORY } from './phonemes.js';
 import { getScript, registeredScripts, requireScript } from './registry.js';
 import {
@@ -133,10 +134,8 @@ export function transliterateSyllable(
   opts?: ScriptOptions,
 ): string {
   const module = requireScript(script);
-  // A romanisation writes its vowels in line: there are no matras to fold into
-  // an onset, so the forms concatenate. This used to read `if (script ===
-  // 'iast')`, which is the privilege this refactor exists to remove — the same
-  // path now serves ITRANS and any romanisation added later.
+  // A romanisation writes its vowels in line — no matras to fold into an onset
+  // — so the forms concatenate: IAST, ITRANS and any romanisation added later.
   if (module.kind === 'romanisation') {
     // In lossless mode the conjunct choice is written out, because otherwise a
     // romanisation drops it: Devanagari distinguishes `क्त्य` from `क्‌त्य`
@@ -147,9 +146,7 @@ export function transliterateSyllable(
     return units.map((u) => {
       const form = formOf(module, u.c)?.form ?? u.c;
       if (u.cj === undefined) return form;
-      // ZWNJ / ZWJ, not the ASCII `_` / `+`.
-      //
-      // They are zero-width format characters: invisible, inert in collation
+      // ZWNJ / ZWJ, not the ASCII `_` / `+`: zero-width format characters, invisible, inert in collation
       // and search, stepped over by every rule (they are in `ANNOTATION`), and
       // already the canonical internal form — `normalize` rewrites the ASCII
       // into these before anything else runs. The ASCII pair is a TYPING
@@ -160,6 +157,8 @@ export function transliterateSyllable(
       return form + cjControl(u.cj);
     }).join('');
   }
+  const ride = splitRiding(units); // the Ṛgvedic overline: see riding.ts
+  if (ride !== null) return transliterateSyllable(ride.bare, script, opts) + ride.riding;
   const virama = module.virama;
   const sel = (c: string): string =>
     opts?.lossless === true ? selectorFor(c, script) : '';

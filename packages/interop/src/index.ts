@@ -116,3 +116,4 @@ export {
 export type { BadEntryName } from './entry-name.js';
 
 export { builtInStyleIds, canonicalStyleId } from './word/style-names.js';
+export { wordRun } from './docx-read.js';

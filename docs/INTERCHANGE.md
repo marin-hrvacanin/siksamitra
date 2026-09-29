@@ -137,6 +137,11 @@ class name, never an element, never a style.
 | `change` | a change-style letter: an anusvāra rewritten by rule, shown as itself | 964 |
 | `sup` | a superscript reading aid | 359 |
 | `candra` | the Vedic candrabindu | 89 |
+
+**`c` may end in U+0305 COMBINING OVERLINE** after a vowel: the Ṛgvedic
+lengthening of a short svarita (`yu̅̍vase`), the owner's `Long` style. It is a
+character of the letter, drawn as text, exactly as a reader draws any
+combining mark; nothing else about the unit changes.
 | `sbhakti` | the epenthetic svarabhakti vowel | 31 |
 
 
@@ -266,7 +271,9 @@ Deliberately, and permanently:
   śikṣāmitra's, and the platform never derives a mark.
 - **`profile`** names a register (`taittiriya`, `rigveda`, `sukla-yajurveda`,
   `smarta`, `prose`). It is provenance: it says which register produced the
-  marks. It is **not** an instruction to reproduce them.
+  marks. It is **not** an instruction to reproduce them. Its `patch` may carry
+  engine parameters a reader does not need to understand — `svara.lengthening`,
+  for one — and a reader that meets an unknown field passes it through.
 - **Presentation.** Colours, weights, geometry, fonts, spacing. Each side draws
   the format as it sees fit; the fixtures constrain *meaning*, not pixels.
 - **How a script is written.** The phoneme-to-glyph mapping, vowel signs,

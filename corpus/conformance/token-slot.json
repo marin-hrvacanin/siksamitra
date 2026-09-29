@@ -671,7 +671,11 @@
     ],
     "primaryScript": "iast",
     "profile": {
-      "patch": {},
+      "patch": {
+        "svara": {
+          "lengthening": false
+        }
+      },
       "preset": "rigveda"
     },
     "scripts": [

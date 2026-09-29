@@ -14,7 +14,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { mark } from '@siksamitra/format';
-import { mergeRuns, readParagraphs } from '@siksamitra/interop';
+import { mergeRuns, readParagraphs, wordRun } from '@siksamitra/interop';
 import { documentPartOf, flatPackage, textParagraph } from '../opc.js';
 import { decodeRuns, paragraphsXml, unresolvedIn } from '../paragraph.js';
 
@@ -113,7 +113,7 @@ describe('a plain paragraph', () => {
 });
 
 describe('what the reader could not place', () => {
-  const run = (text: string, rStyle: string | null) => ({ text, rStyle, superscript: false });
+  const run = wordRun;
 
   /*
    * The importer reports three different things under one name and only one of
@@ -135,12 +135,14 @@ describe('what the reader could not place', () => {
     expect(found.filter((u) => u.lossy).map((u) => u.raw)).toEqual(['(Taittirīya 1.1)']);
   });
 
-  it('does not call an unplaced style a loss when its letters stay', () => {
-    /* `Long` has no home in the format yet, so the style is dropped and the
-       letters are kept — reportable, not refusable. */
-    const found = unresolvedIn([{ pStyle: 'Translit', runs: [run('agne', 'Long')] }]);
-    expect(found).toHaveLength(1);
-    expect(found[0]?.lossy).toBe(false);
+  it('the `Long` style is read now, not reported: the Ṛgvedic overline has a home', () => {
+    /* It used to have none, and every overline in his Ṛgveda was reported and
+       then read as a LETTER, which split nothing and joined everything. It is
+       the character U+0305 riding on the vowel before it; any other letter in
+       the style (a bracket, in his sādhanā) is ordinary text. */
+    expect(unresolvedIn([{ pStyle: 'Translit', runs: [run('yu'), run('̅', 'Long'), run('vase')] }]))
+      .toEqual([]);
+    expect(unresolvedIn([{ pStyle: 'Translit', runs: [run('(', 'Long'), run('agne')] }])).toEqual([]);
   });
 
   it('finds nothing to report in an ordinary marked line', () => {

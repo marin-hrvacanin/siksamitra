@@ -20,6 +20,7 @@ export type { Derivation, DeriveSource, DeriveOptions, SrcMap } from './pipeline
 
 // ── recovering a source from the marks ─────────────────────────────────────
 export { invertVerse } from './invert.js';
+export type { InvertOptions } from './invert.js';
 export type { InvertedSource } from './invert.js';
 
 // ── the author's hand, over the rules ───────────────────────────────────────

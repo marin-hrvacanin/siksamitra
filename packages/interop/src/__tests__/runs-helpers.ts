@@ -3,10 +3,9 @@
  */
 import type { ChantToken, ChantUnit } from '@siksamitra/format';
 import type { ImportReport } from '../docx.js';
-import type { WordRun } from '../docx-read.js';
+import { wordRun } from '../docx-read.js';
 
-export const run = (text: string, rStyle: string | null = null, superscript = false): WordRun =>
-  ({ text, rStyle, superscript });
+export const run = wordRun;
 
 /** A report the reader can fill in — every field it writes to. */
 export const blank = (): ImportReport => ({

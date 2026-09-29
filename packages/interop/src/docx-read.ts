@@ -27,6 +27,10 @@ export interface WordRun {
   superscript: boolean;
 }
 
+/** One run, as the reader and every test of it build one. */
+export const wordRun = (text: string, rStyle: string | null = null, superscript = false): WordRun =>
+  ({ text, rStyle, superscript });
+
 export interface WordParagraph {
   pStyle: string | null;
   runs: WordRun[];

@@ -26,7 +26,7 @@ import { REFERENCE_COUNTS, paraRoleOf, type WordParaRole } from './word-styles.j
 import {
   columnEmuOf, figureFromDrawing, relationshipTargets, type DocxDrawing,
 } from './docx-figures.js';
-import { readParagraphs, type WordParagraph, type WordRun } from './docx-read.js';
+import { readParagraphs, wordRun, type WordParagraph, type WordRun } from './docx-read.js';
 
 /* The OOXML reader is `docx-read.ts`. Re-exported because it is part of this
    module's published surface — the add-in and two gates read paragraphs. */
@@ -270,7 +270,7 @@ export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
     if (role === 'verse-line') {
       // Consecutive Translit paragraphs are one verse until a daṇḍa + number
       // closes it — the same grouping the PDF path uses.
-      verseRuns.push(...p.runs, { text: '\n', rStyle: null, superscript: false });
+      verseRuns.push(...p.runs, wordRun('\n'));
       if (/[।॥]\s*\d*\s*[।॥]?\s*$/.test(text)) closeVerse();
       continue;
     }

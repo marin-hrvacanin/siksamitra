@@ -56,6 +56,13 @@ export interface Profile {
     readonly register: SvaraRegister;
     /** Required when `register === 'conventional'`. */
     readonly meter?: MeterKey;
+    /**
+     * The Ṛgveda's lengthening of the svarita (`rules/rigveda.ts`): a
+     * dīrgha-svarita on a long vowel or a nasal, the overline on a short
+     * vowel. On in the Ṛgveda preset; a verse that is accented but not
+     * recited that way — the anukramaṇī of ṚV 10.191 — turns it off.
+     */
+    readonly lengthening?: boolean;
   };
 
   /**
@@ -163,7 +170,7 @@ export const PROFILES: Readonly<Record<ProfileKey, Profile>> = Object.freeze({
     ...BASE,
     recension: 'rigveda',
     gum: false,
-    svara: { register: 'attested' },
+    svara: { register: 'attested', lengthening: true },
   }),
   'sukla-yajurveda': Object.freeze({
     ...BASE,

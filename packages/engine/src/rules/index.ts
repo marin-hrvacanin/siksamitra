@@ -24,6 +24,7 @@
  * Every rule cites the section it implements. A rule with no citation does not
  * merge; the registry-hygiene test asserts it.
  */
+import { applyRigvedaSvarita } from './rigveda.js';
 import { applyHoldings } from './holdings.js';
 import {
   applyAnusvara, applyAnusvaraBeforeVowel, applyGum, applySemivowelAid,
@@ -107,6 +108,14 @@ export const RULES: readonly Rule[] = [
     apply: applyReadingAids,
   },
   {
+    id: 'svara.rigveda',
+    stage: 'RecensionSvara',
+    spec: "MARKING-RULES step 8; the owner's marked ṚV 10.191, 8.81 and 1.1",
+    title: 'Ṛgveda: a svarita on a long vowel or a nasal is dīrgha; on a short vowel it takes the overline',
+    when: (p) => p.recension === 'rigveda' && p.svara.lengthening === true,
+    apply: applyRigvedaSvarita,
+  },
+  {
     id: 'aids.sv',
     stage: 'Aids',
     spec: 'MARKING-RULES §7 step 2 — measured 2/30, NOT the house habit',
@@ -126,8 +135,16 @@ export function isEnabled(rule: Rule, profile: { ruleOverrides?: Readonly<Record
 /** The stage order the pipeline runs. */
 export const STAGE_ORDER = [
   'Normalize', 'Pauses', 'Holdings', 'Anusvara', 'Visarga',
-  'Svarabhakti', 'Aids', 'RecensionSvara', 'Svara',
+  'Svarabhakti', 'Aids', 'Svara',
 ] as const;
+
+/**
+ * Stages that run AFTER the svaras are placed. The svaras are not a rule in
+ * the loop — the register decides how they come (a witness, a metre, none) —
+ * so a rule that ADJUSTS a svarita has to run after that step, and before the
+ * author's overrides, which keep the last word.
+ */
+export const AFTER_SVARA = ['RecensionSvara'] as const;
 
 export * from './types.js';
 export { samePoint, collectSamyukta, selectHoldingComponent, holdingVowel } from './holdings.js';
@@ -137,3 +154,5 @@ export {
 export type { SvaraPlan, SvaraPosition, Segment } from './svara.js';
 /** The transcription half, split out when `svara.ts` passed 400 lines. */
 export { applyAttestedSvara, witnessLine } from './witness.js';
+export { applyRigvedaSvarita, unlengthen } from './rigveda.js';
+export type { AccentUnit } from './rigveda.js';

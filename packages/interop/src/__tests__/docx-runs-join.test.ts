@@ -75,3 +75,27 @@ describe('a hyphen that OPENS a word', () => {
     expect(read(run('-a-gni'))).toBe('[-a-][gni]');
   });
 });
+
+describe('the Ṛgvedic overline (his `Long` style)', () => {
+  it('rides on the vowel before it — the syllables are not joined', () => {
+    expect(read(run('yu'), run('̅', 'Long'), run('vase'))).toBe('[yu̅][va][se]');
+  });
+  it('and the svarita after it lands on the vowel, not on the overline', () => {
+    const t = tokensFromRuns([run('yu'), run('̅', 'Long'), run('̍', 'Svara'), run('vase')], blank(), 'p');
+    const first = t.find((x) => x.t === 'syl' && x.iast.startsWith('yu'));
+    expect(first?.t === 'syl' && first.units.find((u) => u.c.startsWith('u'))?.svara).toBe('svarita');
+  });
+  it('its Devanāgarī is the engine\'s form, the mark after the syllable', () => {
+    const t = tokensFromRuns([run('na'), run('̅', 'Long')], blank(), 'p');
+    const s = t.find((x) => x.t === 'syl');
+    expect(s?.t === 'syl' && s.deva).toBe('न̅');
+  });
+  it('another letter in the style is ordinary text', () => {
+    expect(read(run('(', 'Long'), run('agne'))).toContain('(');
+  });
+  it('and nothing is reported as having no home', () => {
+    const report = blank();
+    tokensFromRuns([run('bha'), run('̅', 'Long'), run('ra')], report, 'p');
+    expect(report.unresolved.filter((u) => u.what.includes('no home'))).toEqual([]);
+  });
+});
