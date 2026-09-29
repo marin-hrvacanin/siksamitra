@@ -38,7 +38,8 @@
       "@siksamitra/tokens/figure": ["../../packages/tokens/src/figure.ts"],
       "@siksamitra/tokens/fonts": ["../../packages/tokens/src/fonts.ts"],
       "@siksamitra/tokens/source": ["../../packages/tokens/src/source.ts"],
-      "@siksamitra/tokens/word": ["../../packages/tokens/src/word.ts"]
+      "@siksamitra/tokens/word": ["../../packages/tokens/src/word.ts"],
+      "@siksamitra/ui": ["../../packages/ui/src/index.ts"]
     },
     /* `node` because `@siksamitra/interop` reaches for `Buffer` where a
        browser has no `atob` — an isomorphic fallback, never taken here, but
