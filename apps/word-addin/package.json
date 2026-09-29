@@ -16,6 +16,7 @@
     "stop": "office-addin-debugging stop manifest.xml"
   },
   "dependencies": {
+    "@siksamitra/edit": "2.0.0-alpha.0",
     "@siksamitra/engine": "2.0.0-alpha.0",
     "@siksamitra/format": "2.0.0-alpha.0",
     "@siksamitra/interop": "2.0.0-alpha.0",

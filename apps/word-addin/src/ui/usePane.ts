@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChantProfileKey, Stage } from '@siksamitra/format';
 import { STAGES, rerun, resolveProfile } from '@siksamitra/engine';
-import { applyCommand, selectionState } from '../model/command.js';
+import { applyCommand, selectionState } from '@siksamitra/edit';
 import { notCarried } from '../model/carry.js';
 import {
   addStyles, documentStyles, locate, readDocument, writeDocument, writeParagraph,

@@ -10,10 +10,11 @@
  * row: they existed because derivation ran continuously and had to be
  * suppressed. Pressing Long on a long holding removes it, and the record that
  * makes the removal survive a re-run is written without anybody learning the
- * word "none" — see `model/command.ts`.
+ * word "none" — see `text-commands.ts` in `@siksamitra/edit`.
  */
 import type { Stage } from '@siksamitra/format';
-import type { MarkCommand } from '../model/command.js';
+import type { MarkCommand } from '@siksamitra/edit';
+import { ANU, VIS } from '@siksamitra/engine';
 
 import type { IconName } from '@siksamitra/ui';
 
@@ -26,7 +27,7 @@ export interface Control {
   /** What it means, in the pane's own words. Shown as the tooltip. */
   tip: string;
   /** Which palette the button wears — see `pane.css`. */
-  mark: 'hold-short' | 'hold-long' | 'svara' | 'aid' | 'pause';
+  mark: 'hold-short' | 'hold-long' | 'svara' | 'change' | 'aid' | 'pause';
   command: MarkCommand;
   /** A point marking has no width, so it is placed at the caret. */
   point?: true;
@@ -86,6 +87,27 @@ export const GROUPS: readonly Group[] = [
         tip: 'The long falling tone — a double stroke over the letter.',
         mark: 'svara',
         command: { k: 'svara', v: 'dirgha-svarita' },
+      },
+    ],
+  },
+  {
+    title: 'Change',
+    controls: [
+      {
+        state: 'change-anusvara',
+        icon: 'change-anusvara',
+        label: 'Anusvāra',
+        tip: 'The letters here were typed as ṁ — the nasal a rule put in its place.',
+        mark: 'change',
+        command: { k: 'was', v: ANU },
+      },
+      {
+        state: 'change-visarga',
+        icon: 'change-visarga',
+        label: 'Visarga',
+        tip: 'The letters here were typed as ḥ — the sibilant or r a rule put in its place.',
+        mark: 'change',
+        command: { k: 'was', v: VIS },
       },
     ],
   },

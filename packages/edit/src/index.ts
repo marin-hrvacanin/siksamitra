@@ -101,5 +101,10 @@ export type { Retexted } from './retext.js';
 
 /* Placing a marking by hand, straight onto the text — bold's behaviour, over a
    range, on every verse alike. See `mark-text.ts`. */
-export { clearText, markText, patchToMark, toggleText } from './mark-text.js';
+export { clearText, markText, patchToMark } from './mark-text.js';
 export type { MarkPatchText, MarkTextResult } from './mark-text.js';
+
+/* The marking commands over one text-and-marks — the buttons of every program,
+   the desktop app's and the Word add-in's alike. See `text-commands.ts`. */
+export { applyCommand, selectionState } from './text-commands.js';
+export type { CommandResult, MarkCommand } from './text-commands.js';

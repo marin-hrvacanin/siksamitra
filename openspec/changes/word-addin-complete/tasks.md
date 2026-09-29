@@ -127,14 +127,14 @@
 - [x] 12.2 A lone blue bar is the rules' pause; registers fitted per section
 - [x] 12.3 Presentational spacing (after a daṇḍa/pause, `॥ 1॥`, after the tick)
       is not a difference, and an original keeps its own
-- [ ] 12.4 ONE reader for Word and PDF: the Python side only reads the page
+- [x] 12.4 ONE reader for Word and PDF: the Python side only reads the page
       (letters, boxes, colours, superscripts, accents, overline) as Word-style
       paragraphs; `buildDocument` (shared) makes the document. Deletes the
       Python syllabifier and token builder. The overline and hyphen faults of
       the PDF path go with it.
 - [ ] 12.5 A comment INSIDE a line survives: `ChantText.comment` (format,
       interchange, renderer, Word and every export) — 296 in the sādhanā
-- [ ] 12.6 The document title is read from the file; prose before the first
+- [x] 12.6 The document title is read from the file; prose before the first
       section is kept
 - [ ] 12.7 A plain document with no styles (Rudra kṣamā prārthana) imports as
       source text ready to mark
@@ -142,12 +142,12 @@
 ## 13. The Ṛgveda, complete (agnimīḻe sūktam, ṚV 10.191, 8.81)
 
 - [x] 13.1 The three svarita rules, the overline as a character, the inverse
-- [ ] 13.2 Rule 3 reads the NEXT syllable's cluster (past a visarga or
+- [x] 13.2 Rule 3 reads the NEXT syllable's cluster (past a visarga or
       anusvāra coda), and a cluster is held if any letter of it is
-- [ ] 13.3 Rule 2 across a hyphen (`satyama-ṅ̎giraḥ`)
-- [ ] 13.4 Word-initial clusters are boxed in the Ṛgveda (measured, both sources)
-- [ ] 13.5 The anunāsika: `-ān` + vowel → `-ām̐` (ṚPrāt 4.80)
+- [x] 13.3 Rule 2 across a hyphen (`satyama-ṅ̎giraḥ`)
+- [x] 13.4 Word-initial clusters are boxed in the Ṛgveda (measured, both sources)
+- [x] 13.5 The anunāsika: `-ān` + vowel → `-ām̐` (ṚPrāt 4.80)
 - [ ] 13.6 Per-verse fitting for a verse whose register differs from its
       section's (the anukramaṇī: lengthening off)
-- [ ] 13.7 A gate over the owner's Ṛgveda references that ratchets, run when
+- [x] 13.7 A gate over the owner's Ṛgveda references that ratchets, run when
       `Library/reference` is present and skipping loudly when not

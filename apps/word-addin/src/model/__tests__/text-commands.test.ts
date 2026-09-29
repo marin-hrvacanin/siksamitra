@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Mark, TextAndMarks } from '@siksamitra/format';
 import { mark } from '@siksamitra/format';
-import { applyCommand, selectionState } from '../command.js';
+import { applyCommand, selectionState } from '@siksamitra/edit';
 import { paragraphRuns } from '../paragraph.js';
 
 const TEXT = 'agne tvam';

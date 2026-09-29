@@ -1,6 +1,10 @@
 /**
  * THE MARKING COMMANDS — what Short, Long and the rest do to a list of markings.
  *
+ * ONE MODULE FOR EVERY PROGRAM. The desktop app's buttons and the Word add-in's
+ * pane, ribbon and context menu all call `applyCommand`; it moved here out of
+ * the add-in so that neither can grow its own idea of what a button does.
+ *
  * Every one of them is `toggleMark`, `applyMark` or `removeMark` from
  * `@siksamitra/format`, over the range the selection resolved to. The algebra
  * is not restated here and must not be: "apply to a mixed selection and it all
@@ -17,6 +21,7 @@ import type { Mark, MarkKind, TextAndMarks } from '@siksamitra/format';
 import {
   assertMarks, coverage, mark, normalise, removeMark, shiftForEdit, toggleMark,
 } from '@siksamitra/format';
+import { ANU, typedAs, VIS } from '@siksamitra/engine';
 
 export type MarkCommand =
   | { k: 'hold'; v: 'short' | 'long' }
@@ -25,7 +30,8 @@ export type MarkCommand =
   | { k: 'sbhakti' }
   /** A pause at the range's start. A point marking. */
   | { k: 'pause'; v: 'short' | 'long' }
-  /** The letters the rules replaced; `v` is what was typed. */
+  /** The letters the rules replaced; `v` is what was typed — `ṁ` for an
+   *  Anusvāra change, `ḥ` for a Visarga change. */
   | { k: 'was'; v: string }
   /**
    * A combining character typed onto the letters in the range.
@@ -156,11 +162,33 @@ export function applyCommand(
     ...(wasAll ? suppression(removed, from, to) : []),
   ]);
   assertMarks(out, text, `after ${cmd.k}`);
-  const what = cmd.k === 'hold' ? `${wanted.v ?? ''} holding` : cmd.k;
+  const what = cmd.k === 'hold' ? `${wanted.v ?? ''} holding`
+    : cmd.k === 'was' ? changeName(cmd.v) : cmd.k;
+  const odd = cmd.k === 'was' && !wasAll ? unusualChange(text.slice(from, to), cmd.v) : '';
   return {
     marks: out,
-    note: `${what} ${wasAll ? 'removed from' : 'placed over'} ${to - from} character(s)`,
+    note: `${what} ${wasAll ? 'removed from' : 'placed over'} ${to - from} character(s)${odd}`,
   };
+}
+
+/** What a change is called, by what was typed. */
+function changeName(typed: string): string {
+  return typed === VIS ? 'visarga change' : 'anusvāra change';
+}
+
+/** The accents and the virāma tick; the candrabindu is part of the letter. */
+const NOT_A_LETTER = /[̀-̏̑-ͯ]/gu;
+
+/**
+ * A change placed over letters that no rule of ours makes from what it says
+ * was typed. Placed anyway — the person may know better, and "any text" is
+ * what was asked for — but said, because it is usually a slip: a whole word
+ * selected where one nasal was meant. `typedAs` is the one table.
+ */
+function unusualChange(selected: string, typed: string): string {
+  const letters = selected.normalize('NFC').replace(NOT_A_LETTER, '');
+  if (letters === '' || typedAs(letters) === typedAs(typed)) return '';
+  return ` — "${letters}" is not a letter a ${typed} becomes`;
 }
 
 /**
@@ -180,5 +208,7 @@ export function selectionState(
     anudatta: at('svara', 'anudatta'),
     svarita: at('svara', 'svarita'),
     'dirgha-svarita': at('svara', 'dirgha-svarita'),
+    'change-anusvara': at('was', ANU),
+    'change-visarga': at('was', VIS),
   };
 }

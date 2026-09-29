@@ -15,13 +15,12 @@
  * there. Nothing is derived, nothing is overruled, and every verse takes one,
  * because every verse is the same shape.
  *
- * TOGGLING IS BOLD'S RULE, which `toggleMark` in `@siksamitra/format` already
- * implements: a mixed selection turns fully on, pressing again turns it off,
- * and a subset turns off on its own. That is the behaviour the owner asked for
- * by name, and it is not reimplemented here.
+ * A BUTTON PRESSED — bold's toggle over a selection — is `applyCommand` in
+ * `text-commands.ts`, the one every program calls. This file places and lifts
+ * markings the session's `mark` and `unmark` commands name.
  */
 import {
-  applyMark as applySpan, encodeMarks, mark, removeMark, toTextAndMarks, toggleMark,
+  applyMark as applySpan, encodeMarks, mark, removeMark, toTextAndMarks,
   type ChantSection, type ChantVerse, type Mark, type MarkKind,
 } from '@siksamitra/format';
 import { hydrateVerse } from '@siksamitra/engine';
@@ -90,6 +89,41 @@ function spansFor(
 }
 
 /**
+ * Every verse the targets name, its markings rewritten span by span.
+ *
+ * The one loop `markText` and `clearText` share — it was written out three
+ * times, once per button kind.
+ */
+function overSpans(
+  section: ChantSection,
+  targets: readonly UnitAddress[],
+  each: (marks: Mark[], span: { from: number; to: number }) => Mark[],
+  refuseEmpty: boolean,
+): MarkTextResult {
+  const byVerse = new Map<string, number[]>();
+  for (const t of targets) {
+    byVerse.set(t.verseId, [...(byVerse.get(t.verseId) ?? []), t.unit]);
+  }
+  const touched = new Set<string>();
+  const refusals: string[] = [];
+  const verses = section.verses.map((verse) => {
+    const units = byVerse.get(verse.id);
+    if (units === undefined) return verse;
+    const spans = spansFor(verse, units);
+    if (spans.length === 0) {
+      if (refuseEmpty) refusals.push(`verse "${verse.id}" has no letter at the position given`);
+      return verse;
+    }
+    const { text, marks } = toTextAndMarks(verse);
+    let next: Mark[] = [...marks];
+    for (const span of spans) next = each(next, span);
+    touched.add(verse.id);
+    return hydrateVerse({ ...verse, text, marks: encodeMarks(next) });
+  });
+  return { section: { ...section, verses }, touched, refusals };
+}
+
+/**
  * Place, or lift, a marking over the letters named.
  *
  * `v: null` lifts it. That is not the same as `Clear`, which withdraws every
@@ -101,73 +135,9 @@ export function markText(
   targets: readonly UnitAddress[],
   patch: MarkPatchText,
 ): MarkTextResult {
-  const byVerse = new Map<string, number[]>();
-  for (const t of targets) {
-    byVerse.set(t.verseId, [...(byVerse.get(t.verseId) ?? []), t.unit]);
-  }
-  const touched = new Set<string>();
-  const refusals: string[] = [];
-
-  const verses = section.verses.map((verse) => {
-    const units = byVerse.get(verse.id);
-    if (units === undefined) return verse;
-    const spans = spansFor(verse, units);
-    if (spans.length === 0) {
-      refusals.push(`verse "${verse.id}" has no letter at the position given`);
-      return verse;
-    }
-    const { text, marks } = toTextAndMarks(verse);
-    let next: Mark[] = [...marks];
-    for (const span of spans) {
-      next = patch.v === null
-        ? removeMark(next, patch.k, span.from, span.to)
-        : applySpan(next, mark({
-          k: patch.k, from: span.from, to: span.to, v: patch.v, by: 'hand',
-        }));
-    }
-    touched.add(verse.id);
-    return hydrateVerse({ ...verse, text, marks: encodeMarks(next) });
-  });
-
-  return { section: { ...section, verses }, touched, refusals };
-}
-
-/**
- * A marking button pressed: on if the range is not already wholly on, off if
- * it is. Word's rule, and `toggleMark` is where it lives.
- */
-export function toggleText(
-  section: ChantSection,
-  targets: readonly UnitAddress[],
-  patch: { k: MarkKind; v: string },
-): MarkTextResult {
-  const byVerse = new Map<string, number[]>();
-  for (const t of targets) {
-    byVerse.set(t.verseId, [...(byVerse.get(t.verseId) ?? []), t.unit]);
-  }
-  const touched = new Set<string>();
-  const refusals: string[] = [];
-
-  const verses = section.verses.map((verse) => {
-    const units = byVerse.get(verse.id);
-    if (units === undefined) return verse;
-    const spans = spansFor(verse, units);
-    if (spans.length === 0) {
-      refusals.push(`verse "${verse.id}" has no letter at the position given`);
-      return verse;
-    }
-    const { text, marks } = toTextAndMarks(verse);
-    let next: Mark[] = [...marks];
-    for (const span of spans) {
-      next = toggleMark(next, mark({
-        k: patch.k, from: span.from, to: span.to, v: patch.v, by: 'hand',
-      }));
-    }
-    touched.add(verse.id);
-    return hydrateVerse({ ...verse, text, marks: encodeMarks(next) });
-  });
-
-  return { section: { ...section, verses }, touched, refusals };
+  return overSpans(section, targets, (marks, span) => (patch.v === null
+    ? removeMark(marks, patch.k, span.from, span.to)
+    : applySpan(marks, mark({ k: patch.k, from: span.from, to: span.to, v: patch.v, by: 'hand' }))), true);
 }
 
 /** Withdraw every marking of these kinds from the letters named. */
@@ -176,25 +146,9 @@ export function clearText(
   targets: readonly UnitAddress[],
   kinds: readonly MarkKind[],
 ): MarkTextResult {
-  const byVerse = new Map<string, number[]>();
-  for (const t of targets) {
-    byVerse.set(t.verseId, [...(byVerse.get(t.verseId) ?? []), t.unit]);
-  }
-  const touched = new Set<string>();
-
-  const verses = section.verses.map((verse) => {
-    const units = byVerse.get(verse.id);
-    if (units === undefined) return verse;
-    const spans = spansFor(verse, units);
-    if (spans.length === 0) return verse;
-    const { text, marks } = toTextAndMarks(verse);
-    let next: Mark[] = [...marks];
-    for (const span of spans) {
-      for (const k of kinds) next = removeMark(next, k, span.from, span.to);
-    }
-    touched.add(verse.id);
-    return hydrateVerse({ ...verse, text, marks: encodeMarks(next) });
-  });
-
-  return { section: { ...section, verses }, touched, refusals: [] };
+  return overSpans(section, targets, (marks, span) => {
+    let next = marks;
+    for (const k of kinds) next = removeMark(next, k, span.from, span.to);
+    return next;
+  }, false);
 }
