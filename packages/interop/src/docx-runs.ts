@@ -23,14 +23,13 @@
  * the same paragraph imported from a file cannot disagree.
  */
 import type { ChantToken, ChantUnit } from '@siksamitra/format';
-import { parseLetters, isVowel, ANU, CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
-import { transliterateSyllable } from '@siksamitra/engine';
-import { syllabify } from '@siksamitra/engine';
+import { parseLetters, ANU, CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
 import {
   BAR_GLYPH, HOLD_CHANGE_ROLES, SVARA_BY_CHAR, roleOf,
   type WordMarkRole,
 } from './word-styles.js';
 import { mergeRuns, type WordRun } from './docx-read.js';
+import { syllablesOf } from './docx-syllables.js';
 import type { ImportReport } from './docx-report.js';
 
 export function tokensFromRuns(
@@ -56,29 +55,9 @@ export function tokensFromRuns(
 
   const flush = (): void => {
     if (word.length === 0) return;
-    // One nucleus per syllable, the same definition the engine uses.
-    const fake = word.map((u) => ({
-      kind: 'letter' as const, ch: u.c, src: { line: 0, start: 0, end: 0 },
-      word: 0, line: 0, vowel: isVowel(u.c), cons: !isVowel(u.c),
-    }));
-    const groups = syllabify(fake as never);
-    let at = 0;
-    for (const g of groups) {
-      const units = word.slice(at, at + g.length);
-      at += g.length;
-      if (units.length === 0) continue;
-      const iast = units.map((u) => u.c).join('');
-      const su = units.map((u) => ({ c: u.c, ...(u.candra === true ? { candra: true } : {}) }));
-      tokens.push({
-        t: 'syl',
-        units,
-        iast,
-        deva: transliterateSyllable(su, 'deva'),
-        tel: transliterateSyllable(su, 'tel'),
-        tam: transliterateSyllable(su, 'tam'),
-      });
-      report.structure.syllables += 1;
-    }
+    const syllables = syllablesOf(word);
+    tokens.push(...syllables);
+    report.structure.syllables += syllables.length;
     word = [];
   };
 
@@ -157,7 +136,13 @@ export function tokensFromRuns(
   };
 
   for (const run of merged) {
-    const role = roleOf(run.rStyle);
+    /* A LONE BAR IN THE BLUE STYLE IS A PAUSE. His files style everything the
+       rules did in `Anusvara` blue, and that includes the pauses the rules
+       place — the bīja pause of `oṁ | …`: 245 of them in the sādhanā. Read as
+       a letter it became a syllable `[|]`, and no such verse re-derived. */
+    const role = roleOf(run.rStyle) === 'change' && /^\s*\|{1,2}\s*$/.test(run.text)
+      ? 'pause' as const
+      : roleOf(run.rStyle);
     const bump = (k: string) => { report.marks[k] = (report.marks[k] ?? 0) + 1; };
 
     if (role === 'svara') {

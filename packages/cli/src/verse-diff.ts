@@ -86,10 +86,63 @@ const stable = (u: ChantUnit): string => {
  * different documents, and 176 verses were quietly turned into the second by
  * an emitter that added a space after every daṇḍa.
  */
+/**
+ * A SPACE AFTER A DAṆḌA OR PAUSE, BEFORE THE NEXT WORD, IS PRESENTATION.
+ *
+ * `namaḥ | hariḥ` and `namaḥ |hariḥ` are one reading of one text, and the
+ * owner's documents set it both ways: the shipped corpus has a space after a
+ * pause 266 times and none 173 times, and his Word sādhanā sets `oṁ␣|␣bhūr`
+ * where purusha-suktam sets `oṁ␣|bhūr`. The engine writes ONE convention for
+ * everything it produces; an original keeps its own (`keepSpacingOf` in
+ * `attach-src.ts`) — so the space is neither a difference here nor lost there.
+ *
+ * Narrow on purpose: only between the mark and a SYLLABLE. `॥3॥` against
+ * `॥ 3 ॥` is still a difference.
+ */
+export function isPresentationalSpace(tokens: readonly ChantToken[], i: number): boolean {
+  const prev = tokens[i - 1];
+  const next = tokens[i + 1];
+  return tokens[i]?.t === 'sp' && next?.t === 'syl'
+    && (prev?.t === 'danda' || prev?.t === 'pause');
+}
+
+/**
+ * `derived`, with the presentational spaces the ORIGINAL had — so a document
+ * that gains a source layer keeps its own spacing byte for byte. The two have
+ * the same shape (`diffVerse` said so), so their daṇḍas and pauses pair up
+ * one for one, in order.
+ */
+export function keepSpacingOf(
+  derived: readonly ChantToken[],
+  original: readonly ChantToken[],
+): ChantToken[] {
+  const marks = (t: ChantToken): boolean => t.t === 'danda' || t.t === 'pause';
+  const spaced: boolean[] = [];
+  original.forEach((t, i) => {
+    if (marks(t)) spaced.push(isPresentationalSpace(original, i + 1));
+  });
+  const out: ChantToken[] = [];
+  let k = 0;
+  for (let i = 0; i < derived.length; i += 1) {
+    const t = derived[i]!;
+    out.push(t);
+    if (!marks(t)) continue;
+    const want = spaced[k] ?? false;
+    k += 1;
+    if (isPresentationalSpace(derived, i + 1)) {
+      if (!want) i += 1;              // the original had none: drop it
+    } else if (want && derived[i + 1]?.t === 'syl') {
+      out.push({ t: 'sp' });           // the original had one: keep it
+    }
+  }
+  return out;
+}
+
 function shape(tokens: readonly ChantToken[]): string {
   const kinds: string[] = [];
-  for (const token of tokens) {
+  for (const [i, token] of tokens.entries()) {
     if (token.t === 'syl') continue;
+    if (isPresentationalSpace(tokens, i)) continue;
     if (token.t === 'sp' && kinds[kinds.length - 1] === 'sp') continue;
     kinds.push(token.t);
   }

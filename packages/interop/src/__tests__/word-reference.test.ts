@@ -30,9 +30,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { CHAR_STYLE_BY_ID, roleOf } from '../word-styles.js';
-import { tokensFromRuns, type ImportReport } from '../docx.js';
-import type { WordRun } from '../docx-read.js';
-import type { ChantToken, ChantUnit } from '@siksamitra/format';
+import { tokensFromRuns } from '../docx.js';
+import { blank, run, unitsOf } from './runs-helpers.js';
 
 describe('the vocabulary', () => {
   it('his two and ours all mean the same thing', () => {
@@ -71,26 +70,6 @@ describe('the vocabulary', () => {
 });
 
 /** A run, as the reader hands it over. */
-const run = (text: string, rStyle: string | null = null, superscript = false): WordRun =>
-  ({ text, rStyle, superscript });
-
-/** A report the reader can fill in — every field it writes to. */
-const blank = (): ImportReport => ({
-  source: { kind: 'docx', bytes: 0 },
-  structure: {
-    paragraphs: 0, paragraphsWithBody: 0, runs: 0, sections: 0, verses: 0, syllables: 0,
-  },
-  marks: {},
-  byStyle: {},
-  byPara: {},
-  normalisations: [],
-  unresolved: [],
-});
-
-/** The letters of the tokens a run list produces, flattened. */
-const unitsOf = (tokens: readonly ChantToken[]): ChantUnit[] =>
-  tokens.flatMap((t) => (t.t === 'syl' ? [...t.units] : []));
-
 describe('reading a marker out of a .docx', () => {
   it('lands on the letter BEFORE it, which is what `sup` means', () => {
     const report = blank();

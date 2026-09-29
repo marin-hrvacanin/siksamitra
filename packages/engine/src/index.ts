@@ -45,7 +45,7 @@ export type { Normalisation, NormalizeResult } from './normalize.js';
 export { lex } from './lex.js';
 export type { Elem, ElemKind, SrcSpan, LexResult } from './lex.js';
 export { syllabify, nucleusCount } from './syllable.js';
-export { emit, emitWithSpans, unitOf } from './emit.js';
+export { attachHyphen, emit, emitWithSpans, unitOf } from './emit.js';
 export type { EmitResult } from './emit.js';
 
 // ── word surfaces and their analyses ────────────────────────────────────────

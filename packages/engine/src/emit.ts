@@ -18,7 +18,7 @@
  * emits the reader's TYPED tokens (`danda`) where the Python emitted a generic
  * `{t:'punct'}` that each generator had to map itself.
  */
-import type { ChantToken, ChantUnit } from '@siksamitra/format';
+import type { ChantSyllable, ChantToken, ChantUnit } from '@siksamitra/format';
 import type { Elem, SrcSpan } from './lex.js';
 import { syllabify } from './syllable.js';
 import { transliterateSyllable } from './script/index.js';
@@ -30,6 +30,21 @@ export interface EmitOptions extends ScriptOptions {
 }
 
 /** One element becomes one unit, carrying only the keys it actually has. */
+/**
+ * A HYPHEN IS A CODA of the syllable before it, in every script:
+ * `chaṁyorā-vṛṇīmahe` is `chaṁ · yo · rā- · vṛ · …` — which is how 315 of
+ * the shipped corpus's 317 hyphens are stored. ONE function, because the
+ * `.docx` importer built its own syllables and put the hyphen at the head of
+ * the NEXT one (`[ma][-vā]`), so no Word document re-derived to itself.
+ */
+export function attachHyphen(last: ChantSyllable): void {
+  last.units.push({ c: '-' });
+  last.iast += '-';
+  last.deva += '-';
+  if (last.tel !== undefined) last.tel += '-';
+  if (last.tam !== undefined) last.tam += '-';
+}
+
 export function unitOf(l: Elem): ChantUnit {
   const u: ChantUnit = { c: l.ch };
   if (l.hold !== undefined) {
@@ -164,12 +179,8 @@ export function emitWithSpans(elems: Elem[], opts?: EmitOptions): EmitResult {
       flushWord();
       const last = tokens[tokens.length - 1];
       if (last !== undefined && last.t === 'syl') {
-        last.units.push({ c: '-' });
+        attachHyphen(last);
         spans.push(e.src);
-        last.iast += '-';
-        last.deva += '-';
-        if (last.tel !== undefined) last.tel += '-';
-        if (last.tam !== undefined) last.tam += '-';
       }
       continue;
     }

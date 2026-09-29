@@ -268,3 +268,113 @@ while a manifest change needs a re-upload.
 #### Scenario: A colleague follows the site
 - **WHEN** a colleague with a personal Microsoft account follows the web steps
 - **THEN** the add-in appears in their Word on the web
+
+### Requirement: The add-in has its own ribbon tab
+
+The add-in SHALL add a śikṣāmitra tab to Word's ribbon holding every command
+that acts directly — the holdings, svaras, aids, the anusvāra and visarga
+changes, pauses, Clear, the rules over the selection and the document — with
+menu buttons for lists (symbols, style sets). The pane SHALL remain for what
+needs room: the symbol palette, rule options, style-set previews, messages.
+
+#### Scenario: Marking from the tab with no pane open
+- **WHEN** a range is selected and Short is pressed on the śikṣāmitra tab
+- **THEN** the paragraph is written exactly as the pane's Short writes it
+
+#### Scenario: A command that cannot apply
+- **WHEN** a tab command is pressed where it cannot apply
+- **THEN** nothing is written and the reason is shown to the reader
+
+### Requirement: Style sets
+
+The reader SHALL be able to switch every śikṣāmitra style in the document
+between named style sets (Veda Union Classic and the others the app's export
+styles offer), from the SAME table the app exports with, and back.
+
+#### Scenario: Switching and switching back
+- **WHEN** a style set is applied and then the original is applied again
+- **THEN** every style definition is byte-identical to before
+
+#### Scenario: Only our styles
+- **WHEN** a style set is applied
+- **THEN** no style that is not śikṣāmitra's changes
+
+### Requirement: The add-in is the app, one to one
+
+Every capability, rule, command, register, style set and design token SHALL
+come from the shared packages; the add-in and the app SHALL NOT carry parallel
+implementations of anything. A capability the host cannot offer SHALL be
+listed with the reason.
+
+#### Scenario: One command, both programs
+- **WHEN** the same command is applied to the same text in the app and in Word
+- **THEN** the resulting text and markings are identical
+
+### Requirement: Re-running the rules is idempotent
+
+Running the rules again with the same register, stages and mode SHALL change nothing.
+
+#### Scenario: Twice is once
+- **WHEN** the rules are run over a range, and then run again with the same
+  register, stages and mode
+- **THEN** the second run changes nothing, in the app and in Word
+
+### Requirement: Showing plain is lossless
+
+The reader SHALL be able to show a text plain — every change mark turned back
+into what was typed (`gṁ`, `m̐`, an assimilated nasal back to `ṁ`; a visarga
+change back to `ḥ`) — and back, with no loss.
+
+#### Scenario: Plain and back
+- **WHEN** a marked text is shown plain and then marked again
+- **THEN** it is byte-identical to the original, hand-placed marks included
+
+### Requirement: A register change over a selection is defined
+
+Choosing a register while text is selected SHALL apply to a stated scope, keep hand-placed marks, and be one undo step.
+
+#### Scenario: A selection inside one section
+- **WHEN** part of a Kṛṣṇa Yajurveda section is selected and Ṛgveda is chosen
+- **THEN** the reader is asked whether the register applies to the selection's
+  verses or the whole section, the chosen scope is re-derived, hand-placed
+  marks are kept, and one undo restores it all
+
+#### Scenario: A selection across sections with different registers
+- **WHEN** the selection spans sections whose registers differ
+- **THEN** the register shown is "mixed", and applying one sets every verse
+  in the selection to it, with the same guarantees
+
+#### Scenario: Nothing selected
+- **WHEN** the caret is in a verse and a register is chosen
+- **THEN** it applies to the caret's section, and says so
+
+### Requirement: Large selections
+
+A command over any amount of text SHALL keep the host responsive, show progress, be cancellable and finish in bounded time.
+
+#### Scenario: A whole long document
+- **WHEN** the rules run over Śrī Rudram-sized text in Word or the app
+- **THEN** progress is shown, the host stays responsive, the run can be
+  cancelled leaving the document as it was, and it completes in bounded time
+
+### Requirement: The rulebook
+
+A rulebook SHALL be available from the app and the add-in, in their shared
+design: every rule, grouped by stage and register, with navigation, and with
+examples COMPUTED by the engine and drawn by the shared renderer — generated
+from the rule registry, so it cannot disagree with what the program does.
+
+#### Scenario: A rule's example
+- **WHEN** the rulebook shows a rule
+- **THEN** its example is the engine's own output for that input, drawn
+
+### Requirement: The owner's documents survive whole
+
+Importing and exporting the owner's documents SHALL lose nothing they contain.
+
+#### Scenario: Everything his documents contain
+- **WHEN** his Word documents are imported and exported
+- **THEN** every verse, every comment inside a line, every prose and comment
+  paragraph, the title, the Ṛgvedic overline (`Long`) and the section
+  registers survive, and a plain document with no styles imports as source
+  text ready to mark

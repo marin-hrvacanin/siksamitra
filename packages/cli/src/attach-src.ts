@@ -36,7 +36,7 @@ import { withVerses } from '@siksamitra/format';
 import type {
   ChantDoc, ChantOverride, ChantProfileRef, ChantVerse,
 } from '@siksamitra/format';
-import { diffVerse } from './verse-diff.js';
+import { diffVerse, keepSpacingOf } from './verse-diff.js';
 
 /**
  * The parametrizations worth trying, when a document does not declare one.
@@ -136,13 +136,14 @@ function countTamil(
 /** One pass with one profile. Pure: it neither searches nor prints. */
 function attachWith(
   doc: ChantDoc,
-  profile: Profile,
+  profileOf: Profile | ((sectionIndex: number) => Profile),
   opts: Required<Pick<AttachOptions, 'tamil' | 'overrides' | 'rewriteTamil'>>,
 ): { doc: ChantDoc; report: AttachReport } {
   const report = empty();
   const collected: ChantOverride[] = [...(doc.overrides ?? [])];
 
-  const sections = doc.sections.map((section) => {
+  const sections = doc.sections.map((section, sectionIndex) => {
+    const profile = typeof profileOf === 'function' ? profileOf(sectionIndex) : profileOf;
     const verses = section.verses.map((verse): ChantVerse => {
       if (verse.src !== undefined) {
         report.already += 1;
@@ -246,7 +247,7 @@ function attachWith(
        */
       return {
         ...verse,
-        tokens,
+        tokens: keepSpacingOf(tokens, verse.tokens),
         src,
         ...(withWitness ? { svaraRegister: 'attested' as const } : {}),
       };
@@ -307,12 +308,52 @@ export function attachSource(
   }
 
   if (best === null) return { ...attachWith(doc, base, opts), profile: null };
+  const docRef = best.profile;
 
-  // The winning parametrization is RECORDED on the document. Without it the
-  // source layer regenerates the verse only for whoever happens to pass the
-  // same profile, which is not a property of the file.
-  const withProfile: ChantDoc = best.report.attached > 0 && best.profile !== null
-    ? { ...best.doc, profile: best.profile }
-    : best.doc;
-  return { doc: withProfile, report: best.report, profile: best.profile };
+  /*
+   * THEN EACH SECTION ON ITS OWN. A real document mixes registers: the
+   * sādhanā has Taittirīya anuvākas, Ṛgveda sūktas and smārta ślokas, each
+   * with its own pause and box conventions, and one parametrization for all of
+   * it re-derived 145 of 512 verses. A section whose own best fit beats the
+   * document's records it — `section.profile`, which the format has always
+   * had — and only then, so a uniform document is written exactly as before.
+   */
+  const refs: (ChantProfileRef | undefined)[] = doc.sections.map((section) => {
+    const alone: ChantDoc = { ...doc, sections: [section] };
+    const under = (ref: ChantProfileRef | null) => attachWith(alone,
+      ref === null ? base : resolveProfile([ref]), opts).report;
+    const baseline = under(docRef);
+    let pick: { ref: ChantProfileRef; attached: number; overrides: number } | null = null;
+    for (const preset of Object.keys(PROFILES) as ProfileKey[]) {
+      for (const candidate of CANDIDATE_PATCHES) {
+        const ref: ChantProfileRef = { preset, patch: candidate.patch as never };
+        const r = under(ref);
+        if (r.attached > (pick?.attached ?? baseline.attached)
+          || (pick !== null && r.attached === pick.attached && r.overrides < pick.overrides)) {
+          pick = { ref, attached: r.attached, overrides: r.overrides };
+        }
+      }
+    }
+    return pick?.ref;
+  });
+  const profileOf = (i: number): Profile => {
+    const own = refs[i];
+    if (own !== undefined) return resolveProfile([own]);
+    return docRef === null ? base : resolveProfile([docRef]);
+  };
+  const result = attachWith(doc, profileOf, opts);
+  const sections = result.doc.sections.map((section, i) => {
+    const own = refs[i];
+    return own === undefined ? section : { ...section, profile: own };
+  });
+  const out: ChantDoc = { ...result.doc, sections };
+
+  // The winning parametrization is RECORDED on the document (and on each
+  // section that differs). Without it the source layer regenerates the verse
+  // only for whoever happens to pass the same profile, which is not a property
+  // of the file.
+  const withProfile: ChantDoc = result.report.attached > 0 && docRef !== null
+    ? { ...out, profile: docRef }
+    : out;
+  return { doc: withProfile, report: result.report, profile: docRef };
 }
