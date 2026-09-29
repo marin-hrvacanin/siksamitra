@@ -32,7 +32,7 @@
  * all four. Interactive children opt out with `data-no-drag`.
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Icon } from '../ui/Icon.js';
+import { Icon } from '@siksamitra/ui';
 import { host, windowControls } from './host.js';
 
 /** The window's maximised state, kept in step with the OS. */

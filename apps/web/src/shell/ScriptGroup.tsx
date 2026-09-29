@@ -17,9 +17,9 @@
  */
 import { useRef, useState, type ReactNode } from 'react';
 import type { ChantScriptKey } from '@siksamitra/format';
-import { Icon } from '../ui/Icon.js';
-import { Popover } from '../ui/Popover.js';
-import { RibbonButton, RibbonStack } from './RibbonButton.js';
+import { Icon } from '@siksamitra/ui';
+import { Popover } from '@siksamitra/ui';
+import { RibbonButton, RibbonStack } from '@siksamitra/ui';
 
 interface Script {
   readonly k: ChantScriptKey;

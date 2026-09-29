@@ -223,7 +223,7 @@ describe('fixing a boundary by hand', () => {
     expect(named(clean, 'Next guess')?.disabled).toBe(true);
     /* And it says WHY, rather than being a dead control with no explanation —
        "why are so many options greyed out?" is the complaint this answers. */
-    expect(named(clean, 'Next guess')?.title).toContain('landed on a breath');
+    expect(named(clean, 'Next guess')?.dataset.why).toContain('landed on a breath');
 
     const work = mount(<BoundaryGroup audio={player()} mapping={mapping({ guesses: 3 })} />);
     expect(named(work, 'Next guess')?.disabled).toBe(false);

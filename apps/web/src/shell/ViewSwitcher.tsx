@@ -10,8 +10,8 @@
 
 import type { ReactNode } from 'react';
 import { VIEW_CYCLE, VIEW_MODES, type ViewKind } from '@siksamitra/layout';
-import { RibbonButton } from './RibbonButton.js';
-import type { IconName } from '../ui/Icon.js';
+import { RibbonButton } from '@siksamitra/ui';
+import type { IconName } from '@siksamitra/ui';
 
 /** One icon per view. Here rather than in `layout`, which draws nothing. */
 const ICON: Readonly<Record<ViewKind, IconName>> = {

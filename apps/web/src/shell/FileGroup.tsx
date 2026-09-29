@@ -32,7 +32,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
 import { DEFAULT_EXPORT_STYLE, EXPORT_STYLES } from '@siksamitra/tokens/export-styles';
 import { CommandButtons } from './CommandButtons.js';
-import { RibbonButton, RibbonStack } from './RibbonButton.js';
+import { RibbonButton, RibbonStack } from '@siksamitra/ui';
 import { fileNameFor } from './doc-file.js';
 import type { CommandContext } from './commands.js';
 

@@ -66,21 +66,49 @@ vi.mock('../../apps/word-addin/src/word/client.js', () => ({
   addStyles: vi.fn(async (keep: boolean) => { calls.addStyles.push(keep); missing = []; }),
 }));
 
+/*
+ * THE HOST, AS FAR AS THE PANE TALKS TO IT DIRECTLY. The pane follows the caret
+ * through `DocumentSelectionChanged`; the handler is captured here, so
+ * `refresh()` below is exactly what Word does when the reader moves.
+ */
+let selectionChanged: (() => void) | null = null;
+(globalThis as { Office?: unknown }).Office = {
+  context: {
+    officeTheme: { bodyBackgroundColor: '#1B1A19' },
+    document: { addHandlerAsync: (_e: unknown, h: () => void) => { selectionChanged = h; } },
+  },
+  EventType: { DocumentSelectionChanged: 'documentSelectionChanged' },
+};
+if (typeof window.matchMedia !== 'function') {
+  window.matchMedia = (() => ({ matches: false, addEventListener() {}, removeEventListener() {} })) as never;
+}
+
 /* Imported AFTER the mock, so the pane binds to it. */
-const { build, refresh } = await import('../../apps/word-addin/src/ui/pane.js');
+const { createElement } = await import('react');
+const { act } = await import('react');
+const { createRoot } = await import('react-dom/client');
+const { Pane } = await import('../../apps/word-addin/src/ui/Pane.js');
 const { ARM_MS } = await import('../../apps/word-addin/src/ui/dom.js');
 
-/** Let the pane's promises settle — it builds synchronously and then reads. */
+/** Let the pane's promises settle, inside React's act so every update lands. */
 const settle = async (): Promise<void> => {
-  for (let i = 0; i < 12; i += 1) await Promise.resolve();
+  await act(async () => { for (let i = 0; i < 12; i += 1) await Promise.resolve(); });
+};
+
+/** The reader moved the caret. */
+const refresh = async (): Promise<void> => {
+  await act(async () => { selectionChanged?.(); });
 };
 
 let root: HTMLElement;
+let unmount: (() => void) | null = null;
 
 const mount = async (): Promise<void> => {
   root = document.createElement('div');
   document.body.append(root);
-  build(root);
+  const r = createRoot(root);
+  await act(async () => { r.render(createElement(Pane)); });
+  unmount = () => { act(() => r.unmount()); };
   await settle();
 };
 
@@ -99,23 +127,32 @@ beforeEach(() => {
   calls.writeDocument = 0;
   calls.writeDocumentTotal = 0;
   calls.writeParagraph = 0;
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   located.from = 3;
   located.to = 8;
   located.unresolved = [];
 });
 
 afterEach(() => {
+  unmount?.();
+  unmount = null;
   root.remove();
   vi.useRealTimers();
 });
 
 describe('what is in the pane', () => {
+  it('follows the caret: it asks Word to be told when the selection moves', async () => {
+    selectionChanged = null;
+    await mount();
+    expect(selectionChanged).not.toBeNull();
+  });
+
   it('the marking buttons, the rules, the document group and the version', async () => {
     await mount();
     for (const label of ['Short', 'Long', 'Anudātta', 'Svarita', 'Pause', 'Clear']) {
       expect(button(label), label).toBeDefined();
     }
-    expect(text()).toContain('This document');
+    /* 'This document' is shown only when something needs doing — see 'a fresh document'. */
     expect(text()).toContain('The rules');
     /* The version, because a task pane is a CACHED page: Word holds one for
        days and nothing in Office says which build is loaded. */
@@ -153,10 +190,13 @@ describe('the document’s text is displayed and never interpreted', () => {
 
       /* It is ON SCREEN — otherwise this would pass by showing nothing. */
       expect(text()).toContain(payload);
-      /* And nothing the payload asked for became an element. */
-      for (const tag of ['img', 'script', 'svg', 'iframe', 'a[href^="javascript:"]']) {
+      /* And nothing the payload asked for became an element. The pane's own
+         buttons carry svg icons, so an svg is looked for only where the
+         document's text is drawn. */
+      for (const tag of ['img', 'script', 'iframe', 'a[href^="javascript:"]']) {
         expect(root.querySelectorAll(tag).length, `${payload} created ${tag}`).toBe(0);
       }
+      expect(root.querySelectorAll('.where svg').length, `${payload} created svg`).toBe(0);
     });
   }
 
@@ -219,10 +259,12 @@ describe('the document’s text is displayed and never interpreted', () => {
     await mount();
     await refresh();
     await settle();
+    /* The button is refused BEFORE it can be pressed, and says why. */
+    expect(button('Short')?.disabled).toBe(true);
+    expect(button('Short')?.dataset.why).toContain('cannot place');
     button('Short')?.click();
     await settle();
     expect(calls.writeParagraph).toBe(0);
-    expect(text()).toContain('Refusing to write');
   });
 });
 
@@ -235,12 +277,12 @@ describe('a fresh document', () => {
     expect(text()).toContain('styles are in this document');
   });
 
-  it('and a document with everything says so, quietly', async () => {
+  it('and a document with everything does not show the group at all', async () => {
     missing = [];
     await mount();
-    const group = root.querySelector('[data-group="document"]');
-    expect(group?.getAttribute('data-ready')).toBe('true');
-    expect(text()).toContain('has all 16 śikṣāmitra styles');
+    /* Nothing needs doing, so the group is not there at all — the pane shows
+       only what needs doing (spec: "Only what needs doing"). */
+    expect(root.querySelector('[data-group="document"]')).toBeNull();
   });
 
   it('and one with none of them says marking still works', async () => {
@@ -281,7 +323,6 @@ describe('the button that rewrites the whole document', () => {
     /* Nothing has happened yet, and the button now holds the question. */
     expect(calls.writeDocument).toBe(0);
     expect(all?.textContent).toContain('Rewrite every mantra line?');
-    expect(all?.getAttribute('data-armed')).toBe('yes');
   });
 
   it('and does it on the second press', async () => {
@@ -292,7 +333,7 @@ describe('the button that rewrites the whole document', () => {
     all?.click();
     await settle();
     expect(calls.writeDocument).toBe(1);
-    expect(all?.getAttribute('data-armed')).toBeNull();
+    expect(all?.textContent).toContain('Run over the document');
     /* THE PARAGRAPH COUNT TRAVELS WITH THE INDICES. `writeDocument` addresses
        paragraphs by index from a different read than the one it writes
        through, and it refuses when the two disagree — so the pane has to hand
@@ -306,10 +347,9 @@ describe('the button that rewrites the whole document', () => {
     vi.useFakeTimers();
     await mount();
     const all = button('Run over the document');
-    all?.click();
-    expect(all?.getAttribute('data-armed')).toBe('yes');
-    vi.advanceTimersByTime(ARM_MS + 1);
-    expect(all?.getAttribute('data-armed')).toBeNull();
+    await act(async () => { all?.click(); });
+    expect(all?.textContent).toContain('Rewrite every mantra line?');
+    await act(async () => { vi.advanceTimersByTime(ARM_MS + 1); });
     expect(all?.textContent).toContain('Run over the document');
   });
 

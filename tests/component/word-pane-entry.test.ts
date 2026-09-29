@@ -8,13 +8,15 @@
  * say why. These load the real module into a DOM with and without an `Office`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act } from 'react';
 
-vi.mock('../../apps/word-addin/src/ui/pane.js', () => ({
-  build: vi.fn((root: HTMLElement) => { root.textContent = 'the pane was built'; }),
-  refresh: vi.fn(async () => undefined),
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+vi.mock('../../apps/word-addin/src/ui/Pane.js', () => ({
+  Pane: () => 'the pane was built',
 }));
 
-const ENTRY = '../../apps/word-addin/src/taskpane.ts';
+const ENTRY = '../../apps/word-addin/src/taskpane.tsx';
 
 beforeEach(() => {
   vi.resetModules();
@@ -48,11 +50,10 @@ describe('with office.js', () => {
     return addHandlerAsync;
   }
 
-  it('builds the pane in Word, and follows the caret — the control', async () => {
-    const follow = office('Word');
-    await import(ENTRY);
+  it('draws the pane in Word — the control', async () => {
+    office('Word');
+    await act(async () => { await import(ENTRY); });
     expect(root().textContent).toBe('the pane was built');
-    expect(follow).toHaveBeenCalledOnce();
   });
 
   it('and outside Word, says it marks Word documents', async () => {

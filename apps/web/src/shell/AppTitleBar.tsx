@@ -14,7 +14,7 @@
  */
 import type { ReactNode } from 'react';
 import { TitleBar } from './TitleBar.js';
-import { Icon } from '../ui/Icon.js';
+import { Icon } from '@siksamitra/ui';
 import { titleBarNames } from './title-names.js';
 import type { DocFile } from './useDocFile.js';
 

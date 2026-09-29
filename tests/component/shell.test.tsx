@@ -11,9 +11,9 @@
  */
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { renderToString } from 'react-dom/server';
-import { Icon } from '../../apps/web/src/ui/Icon.js';
-import { ICONS, ICON_NAMES } from '../../apps/web/src/ui/icons.generated.js';
-import { RibbonButton, RibbonStack } from '../../apps/web/src/shell/RibbonButton.js';
+import { Icon } from '@siksamitra/ui';
+import { ICONS, ICON_NAMES } from '@siksamitra/ui';
+import { RibbonButton, RibbonStack } from '@siksamitra/ui';
 
 /** Render to a real element, so `querySelector` and `textContent` work. */
 function mount(node: React.ReactNode): HTMLElement {
@@ -100,7 +100,11 @@ describe('a ribbon button', () => {
     const host = mount(
       <RibbonButton icon="undo" label="Undo" title="Take it back" accel="Ctrl+Z" onClick={() => {}} />,
     );
-    expect(host.querySelector('button')!.title).toBe('Take it back (Ctrl+Z)');
+    const b = host.querySelector('button')!;
+    expect(b.dataset.tip).toBe('Take it back');
+    expect(b.dataset.accel).toBe('Ctrl+Z');
+    /* The browser's own popup is gone — two tooltips over one button. */
+    expect(b.title).toBe('');
   });
 
   it('is disabled rather than absent when it cannot run', () => {

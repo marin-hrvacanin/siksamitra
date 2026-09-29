@@ -19,10 +19,15 @@
     "@siksamitra/engine": "2.0.0-alpha.0",
     "@siksamitra/format": "2.0.0-alpha.0",
     "@siksamitra/interop": "2.0.0-alpha.0",
-    "@siksamitra/tokens": "2.0.0-alpha.0"
+    "@siksamitra/tokens": "2.0.0-alpha.0",
+    "@siksamitra/ui": "2.0.0-alpha.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/office-js": "^1.0.377",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "office-addin-debugging": "^6.0.4",
     "office-addin-dev-certs": "^2.0.4",
     "office-addin-manifest": "^2.1.6",

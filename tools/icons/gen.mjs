@@ -25,7 +25,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
 const SET = join(ROOT, 'node_modules', '@material-symbols', 'svg-400', 'rounded');
 const OUT_SVG = join(ROOT, 'assets', 'icons');
-const OUT_TS = join(ROOT, 'apps', 'web', 'src', 'ui', 'icons.generated.ts');
+const OUT_TS = join(ROOT, 'packages', 'ui', 'src', 'icons.generated.ts');
 const check = process.argv.includes('--check');
 
 /** The `d` attributes of a Material Symbols file, with its own view box. */
@@ -131,5 +131,5 @@ writeFileSync(
     '',
   ].join('\n'),
 );
-console.log(`\n  ${names.length} icons → assets/icons/ and apps/web/src/ui/icons.generated.ts`);
+console.log(`\n  ${names.length} icons → assets/icons/ and packages/ui/src/icons.generated.ts`);
 console.log(`    ${Object.keys(SYMBOL).length} Material Symbols · ${Object.keys(MARK).length} marking · ${Object.keys(CAPTION).length} caption\n`);

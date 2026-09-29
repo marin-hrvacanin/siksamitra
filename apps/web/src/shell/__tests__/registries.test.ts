@@ -15,7 +15,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMMANDS, commandsIn, handleKey, type CommandContext } from '../commands.js';
 import { EDIT_KEYS, accelOf, ribbonActions } from '../../editor/keymap.js';
-import { ICONS } from '../../ui/icons.generated.js';
+import { ICONS } from '@siksamitra/ui';
 
 /** A context that records what a command did to it. */
 function context(over: Partial<CommandContext> = {}): CommandContext & { calls: string[] } {

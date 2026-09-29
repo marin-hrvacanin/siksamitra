@@ -1,216 +1,140 @@
 /*
- * The task pane.
+ * The task pane's ARRANGEMENT — and nothing else.
  *
- * NOT ONE DESIGN VALUE IS WRITTEN HERE. Every colour, size, radius and gap is a
- * custom property out of `@siksamitra/tokens/tokens.css`, which is the same
- * file the editor and vedaunion.org load — so the green of the Short button is
- * literally the green Word will draw the box in, and it stays that way when the
- * token changes. `taskpane.html` sets `data-chrome` and `data-doc`, which is
- * what selects the palette.
- *
- * A TASK PANE IS NARROW — around 320 px, and the reader can drag it narrower.
- * So there is one column, the controls wrap, and nothing assumes a width.
+ * Every control is the app's own (`@siksamitra/ui`: the ribbon button, the
+ * group frame, the tooltip), styled by the app's own sheets, which this file
+ * does not repeat. What is here is the column a task pane needs: it is tall and
+ * narrow — about 320 px, and the reader can drag it to 300 — where the ribbon
+ * is wide and short. Not one design value is written here: every size, colour
+ * and gap is a token.
  */
 
-body {
-  margin: 0;
-  font-family: var(--font-ui);
-  font-size: var(--text-ui);
-  color: var(--chrome-ink);
-  background: var(--chrome-bg);
-}
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--chrome-bg); }
 
 .pane {
+  min-height: 100vh;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
-  padding: var(--space-6);
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--chrome-bg);
+  color: var(--chrome-ink);
+  font: var(--text-ui) / 1.4 var(--font-ui);
+  overflow-wrap: anywhere;
 }
 
-/* ── what the selection is ─────────────────────────────────────────────── */
+/* ── where: the selection, one line ────────────────────────────────────── */
 
 .where {
-  padding: var(--space-4);
-  border: 1px solid var(--chrome-line); /* token-exempt: a hairline is 1 device pixel, not a scale step */
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-hair) solid var(--chrome-line-soft);
   border-radius: var(--chrome-radius);
   background: var(--chrome-raise);
   color: var(--chrome-ink-soft);
-  line-height: var(--doc-leading);
-  overflow-wrap: anywhere;
+  font-size: var(--text-ui-sm);
 }
+.where strong { color: var(--chrome-ink); font-family: var(--doc-verse-face); font-weight: 400; }
+.where[data-state="none"] { color: var(--chrome-ink-mute); }
+.where__refuse { margin: var(--space-1) 0 0; color: var(--chrome-ink); }
+.where[data-lossy] { border-color: var(--chrome-danger); }
+.where__notes { margin: var(--space-1) 0 0; padding-inline-start: var(--space-4); }
 
-.where strong {
-  color: var(--chrome-ink);
-  font-weight: 600;
+/* ── the last action's message ─────────────────────────────────────────── */
+
+.said {
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: var(--space-1) solid var(--chrome-accent);
+  background: var(--chrome-sunk);
+  border-radius: var(--chrome-radius);
+  font-size: var(--text-ui-sm);
 }
+.said[data-kind="warn"] { border-inline-start-color: var(--chrome-danger); }
+.said ul { margin: var(--space-1) 0 0; padding-inline-start: var(--space-4); }
 
-.where[data-state='none'] {
-  color: var(--chrome-ink-mute);
-}
+/* ── this document: shown only when something needs doing ──────────────── */
 
-/* ── a group of buttons ────────────────────────────────────────────────── */
-
-.group {
+.doc-box {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
 }
+.doc-box__h { margin: 0; font-size: var(--text-ui); font-weight: 600; }
+.doc-box .says { margin: 0; font-size: var(--text-ui-sm); color: var(--chrome-ink-soft); }
+.doc-box__do { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 
-.group > h2 {
-  margin: 0;
-  font-size: var(--text-ui-sm);
-  font-weight: 600;
-  letter-spacing: var(--tracking-eyebrow, normal);
-  text-transform: uppercase;
-  color: var(--chrome-ink-mute);
-}
+/* ── the marks: the ribbon's groups, wrapping in a column ──────────────── */
 
-.row {
+.pane__groups {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--chrome-gap);
-}
-
-button {
-  min-height: var(--control-h);
-  padding: var(--space-2) var(--space-5);
-  font: inherit;
-  color: var(--chrome-ink);
-  background: var(--chrome-raise);
-  border: 1px solid var(--chrome-line); /* token-exempt: a hairline is 1 device pixel, not a scale step */
+  border: var(--border-hair) solid var(--chrome-line-soft);
   border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+}
+/* In a column the groups wrap, so the ribbon's divider goes under a group as
+   well as beside it; the last one in a row loses its right edge naturally. */
+.pane__groups .grp {
+  flex: 1 1 auto;
+  border-bottom: var(--border-hair) solid var(--chrome-line-soft);
+}
+.pane__groups .grp__body { flex-wrap: wrap; justify-content: center; }
+/* A ribbon is one row tall, so its large button fills it (`height: 100%`). In
+   a wrapping column that pushed the second row out of the group's frame —
+   "Clear" landed on the Register box. Here a button is as tall as it is. */
+.pane__groups .rbb--lg { height: auto; }
+
+/* ── the rules: folded until opened ────────────────────────────────────── */
+
+.rules {
+  border: var(--border-hair) solid var(--chrome-line-soft);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+}
+.rules > summary {
   cursor: pointer;
-}
-
-button:hover:not(:disabled) {
-  background: var(--chrome-sunk);
-}
-
-button:disabled {
-  color: var(--chrome-ink-mute);
-  cursor: default;
-}
-
-/*
- * A pressed button carries the mark's OWN colour, because the thing it turns on
- * is that colour on the page. A generic accent would make Short and Long look
- * like the same control at two settings, which is what they are not: the only
- * difference between the two boxes Word draws is the stroke weight, so the
- * button has to carry the difference somewhere a person can see it.
- */
-button[aria-pressed='true'] {
-  border-color: currentcolor;
-  background: var(--chrome-sunk);
-}
-
-button[data-mark='hold-short'] { color: var(--color-hold); }
-button[data-mark='hold-long'] { color: var(--color-hold-long); }
-button[data-mark='svara'] { color: var(--color-svara); }
-button[data-mark='aid'] { color: var(--color-change); }
-button[data-mark='pause'] { color: var(--color-pause-short); }
-
-/* The two holding weights, as the page and the .docx draw them. */
-button[data-mark='hold-short'][aria-pressed='true'] {
-  border-width: calc(var(--mark-holdStroke-short) * 1em);
-}
-
-button[data-mark='hold-long'][aria-pressed='true'] {
-  border-width: calc(var(--mark-holdStroke-long) * 1em);
-}
-
-/* ── the rules ─────────────────────────────────────────────────────────── */
-
-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  color: var(--chrome-ink-soft);
-}
-
-select {
-  width: 100%;
-  min-height: var(--control-h);
-  font: inherit;
+  padding: var(--space-2) var(--space-3);
+  font-weight: 600;
   color: var(--chrome-ink);
-  background: var(--chrome-raise);
-  border: 1px solid var(--chrome-line); /* token-exempt: a hairline is 1 device pixel, not a scale step */
-  border-radius: var(--chrome-radius);
+  list-style-position: inside;
 }
-
-.stages {
+.rules[open] > summary { border-bottom: var(--border-hair) solid var(--chrome-line-soft); }
+.rules > :not(summary) { margin: var(--space-2) var(--space-3); }
+.rules__row { display: flex; align-items: center; gap: var(--space-2); }
+.rules__row select { flex: 1 1 auto; min-width: 0; }
+.rules fieldset {
+  border: 0;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3) var(--space-5);
+  gap: var(--space-1) var(--space-3);
 }
-
-.note {
-  color: var(--chrome-ink-soft);
-  line-height: var(--doc-leading);
-  overflow-wrap: anywhere;
-}
-
-.note[data-kind='warn'] {
-  color: var(--chrome-danger);
-}
-
-.note ul {
-  margin: var(--space-2) 0 0;
-  padding-inline-start: var(--space-6);
-}
-
-/* ── this document ─────────────────────────────────────────────────────── */
-
-/*
- * WHILE ANYTHING IS MISSING, THE GROUP COMES FIRST.
- *
- * The pane is one flex column, so `order` moves it without the DOM changing —
- * which matters because moving a node re-creates it and a button mid-press
- * would lose its handler. A fresh Word document has none of the seventeen
- * styles, and "prepare the document" is the first thing that happens in it;
- * once that is done the group is one quiet line and belongs at the bottom,
- * where it is built.
- */
-.group[data-group='document'][data-ready='false'] {
-  order: -1;
-}
-
-.says {
-  margin: 0;
-  color: var(--chrome-ink-soft);
-  line-height: var(--doc-leading);
-}
-
-.group[data-group='document'][data-ready='false'] .says {
-  color: var(--chrome-ink);
-}
-
-/*
- * A BUTTON THAT HAS ASKED A QUESTION, and is waiting for the second press.
- *
- * It wears the danger colour rather than an accent because what it is asking
- * about is a rewrite of every mantra paragraph in the file — `insertOoxml`
- * replaces a whole paragraph, so a comment or a bookmark inside one does not
- * come back, and one Ctrl+Z does not undo four hundred of them.
- */
-button[data-armed='yes'] {
-  color: var(--chrome-danger);
-  border-color: currentcolor;
-  background: var(--chrome-sunk);
-}
-
-/* ── which build this is ───────────────────────────────────────────────── */
-
-.foot {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--chrome-gap);
-  justify-content: space-between;
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--chrome-line); /* token-exempt: a hairline is 1 device pixel, not a scale step */
-  color: var(--chrome-ink-mute);
+.rules legend {
+  padding: 0 0 var(--space-1);
   font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-soft);
 }
+.rules label { display: inline-flex; align-items: center; gap: var(--space-1); }
+.rules input { accent-color: var(--chrome-accent); margin: 0; }
+.rules__do { display: flex; flex-wrap: wrap; gap: var(--space-1); padding-bottom: var(--space-2); }
 
-.foot a {
-  color: var(--chrome-accent);
+/* ── the foot ──────────────────────────────────────────────────────────── */
+
+.pane__foot {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-soft);
+}
+/* The ink, underlined — the accent measured 3.04:1 as text on the light ground. */
+.pane__foot a { color: var(--chrome-ink); text-decoration-color: var(--chrome-accent); }
+
+@media (forced-colors: active) {
+  .where, .said, .doc-box, .pane__groups, .rules { border-color: CanvasText; }
 }

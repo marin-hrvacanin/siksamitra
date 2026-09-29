@@ -14,8 +14,8 @@
  */
 import { useRef, type ReactNode } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
-import { Icon } from '../ui/Icon.js';
-import { RibbonButton, RibbonStack } from './RibbonButton.js';
+import { Icon } from '@siksamitra/ui';
+import { RibbonButton, RibbonStack } from '@siksamitra/ui';
 import type { Recording } from '../audio/useRecording.js';
 import { NUDGE, type Mapping } from '../audio/useMapping.js';
 
@@ -209,9 +209,8 @@ export function BoundaryGroup(
         icon="find"
         label="Next guess"
         size="lg"
-        title={mapping.guesses === 0
-          ? 'Every boundary landed on a breath'
-          : 'Go to the next boundary the mapper had to guess'}
+        title="Go to the next boundary the mapper had to guess"
+        why="Every boundary landed on a breath"
         disabled={mapping.guesses === 0}
         onClick={() => { mapping.nextGuess(); }}
       />

@@ -16,6 +16,7 @@
     "packages/audio",
     "packages/account",
     "packages/edit",
+    "packages/ui",
     "packages/render",
     "packages/interop",
     "packages/storage",

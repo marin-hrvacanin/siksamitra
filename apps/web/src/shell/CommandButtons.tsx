@@ -14,7 +14,7 @@
  */
 import type { ReactNode } from 'react';
 import { commandsIn, type CommandContext, type CommandGroup } from './commands.js';
-import { RibbonButton, RibbonStack } from './RibbonButton.js';
+import { RibbonButton, RibbonStack } from '@siksamitra/ui';
 
 export function CommandButtons(
   { group, ctx, large = [] }: {

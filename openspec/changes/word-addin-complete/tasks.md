@@ -60,7 +60,10 @@
 
 - [ ] 6.1 Theme from `officeTheme`, then `prefers-color-scheme`; live on change;
       `forced-colors`
-- [ ] 6.2 Layout per D8: status line, grouped icon tools with swatches, rules
+- [ ] 6.0 `packages/ui` (D11): Icon + icon table, RibbonButton, RibbonStack, group
+      frame, Popover, Tooltip, and their stylesheets, moved out of `apps/web`; the
+      app imports them from there, every browser gate still green
+- [ ] 6.2 Layout per D8, built from `packages/ui`: status line, grouped icon tools, rules
       collapsible, "This document" only when needed
 - [ ] 6.3 Register stored in document settings
 - [ ] 6.4 Tests: component (theme chosen from each input; sections shown only

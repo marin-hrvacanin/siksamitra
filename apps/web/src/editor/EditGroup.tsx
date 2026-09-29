@@ -13,7 +13,7 @@
  * a pair. Two actions that answer each other are the same size; the rest stack.
  */
 import type { ReactNode } from 'react';
-import { RibbonButton, RibbonStack } from '../shell/RibbonButton.js';
+import { RibbonButton, RibbonStack } from '@siksamitra/ui';
 import { accelOf, ribbonActions, type Binding } from './keymap.js';
 import { focusDocument } from './focus.js';
 import type { Session } from './useSession.js';

@@ -19,7 +19,7 @@
  * (`IAST_LEADER_KEY`). Both are his own binding from v1.
  */
 import type { Session } from './useSession.js';
-import type { IconName } from '../ui/Icon.js';
+import type { IconName } from '@siksamitra/ui';
 
 export interface Binding {
   /** `KeyboardEvent.key`, matched case-insensitively for letters. Empty for an

@@ -1,0 +1,49 @@
+/* The tooltip layer (`Tooltip.tsx`). Tokens only — it sits above the ribbon's
+   own popovers, below a modal dialog. */
+
+.tip {
+  --tip-gap: var(--space-1);
+  position: fixed;
+  z-index: 70;
+  max-width: var(--menu-wide);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  box-shadow: var(--chrome-shadow-lift);
+  font: var(--text-ui-sm) / 1.35 var(--font-ui);
+  pointer-events: none;
+  animation: tip-in 120ms var(--ease-out-expo);
+}
+
+.tip__accel {
+  font: inherit;
+  color: var(--chrome-ink-mute);
+  padding: 0 var(--space-1);
+  border: var(--border-hair) solid var(--chrome-line-soft);
+  border-radius: var(--chrome-radius);
+}
+
+/* Why it cannot be pressed — on its own line, so it is read as the answer. */
+.tip__why {
+  flex-basis: 100%;
+  color: var(--chrome-ink-soft);
+}
+
+@keyframes tip-in {
+  from { opacity: 0; transform: translateY(calc(-1 * var(--space-1))); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip { animation: none; }
+}
+
+@media (forced-colors: active) {
+  .tip { border-color: CanvasText; background: Canvas; color: CanvasText; }
+}

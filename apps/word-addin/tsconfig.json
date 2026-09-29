@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
     "noEmit": true,
     /* EVERY WORKSPACE PACKAGE, TO SOURCE — not the four this used to list.
 

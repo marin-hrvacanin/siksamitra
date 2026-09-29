@@ -15,7 +15,7 @@
 
 import type { ChantScriptKey } from '@siksamitra/format';
 import type { ViewKind, ZoomMode } from '@siksamitra/layout';
-import type { IconName } from '../ui/Icon.js';
+import type { IconName } from '@siksamitra/ui';
 
 /** Everything a command may act on. Explicit, so a command cannot reach past it. */
 export interface CommandContext {

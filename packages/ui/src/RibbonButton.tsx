@@ -20,7 +20,8 @@
  * space. The click still fires; only the focus change is refused.
  */
 import type { ReactNode } from 'react';
-import { Icon, type IconName } from '../ui/Icon.js';
+import { Icon, type IconName } from './Icon.js';
+import { tipProps } from './Tooltip.js';
 
 export interface RibbonButtonProps {
   /**
@@ -36,6 +37,8 @@ export interface RibbonButtonProps {
   title?: string;
   /** Shown after the title in the tooltip, as Word shows it. */
   accel?: string;
+  /** Why it is disabled right now — the tooltip's answer to "why can I not press this?" */
+  why?: string;
   size?: 'lg' | 'sm';
   disabled?: boolean;
   /** A toggle's state. `undefined` for a plain action, so nothing is announced. */
@@ -46,16 +49,14 @@ export interface RibbonButtonProps {
 const keepFocus = (e: React.MouseEvent): void => e.preventDefault();
 
 export function RibbonButton(
-  { icon, label, title, accel, size = 'sm', disabled = false, pressed, onClick }: RibbonButtonProps,
+  { icon, label, title, accel, why, size = 'sm', disabled = false, pressed, onClick }: RibbonButtonProps,
 ): ReactNode {
-  const tip = [title ?? label, accel === undefined ? '' : `(${accel})`]
-    .filter((s) => s !== '').join(' ');
   return (
     <button
       type="button"
       className={`rbb rbb--${size}${pressed === true ? ' is-on' : ''}`}
       disabled={disabled}
-      title={tip}
+      {...tipProps(title ?? label, accel, disabled ? why : undefined)}
       aria-pressed={pressed}
       onMouseDown={keepFocus}
       onClick={onClick}

@@ -21,8 +21,8 @@
  */
 import { useRef, useState, type ReactNode } from 'react';
 import { IAST_PALETTE, leaderFor } from '../editor/iast.js';
-import { RibbonButton } from './RibbonButton.js';
-import { Popover } from '../ui/Popover.js';
+import { RibbonButton } from '@siksamitra/ui';
+import { Popover } from '@siksamitra/ui';
 
 export function IastPalette(
   { insert, armed, enabled }: {

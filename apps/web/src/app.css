@@ -12,11 +12,12 @@
 
 @import './styles/base.css';
 @import './styles/titlebar.css';
-@import './styles/controls.css';
-@import './styles/ribbon.css';
+@import '@siksamitra/ui/controls.css';
+@import '@siksamitra/ui/ribbon.css';
 @import './styles/canvas.css';
 @import './styles/nav.css';
-@import './styles/popover.css';
+@import '@siksamitra/ui/popover.css';
+@import '@siksamitra/ui/tooltip.css';
 @import './styles/backstage.css';
 @import './styles/dialog.css';
 /* The document comes after the shell and after `chant.css` (imported in

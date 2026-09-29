@@ -17,7 +17,7 @@
  */
 import type { ReactNode } from 'react';
 import { MAY, can, describeRole, type Ability } from '@siksamitra/account';
-import { Icon } from '../ui/Icon.js';
+import { Icon } from '@siksamitra/ui';
 import type { AccountApi } from '../account/useAccount.js';
 
 /** The abilities worth listing, in the order somebody would ask about them. */

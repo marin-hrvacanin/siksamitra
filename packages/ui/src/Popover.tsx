@@ -131,7 +131,7 @@ export function Popover(
    * fixed` child — its containing block is the viewport, not the scroller. So
    * this keeps the theme AND stays out of the ribbon's clip.
    */
-  const root = document.querySelector('.app') ?? document.body;
+  const root = document.querySelector('[data-chrome]') ?? document.body;
 
   return createPortal(
     <div

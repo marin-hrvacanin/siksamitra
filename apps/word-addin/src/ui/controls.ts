@@ -15,7 +15,11 @@
 import type { Stage } from '@siksamitra/format';
 import type { MarkCommand } from '../model/command.js';
 
+import type { IconName } from '@siksamitra/ui';
+
 export interface Control {
+  /** The glyph, from the one icon table the app's ribbon uses. */
+  icon: IconName;
   /** The key `selectionState` reports this button's coverage under. */
   state?: string;
   label: string;
@@ -39,6 +43,7 @@ export const GROUPS: readonly Group[] = [
     controls: [
       {
         state: 'hold-short',
+        icon: 'hold-short',
         label: 'Short',
         tip: 'A thin box — 0.25 pt, his `Holding` style. Press again to take it off.',
         mark: 'hold-short',
@@ -46,6 +51,7 @@ export const GROUPS: readonly Group[] = [
       },
       {
         state: 'hold-long',
+        icon: 'hold-long',
         label: 'Long',
         tip: 'A thick box — 1.5 pt, his `2Holding` style. The weight is the only '
           + 'difference between the two.',
@@ -59,6 +65,7 @@ export const GROUPS: readonly Group[] = [
     controls: [
       {
         state: 'anudatta',
+        icon: 'svara-anudatta',
         label: 'Anudātta',
         tip: 'The low tone — a bar under the letter.',
         mark: 'svara',
@@ -66,6 +73,7 @@ export const GROUPS: readonly Group[] = [
       },
       {
         state: 'svarita',
+        icon: 'svara-svarita',
         label: 'Svarita',
         tip: 'The falling tone — a stroke over the letter.',
         mark: 'svara',
@@ -73,6 +81,7 @@ export const GROUPS: readonly Group[] = [
       },
       {
         state: 'dirgha-svarita',
+        icon: 'svara-dirgha',
         label: 'Dīrgha svarita',
         tip: 'The long falling tone — a double stroke over the letter.',
         mark: 'svara',
@@ -84,6 +93,7 @@ export const GROUPS: readonly Group[] = [
     title: 'Aids',
     controls: [
       {
+        icon: 'candrabindu',
         label: 'Candrabindu',
         /* A CHARACTER, not a marking — U+0310 laid on the letter. It was a
            marking until the run renderer showed it could not be drawn as one:
@@ -94,6 +104,7 @@ export const GROUPS: readonly Group[] = [
         command: { k: 'combining', v: '̐' },
       },
       {
+        icon: 'svarabhakti',
         label: 'Svarabhakti',
         tip: 'The epenthetic dot, written before the letter it belongs to.',
         mark: 'aid',
@@ -101,6 +112,7 @@ export const GROUPS: readonly Group[] = [
         point: true,
       },
       {
+        icon: 'bar-short',
         label: 'Pause',
         tip: 'A short pause — one bar, in his `Pause` style.',
         mark: 'pause',
@@ -108,6 +120,7 @@ export const GROUPS: readonly Group[] = [
         point: true,
       },
       {
+        icon: 'bar-long',
         label: 'Long pause',
         tip: 'A long pause — two bars.',
         mark: 'pause',
@@ -115,6 +128,7 @@ export const GROUPS: readonly Group[] = [
         point: true,
       },
       {
+        icon: 'marks-clear',
         label: 'Clear',
         tip: 'Withdraw every marking in the selection.',
         mark: 'aid',

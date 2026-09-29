@@ -12,8 +12,8 @@
 
 import { useRef, useState, type ReactNode } from 'react';
 import type { Appearance } from '../state/useAppearance.js';
-import { RibbonButton } from './RibbonButton.js';
-import { Popover } from '../ui/Popover.js';
+import { RibbonButton } from '@siksamitra/ui';
+import { Popover } from '@siksamitra/ui';
 
 function Group(
   { label, choices, value, onPick }: {
@@ -61,7 +61,7 @@ export function AppearanceMenu({ look }: { look: Appearance }): ReactNode {
         PORTALLED, because the ribbon clips. `.rbn__body` has `overflow:
         hidden` so a group that does not fit cannot spill across the row — and
         that clip applied to this menu too, leaving nine tenths of it below the
-        ribbon's edge and unreachable. See `ui/Popover.tsx`.
+        ribbon's edge and unreachable. See `packages/ui/src/Popover.tsx`.
       */}
       <Popover anchor={anchor} open={open} onClose={() => setOpen(false)} label="Appearance">
         <div className="ap__pop">

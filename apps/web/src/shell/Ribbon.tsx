@@ -31,8 +31,8 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Icon, type IconName } from '../ui/Icon.js';
-import { Popover } from '../ui/Popover.js';
+import { Icon, type IconName } from '@siksamitra/ui';
+import { Popover } from '@siksamitra/ui';
 import { useOverflow, type OverflowGroup } from './useOverflow.js';
 
 export interface RibbonGroup extends OverflowGroup {
@@ -70,7 +70,7 @@ export interface RibbonTab {
 /**
  * A group that did not fit, as one labelled button and a popover.
  *
- * The popover is PORTALLED (see `ui/Popover.tsx`): the ribbon body clips its
+ * The popover is PORTALLED (see `packages/ui/src/Popover.tsx`): the ribbon body clips its
  * children so a group cannot spill across the row, and that clip cut every
  * menu off at the ribbon's edge.
  */

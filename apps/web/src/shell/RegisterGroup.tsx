@@ -20,8 +20,8 @@
  */
 import { useRef, useState, type ReactNode } from 'react';
 import { CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES, type ChantProfileKey } from '@siksamitra/format';
-import { Popover } from '../ui/Popover.js';
-import { RibbonButton } from './RibbonButton.js';
+import { Popover } from '@siksamitra/ui';
+import { RibbonButton } from '@siksamitra/ui';
 import type { Session } from '../editor/useSession.js';
 
 export function RegisterGroup(

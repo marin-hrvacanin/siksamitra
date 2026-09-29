@@ -23,7 +23,7 @@
  */
 import { useRef, type ReactNode } from 'react';
 import { FIGURE_MEDIA_TYPES } from '@siksamitra/format';
-import { RibbonButton } from './RibbonButton.js';
+import { RibbonButton } from '@siksamitra/ui';
 import { IastPalette } from './IastPalette.js';
 import { readImageFile } from '../editor/useFigures.js';
 import type { Session } from '../editor/useSession.js';

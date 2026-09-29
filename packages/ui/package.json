@@ -1,0 +1,35 @@
+{
+  "name": "@siksamitra/ui",
+  "version": "2.0.0-alpha.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./controls.css": "./src/controls.css",
+    "./ribbon.css": "./src/ribbon.css",
+    "./popover.css": "./src/popover.css",
+    "./tooltip.css": "./src/tooltip.css"
+  },
+  "files": [
+    "dist",
+    "src/*.css"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.3"
+  }
+}

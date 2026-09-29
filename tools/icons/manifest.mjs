@@ -70,6 +70,7 @@ export const SYMBOL = {
   'auto-keep': 'wand_stars',
   'auto-replace': 'published_with_changes',
   locked: 'lock',
+  symbols: 'special_character',
 
   /* views */
   'view-flow': 'notes',
@@ -146,6 +147,55 @@ export const MARK = {
     + ' stroke-width="1.2" stroke-linejoin="round"/>'
     + '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
     + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+
+  /*
+   * The svaras, as they are written on the page — the same letter as the
+   * holding icons, with the accent where the accent goes: a bar UNDER for the
+   * anudātta, one stroke OVER for the svarita, two for the dīrgha svarita.
+   */
+  'svara-anudatta':
+    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
+    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<path d="M8.6 19.4h6.8" fill="none" stroke="currentColor" stroke-width="1.6"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/>',
+  'svara-svarita':
+    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
+    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<path d="M12 2.2v3.4" fill="none" stroke="currentColor" stroke-width="1.6"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/>',
+  'svara-dirgha':
+    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
+    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<path d="M10.7 2.2v3.4M13.3 2.2v3.4" fill="none" stroke="currentColor" stroke-width="1.6"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/>',
+  /* Candrabindu: the crescent and its dot, over the letter. */
+  candrabindu:
+    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
+    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<path d="M9.4 4.6a2.6 2.2 0 0 0 5.2 0" fill="none" stroke="currentColor" stroke-width="1.3"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="12" cy="2.6" r="0.9" fill="currentColor"/>',
+  /* Svarabhakti: the dot, written BEFORE the letter it belongs to. */
+  svarabhakti:
+    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
+    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="5.4" cy="12.2" r="1.1" fill="currentColor"/>',
+  /* The two pauses — one bar and two, as they are written in the line. */
+  'bar-short':
+    '<path d="M12 5.5v13" fill="none" stroke="currentColor" stroke-width="1.8"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/>',
+  'bar-long':
+    '<path d="M9.6 5.5v13M14.4 5.5v13" fill="none" stroke="currentColor" stroke-width="1.8"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/>',
+  /* A letter the rules replaced: ṁ for an anusvāra change, ḥ for a visarga one. */
+  'change-anusvara':
+    '<path d="M6.8 16.8v-6.2M6.8 12c0-1.5 1-2.2 2.3-2.2s2.2.7 2.2 2.2v4.8M11.3 12c0-1.5 1-2.2 2.3-2.2s2.2.7 2.2 2.2v4.8" fill="none" stroke="currentColor" stroke-width="1.5"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="11.3" cy="6.2" r="1" fill="currentColor"/>',
+  'change-visarga':
+    '<path d="M9 5.2v11.6M9 11.2c0-1.6 1.2-2.4 2.6-2.4s2.6.8 2.6 2.4v5.6" fill="none" stroke="currentColor" stroke-width="1.5"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="11.6" cy="19.6" r="1" fill="currentColor"/>',
   /* Marks on or off: the svara stroke above a letter, the holding under it. */
   marks:
     '<path d="M9 4.4h6" fill="none" stroke="currentColor" stroke-width="1.6"'

@@ -23,7 +23,7 @@ import { GuardDialog } from './shell/GuardDialog.js';
 import { useDocFile } from './shell/useDocFile.js';
 import { useAccount } from './account/useAccount.js';
 import { Toolbar } from './shell/Toolbar.js';
-import { Icon } from './ui/Icon.js';
+import { Icon, TooltipLayer } from '@siksamitra/ui';
 import { handleKey, type CommandContext } from './shell/commands.js';
 import { EditorSurface } from './editor/EditorSurface.js';
 import { useContextualTab } from './shell/useContextualTab.js';
@@ -250,6 +250,7 @@ export function App() {
       data-mode={look.mode}
       data-density={look.density}
     >
+      <TooltipLayer />
       <AppTitleBar file={file} />
 
       <Toolbar

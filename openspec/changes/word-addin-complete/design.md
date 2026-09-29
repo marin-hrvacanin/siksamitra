@@ -156,3 +156,29 @@ Word on the web is the host tested live (a signed-in browser driven by
 same Office.js; it is confirmed once, before the store, with the existing COM
 gate plus a sideload. Mac and iPad remain claimed-not-verified, and the site
 says so.
+
+### D11. One design, one origin: the pane IS the app's UI
+
+The pane was hand-written DOM with its own stylesheet, and looked like it: a
+second design that resembled the first. It is replaced by the app's own
+components, moved into ONE shared package, `packages/ui`, that both the app and
+the add-in import:
+
+- `Icon` and the generated icon table (the same Material Symbols Rounded set
+  and marking glyphs the ribbon uses — `tools/icons/manifest.mjs` stays the one
+  place an icon is named)
+- `RibbonButton`, `RibbonStack`, the group frame, `Popover`
+- a real `Tooltip` — a label, the shortcut, and when disabled the REASON — which
+  replaces the browser's `title` popup in BOTH programs
+- the ribbon, control and popover stylesheets, which already read only tokens
+
+The pane becomes React, like the app. Its chrome theme and mode are set with the
+same `data-chrome` / `data-mode` / `data-density` attributes the app sets on
+`.app`, so every token resolves identically; the mode comes from Word (D7).
+
+Responsiveness is the app's own mechanism, not a second one: the pane's groups
+collapse with `useOverflow` / `fit-groups` exactly as the ribbon's do at narrow
+widths, down to 300 px.
+
+**Rejected:** restyling the existing pane to look like the app. Two
+implementations of one look drift the first time either changes — rule 1.

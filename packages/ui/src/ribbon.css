@@ -198,7 +198,9 @@
 .grp__label {
   text-align: center;
   font-size: var(--text-ui-sm);
-  color: var(--chrome-ink-mute);
+  /* ink-SOFT, not ink-mute: mute measured 2.86:1 on the raised ground — a
+     label a person has to squint at (tools/word-pane.mjs, the contrast check). */
+  color: var(--chrome-ink-soft);
   padding-top: var(--space-1);
   white-space: nowrap;
 }

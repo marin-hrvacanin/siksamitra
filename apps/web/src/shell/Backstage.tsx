@@ -17,7 +17,7 @@
  */
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
-import { Icon } from '../ui/Icon.js';
+import { Icon } from '@siksamitra/ui';
 import { AccountPanel } from './AccountPanel.js';
 import type { AccountApi } from '../account/useAccount.js';
 import type { LibraryDoc } from './library.js';

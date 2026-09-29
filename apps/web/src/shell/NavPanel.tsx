@@ -20,7 +20,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { recitationText } from '@siksamitra/format';
 import type { ChantDoc, ChantToken } from '@siksamitra/format';
-import { Icon } from '../ui/Icon.js';
+import { Icon } from '@siksamitra/ui';
 import { blockId } from '../views/blocks.js';
 
 export interface OutlineNode {
