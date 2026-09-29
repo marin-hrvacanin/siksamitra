@@ -101,16 +101,16 @@
 
 ## 10. Symbols, and insertions that are not sticky
 
-- [ ] 10.1 Move the IAST palette table (`apps/web/src/editor/iast.ts`) into
+- [x] 10.1 Move the IAST palette table (`apps/web/src/editor/iast.ts`) into
       `packages/engine` so the app and the add-in share ONE table; the app
       re-imports it unchanged
-- [ ] 10.2 The pane's symbol palette: the groups, each key inserting in its
+- [x] 10.2 The pane's symbol palette: the groups, each key inserting in its
       proper style; svaras attach to the letter before the caret
-- [ ] 10.3 Not sticky: after every styled insertion the caret's formatting is
+- [x] 10.3 Not sticky: after every styled insertion the caret's formatting is
       the surrounding text's. The technique is MEASURED in Word on the web
       (typing after an insertion and reading the typed run's style), not
       assumed; the chosen one is recorded in design
-- [ ] 10.4 Tests: unit (each key's style; attach/refuse rules), integration
+- [x] 10.4 Tests: unit (each key's style; attach/refuse rules), integration
       (the palette table is the app's — one module), component (palette
       renders every group, keys labelled), live (insert each kind, then type,
       then assert the typed run's style)

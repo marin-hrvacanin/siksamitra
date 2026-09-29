@@ -17,7 +17,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, renderHook, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { IAST_PALETTE } from '../../apps/web/src/editor/iast.js';
+import { IAST_PALETTE } from '@siksamitra/ui';
 import { useIast } from '../../apps/web/src/editor/useIast.js';
 import { IastPalette } from '../../apps/web/src/shell/IastPalette.js';
 

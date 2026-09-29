@@ -235,7 +235,7 @@
 /* ── the IAST keyboard ─────────────────────────────────────────────────────
    v1's `dialog-iast.html`, recreated in a popover: the varṇamālā in eight
    groups by place of articulation. The characters and the arrangement are
-   `editor/iast.ts`'s; this is only how they are laid out.
+   `iast.ts`'s, drawn by `IastKeys`; this is only how they are laid out.
 
    TWO COLUMNS, as his dialog had — eight groups in one column is a list
    nobody scans. `auto-fit` rather than a fixed two, so a narrow window gets

@@ -1,6 +1,10 @@
 /**
  * TYPING IAST — the leader key and the character palette, as data.
  *
+ * ONE TABLE FOR EVERY PROGRAM: the app's IAST popover and the Word add-in's
+ * insert palette both draw `IAST_PALETTE` through `IastKeys`. It moved here
+ * out of the app for exactly that.
+ *
  * A person marking a Vedic text types `ā`, `ṛ`, `ṁ`, `ṭh`, `ś` and `ḥ` all
  * day, and no keyboard layout has them. v1 answered that twice and the answers
  * are HIS, so both are transcribed here from v1's own source rather than
@@ -127,9 +131,17 @@ export const IAST_PALETTE: readonly IastGroup[] = [
       { ch: 'ꣳ', name: 'Vedic tiryak' },
       { ch: '̱', show: 'a̱', name: 'anudātta (U+0331)' },
       { ch: '̍', show: 'a̍', name: 'svarita (U+030D)' },
-      { ch: '̎', show: 'a̎', name: 'udātta (U+030E)' },
+      /* U+030E is the DĪRGHA SVARITA in this notation (`SVARA_CHAR` in
+         `@siksamitra/interop`), and v1's dialog called it "udātta" — which is
+         the unmarked tone and has no mark at all. */
+      { ch: '̎', show: 'a̎', name: 'dīrgha svarita (U+030E)' },
       { ch: '̐', show: 'm̐', name: 'candrabindu (U+0310)' },
       { ch: 'ꣻ', name: 'Vedic anusvāra above (U+A8FB)' },
+      /* The Ṛgveda's overline and the virāma tick, which his Ṛgveda and his
+         Taittirīya files carry and v1's dialog predates. */
+      { ch: '̅', show: 'a̅', name: 'Ṛgvedic overline (U+0305)' },
+      { ch: 'ˎ', name: 'virāma tick (U+02CE)' },
+      { ch: 'ऽ', name: 'avagraha' },
     ],
   },
 ];

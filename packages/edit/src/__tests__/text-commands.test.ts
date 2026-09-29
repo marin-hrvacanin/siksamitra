@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TextAndMarks } from '@siksamitra/format';
 import { ANU, VIS } from '@siksamitra/engine';
-import { applyAcross, applyCommand, selectionAcross, selectionState } from '../index.js';
+import { applyAcross, applyCommand, selectionAcross, selectionState, typeAt } from '../index.js';
 
 const tm = (text: string): TextAndMarks => ({ text, marks: [] });
 const TEXT = 'taṅ kavim';
@@ -87,5 +87,58 @@ describe('a press over several lines is decided once, for the whole selection', 
   it('one line: the same as a single press — the control', () => {
     const [l] = lines();
     expect(applyAcross([l!], { k: 'hold', v: 'short' })[0]).toEqual(applyCommand(l!.tm, 0, 5, { k: 'hold', v: 'short' }));
+  });
+});
+
+describe('typing from the palette is never sticky', () => {
+  const boxed = { text: 'agne', marks: applyCommand(tm('agne'), 1, 2, { k: 'hold', v: 'short' }).marks };
+  it('a letter typed right after a box is outside it', () => {
+    const t = typeAt(boxed, 2, 2, 'ṅ');
+    expect(t.text).toBe('agṅne');
+    expect(t.marks.filter((m) => m.k === 'hold')).toEqual([expect.objectContaining({ from: 1, to: 2 })]);
+    expect(t.caret).toBe(3);
+  });
+  it('a letter typed inside a box is inside it — bold\'s rule', () => {
+    const t = typeAt({ text: 'agne', marks: applyCommand(tm('agne'), 1, 3, { k: 'hold', v: 'short' }).marks }, 2, 2, 'x');
+    expect(t.marks.filter((m) => m.k === 'hold')).toEqual([expect.objectContaining({ from: 1, to: 4 })]);
+  });
+  it('an accent is a svara on the letter before the caret, not a character', () => {
+    const t = typeAt(tm('agne'), 4, 4, '̍');
+    expect(t.text).toBe('agne');
+    expect(t.marks).toEqual([expect.objectContaining({ k: 'svara', v: 'svarita', from: 3, to: 4 })]);
+    expect(t.caret).toBe(4);
+  });
+  it('and the letter typed after the accent carries none', () => {
+    const accented = typeAt(tm('agne'), 4, 4, '̍');
+    const next = typeAt(accented, 4, 4, 'ḥ');
+    expect(next.text).toBe('agneḥ');
+    expect(next.marks.filter((m) => m.k === 'svara')).toEqual([expect.objectContaining({ from: 3, to: 4 })]);
+  });
+  it('an accent after a letter that already rides a mark lands on that letter', () => {
+    const t = typeAt(tm('ma̅'), 3, 3, '̱');
+    expect(t.marks).toEqual([expect.objectContaining({ k: 'svara', v: 'anudatta', from: 1, to: 3 })]);
+  });
+  it('the candrabindu goes into the text on the letter before', () => {
+    const t = typeAt(tm('sam'), 3, 3, '̐');
+    expect(t.text).toBe('sam̐');
+    expect(t.caret).toBe(4);
+  });
+  it('an accent at the start of a line has nowhere to go, and says so', () => {
+    const t = typeAt(tm('agne'), 0, 0, '̍');
+    expect(t.marks).toEqual([]);
+    expect(t.note).toContain('no letter before the caret');
+  });
+  it('an accent after a space has nowhere to go either', () => {
+    expect(typeAt(tm('a b'), 2, 2, '̍').marks).toEqual([]);
+  });
+  it('the overline is text, riding on its vowel — a box ending there takes it in', () => {
+    const t = typeAt(boxed, 2, 2, '̅');
+    expect(t.text).toBe('ag̅ne');
+    expect(t.marks.filter((m) => m.k === 'hold')).toEqual([expect.objectContaining({ from: 1, to: 3 })]);
+  });
+  it('typing over a selection replaces it', () => {
+    const t = typeAt(tm('agne'), 1, 3, 'ṅ');
+    expect(t.text).toBe('aṅe');
+    expect(t.caret).toBe(2);
   });
 });

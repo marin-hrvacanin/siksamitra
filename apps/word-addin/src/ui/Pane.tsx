@@ -19,7 +19,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES } from '@siksamitra/format';
 import type { ChantProfileKey, Stage } from '@siksamitra/format';
 import { STAGES } from '@siksamitra/engine';
-import { RibbonButton, TooltipLayer, tipProps } from '@siksamitra/ui';
+import { IastKeys, RibbonButton, TooltipLayer, tipProps } from '@siksamitra/ui';
 import { STYLE_MEANS } from '../model/setup.js';
 import { ARM_MS } from './dom.js';
 import { GROUPS, STAGE_LABEL, type Control } from './controls.js';
@@ -67,6 +67,7 @@ export function Pane(): ReactNode {
       <div className="pane__groups">
         {GROUPS.map((g) => <MarkGroup key={g.title} title={g.title} controls={g.controls} pane={pane} />)}
       </div>
+      <Insert pane={pane} />
       <TheRules pane={pane} />
       <footer className="pane__foot">
         <a href={GUIDE_URL} target="_blank" rel="noopener noreferrer">What the marks mean</a>
@@ -186,6 +187,28 @@ function MarkGroup(
       </div>
       <div className="grp__label">{title}</div>
     </section>
+  );
+}
+
+/**
+ * THE INSERT PALETTE — every IAST letter and Vedic mark, the app's own keys.
+ *
+ * Each key goes through the model rather than Word's typing (`typeAt`), so an
+ * accent lands as the Svara style on the letter before the caret and the
+ * letter typed after it is plain: the stickiness Word would otherwise carry
+ * over from the character before the caret cannot happen. No F9 hints: the
+ * leader key is the app's, and in Word it does nothing.
+ */
+function Insert({ pane }: { pane: PaneModel }): ReactNode {
+  return (
+    <details className="insert">
+      <summary {...tipProps('Every IAST letter and Vedic mark, inserted at the caret in its proper style.')}>
+        Insert
+      </summary>
+      <div className="iast__pad">
+        <IastKeys leader={false} insert={(ch) => { void pane.insert(ch); }} />
+      </div>
+    </details>
   );
 }
 

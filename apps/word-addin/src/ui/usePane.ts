@@ -20,7 +20,8 @@ import { locate, type Located } from '../word/selection.js';
 import { recordedRegister } from '../word/settings.js';
 import { SAID_KEY } from '../commands-table.js';
 import {
-  defaultRules, markSelection, runOverDocument, runOverSelection, type Rules, type Said,
+  defaultRules, markSelection, runOverDocument, runOverSelection, typeInSelection,
+  type Rules, type Said,
 } from '../word/actions.js';
 import type { Control } from './controls.js';
 
@@ -124,6 +125,16 @@ export function usePane() {
     });
   }, [guard, refresh, rules, show]);
 
+  const insert = useCallback(async (ch: string) => {
+    const here = atRef.current;
+    if (here === null) { say('Put the caret in a line of text first.', 'warn'); return; }
+    await guard('cannot insert', async () => {
+      const m = await typeInSelection(here, ch);
+      if (m.text !== '') show(m);
+      await refresh();
+    });
+  }, [guard, refresh, say, show]);
+
   const runDocument = useCallback(async () => {
     await guard('the rules would not run over the document', async () => {
       say('Reading the document…');
@@ -152,7 +163,7 @@ export function usePane() {
 
   return {
     at, state, message, styles, busy, rules, setRules, marked,
-    refresh, press, runHere, runDocument, putStyles,
+    refresh, press, insert, runHere, runDocument, putStyles,
   };
 }
 

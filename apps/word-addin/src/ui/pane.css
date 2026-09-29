@@ -89,13 +89,15 @@ body { background: var(--chrome-bg); }
    "Clear" landed on the Register box. Here a button is as tall as it is. */
 .pane__groups .rbb--lg { height: auto; }
 
-/* ── the rules: folded until opened ────────────────────────────────────── */
+/* ── the insert palette and the rules: folded until opened ─────────────── */
 
+.insert,
 .rules {
   border: var(--border-hair) solid var(--chrome-line-soft);
   border-radius: var(--chrome-radius);
   background: var(--chrome-raise);
 }
+.insert > summary,
 .rules > summary {
   cursor: pointer;
   padding: var(--space-2) var(--space-3);
@@ -103,8 +105,11 @@ body { background: var(--chrome-bg); }
   color: var(--chrome-ink);
   list-style-position: inside;
 }
+.insert[open] > summary,
 .rules[open] > summary { border-bottom: var(--border-hair) solid var(--chrome-line-soft); }
 .rules > :not(summary) { margin: var(--space-2) var(--space-3); }
+/* The palette's own padding is the popover's; in the pane the frame gives it. */
+.insert .iast__pad { padding: var(--space-2) var(--space-3); }
 .rules__row { display: flex; align-items: center; gap: var(--space-2); }
 .rules__row select { flex: 1 1 auto; min-width: 0; }
 .rules__note { margin: 0; font-size: var(--text-ui-sm); color: var(--chrome-ink-soft); }

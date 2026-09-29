@@ -11,7 +11,7 @@
  * and then `await import` this module. `root` is read through the module
  * namespace (`H.root`), because it is reassigned by every `mount`.
  */
-import { afterEach, beforeEach, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, vi } from 'vitest';
 
 export const located = {
   tm: { text: 'oṁ agnim īḷe puraḥ', marks: [] as unknown[] },
@@ -43,6 +43,8 @@ export const host = {
 export const calls = {
   addStyles: [] as boolean[], writeDocument: 0, writeParagraph: 0,
   writeDocumentTotal: 0, written: 0, linesWritten: 0,
+  lastWrites: [] as { tm: { text: string; marks: { k: string; v?: string }[] } }[],
+  caret: null as { line: number; at: number } | null,
 };
 
 /** The selection: `located` is its one line, unless a test sets `more`. */
@@ -52,9 +54,11 @@ export const selectionMock = {
     return { ...one, lines: [one, ...structuredClone(host.more)] };
   }),
   /* A press writes the selection's lines in ONE call; this counts calls. */
-  writeLines: vi.fn(async (writes: unknown[]) => {
+  writeLines: vi.fn(async (writes: unknown[], caret?: { line: number; at: number }) => {
     if (writes.length > 0) calls.writeParagraph += 1;
     calls.linesWritten += writes.length;
+    calls.lastWrites = writes as typeof calls.lastWrites;
+    calls.caret = caret ?? null;
     return writes.length;
   }),
   LineChanged: class extends Error {},
@@ -144,6 +148,14 @@ export const button = (label: string): HTMLButtonElement | undefined =>
 
 export const text = (): string => root.textContent ?? '';
 
+/* THE PANE IS LOADED ONCE, BEFORE ANY TEST, on its own clock. Its first
+   import transforms the whole add-in and the engine under it, and under the
+   full suite's load that took longer than a test's 5 s — the first test timed
+   out and every later one failed after it. */
+beforeAll(async () => {
+  await import('../../apps/word-addin/src/ui/Pane.js');
+}, 120_000);
+
 beforeEach(() => {
   /* `located` is module-level, so every field a test changes has to come back
      — including the text. Leaving one behind made two later tests fail with a
@@ -156,6 +168,8 @@ beforeEach(() => {
   calls.writeDocumentTotal = 0;
   calls.writeParagraph = 0;
   calls.linesWritten = 0;
+  calls.lastWrites = [];
+  calls.caret = null;
   host.more = [];
   host.settings.clear();
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

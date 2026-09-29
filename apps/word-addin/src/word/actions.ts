@@ -13,7 +13,7 @@
 import type { ChantProfileKey, Stage, TextAndMarks } from '@siksamitra/format';
 import { CHANT_PROFILE_NOTES } from '@siksamitra/format';
 import { STAGES, rerun, resolveProfile, showsLengthening, type ReRunMode } from '@siksamitra/engine';
-import { applyAcross, type MarkCommand } from '@siksamitra/edit';
+import { applyAcross, typeAt, type MarkCommand } from '@siksamitra/edit';
 import { notCarried } from '../model/carry.js';
 import { readDocument, writeDocument } from './client.js';
 import { writeLines, type Line, type LineWrite, type Located } from './selection.js';
@@ -87,6 +87,26 @@ export async function markSelection(here: Located, command: MarkCommand): Promis
   const undrawable = results.flatMap((r) => notCarried(r.marks));
   const note = here.lines.length === 1 ? results[0]!.note : `${writes.length} of ${here.lines.length} lines changed`;
   return said(note, undrawable.length === 0 ? 'plain' : 'warn', undrawable.map((l) => l.why));
+}
+
+/**
+ * A character from the insert palette, typed at the caret or over the
+ * selected letters of one line. Through the model and the writer, never
+ * Word's own typing — so it takes exactly the style it should and the next
+ * letter is not dragged into it (`typeAt`). The caret comes back after it.
+ */
+export async function typeInSelection(here: Located, ch: string): Promise<Said> {
+  if (here.lines.length > 1) {
+    return said('Select within one line to type over it — this selection runs over several.', 'warn');
+  }
+  const refused = refusalOf(here);
+  if (refused !== null) return refused;
+  const l = here.lines[0]!;
+  const t = typeAt(l.tm, l.from, l.to, ch);
+  const tm = { text: t.text, marks: t.marks };
+  if (sameText(tm, l.tm)) return said(t.note, 'warn');
+  await writeLines([{ line: 0, tm, style: l.style, wordText: l.wordText }], { line: 0, at: t.caret });
+  return said('');
 }
 
 /**

@@ -23,6 +23,7 @@ import { decodeRuns, isVerseParagraph, paragraphsXml, unresolvedIn } from '../mo
 import type { Unaccounted } from '../model/paragraph.js';
 import { offsetMap, modelRange, type OffsetMap } from '../model/offsets.js';
 import { learn, packageOf } from './client.js';
+import { CARET_BOOKMARK, withCaretAt, wordOffsetIn } from '../model/caret.js';
 
 /** Lines queued per `context.sync()`. */
 const CHUNK = 40;
@@ -147,8 +148,15 @@ export interface LineWrite {
  * every style the body NAMES, or Word drops it — which once spliced every
  * raised reading aid into the recitation. See `model/sheet.ts`.
  */
-export async function writeLines(writes: readonly LineWrite[]): Promise<number> {
+export async function writeLines(
+  writes: readonly LineWrite[],
+  /** Put the caret back here — a line of the selection, and a MODEL offset. */
+  caret?: { line: number; at: number },
+): Promise<number> {
   if (writes.length === 0) return 0;
+  /* A caret needs `getBookmarkRangeOrNullObject`, WordApi 1.4; without it the
+     caret stays where Word leaves it, at the end of the line. */
+  const canPlace = caret !== undefined && Office.context.requirements.isSetSupported('WordApi', '1.4');
   await Word.run(async (context) => {
     const paragraphs = context.document.getSelection().paragraphs;
     paragraphs.load('items/text');
@@ -159,13 +167,23 @@ export async function writeLines(writes: readonly LineWrite[]): Promise<number> 
     }
     for (let at = 0; at < writes.length; at += CHUNK) {
       for (const w of writes.slice(at, at + CHUNK)) {
-        const body = restyle(paragraphsXml(w.tm), w.style);
+        const plain = restyle(paragraphsXml(w.tm), w.style);
+        const body = canPlace && caret!.line === w.line ? withCaretAt(plain, wordOffsetIn(plain, caret!.at)) : plain;
         items[w.line]!.getRange(Word.RangeLocation.content)
           .insertOoxml(packageOf(body, styleSheetFor(body)), Word.InsertLocation.replace);
       }
       await context.sync();
     }
-    if (items.length > 1) {
+    if (canPlace) {
+      const mark = context.document.getBookmarkRangeOrNullObject(CARET_BOOKMARK);
+      mark.load('isNullObject');
+      await context.sync();
+      if (!mark.isNullObject) {
+        mark.select();
+        context.document.deleteBookmark(CARET_BOOKMARK);
+        await context.sync();
+      }
+    } else if (items.length > 1) {
       items[0]!.getRange('Start').expandTo(items[items.length - 1]!.getRange('End')).select();
       await context.sync();
     }

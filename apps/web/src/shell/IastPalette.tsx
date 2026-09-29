@@ -4,8 +4,8 @@
  * v1's `dialog-iast.html`, recreated: the varṇamālā in eight groups by place
  * of articulation, every key showing the F9 letter that types it, and the tip
  * at the foot saying the leader exists at all. The arrangement, the groups and
- * the characters are `editor/iast.ts`'s — transcribed from his file, not
- * redesigned — and this draws them.
+ * the characters are `@siksamitra/ui`'s `iast.ts` — transcribed from his file,
+ * not redesigned — and `IastKeys` draws them, as it does in the Word add-in.
  *
  * A POPOVER RATHER THAN A DIALOG, and the difference matters for this one. v1
  * opened a separate window: you could not see the word you were spelling while
@@ -20,9 +20,7 @@
  * `onMouseDown`.
  */
 import { useRef, useState, type ReactNode } from 'react';
-import { IAST_PALETTE, leaderFor } from '../editor/iast.js';
-import { RibbonButton } from '@siksamitra/ui';
-import { Popover } from '@siksamitra/ui';
+import { IastKeys, Popover, RibbonButton } from '@siksamitra/ui';
 
 export function IastPalette(
   { insert, armed, enabled }: {
@@ -50,40 +48,7 @@ export function IastPalette(
 
       <Popover anchor={anchor} open={open} onClose={() => setOpen(false)} label="IAST characters">
         <div className="iast__pad">
-          {IAST_PALETTE.map((group) => (
-            <section className="iast__grp" key={group.group}>
-              <h3 className="iast__lbl">{group.group}</h3>
-              <div className="iast__keys">
-                {group.keys.map((key) => {
-                  const leader = leaderFor(key.ch);
-                  const hint = [key.name, leader === undefined ? undefined : `F9 ${leader}`]
-                    .filter((s) => s !== undefined).join(' · ');
-                  return (
-                    <button
-                      type="button"
-                      key={key.ch}
-                      className="iast__key"
-                      title={hint === '' ? key.ch : `${key.ch} — ${hint}`}
-                      /*
-                       * THE CARET MUST NOT MOVE. A button that takes the focus
-                       * takes it from the document, and the insertion then has
-                       * no caret to land at — which is the same fault the
-                       * popover's own focus restoration exists for, one level
-                       * down.
-                       */
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => insert(key.ch)}
-                    >
-                      <span className="iast__ch">{key.show ?? key.ch}</span>
-                      {leader !== undefined && (
-                        <span className="iast__f9" aria-hidden>{leader}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+          <IastKeys insert={insert} />
           <p className="iast__tip">
             Press F9 and then a letter to insert one without opening this.
           </p>

@@ -21,7 +21,7 @@ import type { Mark, MarkKind, TextAndMarks } from '@siksamitra/format';
 import {
   assertMarks, coverage, mark, normalise, removeMark, shiftForEdit, toggleMark,
 } from '@siksamitra/format';
-import { ANU, typedAs, VIS } from '@siksamitra/engine';
+import { ANU, CANDRA, PLAN_MARK, typedAs, VIS } from '@siksamitra/engine';
 
 export type MarkCommand =
   | { k: 'hold'; v: 'short' | 'long' }
@@ -261,4 +261,53 @@ export function selectionAcross(spans: readonly Span[]): Record<string, 'all' | 
     out[key] = got.every((g) => g === 'all') ? 'all' : got.every((g) => g === 'none') ? 'none' : 'some';
   }
   return out;
+}
+
+/** What typing one character did: the text, and where the caret now is. */
+export interface Typed extends CommandResult {
+  text: string;
+  caret: number;
+}
+
+const COMBINING = /^\p{M}+$/u;
+
+/**
+ * A character from the palette, typed at the caret — or over the selection.
+ *
+ * NOT STICKY, by construction. Word gives a typed character the formatting of
+ * the one before it, so a letter typed after an accent came out accent-red and
+ * one typed after a box went into the box. Here the character goes into the
+ * TEXT and every marking is carried across the edit by `shiftForEdit`, whose
+ * rules decide it: a letter typed at the end of a box is outside it.
+ *
+ * AN ACCENT IS A MARKING, NOT A CHARACTER: `a` + U+030D is a svarita placed on
+ * the `a`, in its own style, exactly as the Svarita button places one — so it
+ * is `applyCommand`, on the letter before the caret. So is the candrabindu, as
+ * the combining character it is. Any other combining mark (the overline) is
+ * text and rides on the letter before it.
+ */
+export function typeAt(tm: TextAndMarks, from: number, to: number, ch: string): Typed {
+  const svara = PLAN_MARK.get(ch);
+  if (svara !== undefined || ch === CANDRA) {
+    /* The letter before the caret, with whatever already rides on it. */
+    let start = from - 1;
+    while (start > 0 && /\p{M}/u.test(tm.text[start] ?? '')) start -= 1;
+    if (start < 0 || tm.text[start] === undefined || /\s/u.test(tm.text[start]!)) {
+      return { marks: [...tm.marks], text: tm.text, caret: from, note: 'there is no letter before the caret to put it on' };
+    }
+    /* An accent covers the letter AND what already rides on it (a marking may
+       not end between a letter and its combining mark); the candrabindu is
+       typed onto the letter itself. */
+    const r = svara !== undefined
+      ? applyCommand(tm, start, from, { k: 'svara', v: svara })
+      : applyCommand(tm, start, start + 1, { k: 'combining', v: ch });
+    const text = r.text ?? tm.text;
+    return { ...r, text, caret: from + (text.length - tm.text.length) };
+  }
+  const text = tm.text.slice(0, from) + ch + tm.text.slice(to);
+  const { marks } = shiftForEdit(tm.marks, {
+    from, to, inserted: ch.length, combining: COMBINING.test(ch),
+  });
+  assertMarks(marks, text, 'after typing');
+  return { marks, text, caret: from + ch.length, note: `${ch} typed` };
 }

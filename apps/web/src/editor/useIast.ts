@@ -17,7 +17,7 @@
  * happens (nothing should), and they press it again. The status bar says so.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { IAST_LEADER_KEY, leaderStep } from './iast.js';
+import { IAST_LEADER_KEY, leaderStep } from '@siksamitra/ui';
 
 export interface Iast {
   /** Insert a character at the caret, as if it had been typed. */

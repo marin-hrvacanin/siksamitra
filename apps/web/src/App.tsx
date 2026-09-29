@@ -110,7 +110,7 @@ export function App() {
   /*
    * TYPING IAST. The F9 leader is his own binding from v1 and the palette is
    * his own dialog; both insert through `session.insert`, which is the one path
-   * a character reaches the document by. See `editor/iast.ts`.
+   * a character reaches the document by. See ``@siksamitra/ui` (`iast.ts`)`.
    */
   const iast = useIast({ insert: session.insert, editing: session.editing });
   /* The print dialog is told which paper the document is for — see

@@ -17,7 +17,7 @@
  */
 import { WORD_MARKS } from '@siksamitra/tokens/word';
 import type { ChantSvara } from '@siksamitra/format';
-import { typedAs, VIS } from '@siksamitra/engine';
+import { MARK_CHAR, PLAN_MARK, typedAs, VIS } from '@siksamitra/engine';
 
 /** What a character style means in the chant model. */
 export type WordMarkRole =
@@ -255,16 +255,10 @@ export const HOLD_CHANGE_ROLES: ReadonlySet<WordMarkRole> = new Set<WordMarkRole
   'hold-short-change', 'hold-long-change',
 ]);
 
-/** The combining marks a `Svara` run carries, and what they mean. */
-export const SVARA_BY_CHAR: ReadonlyMap<string, ChantSvara> = new Map([
-  ['̍', 'svarita'],
-  ['̎', 'dirgha-svarita'],
-  ['̱', 'anudatta'],
-]);
-
-export const SVARA_CHAR: ReadonlyMap<ChantSvara, string> = new Map(
-  [...SVARA_BY_CHAR.entries()].map(([c, m]) => [m, c]),
-);
+/** The combining marks a `Svara` run carries, and what they mean — the
+ *  engine's one table (`PLAN_MARK`), under the names this contract uses. */
+export const SVARA_BY_CHAR: ReadonlyMap<string, ChantSvara> = PLAN_MARK;
+export const SVARA_CHAR: ReadonlyMap<ChantSvara, string> = MARK_CHAR;
 
 /** The counts the reference file carries — an import must reproduce them
  *  exactly (gate W2, specs/chant-editor/03-INTEROP.md §2.6). */
