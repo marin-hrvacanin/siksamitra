@@ -70,7 +70,7 @@ describe('each host gets a manifest that points at it', () => {
 
     it(`${key}: the pane, the icons and the get-started link all resolve`, () => {
       const out = manifestFor(xml, host, '2.0.0.0');
-      for (const path of ['/taskpane.html', '/icon-16.png', '/icon-32.png', '/icon-80.png']) {
+      for (const path of ['/taskpane.html', '/commands.html', '/icon-32.png', '/icon-80.png', '/ribbon/hold-short-16.png']) {
         expect(out, path).toContain(`${host.base}${path}`);
       }
     });
@@ -110,7 +110,7 @@ describe('the faults it refuses', () => {
 
   it('a localhost URL that survived', () => {
     const broken = good.replace(
-      `${pages.base}/icon-16.png`, `${ADDIN_HOSTS.local.base}/icon-16.png`,
+      `${pages.base}/icon-32.png`, `${ADDIN_HOSTS.local.base}/icon-32.png`,
     );
     expect(manifestFaults(broken, pages).join(' ')).toContain('localhost');
   });
@@ -235,10 +235,14 @@ describe('what the manifest tells a person', () => {
     expect(xml).toContain('<SupportUrl DefaultValue="https://marin-hrvacanin.github.io/siksamitra/#word"/>');
     expect(xml).not.toContain('<SupportUrl DefaultValue="https://vedaunion.org/"/>');
   });
-  it('the Get Started text names the button that really exists on the ribbon', () => {
-    /* The ribbon has one button, Marking. Short and Long are in the pane. */
+  it('the Get Started text names what really exists: the tab, its buttons, the menu', () => {
+    /* The add-in has its own tab now, with Short and Long on it, and a
+       right-click menu — generated from the pane's controls. */
     const text = /id="sm\.GetStarted\.Description" DefaultValue="([^"]*)"/.exec(xml)?.[1] ?? '';
-    expect(text).toContain('Marking');
+    expect(text).toContain('śikṣāmitra tab');
+    expect(text).toContain('Short or Long');
+    expect(text).toContain('right-click');
+    expect(xml).toContain('<bt:String id="sm.Tab.Label" DefaultValue="śikṣāmitra"/>');
     expect(text.length).toBeLessThanOrEqual(125);
   });
 });

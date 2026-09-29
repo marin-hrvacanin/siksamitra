@@ -47,6 +47,7 @@
     "gen:conformance": "tsx tools/build-conformance.mjs",
     "check:fixtures": "tsx tools/build-conformance.mjs --check",
     "gen:tokens": "tsx packages/tokens/gen.mjs",
+    "gen:word-commands": "tsx --conditions=development scripts/word-commands.ts",
     "check:tokens": "tsx packages/tokens/gen.mjs --check",
     "check:literals": "node tools/check-tokens.mjs",
     "build:storage": "npm run -w @siksamitra/storage build",

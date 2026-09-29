@@ -77,25 +77,253 @@
             <Description resid="sm.GetStarted.Description"/>
             <LearnMoreUrl resid="sm.Support.Url"/>
           </GetStarted>
+          <FunctionFile resid="sm.Commands.Url"/>
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
-            <OfficeTab id="TabHome">
-              <Group id="sm.Group">
-                <Label resid="sm.Group.Label"/>
+            <CustomTab id="sm.Tab">
+              <Group id="sm.grp.holding">
+                <Label resid="sm.grp.holding"/>
                 <Icon>
-                  <bt:Image size="16" resid="sm.Icon.16"/>
-                  <bt:Image size="32" resid="sm.Icon.32"/>
-                  <bt:Image size="80" resid="sm.Icon.80"/>
+                  <bt:Image size="16" resid="sm.hold-short.16"/>
+                  <bt:Image size="32" resid="sm.hold-short.32"/>
+                  <bt:Image size="80" resid="sm.hold-short.80"/>
                 </Icon>
-                <Control xsi:type="Button" id="sm.Open">
-                  <Label resid="sm.Open.Label"/>
+                <Control xsi:type="Button" id="sm.tab.hold-short">
+                  <Label resid="sm.hold-short.L"/>
                   <Supertip>
-                    <Title resid="sm.Open.Label"/>
-                    <Description resid="sm.Open.Tip"/>
+                    <Title resid="sm.hold-short.L"/>
+                    <Description resid="sm.hold-short.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.Icon.16"/>
-                    <bt:Image size="32" resid="sm.Icon.32"/>
-                    <bt:Image size="80" resid="sm.Icon.80"/>
+                    <bt:Image size="16" resid="sm.hold-short.16"/>
+                    <bt:Image size="32" resid="sm.hold-short.32"/>
+                    <bt:Image size="80" resid="sm.hold-short.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smHoldShort</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.hold-long">
+                  <Label resid="sm.hold-long.L"/>
+                  <Supertip>
+                    <Title resid="sm.hold-long.L"/>
+                    <Description resid="sm.hold-long.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.hold-long.16"/>
+                    <bt:Image size="32" resid="sm.hold-long.32"/>
+                    <bt:Image size="80" resid="sm.hold-long.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smHoldLong</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              <Group id="sm.grp.svara">
+                <Label resid="sm.grp.svara"/>
+                <Icon>
+                  <bt:Image size="16" resid="sm.svara-anudatta.16"/>
+                  <bt:Image size="32" resid="sm.svara-anudatta.32"/>
+                  <bt:Image size="80" resid="sm.svara-anudatta.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="sm.tab.svara-anudatta">
+                  <Label resid="sm.svara-anudatta.L"/>
+                  <Supertip>
+                    <Title resid="sm.svara-anudatta.L"/>
+                    <Description resid="sm.svara-anudatta.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.svara-anudatta.16"/>
+                    <bt:Image size="32" resid="sm.svara-anudatta.32"/>
+                    <bt:Image size="80" resid="sm.svara-anudatta.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smSvaraAnudatta</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.svara-svarita">
+                  <Label resid="sm.svara-svarita.L"/>
+                  <Supertip>
+                    <Title resid="sm.svara-svarita.L"/>
+                    <Description resid="sm.svara-svarita.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.svara-svarita.16"/>
+                    <bt:Image size="32" resid="sm.svara-svarita.32"/>
+                    <bt:Image size="80" resid="sm.svara-svarita.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smSvaraSvarita</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.svara-dirgha">
+                  <Label resid="sm.svara-dirgha.L"/>
+                  <Supertip>
+                    <Title resid="sm.svara-dirgha.L"/>
+                    <Description resid="sm.svara-dirgha.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.svara-dirgha.16"/>
+                    <bt:Image size="32" resid="sm.svara-dirgha.32"/>
+                    <bt:Image size="80" resid="sm.svara-dirgha.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smSvaraDirgha</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              <Group id="sm.grp.change">
+                <Label resid="sm.grp.change"/>
+                <Icon>
+                  <bt:Image size="16" resid="sm.change-anusvara.16"/>
+                  <bt:Image size="32" resid="sm.change-anusvara.32"/>
+                  <bt:Image size="80" resid="sm.change-anusvara.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="sm.tab.change-anusvara">
+                  <Label resid="sm.change-anusvara.L"/>
+                  <Supertip>
+                    <Title resid="sm.change-anusvara.L"/>
+                    <Description resid="sm.change-anusvara.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.change-anusvara.16"/>
+                    <bt:Image size="32" resid="sm.change-anusvara.32"/>
+                    <bt:Image size="80" resid="sm.change-anusvara.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smChangeAnusvara</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.change-visarga">
+                  <Label resid="sm.change-visarga.L"/>
+                  <Supertip>
+                    <Title resid="sm.change-visarga.L"/>
+                    <Description resid="sm.change-visarga.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.change-visarga.16"/>
+                    <bt:Image size="32" resid="sm.change-visarga.32"/>
+                    <bt:Image size="80" resid="sm.change-visarga.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smChangeVisarga</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              <Group id="sm.grp.aids">
+                <Label resid="sm.grp.aids"/>
+                <Icon>
+                  <bt:Image size="16" resid="sm.candrabindu.16"/>
+                  <bt:Image size="32" resid="sm.candrabindu.32"/>
+                  <bt:Image size="80" resid="sm.candrabindu.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="sm.tab.candrabindu">
+                  <Label resid="sm.candrabindu.L"/>
+                  <Supertip>
+                    <Title resid="sm.candrabindu.L"/>
+                    <Description resid="sm.candrabindu.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.candrabindu.16"/>
+                    <bt:Image size="32" resid="sm.candrabindu.32"/>
+                    <bt:Image size="80" resid="sm.candrabindu.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smCandrabindu</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.svarabhakti">
+                  <Label resid="sm.svarabhakti.L"/>
+                  <Supertip>
+                    <Title resid="sm.svarabhakti.L"/>
+                    <Description resid="sm.svarabhakti.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.svarabhakti.16"/>
+                    <bt:Image size="32" resid="sm.svarabhakti.32"/>
+                    <bt:Image size="80" resid="sm.svarabhakti.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smSvarabhakti</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.bar-short">
+                  <Label resid="sm.bar-short.L"/>
+                  <Supertip>
+                    <Title resid="sm.bar-short.L"/>
+                    <Description resid="sm.bar-short.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.bar-short.16"/>
+                    <bt:Image size="32" resid="sm.bar-short.32"/>
+                    <bt:Image size="80" resid="sm.bar-short.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smBarShort</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.bar-long">
+                  <Label resid="sm.bar-long.L"/>
+                  <Supertip>
+                    <Title resid="sm.bar-long.L"/>
+                    <Description resid="sm.bar-long.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.bar-long.16"/>
+                    <bt:Image size="32" resid="sm.bar-long.32"/>
+                    <bt:Image size="80" resid="sm.bar-long.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smBarLong</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.marks-clear">
+                  <Label resid="sm.marks-clear.L"/>
+                  <Supertip>
+                    <Title resid="sm.marks-clear.L"/>
+                    <Description resid="sm.marks-clear.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.marks-clear.16"/>
+                    <bt:Image size="32" resid="sm.marks-clear.32"/>
+                    <bt:Image size="80" resid="sm.marks-clear.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smMarksClear</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              <Group id="sm.grp.rules">
+                <Label resid="sm.grp.rules"/>
+                <Icon>
+                  <bt:Image size="16" resid="sm.auto-keep.16"/>
+                  <bt:Image size="32" resid="sm.auto-keep.32"/>
+                  <bt:Image size="80" resid="sm.auto-keep.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="sm.tab.auto-keep">
+                  <Label resid="sm.auto-keep.L"/>
+                  <Supertip>
+                    <Title resid="sm.auto-keep.L"/>
+                    <Description resid="sm.auto-keep.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.auto-keep.16"/>
+                    <bt:Image size="32" resid="sm.auto-keep.32"/>
+                    <bt:Image size="80" resid="sm.auto-keep.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smAutoKeep</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.panel-open">
+                  <Label resid="sm.panel-open.L"/>
+                  <Supertip>
+                    <Title resid="sm.panel-open.L"/>
+                    <Description resid="sm.panel-open.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.panel-open.16"/>
+                    <bt:Image size="32" resid="sm.panel-open.32"/>
+                    <bt:Image size="80" resid="sm.panel-open.80"/>
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
                     <TaskpaneId>sm.Taskpane</TaskpaneId>
@@ -103,29 +331,259 @@
                   </Action>
                 </Control>
               </Group>
-            </OfficeTab>
+              <Label resid="sm.Tab.Label"/>
+            </CustomTab>
+          </ExtensionPoint>
+          <ExtensionPoint xsi:type="ContextMenu">
+            <OfficeMenu id="ContextMenuText">
+              <Control xsi:type="Menu" id="sm.ctx">
+                <Label resid="sm.Ctx.Label"/>
+                <Supertip>
+                  <Title resid="sm.Ctx.Label"/>
+                  <Description resid="sm.Ctx.Tip"/>
+                </Supertip>
+                <Icon>
+                  <bt:Image size="16" resid="sm.marks.16"/>
+                  <bt:Image size="32" resid="sm.marks.32"/>
+                  <bt:Image size="80" resid="sm.marks.80"/>
+                </Icon>
+                <Items>
+                  <Item id="sm.ctx.hold-short">
+                    <Label resid="sm.hold-short.L"/>
+                    <Supertip>
+                      <Title resid="sm.hold-short.L"/>
+                      <Description resid="sm.hold-short.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.hold-short.16"/>
+                      <bt:Image size="32" resid="sm.hold-short.32"/>
+                      <bt:Image size="80" resid="sm.hold-short.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smHoldShort</FunctionName>
+                    </Action>
+                  </Item>
+                  <Item id="sm.ctx.hold-long">
+                    <Label resid="sm.hold-long.L"/>
+                    <Supertip>
+                      <Title resid="sm.hold-long.L"/>
+                      <Description resid="sm.hold-long.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.hold-long.16"/>
+                      <bt:Image size="32" resid="sm.hold-long.32"/>
+                      <bt:Image size="80" resid="sm.hold-long.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smHoldLong</FunctionName>
+                    </Action>
+                  </Item>
+                  <Item id="sm.ctx.svara-anudatta">
+                    <Label resid="sm.svara-anudatta.L"/>
+                    <Supertip>
+                      <Title resid="sm.svara-anudatta.L"/>
+                      <Description resid="sm.svara-anudatta.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.svara-anudatta.16"/>
+                      <bt:Image size="32" resid="sm.svara-anudatta.32"/>
+                      <bt:Image size="80" resid="sm.svara-anudatta.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smSvaraAnudatta</FunctionName>
+                    </Action>
+                  </Item>
+                  <Item id="sm.ctx.svara-svarita">
+                    <Label resid="sm.svara-svarita.L"/>
+                    <Supertip>
+                      <Title resid="sm.svara-svarita.L"/>
+                      <Description resid="sm.svara-svarita.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.svara-svarita.16"/>
+                      <bt:Image size="32" resid="sm.svara-svarita.32"/>
+                      <bt:Image size="80" resid="sm.svara-svarita.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smSvaraSvarita</FunctionName>
+                    </Action>
+                  </Item>
+                  <Item id="sm.ctx.svara-dirgha">
+                    <Label resid="sm.svara-dirgha.L"/>
+                    <Supertip>
+                      <Title resid="sm.svara-dirgha.L"/>
+                      <Description resid="sm.svara-dirgha.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.svara-dirgha.16"/>
+                      <bt:Image size="32" resid="sm.svara-dirgha.32"/>
+                      <bt:Image size="80" resid="sm.svara-dirgha.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smSvaraDirgha</FunctionName>
+                    </Action>
+                  </Item>
+                  <Item id="sm.ctx.change-anusvara">
+                    <Label resid="sm.change-anusvara.L"/>
+                    <Supertip>
+                      <Title resid="sm.change-anusvara.L"/>
+                      <Description resid="sm.change-anusvara.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.change-anusvara.16"/>
+                      <bt:Image size="32" resid="sm.change-anusvara.32"/>
+                      <bt:Image size="80" resid="sm.change-anusvara.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smChangeAnusvara</FunctionName>
+                    </Action>
+                  </Item>
+                  <Item id="sm.ctx.change-visarga">
+                    <Label resid="sm.change-visarga.L"/>
+                    <Supertip>
+                      <Title resid="sm.change-visarga.L"/>
+                      <Description resid="sm.change-visarga.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.change-visarga.16"/>
+                      <bt:Image size="32" resid="sm.change-visarga.32"/>
+                      <bt:Image size="80" resid="sm.change-visarga.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smChangeVisarga</FunctionName>
+                    </Action>
+                  </Item>
+                  <Item id="sm.ctx.marks-clear">
+                    <Label resid="sm.marks-clear.L"/>
+                    <Supertip>
+                      <Title resid="sm.marks-clear.L"/>
+                      <Description resid="sm.marks-clear.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.marks-clear.16"/>
+                      <bt:Image size="32" resid="sm.marks-clear.32"/>
+                      <bt:Image size="80" resid="sm.marks-clear.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smMarksClear</FunctionName>
+                    </Action>
+                  </Item>
+                  <Item id="sm.ctx.auto-keep">
+                    <Label resid="sm.auto-keep.L"/>
+                    <Supertip>
+                      <Title resid="sm.auto-keep.L"/>
+                      <Description resid="sm.auto-keep.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.auto-keep.16"/>
+                      <bt:Image size="32" resid="sm.auto-keep.32"/>
+                      <bt:Image size="80" resid="sm.auto-keep.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smAutoKeep</FunctionName>
+                    </Action>
+                  </Item>
+                </Items>
+              </Control>
+            </OfficeMenu>
           </ExtensionPoint>
         </DesktopFormFactor>
       </Host>
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="sm.Icon.16" DefaultValue="https://localhost:3000/icon-16.png"/>
-        <bt:Image id="sm.Icon.32" DefaultValue="https://localhost:3000/icon-32.png"/>
-        <bt:Image id="sm.Icon.80" DefaultValue="https://localhost:3000/icon-80.png"/>
+        <bt:Image id="sm.hold-short.16" DefaultValue="https://localhost:3000/ribbon/hold-short-16.png"/>
+        <bt:Image id="sm.hold-short.32" DefaultValue="https://localhost:3000/ribbon/hold-short-32.png"/>
+        <bt:Image id="sm.hold-short.80" DefaultValue="https://localhost:3000/ribbon/hold-short-80.png"/>
+        <bt:Image id="sm.hold-long.16" DefaultValue="https://localhost:3000/ribbon/hold-long-16.png"/>
+        <bt:Image id="sm.hold-long.32" DefaultValue="https://localhost:3000/ribbon/hold-long-32.png"/>
+        <bt:Image id="sm.hold-long.80" DefaultValue="https://localhost:3000/ribbon/hold-long-80.png"/>
+        <bt:Image id="sm.svara-anudatta.16" DefaultValue="https://localhost:3000/ribbon/svara-anudatta-16.png"/>
+        <bt:Image id="sm.svara-anudatta.32" DefaultValue="https://localhost:3000/ribbon/svara-anudatta-32.png"/>
+        <bt:Image id="sm.svara-anudatta.80" DefaultValue="https://localhost:3000/ribbon/svara-anudatta-80.png"/>
+        <bt:Image id="sm.svara-svarita.16" DefaultValue="https://localhost:3000/ribbon/svara-svarita-16.png"/>
+        <bt:Image id="sm.svara-svarita.32" DefaultValue="https://localhost:3000/ribbon/svara-svarita-32.png"/>
+        <bt:Image id="sm.svara-svarita.80" DefaultValue="https://localhost:3000/ribbon/svara-svarita-80.png"/>
+        <bt:Image id="sm.svara-dirgha.16" DefaultValue="https://localhost:3000/ribbon/svara-dirgha-16.png"/>
+        <bt:Image id="sm.svara-dirgha.32" DefaultValue="https://localhost:3000/ribbon/svara-dirgha-32.png"/>
+        <bt:Image id="sm.svara-dirgha.80" DefaultValue="https://localhost:3000/ribbon/svara-dirgha-80.png"/>
+        <bt:Image id="sm.change-anusvara.16" DefaultValue="https://localhost:3000/ribbon/change-anusvara-16.png"/>
+        <bt:Image id="sm.change-anusvara.32" DefaultValue="https://localhost:3000/ribbon/change-anusvara-32.png"/>
+        <bt:Image id="sm.change-anusvara.80" DefaultValue="https://localhost:3000/ribbon/change-anusvara-80.png"/>
+        <bt:Image id="sm.change-visarga.16" DefaultValue="https://localhost:3000/ribbon/change-visarga-16.png"/>
+        <bt:Image id="sm.change-visarga.32" DefaultValue="https://localhost:3000/ribbon/change-visarga-32.png"/>
+        <bt:Image id="sm.change-visarga.80" DefaultValue="https://localhost:3000/ribbon/change-visarga-80.png"/>
+        <bt:Image id="sm.candrabindu.16" DefaultValue="https://localhost:3000/ribbon/candrabindu-16.png"/>
+        <bt:Image id="sm.candrabindu.32" DefaultValue="https://localhost:3000/ribbon/candrabindu-32.png"/>
+        <bt:Image id="sm.candrabindu.80" DefaultValue="https://localhost:3000/ribbon/candrabindu-80.png"/>
+        <bt:Image id="sm.svarabhakti.16" DefaultValue="https://localhost:3000/ribbon/svarabhakti-16.png"/>
+        <bt:Image id="sm.svarabhakti.32" DefaultValue="https://localhost:3000/ribbon/svarabhakti-32.png"/>
+        <bt:Image id="sm.svarabhakti.80" DefaultValue="https://localhost:3000/ribbon/svarabhakti-80.png"/>
+        <bt:Image id="sm.bar-short.16" DefaultValue="https://localhost:3000/ribbon/bar-short-16.png"/>
+        <bt:Image id="sm.bar-short.32" DefaultValue="https://localhost:3000/ribbon/bar-short-32.png"/>
+        <bt:Image id="sm.bar-short.80" DefaultValue="https://localhost:3000/ribbon/bar-short-80.png"/>
+        <bt:Image id="sm.bar-long.16" DefaultValue="https://localhost:3000/ribbon/bar-long-16.png"/>
+        <bt:Image id="sm.bar-long.32" DefaultValue="https://localhost:3000/ribbon/bar-long-32.png"/>
+        <bt:Image id="sm.bar-long.80" DefaultValue="https://localhost:3000/ribbon/bar-long-80.png"/>
+        <bt:Image id="sm.marks-clear.16" DefaultValue="https://localhost:3000/ribbon/marks-clear-16.png"/>
+        <bt:Image id="sm.marks-clear.32" DefaultValue="https://localhost:3000/ribbon/marks-clear-32.png"/>
+        <bt:Image id="sm.marks-clear.80" DefaultValue="https://localhost:3000/ribbon/marks-clear-80.png"/>
+        <bt:Image id="sm.auto-keep.16" DefaultValue="https://localhost:3000/ribbon/auto-keep-16.png"/>
+        <bt:Image id="sm.auto-keep.32" DefaultValue="https://localhost:3000/ribbon/auto-keep-32.png"/>
+        <bt:Image id="sm.auto-keep.80" DefaultValue="https://localhost:3000/ribbon/auto-keep-80.png"/>
+        <bt:Image id="sm.panel-open.16" DefaultValue="https://localhost:3000/ribbon/panel-open-16.png"/>
+        <bt:Image id="sm.panel-open.32" DefaultValue="https://localhost:3000/ribbon/panel-open-32.png"/>
+        <bt:Image id="sm.panel-open.80" DefaultValue="https://localhost:3000/ribbon/panel-open-80.png"/>
+        <bt:Image id="sm.marks.16" DefaultValue="https://localhost:3000/ribbon/marks-16.png"/>
+        <bt:Image id="sm.marks.32" DefaultValue="https://localhost:3000/ribbon/marks-32.png"/>
+        <bt:Image id="sm.marks.80" DefaultValue="https://localhost:3000/ribbon/marks-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="sm.Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
+        <bt:Url id="sm.Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
         <bt:Url id="sm.Support.Url" DefaultValue="https://marin-hrvacanin.github.io/siksamitra/#word"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="sm.Group.Label" DefaultValue="śikṣāmitra"/>
-        <bt:String id="sm.Open.Label" DefaultValue="Marking"/>
+        <bt:String id="sm.Tab.Label" DefaultValue="śikṣāmitra"/>
+        <bt:String id="sm.Ctx.Label" DefaultValue="śikṣāmitra"/>
         <bt:String id="sm.GetStarted.Title" DefaultValue="śikṣāmitra is ready"/>
+        <bt:String id="sm.grp.holding" DefaultValue="Holding"/>
+        <bt:String id="sm.grp.svara" DefaultValue="Svara"/>
+        <bt:String id="sm.grp.change" DefaultValue="Change"/>
+        <bt:String id="sm.grp.aids" DefaultValue="Aids"/>
+        <bt:String id="sm.grp.rules" DefaultValue="Rules"/>
+        <bt:String id="sm.hold-short.L" DefaultValue="Short"/>
+        <bt:String id="sm.hold-long.L" DefaultValue="Long"/>
+        <bt:String id="sm.svara-anudatta.L" DefaultValue="Anudātta"/>
+        <bt:String id="sm.svara-svarita.L" DefaultValue="Svarita"/>
+        <bt:String id="sm.svara-dirgha.L" DefaultValue="Dīrgha svarita"/>
+        <bt:String id="sm.change-anusvara.L" DefaultValue="Anusvāra"/>
+        <bt:String id="sm.change-visarga.L" DefaultValue="Visarga"/>
+        <bt:String id="sm.candrabindu.L" DefaultValue="Candrabindu"/>
+        <bt:String id="sm.svarabhakti.L" DefaultValue="Svarabhakti"/>
+        <bt:String id="sm.bar-short.L" DefaultValue="Pause"/>
+        <bt:String id="sm.bar-long.L" DefaultValue="Long pause"/>
+        <bt:String id="sm.marks-clear.L" DefaultValue="Clear"/>
+        <bt:String id="sm.auto-keep.L" DefaultValue="Re-mark"/>
+        <bt:String id="sm.panel-open.L" DefaultValue="Pane"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="sm.Open.Tip" DefaultValue="Open the marking pane: holdings, svaras, reading aids, pauses, and the rules."/>
-        <bt:String id="sm.GetStarted.Description" DefaultValue="Press Marking on the Home tab, put the caret in a line, and press Short or Long to mark a holding."/>
+        <bt:String id="sm.Ctx.Tip" DefaultValue="Mark the selected letters: a holding, a svara, an anusvāra or visarga change."/>
+        <bt:String id="sm.GetStarted.Description" DefaultValue="Open the śikṣāmitra tab, select letters in a line and press Short or Long to mark a holding — or right-click a selection."/>
+        <bt:String id="sm.hold-short.T" DefaultValue="A thin box — 0.25 pt, his Holding style. Press again to take it off."/>
+        <bt:String id="sm.hold-long.T" DefaultValue="A thick box — 1.5 pt, his 2Holding style. The weight is the only difference between the two."/>
+        <bt:String id="sm.svara-anudatta.T" DefaultValue="The low tone — a bar under the letter."/>
+        <bt:String id="sm.svara-svarita.T" DefaultValue="The falling tone — a stroke over the letter."/>
+        <bt:String id="sm.svara-dirgha.T" DefaultValue="The long falling tone — a double stroke over the letter."/>
+        <bt:String id="sm.change-anusvara.T" DefaultValue="The letters here were typed as ṁ — the nasal a rule put in its place."/>
+        <bt:String id="sm.change-visarga.T" DefaultValue="The letters here were typed as ḥ — the sibilant or r a rule put in its place."/>
+        <bt:String id="sm.candrabindu.T" DefaultValue="The nasalised m̐ — the combining mark, typed onto each letter."/>
+        <bt:String id="sm.svarabhakti.T" DefaultValue="The epenthetic dot, written before the letter it belongs to."/>
+        <bt:String id="sm.bar-short.T" DefaultValue="A short pause — one bar, in his Pause style."/>
+        <bt:String id="sm.bar-long.T" DefaultValue="A long pause — two bars."/>
+        <bt:String id="sm.marks-clear.T" DefaultValue="Withdraw every marking in the selection."/>
+        <bt:String id="sm.auto-keep.T" DefaultValue="Run the śikṣā rules over the selection, in the register this document is marked in. Hand markings are kept."/>
+        <bt:String id="sm.panel-open.T" DefaultValue="Open the śikṣāmitra pane: the register, the stages, the whole-document run and the styles."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

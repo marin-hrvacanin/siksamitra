@@ -27,7 +27,7 @@
 - [ ] 3.2 `classifyBlueRun` — the upgrade table in D3, pure
 - [ ] 3.3 "Upgrade this document": counts first, then one pass, then the list
       of what was left; idempotent
-- [ ] 3.4 Hand-placed Anusvāra change / Visarga change commands in
+- [x] 3.4 Hand-placed Anusvāra change / Visarga change commands in
       `packages/edit` (the app) and the add-in model; refusal for letters that
       cannot be that change
 - [ ] 3.5 Tests: unit (every row of D3 and every refusal), integration (his
@@ -73,9 +73,9 @@
 
 ## 7. The right-click menu and the ribbon menu
 
-- [ ] 7.1 Manifest: `ContextMenuText` submenu and a ribbon menu, both valid in
+- [x] 7.1 Manifest: `ContextMenuText` submenu and a ribbon menu, both valid in
       Microsoft's validator for all three hosts
-- [ ] 7.2 Function file sharing the model; the commands of the spec
+- [x] 7.2 Function file sharing the model; the commands of the spec
 - [ ] 7.3 The app: the two change commands on the Marking tab and its context
       menu (`apps/web/src/editor/keymap.ts` + `EditCommand`)
 - [ ] 7.4 Tests: unit (manifest shape), component (the app's buttons), live
