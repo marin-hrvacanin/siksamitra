@@ -17,11 +17,12 @@ describe('the caret mark', () => {
   it('goes where it is asked, splitting a run of text', () => {
     expect(at(withCaretAt(plain, 3))).toBe('agn');
   });
-  it('at 0, before everything; past the end, before the paragraph closes', () => {
+  it('at 0, before everything', () => {
     expect(at(withCaretAt(plain, 0))).toBe('');
-    const end = withCaretAt(plain, 99);
-    expect(at(end)).toBe('agne naya');
-    expect(end.indexOf(CARET_BOOKMARK)).toBeLessThan(end.lastIndexOf('</w:p>'));
+  });
+  it('at or past the end, no mark at all: Word on the web drops one there', () => {
+    expect(withCaretAt(plain, 9)).toBe(plain);
+    expect(withCaretAt(plain, 99)).toBe(plain);
   });
   it('is written once, as an empty bookmark', () => {
     const x = withCaretAt(plain, 4);

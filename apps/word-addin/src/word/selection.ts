@@ -181,8 +181,11 @@ export async function writeLines(
       if (!mark.isNullObject) {
         mark.select();
         context.document.deleteBookmark(CARET_BOOKMARK);
-        await context.sync();
+      } else {
+        /* No mark: the caret belongs at the end of the line (see `caret.ts`). */
+        items[caret!.line]?.getRange(Word.RangeLocation.content).getRange('End').select();
       }
+      await context.sync();
     } else if (items.length > 1) {
       items[0]!.getRange('Start').expandTo(items[items.length - 1]!.getRange('End')).select();
       await context.sync();

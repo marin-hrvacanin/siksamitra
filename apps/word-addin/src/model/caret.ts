@@ -6,7 +6,8 @@
  * so the paragraph is written with a hidden one, `_smCaret`, at the offset
  * where the caret belongs, and the client selects it and deletes it in the same
  * batch. Nothing is left behind; `inTheWay` passes the name in case a host
- * fails between the two.
+ * fails between the two. At the end of a line there is no mark (Word drops
+ * one there), and the client puts the caret at the end of the line itself.
  *
  * The offset is a WORD offset — characters as `Paragraph.text` counts them —
  * and it is found by reading the written XML back through the same reader and
@@ -60,10 +61,11 @@ export function withCaretAt(paragraph: string, wordOffset: number): string {
     seen += n;
     return run;
   });
-  if (done) return out;
-  /* At the very end: before the paragraph closes. */
-  const close = out.lastIndexOf('</w:p>');
-  return close < 0 ? out + MARK : out.slice(0, close) + MARK + out.slice(close);
+  /* AT THE VERY END, NO MARK. Word on the web drops a bookmark that ends the
+     content it is inserting — measured: the mark came back as nothing, and the
+     caret was left wherever Word had put it. The client selects the end of the
+     paragraph's content instead, which is the same place. */
+  return out;
 }
 
 /** The Word offset of a model offset, in the paragraph as written. */
