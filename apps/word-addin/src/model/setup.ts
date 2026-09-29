@@ -26,7 +26,7 @@
  * silently. ECMA-376 §17.7.4.4: an `rStyle` naming a style that does not
  * exist is IGNORED.
  */
-import { styledParagraph, styledRun } from '@siksamitra/interop';
+import { builtInStyleIds, styledParagraph, styledRun } from '@siksamitra/interop';
 
 /** A style the sheet declares, and what kind of style it is. */
 export interface SheetStyle {
@@ -70,7 +70,10 @@ export function styleIds(sheet: string): SheetStyle[] {
  * a prepared document look unprepared forever.
  */
 export function missingStyles(pkg: string, sheet: string): string[] {
-  const have = new Set(styleIds(pkg).map((s) => s.id));
+  /* Read through the document's own table: in a Croatian Word `Heading1` is
+     `Naslov1`, and matched by id it was reported missing while in use. */
+  const english = builtInStyleIds(pkg);
+  const have = new Set(styleIds(pkg).map((s) => english.get(s.id) ?? s.id));
   return styleIds(sheet)
     .map((s) => s.id)
     .filter((id) => id !== 'Normal' && !have.has(id))

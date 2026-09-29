@@ -89,7 +89,7 @@ export async function locate(): Promise<Located> {
     const ooxml = paragraph.getOoxml();
     await context.sync();
 
-    const [read] = readParagraphs(documentPartOf(ooxml.value));
+    const [read] = readParagraphs(documentPartOf(ooxml.value), ooxml.value);
     if (read === undefined) throw new Error('Word returned a paragraph with no content');
     const runs = mergeRuns(read.runs);
     const tm = decodeRuns(runs);
@@ -182,7 +182,7 @@ export async function readDocument(): Promise<DocumentRead> {
   return Word.run(async (context) => {
     const ooxml = context.document.body.getOoxml();
     await context.sync();
-    const all = readParagraphs(documentPartOf(ooxml.value));
+    const all = readParagraphs(documentPartOf(ooxml.value), ooxml.value);
     const lines: DocParagraph[] = [];
     all.forEach((p, index) => {
       if (!isVerseParagraph(p)) return;

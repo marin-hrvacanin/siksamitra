@@ -86,6 +86,7 @@ export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
    */
   const zip = unzipSync(bytes, {
     filter: (f) => f.name === 'word/document.xml'
+      || f.name === 'word/styles.xml'
       || f.name === 'word/_rels/document.xml.rels'
       || f.name.startsWith('word/media/'),
   });
@@ -93,7 +94,8 @@ export function importDocx(bytes: Uint8Array, title = 'Imported'): DocxImport {
   if (xml === undefined) throw new Error('not a .docx — word/document.xml is missing');
 
   const documentText = strFromU8(xml);
-  const paragraphs = readParagraphs(documentText);
+  const styles = zip['word/styles.xml'];
+  const paragraphs = readParagraphs(documentText, styles === undefined ? undefined : strFromU8(styles));
   const rels = zip['word/_rels/document.xml.rels'] === undefined
     ? new Map<string, string>()
     : relationshipTargets(strFromU8(zip['word/_rels/document.xml.rels']));

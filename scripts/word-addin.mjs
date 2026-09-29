@@ -28,7 +28,7 @@
  */
 
 /** Word's `<Version>` is four numbers. Nothing else is accepted. */
-export function manifestVersion(semver) {
+export function manifestVersion(semver, build) {
   const [core, pre] = String(semver).split('-');
   const parts = String(core).split('.').map((n) => Number.parseInt(n, 10));
   if (parts.length !== 3 || parts.some((n) => !Number.isInteger(n) || n < 0)) {
@@ -41,8 +41,22 @@ export function manifestVersion(semver) {
    * comparing these, so a manifest whose version never changes is one a person
    * has to clear a cache to update.
    */
-  const build = /(\d+)\s*$/.exec(pre ?? '');
-  return `${parts.join('.')}.${build === null ? 0 : build[1]}`;
+  /*
+   * A BUILD NUMBER, when the publisher has one, wins over the prerelease
+   * number. The prerelease number only moves when somebody edits package.json,
+   * and nobody did: every deploy went out as 2.0.0.0, so Word had no reason to
+   * re-fetch any of them. The Pages workflow passes its run number, which
+   * rises on every deploy by construction.
+   */
+  if (build !== undefined) {
+    const n = Number(build);
+    if (!Number.isInteger(n) || n < 0 || n > 65535) {
+      throw new Error(`not a build number Word accepts (0-65535): ${build}`);
+    }
+    return `${parts.join('.')}.${n}`;
+  }
+  const tail = /(\d+)\s*$/.exec(pre ?? '');
+  return `${parts.join('.')}.${tail === null ? 0 : tail[1]}`;
 }
 
 /**
@@ -166,8 +180,13 @@ const notOurs = (url) => url.startsWith('https://appsforoffice.microsoft.com/')
   || url.startsWith('http://schemas.') || url.startsWith('https://schemas.')
   || url.startsWith('http://www.w3.org/');
 
-/** The support link is deliberately a domain the add-in is not served from. */
-const SUPPORT = 'https://vedaunion.org/';
+/**
+ * The support link is the add-in's own section of the landing page — what a
+ * person who needs help installing or using it actually wants. It used to be
+ * vedaunion.org's front page, which says nothing about the add-in; store
+ * review expects a page about THIS add-in.
+ */
+const SUPPORT = INSTALL_URL;
 
 /**
  * What is wrong with a manifest, as a list of sentences. Empty is a pass.

@@ -13,6 +13,7 @@
  * document missing half of them. `tools/word-live.mjs` proves the same thing
  * against a real Word; this proves the specimen gives it the chance.
  */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { styleSheet } from '../sheet.js';
 import { paragraphsXml } from '../paragraph.js';
@@ -221,5 +222,25 @@ describe('the marked line in the specimen', () => {
     const pause = tm.marks.find((m) => m.k === 'pause');
     expect(pause?.from).toBe(pause?.to);
     expect(pause?.from).toBe(tm.text.length);
+  });
+});
+
+describe('a document from a Word that is not in English', () => {
+  /* The package a Croatian Word on the web returned after the specimen went
+     in. Every style is there; six of them are there under Croatian ids. The
+     pane said "10 of 16 styles… Missing: Heading1, …, Caption" about it. */
+  const hr = readFileSync(new URL('./fixtures/word-web-hr.xml', import.meta.url), 'utf8');
+  const sheet = styleSheet();
+
+  it('reports nothing missing, because nothing is', () => {
+    expect(missingStyles(hr, sheet)).toEqual([]);
+  });
+
+  it('the control: matched by id alone, six would be "missing"', () => {
+    const have = new Set(styleIds(hr).map((s) => s.id));
+    const byId = styleIds(sheet).map((s) => s.id)
+      .filter((id) => id !== 'Normal' && !have.has(id));
+    expect([...new Set(byId)].sort())
+      .toEqual(['Caption', 'Header', 'Heading1', 'Heading2', 'Heading3', 'Heading4']);
   });
 });

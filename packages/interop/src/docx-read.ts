@@ -17,6 +17,7 @@
  */
 import { xmlText } from './xml.js';
 import { readDrawings, type DocxDrawing } from './docx-figures.js';
+import { builtInStyleIds, canonicalStyleId } from './word/style-names.js';
 
 
 /** One `<w:r>`: its text, its character style, and whether it is raised. */
@@ -66,15 +67,23 @@ const RE_RSTYLE = /<w:rStyle\s+w:val="([^"]*)"/;
 const RE_TAB = /<w:tab\b[^>]*\/?>/;
 const RE_BR = /<w:br\b[^>]*\/?>/;
 
-/** Read `word/document.xml` into paragraphs of runs, in DOCUMENT ORDER. */
-export function readParagraphs(documentXml: string): WordParagraph[] {
+/**
+ * Read `word/document.xml` into paragraphs of runs, in DOCUMENT ORDER.
+ *
+ * Pass the document's `word/styles.xml` (or any package containing it) and a
+ * built-in paragraph style comes back under its English id whatever language
+ * the Word that wrote it was in — see `word/style-names.ts`. Without it the
+ * ids are returned as written.
+ */
+export function readParagraphs(documentXml: string, stylesXml?: string): WordParagraph[] {
+  const table = stylesXml === undefined ? undefined : builtInStyleIds(stylesXml);
   const out: WordParagraph[] = [];
   RE_PARA.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = RE_PARA.exec(documentXml)) !== null) {
     const body = m[1] ?? '';
     const selfClosing = m[1] === undefined;
-    const pStyle = RE_PSTYLE.exec(body)?.[1] ?? null;
+    const pStyle = canonicalStyleId(RE_PSTYLE.exec(body)?.[1] ?? null, table);
     const runs: WordRun[] = [];
     RE_RUN.lastIndex = 0;
     let r: RegExpExecArray | null;

@@ -97,13 +97,14 @@ ${host.label}. There is nothing here to read.</p>
 `;
 
 /** One host's folder, written whole. */
-function publish(key, out) {
+function publish(key, out, build) {
   const host = ADDIN_HOSTS[key];
   if (host === undefined) {
     throw new Error(`no such host: ${key}. One of ${Object.keys(ADDIN_HOSTS).join(', ')}.`);
   }
   const version = manifestVersion(
     JSON.parse(readFileSync(join(ADDIN, 'package.json'), 'utf8')).version,
+    build,
   );
   const xml = manifestFor(readFileSync(TEMPLATE, 'utf8'), host, version);
   const faults = manifestFaults(xml, host);
@@ -185,6 +186,6 @@ if (argv.includes('--all')) {
   for (const key of Object.keys(ADDIN_HOSTS)) publish(key, `out/word-extension-${key}`);
 } else {
   const key = flag('host') ?? 'pages';
-  publish(key, flag('out') ?? 'out/word-extension');
+  publish(key, flag('out') ?? 'out/word-extension', flag('build'));
 }
 console.log('');

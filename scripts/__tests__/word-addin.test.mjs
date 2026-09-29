@@ -13,7 +13,7 @@
  * URL to the template — a help page, an icon, a privacy note — and the
  * substitution does not know about it, `manifestFaults` names it.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   ADDIN_HOSTS, manifestFaults, manifestFor, manifestName, manifestVersion, originOf, urlsIn,
@@ -186,6 +186,60 @@ describe('Word’s four numbers', () => {
   it('and anything else throws rather than shipping a manifest Word rejects', () => {
     expect(() => manifestVersion('2.0')).toThrow();
     expect(() => manifestVersion('latest')).toThrow();
+  });
+
+  it('a build number, when given, is the fourth number — so every deploy is higher', () => {
+    /* Every deploy used to go out as 2.0.0.0, so Word never re-fetched one.
+       The Pages workflow passes its run number, as a string, from argv. */
+    expect(manifestVersion('2.0.0-alpha.0', '41')).toBe('2.0.0.41');
+    expect(manifestVersion('2.0.0-alpha.0', 42)).toBe('2.0.0.42');
+    expect(manifestVersion('2.1.3', '7')).toBe('2.1.3.7');
+    /* The control: without one, the prerelease rule is unchanged. */
+    expect(manifestVersion('2.0.0-alpha.3', undefined)).toBe('2.0.0.3');
+  });
+
+  it('and a build number Word would reject is refused, not written', () => {
+    expect(() => manifestVersion('2.0.0', '65536')).toThrow();
+    expect(() => manifestVersion('2.0.0', '-1')).toThrow();
+    expect(() => manifestVersion('2.0.0', 'abc')).toThrow();
+    expect(() => manifestVersion('2.0.0', '1.5')).toThrow();
+  });
+
+  it('and the Pages workflow actually passes one', () => {
+    const wf = readFileSync('.github/workflows/pages.yml', 'utf8');
+    expect(wf).toMatch(/word-publish\.mjs[^\n]*--build \$\{\{ github\.run_number \}\}/);
+  });
+});
+
+describe('what triggers a redeploy', () => {
+  /* The pane bundles the engine, the format and the tokens. A rule changed in
+     packages/engine is a changed add-in, and the live pane once kept the old
+     rules because the workflow only watched apps/word-addin. */
+  const wf = readFileSync('.github/workflows/pages.yml', 'utf8');
+  it('includes every package the pane is built from', () => {
+    expect(wf).toContain("- 'packages/**'");
+    expect(wf).toContain("- 'package-lock.json'");
+  });
+  it('and every one of those packages exists, so the path is not a dead pattern', () => {
+    const deps = Object.keys(JSON.parse(readFileSync('apps/word-addin/package.json', 'utf8'))
+      .dependencies ?? {}).filter((d) => d.startsWith('@siksamitra/'));
+    expect(deps.length).toBeGreaterThan(0);
+    for (const d of deps) {
+      expect(existsSync(`packages/${d.slice('@siksamitra/'.length)}/package.json`), d).toBe(true);
+    }
+  });
+});
+
+describe('what the manifest tells a person', () => {
+  it('points support at the add-in’s own page, not a site that never mentions it', () => {
+    expect(xml).toContain('<SupportUrl DefaultValue="https://marin-hrvacanin.github.io/siksamitra/#word"/>');
+    expect(xml).not.toContain('<SupportUrl DefaultValue="https://vedaunion.org/"/>');
+  });
+  it('the Get Started text names the button that really exists on the ribbon', () => {
+    /* The ribbon has one button, Marking. Short and Long are in the pane. */
+    const text = /id="sm\.GetStarted\.Description" DefaultValue="([^"]*)"/.exec(xml)?.[1] ?? '';
+    expect(text).toContain('Marking');
+    expect(text.length).toBeLessThanOrEqual(125);
   });
 });
 

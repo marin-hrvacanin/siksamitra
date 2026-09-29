@@ -10,7 +10,19 @@ import '@siksamitra/tokens/tokens.css';
 import './ui/pane.css';
 import { build, refresh } from './ui/pane.js';
 
-Office.onReady(({ host }) => {
+/*
+ * office.js comes from Microsoft's CDN, not from this bundle. When it is
+ * blocked or the machine is offline, `Office` is not defined at all and the
+ * call below throws — which used to leave an empty pane and nothing to say why.
+ */
+if (typeof Office === 'undefined') {
+  const root = document.getElementById('root');
+  if (root !== null) {
+    root.textContent = 'The pane could not reach Microsoft’s Office library '
+      + '(appsforoffice.microsoft.com). Check the connection, then close and '
+      + 'reopen the pane.';
+  }
+} else Office.onReady(({ host }) => {
   const root = document.getElementById('root');
   if (root === null) return;
 

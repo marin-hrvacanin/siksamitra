@@ -35,7 +35,7 @@
   <Description DefaultValue="Mark Vedic recitation text in Word: holdings, svaras, reading aids and pauses, in the same notation and the same styles as the śikṣāmitra editor."/>
   <IconUrl DefaultValue="https://localhost:3000/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/icon-80.png"/>
-  <SupportUrl DefaultValue="https://vedaunion.org/"/>
+  <SupportUrl DefaultValue="https://marin-hrvacanin.github.io/siksamitra/#word"/>
 
   <AppDomains>
     <AppDomain>https://localhost:3000</AppDomain>
@@ -116,7 +116,7 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="sm.Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
-        <bt:Url id="sm.Support.Url" DefaultValue="https://vedaunion.org/"/>
+        <bt:Url id="sm.Support.Url" DefaultValue="https://marin-hrvacanin.github.io/siksamitra/#word"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="sm.Group.Label" DefaultValue="śikṣāmitra"/>
@@ -125,7 +125,7 @@
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="sm.Open.Tip" DefaultValue="Open the marking pane: holdings, svaras, reading aids, pauses, and the rules."/>
-        <bt:String id="sm.GetStarted.Description" DefaultValue="Select some text and press Short or Long on the Home tab to mark a holding."/>
+        <bt:String id="sm.GetStarted.Description" DefaultValue="Press Marking on the Home tab, put the caret in a line, and press Short or Long to mark a holding."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

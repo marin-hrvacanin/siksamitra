@@ -114,3 +114,5 @@ export {
   LIMITS, badEntryNames, entryNameProblem, formatBytes,
 } from './entry-name.js';
 export type { BadEntryName } from './entry-name.js';
+
+export { builtInStyleIds, canonicalStyleId } from './word/style-names.js';
