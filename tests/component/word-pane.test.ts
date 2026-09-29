@@ -25,126 +25,19 @@
  *      pause is placed at a caret. Pressing one that cannot apply is the
  *      commonest way an add-in looks broken.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { act } from 'react';
 
-/* ── the Word that is not here ──────────────────────────────────────────── */
-
-const located = {
-  tm: { text: 'oṁ agnim īḷe puraḥ', marks: [] as unknown[] },
-  map: [] as unknown[],
-  from: 3,
-  to: 8,
-  style: 'Translit' as string | null,
-  isVerse: true,
-  unresolved: [] as {
-    what: string; raw: string; lossy: boolean; advisory?: boolean;
-  }[],
-};
-
-/** What the faked document reports as missing. Set per test. */
-let missing: string[] = [];
-const calls = {
-  addStyles: [] as boolean[], writeDocument: 0, writeParagraph: 0,
-  writeDocumentTotal: 0,
-};
-
-vi.mock('../../apps/word-addin/src/word/client.js', () => ({
-  locate: vi.fn(async () => structuredClone(located)),
-  writeParagraph: vi.fn(async () => { calls.writeParagraph += 1; }),
-  readDocument: vi.fn(async () => ({
-    lines: [{ index: 0, tm: { text: 'agnim', marks: [] }, style: 'Translit' }],
-    /* `total` is every paragraph, not just the mantra ones: `writeDocument`
-       compares it with Word's own count and refuses if they disagree. */
-    total: 4,
-  })),
-  writeDocument: vi.fn(async (_changed: unknown, total: number) => {
-    calls.writeDocument += 1;
-    calls.writeDocumentTotal = total;
-    return 1;
-  }),
-  documentStyles: vi.fn(async () => ({ missing, total: 16 })),
-  addStyles: vi.fn(async (keep: boolean) => { calls.addStyles.push(keep); missing = []; }),
-}));
-
-/*
- * THE HOST, AS FAR AS THE PANE TALKS TO IT DIRECTLY. The pane follows the caret
- * through `DocumentSelectionChanged`; the handler is captured here, so
- * `refresh()` below is exactly what Word does when the reader moves.
- */
-let selectionChanged: (() => void) | null = null;
-(globalThis as { Office?: unknown }).Office = {
-  context: {
-    officeTheme: { bodyBackgroundColor: '#1B1A19' },
-    document: { addHandlerAsync: (_e: unknown, h: () => void) => { selectionChanged = h; } },
-  },
-  EventType: { DocumentSelectionChanged: 'documentSelectionChanged' },
-};
-if (typeof window.matchMedia !== 'function') {
-  window.matchMedia = (() => ({ matches: false, addEventListener() {}, removeEventListener() {} })) as never;
-}
-
-/* Imported AFTER the mock, so the pane binds to it. */
-const { createElement } = await import('react');
-const { act } = await import('react');
-const { createRoot } = await import('react-dom/client');
-const { Pane } = await import('../../apps/word-addin/src/ui/Pane.js');
-const { ARM_MS } = await import('../../apps/word-addin/src/ui/dom.js');
-
-/** Let the pane's promises settle, inside React's act so every update lands. */
-const settle = async (): Promise<void> => {
-  await act(async () => { for (let i = 0; i < 12; i += 1) await Promise.resolve(); });
-};
-
-/** The reader moved the caret. */
-const refresh = async (): Promise<void> => {
-  await act(async () => { selectionChanged?.(); });
-};
-
-let root: HTMLElement;
-let unmount: (() => void) | null = null;
-
-const mount = async (): Promise<void> => {
-  root = document.createElement('div');
-  document.body.append(root);
-  const r = createRoot(root);
-  await act(async () => { r.render(createElement(Pane)); });
-  unmount = () => { act(() => r.unmount()); };
-  await settle();
-};
-
-const button = (label: string): HTMLButtonElement | undefined =>
-  [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === label);
-
-const text = (): string => root.textContent ?? '';
-
-beforeEach(() => {
-  /* `located` is module-level, so every field a test changes has to come back
-     — including the text. Leaving one behind made two later tests fail with a
-     message about a button, which says nothing about the cause. */
-  located.tm = { text: 'oṁ agnim īḷe puraḥ', marks: [] };
-  missing = [];
-  calls.addStyles = [];
-  calls.writeDocument = 0;
-  calls.writeDocumentTotal = 0;
-  calls.writeParagraph = 0;
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  located.from = 3;
-  located.to = 8;
-  located.unresolved = [];
-});
-
-afterEach(() => {
-  unmount?.();
-  unmount = null;
-  root.remove();
-  vi.useRealTimers();
-});
+vi.mock('../../apps/word-addin/src/word/client.js',
+  async () => (await import('./word-pane-harness.js')).clientMock);
+const H = await import('./word-pane-harness.js');
+const { ARM_MS, button, calls, host, located, mount, refresh, settle, text } = H;
 
 describe('what is in the pane', () => {
   it('follows the caret: it asks Word to be told when the selection moves', async () => {
-    selectionChanged = null;
+    host.selectionChanged = null;
     await mount();
-    expect(selectionChanged).not.toBeNull();
+    expect(host.selectionChanged).not.toBeNull();
   });
 
   it('the marking buttons, the rules, the document group and the version', async () => {
@@ -161,7 +54,7 @@ describe('what is in the pane', () => {
 
   it('and a link to what the marks mean, which opens outside the pane', async () => {
     await mount();
-    const link = root.querySelector('a');
+    const link = H.root.querySelector('a');
     expect(link?.getAttribute('href')).toMatch(/^https:\/\//);
     /* `noopener` because the pane is a privileged context: a page it opens
        must not get a handle back to it. */
@@ -194,9 +87,9 @@ describe('the document’s text is displayed and never interpreted', () => {
          buttons carry svg icons, so an svg is looked for only where the
          document's text is drawn. */
       for (const tag of ['img', 'script', 'iframe', 'a[href^="javascript:"]']) {
-        expect(root.querySelectorAll(tag).length, `${payload} created ${tag}`).toBe(0);
+        expect(H.root.querySelectorAll(tag).length, `${payload} created ${tag}`).toBe(0);
       }
-      expect(root.querySelectorAll('.where svg').length, `${payload} created svg`).toBe(0);
+      expect(H.root.querySelectorAll('.where svg').length, `${payload} created svg`).toBe(0);
     });
   }
 
@@ -249,7 +142,7 @@ describe('the document’s text is displayed and never interpreted', () => {
     await refresh();
     await settle();
     expect(text()).toContain('<script>alert(1)</script>');
-    expect(root.querySelectorAll('script')).toHaveLength(0);
+    expect(H.root.querySelectorAll('script')).toHaveLength(0);
   });
 
   it('and a paragraph carrying text the reader cannot place refuses the write', async () => {
@@ -270,31 +163,31 @@ describe('the document’s text is displayed and never interpreted', () => {
 
 describe('a fresh document', () => {
   it('is led with the group that prepares it, and says what is missing', async () => {
-    missing = ['Translit', 'Holding', '2Holding', 'Svara'];
+    host.missing = ['Translit', 'Holding', '2Holding', 'Svara'];
     await mount();
-    const group = root.querySelector('[data-group="document"]');
+    const group = H.root.querySelector('[data-group="document"]');
     expect(group?.getAttribute('data-ready')).toBe('false');
     expect(text()).toContain('styles are in this document');
   });
 
   it('and a document with everything does not show the group at all', async () => {
-    missing = [];
+    host.missing = [];
     await mount();
     /* Nothing needs doing, so the group is not there at all — the pane shows
        only what needs doing (spec: "Only what needs doing"). */
-    expect(root.querySelector('[data-group="document"]')).toBeNull();
+    expect(H.root.querySelector('[data-group="document"]')).toBeNull();
   });
 
   it('and one with none of them says marking still works', async () => {
     /* Because it does: every insertion carries the style sheet. Telling
        somebody they cannot mark yet would be false, and they would stop. */
-    missing = Array.from({ length: 16 }, (_, i) => `S${i}`);
+    host.missing = Array.from({ length: 16 }, (_, i) => `S${i}`);
     await mount();
     expect(text()).toContain('Marking still works');
   });
 
   it('“Add the styles” puts them in and leaves nothing behind', async () => {
-    missing = ['Translit'];
+    host.missing = ['Translit'];
     await mount();
     button('Add the styles')?.click();
     await settle();
@@ -304,7 +197,7 @@ describe('a fresh document', () => {
   });
 
   it('“Insert a specimen” leaves it, and says it can be deleted', async () => {
-    missing = ['Translit'];
+    host.missing = ['Translit'];
     await mount();
     button('Insert a specimen')?.click();
     await settle();
@@ -385,7 +278,7 @@ describe('a button’s state follows the selection', () => {
     await settle();
     expect(button('Short')?.disabled).toBe(false);
     expect(text()).toContain('agnim');
-    expect(root.querySelector('.where')?.getAttribute('data-state')).toBe('range');
+    expect(H.root.querySelector('.where')?.getAttribute('data-state')).toBe('range');
   });
 
   it('and pressing Short writes the paragraph once', async () => {
@@ -397,3 +290,4 @@ describe('a button’s state follows the selection', () => {
     expect(calls.writeParagraph).toBe(1);
   });
 });
+

@@ -72,6 +72,14 @@ const RE_TAB = /<w:tab\b[^>]*\/?>/;
 const RE_BR = /<w:br\b[^>]*\/?>/;
 
 /**
+ * Each paragraph's own XML, in the same order `readParagraphs` reads them —
+ * one pattern for both, so an index into one is an index into the other.
+ */
+export function paragraphXml(documentXml: string): string[] {
+  return [...documentXml.matchAll(RE_PARA)].map((m) => m[0]);
+}
+
+/**
  * Read `word/document.xml` into paragraphs of runs, in DOCUMENT ORDER.
  *
  * Pass the document's `word/styles.xml` (or any package containing it) and a

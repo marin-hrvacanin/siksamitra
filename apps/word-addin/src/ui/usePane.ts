@@ -13,7 +13,7 @@
  * being done, and the pane stays usable.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChantProfileKey, Stage } from '@siksamitra/format';
+import type { ChantProfileKey, Stage, TextAndMarks } from '@siksamitra/format';
 import { STAGES, rerun, resolveProfile } from '@siksamitra/engine';
 import { applyCommand, selectionState } from '@siksamitra/edit';
 import { notCarried } from '../model/carry.js';
@@ -36,6 +36,12 @@ export interface Rules {
 }
 
 const quiet: Message = { text: '', kind: 'plain', lines: [] };
+
+/** One text and its markings, in an order that does not depend on how they
+ *  were produced — so "did the rules change this line?" has one answer. */
+const canon = (tm: TextAndMarks): string => JSON.stringify([tm.text, [...tm.marks]
+  .map((m) => JSON.stringify(m)).sort()]);
+export const sameText = (a: TextAndMarks, b: TextAndMarks): boolean => canon(a) === canon(b);
 
 export function usePane() {
   const [at, setAt] = useState<Located | null>(null);
@@ -80,19 +86,33 @@ export function usePane() {
 
   useEffect(() => { void refresh(); void readStyles(); }, [refresh, readStyles]);
 
-  const press = useCallback(async (control: Control) => {
-    const here = atRef.current;
-    if (here === null) return;
+  /**
+   * A line that may not be written, said — and `true` so the caller stops.
+   * Checked before anything is computed, for every button alike.
+   */
+  const refused = useCallback((here: Located): boolean => {
+    if (here.blocked.length > 0) {
+      say(`Left alone: this line has ${here.blocked.join(' and ')} on it, and rewriting it would lose that.`,
+        'warn', ['Move it to a line of its own, or remove it, and press again.']);
+      return true;
+    }
     const lost = here.unresolved.filter((u) => u.lossy);
     if (lost.length > 0) {
       say('Refusing to write: this line carries text the reader cannot place.', 'warn',
         lost.map((u) => `${u.what}: ${u.raw}`));
-      return;
+      return true;
     }
+    return false;
+  }, [say]);
+
+  const press = useCallback(async (control: Control) => {
+    const here = atRef.current;
+    if (here === null) return;
+    if (refused(here)) return;
     await guard('cannot mark', async () => {
       const result = applyCommand(here.tm, here.from, here.to, control.command);
       const tm = { text: result.text ?? here.tm.text, marks: result.marks };
-      await writeParagraph(tm, here.style);
+      await writeParagraph(tm, here.style, here.wordText);
       const undrawable = notCarried(result.marks);
       say(result.note, undrawable.length === 0 ? 'plain' : 'warn', undrawable.map((l) => l.why));
       await refresh();
@@ -101,7 +121,7 @@ export function usePane() {
          makes an add-in feel broken. */
       if (styles !== null && styles.missing.length > 0) await readStyles();
     });
-  }, [guard, refresh, readStyles, say, styles]);
+  }, [guard, refresh, readStyles, refused, say, styles]);
 
   const request = useCallback(() => ({
     stages: STAGES.filter((s) => rules.stages.has(s)),
@@ -111,7 +131,7 @@ export function usePane() {
 
   const runHere = useCallback(async () => {
     const here = atRef.current;
-    if (here === null) return;
+    if (here === null || refused(here)) return;
     await guard('the rules would not run', async () => {
       const { stages, mode, profile } = request();
       const whole = here.from === here.to;
@@ -120,13 +140,13 @@ export function usePane() {
         from: whole ? 0 : here.from,
         to: whole ? here.tm.text.length : here.to,
       });
-      await writeParagraph({ text: out.text, marks: out.marks }, here.style);
+      await writeParagraph({ text: out.text, marks: out.marks }, here.style, here.wordText);
       say(`${whole ? 'This line' : 'The selection'}: ${out.note}`,
         out.lost.length === 0 ? 'plain' : 'warn',
         [...out.warnings, ...out.lost.map((m) => `${m.k} at ${m.from} was placed by hand`)]);
       await refresh();
     });
-  }, [guard, refresh, request, say]);
+  }, [guard, refresh, refused, request, say]);
 
   const runDocument = useCallback(async () => {
     await guard('the rules would not run over the document', async () => {
@@ -134,15 +154,21 @@ export function usePane() {
       say('Reading the document…');
       const { lines, total } = await readDocument();
       let lost = 0;
-      const changed = lines.map((p) => {
+      const skipped = lines.filter((p) => p.blocked.length > 0);
+      /* Only the lines the rules actually change are written: a second run
+         over a marked document writes nothing, and says so. */
+      const changed = lines.filter((p) => p.blocked.length === 0).flatMap((p) => {
         const out = rerun(p.tm, { stages, mode, profile, from: 0, to: p.tm.text.length });
         lost += out.lost.length;
-        return { ...p, tm: { text: out.text, marks: out.marks } };
+        const tm = { text: out.text, marks: out.marks };
+        return sameText(tm, p.tm) ? [] : [{ ...p, tm }];
       });
       const written = await writeDocument(changed, total);
-      say(`${written} mantra line(s) re-marked`
-        + `${lost === 0 ? '' : `, ${lost} hand marking(s) could not be carried`}.`,
-      lost === 0 ? 'plain' : 'warn');
+      say(`${written === 0 ? 'Nothing to change' : `${written} mantra line(s) re-marked`}`
+        + `${lost === 0 ? '' : `, ${lost} hand marking(s) could not be carried`}`
+        + `${skipped.length === 0 ? '' : `, ${skipped.length} left alone`}.`,
+      lost === 0 && skipped.length === 0 ? 'plain' : 'warn',
+      skipped.map((p) => `line ${p.index + 1}: it has ${p.blocked.join(' and ')} on it`));
       await refresh();
     });
   }, [guard, refresh, request, say]);

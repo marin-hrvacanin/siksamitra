@@ -30,7 +30,7 @@ import { readParagraphs, type WordParagraph } from './docx-read.js';
 
 /* The OOXML reader is `docx-read.ts`. Re-exported because it is part of this
    module's published surface — the add-in and two gates read paragraphs. */
-export { mergeRuns, readParagraphs } from './docx-read.js';
+export { mergeRuns, paragraphXml, readParagraphs } from './docx-read.js';
 /* The transcriber is `docx-runs.ts` and the report is `docx-report.ts`,
    split out when this file passed 700 lines. Re-exported because they are
    part of this module's published surface. */

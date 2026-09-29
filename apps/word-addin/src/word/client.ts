@@ -52,7 +52,9 @@ import { documentPartOf, flatPackage, restyle } from '../model/opc.js';
 import { decodeRuns, isVerseParagraph, paragraphsXml, unresolvedIn } from '../model/paragraph.js';
 import type { Unaccounted } from '../model/paragraph.js';
 import { offsetMap, modelRange, type OffsetMap } from '../model/offsets.js';
-import { inVocabulary, mergeRuns, readParagraphs, vocabularyOf } from '@siksamitra/interop';
+import {
+  inTheWay, inVocabulary, mergeRuns, paragraphXml, readParagraphs, vocabularyOf,
+} from '@siksamitra/interop';
 import type { Vocabulary } from '@siksamitra/interop';
 
 /*
@@ -86,6 +88,21 @@ export interface Located {
   isVerse: boolean;
   /** What the reader could not account for. A `lossy` one refuses a write. */
   unresolved: Unaccounted[];
+  /** What a rewrite would lose — a picture, a comment. Any refuses a write. */
+  blocked: string[];
+  /** The paragraph's text as Word reported it, to check the write against. */
+  wordText: string;
+}
+
+/**
+ * THE LINE CHANGED UNDERNEATH US. Word on the web is co-authored, so between
+ * the read a command was computed on and the write, somebody may have typed
+ * into the line; writing then would undo their typing.
+ */
+export class LineChanged extends Error {
+  constructor() {
+    super('this line changed while it was being marked — nothing was written. Press again.');
+  }
 }
 
 
@@ -104,7 +121,7 @@ export async function locate(): Promise<Located> {
     const before = paragraph.getRange('Start').expandTo(selection.getRange('Start'));
     before.load('text');
     selection.load('text');
-    paragraph.load('style');
+    paragraph.load('style,text');
     const ooxml = paragraph.getOoxml();
     await context.sync();
 
@@ -124,6 +141,8 @@ export async function locate(): Promise<Located> {
       style: read.pStyle,
       isVerse: isVerseParagraph(read),
       unresolved: unresolvedIn([read]),
+      blocked: inTheWay(paragraphXml(documentPartOf(ooxml.value)).join('')),
+      wordText: paragraph.text,
     };
   });
 }
@@ -152,7 +171,9 @@ export async function locate(): Promise<Located> {
  * content alone holds all twelve writes at 872, byte for byte. `WordApi 1.3`,
  * which the manifest already requires.
  */
-export async function writeParagraph(tm: TextAndMarks, style: string | null): Promise<void> {
+export async function writeParagraph(
+  tm: TextAndMarks, style: string | null, wordText: string,
+): Promise<void> {
   const body = restyle(paragraphsXml(tm), style);
   /* `styleSheetFor(body)` and never `styleSheet()`: the sheet has to define
      every style the body NAMES. Sending the plain one omitted `Reference` and
@@ -161,6 +182,9 @@ export async function writeParagraph(tm: TextAndMarks, style: string | null): Pr
   const pkg = packageOf(body, styleSheetFor(body));
   await Word.run(async (context) => {
     const paragraph = context.document.getSelection().paragraphs.getFirst();
+    paragraph.load('text');
+    await context.sync();
+    if (paragraph.text !== wordText) throw new LineChanged();
     paragraph.getRange(Word.RangeLocation.content).insertOoxml(pkg, Word.InsertLocation.replace);
     await context.sync();
   });
@@ -171,6 +195,8 @@ export interface DocParagraph {
   index: number;
   tm: TextAndMarks;
   style: string | null;
+  /** What a rewrite would lose. A whole-document run skips and lists it. */
+  blocked: string[];
 }
 
 /** What one read of the whole document saw. */
@@ -203,11 +229,15 @@ export async function readDocument(): Promise<DocumentRead> {
     const ooxml = context.document.body.getOoxml();
     await context.sync();
     learn(ooxml.value);
-    const all = readParagraphs(documentPartOf(ooxml.value), ooxml.value);
+    const part = documentPartOf(ooxml.value);
+    const all = readParagraphs(part, ooxml.value);
+    const raw = paragraphXml(part);
     const lines: DocParagraph[] = [];
     all.forEach((p, index) => {
       if (!isVerseParagraph(p)) return;
-      lines.push({ index, tm: decodeRuns(mergeRuns(p.runs)), style: p.pStyle });
+      lines.push({
+        index, tm: decodeRuns(mergeRuns(p.runs)), style: p.pStyle, blocked: inTheWay(raw[index] ?? ''),
+      });
     });
     return { lines, total: all.length };
   });
@@ -247,7 +277,7 @@ export async function writeDocument(
     }
     for (const one of changed) {
       const target = paragraphs.items[one.index];
-      if (target === undefined) continue;
+      if (target === undefined || one.blocked.length > 0) continue;
       const body = restyle(paragraphsXml(one.tm), one.style);
       /* Per body, for the reason in `model/sheet.ts` — and cached on the set
          of styles a body names, so 434 paragraphs build a handful of sheets. */

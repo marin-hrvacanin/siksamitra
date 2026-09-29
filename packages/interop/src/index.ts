@@ -12,7 +12,7 @@
  *   `.vuchant`     — `pack` / `unpack`, the portable package (01 §4).
  */
 export {
-  importDocx, mergeRuns, readParagraphs, tokensFromRuns,
+  importDocx, mergeRuns, paragraphXml, readParagraphs, tokensFromRuns,
 } from './docx.js';
 export type { DocxImport, ImportReport, WordParagraph, WordRun } from './docx.js';
 
@@ -121,4 +121,6 @@ export { builtInStyleIds, canonicalStyleId } from './word/style-names.js';
 /* His style names or clean ones, chosen per document. See `word/vocabulary.ts`. */
 export { fromClean, inVocabulary, VOCABULARY, vocabularyOf } from './word/vocabulary.js';
 export type { Vocabulary } from './word/vocabulary.js';
+/* What a paragraph carries that rewriting it would lose. See `word/in-the-way.ts`. */
+export { inTheWay } from './word/in-the-way.js';
 export { wordRun } from './docx-read.js';
