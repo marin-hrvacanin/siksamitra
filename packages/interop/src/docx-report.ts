@@ -12,7 +12,7 @@
  */
 
 export interface ImportReport {
-  source: { kind: 'docx'; bytes: number };
+  source: { kind: 'docx' | 'pdf'; bytes: number };
   structure: {
     /** Every `<w:p>`, including self-closing empties. */
     paragraphs: number;
@@ -26,4 +26,39 @@ export interface ImportReport {
   byPara: Record<string, number>;
   normalisations: { rule: string; from: string; to: string; count: number }[];
   unresolved: { at: string; what: string; raw: string }[];
+}
+
+/**
+ * A report for these paragraphs, with the paragraph, run and style counts
+ * filled in — one construction for every importer, Word and PDF alike.
+ */
+export function reportFor(
+  kind: ImportReport['source']['kind'],
+  bytes: number,
+  paragraphs: readonly import('./docx-read.js').WordParagraph[],
+): ImportReport {
+  const report: ImportReport = {
+    source: { kind, bytes },
+    structure: {
+      paragraphs: paragraphs.length,
+      paragraphsWithBody: paragraphs.filter((p) => p.empty !== true).length,
+      runs: 0, sections: 0, verses: 0, syllables: 0,
+    },
+    marks: {},
+    byStyle: {},
+    byPara: {},
+    normalisations: [],
+    unresolved: [],
+  };
+  for (const p of paragraphs) {
+    if (p.empty === true) continue; // counted in `paragraphs`, not per style
+    const key = p.pStyle ?? 'default';
+    report.byPara[key] = (report.byPara[key] ?? 0) + 1;
+    for (const r of p.runs) {
+      report.structure.runs += 1;
+      const sk = r.rStyle ?? 'none';
+      report.byStyle[sk] = (report.byStyle[sk] ?? 0) + 1;
+    }
+  }
+  return report;
 }

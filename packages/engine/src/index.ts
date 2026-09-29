@@ -103,3 +103,4 @@ export { hydrateVerse, openChantDoc, splitLetters } from './open-doc.js';
    `rerun.ts`, and `openspec/changes/text-and-marks` §4.2. */
 export { STAGES, rerun, typedText } from './rerun.js';
 export type { ReRun, ReRunMode, ReRunRequest } from './rerun.js';
+export { typedAs } from './changes.js';

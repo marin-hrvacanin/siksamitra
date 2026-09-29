@@ -34,6 +34,8 @@ interface Comp {
   /** This letter opens its word. True on a first member that begins a word,
    *  where `boundaryBefore` cannot be. */
   wordInitial: boolean;
+  /** Directly after a hyphen: it opens a part of a JOINED word, not a word. */
+  afterHyphen: boolean;
 }
 
 /**
@@ -63,7 +65,10 @@ export function collectSamyukta(elems: Elem[], i: number): { comps: Comp[]; next
   while (j < n) {
     const e = elems[j]!;
     if (e.kind !== 'letter' || !e.cons) break;
-    comps.push({ index: j, elem: e, boundaryBefore: boundary, wordInitial: opensWord(elems, j) });
+    comps.push({
+      index: j, elem: e, boundaryBefore: boundary, wordInitial: opensWord(elems, j),
+      afterHyphen: elems[j - 1]?.kind === 'hyphen',
+    });
     let k = j + 1;
     while (k < n && elems[k]!.kind === 'br') k += 1;
     if (k >= n) {
@@ -163,6 +168,10 @@ export function selectHoldingComponent(comps: Comp[], profile: Profile): number 
     const c = comps[cand]!;
     const skip = SKIP.has(c.elem.ch) || (c.elem.ch === VIS && cand < b);
     if (!skip || (c.boundaryBefore && SIBILANTS.has(c.elem.ch))) break;
+    /* A register that settles §5.6 for the sibilant: see `sibilantHosts`. After
+       a SPACE only — a hyphen joins (`rayima-ś▫navat` boxes the `n`). */
+    if (profile.holdings.sibilantHosts === true && c.wordInitial && SIBILANTS.has(c.elem.ch)
+      && !c.afterHyphen) break;
     cand += 1;
   }
 

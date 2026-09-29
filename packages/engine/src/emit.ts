@@ -120,10 +120,13 @@ export function emitWithSpans(elems: Elem[], opts?: EmitOptions): EmitResult {
     for (const syl of syllabify(buf)) {
       const units = syl.map(unitOf);
       for (const l of syl) spans.push(l.src);
-      const iast = syl.map((l) => l.ch).join('');
-      const scriptUnits = syl.map((l) => ({
-        c: l.ch,
-        ...(l.cj !== undefined ? { cj: l.cj } : {}),
+      /* The syllable's text and every script's form come FROM ITS UNITS, which
+         are what the document holds — built from the bare letters instead, an
+         overlined vowel's unit said `i̅` while its syllable said `hi`. */
+      const iast = units.map((u) => u.c).join('');
+      const scriptUnits = units.map((u) => ({
+        c: u.c,
+        ...(u.cj !== undefined ? { cj: u.cj } : {}),
       }));
       const tok = { t: 'syl' as const, units, iast } as ChantToken & {
         deva: string; tel?: string; tam?: string;

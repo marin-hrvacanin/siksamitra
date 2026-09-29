@@ -11,6 +11,8 @@
 export { embedInPdf } from './embed.js';
 
 export { importPdf, isSiksamitraPdf } from './import.js';
+export { importPdfRows, paragraphsOfRows, runsOf } from './page-rows.js';
+export type { PdfEvent, PdfRow } from './page-rows.js';
 export type { PdfImport } from './import.js';
 
 export { PDF_ATTACHMENT, PDF_FORMAT, PDF_VERSION, PdfError } from './manifest.js';

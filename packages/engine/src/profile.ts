@@ -118,6 +118,14 @@ export interface Profile {
      *   false        identical pairs only — the pre-ruling behaviour. 507/534.
      */
     readonly crosswordHost: 'aspirate' | 'homorganic' | 'all' | false;
+    /**
+     * Whether a word-initial SIBILANT cluster hosts its box on the sibilant
+     * (`▫śravas`, `▫sve`) rather than the consonant after it. An open question
+     * for the Taittirīya (00 §5.6: 67 against 28 in the corpus, and his own
+     * `svāhā` takes the second), and settled for the Ṛgveda by his own marked
+     * agnimīḻe, which boxes the sibilant every time.
+     */
+    readonly sibilantHosts?: boolean;
   };
 
   readonly scripts: readonly ChantScriptKey[];
@@ -171,6 +179,10 @@ export const PROFILES: Readonly<Record<ProfileKey, Profile>> = Object.freeze({
     recension: 'rigveda',
     gum: false,
     svara: { register: 'attested', lengthening: true },
+    /* His Ṛgveda boxes the word-initial clusters the Taittirīya ruling leaves
+       bare — agnimīḻe's `agnir·▫hotā`, the sādhanā's `saṅ [g]acchadhvam` — and
+       hosts a sibilant cluster on the sibilant. */
+    holdings: { ...BASE.holdings, noInitialBox: false, sibilantHosts: true },
   }),
   'sukla-yajurveda': Object.freeze({
     ...BASE,

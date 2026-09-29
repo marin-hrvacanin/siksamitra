@@ -91,9 +91,11 @@ export type {
  */
 export {
   PDF_ATTACHMENT, PDF_FORMAT, PDF_VERSION, PdfError, embedInPdf, importPdf,
-  isSiksamitraPdf,
+  importPdfRows, isSiksamitraPdf, paragraphsOfRows,
 } from './pdf/index.js';
-export type { PdfImport, PdfManifest } from './pdf/index.js';
+export type { PdfEvent, PdfImport, PdfManifest, PdfRow } from './pdf/index.js';
+export { buildDocument } from './build-document.js';
+export type { BuildOptions } from './build-document.js';
 
 // ── what every embedding format says about itself ───────────────────────────
 export { embedded } from './embed.js';

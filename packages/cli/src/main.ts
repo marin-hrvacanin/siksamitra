@@ -15,7 +15,8 @@
  * See specs/chant-editor/02-ENGINE.md §14.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import {
   PROFILES, derive, headword, normalize, resolveProfile, surfacesOf,
@@ -23,7 +24,8 @@ import {
   type Profile, type ProfileKey,
   openChantDoc,
 } from '@siksamitra/engine';
-import { exportWord, importDocx, pack, readManifest, unpack } from '@siksamitra/interop';
+import { exportWord, importDocx, importPdfRows, pack, readManifest, unpack } from '@siksamitra/interop';
+import type { ImportReport, PdfRow } from '@siksamitra/interop';
 import {
   DEFAULT_EXPORT_STYLE, exportStyle, styleStacks,
 } from '@siksamitra/tokens/export-styles';
@@ -732,52 +734,38 @@ switch (cmd) {
      * back is IAST-only, and `scripts` fills the rest through the ONE
      * transliterator — so there is still exactly one of those.
      */
+    /*
+     * ONE READER FOR BOTH. A PDF's PAGE is read in Python (`vu_import.py`,
+     * where PyMuPDF and the calibrated readers are): its rows, letters and
+     * marks, and nothing more. The document is then built HERE, by the same
+     * builder and run reader that read a `.docx` — so a PDF and a Word file of
+     * one text cannot be read two ways. The title: one given with --title wins,
+     * then the file's own, then its name.
+     */
+    const bytes = new Uint8Array(readFileSync(path!));
+    const fallbackTitle = basename(path!).replace(/\.(docx|pdf)$/i, '').normalize('NFC');
+    const given = flag('title');
+    let imported: { doc: ChantDoc; report: ImportReport };
     if (/\.pdf$/i.test(path!)) {
-      const out = flag('out') ?? `${basename(path!).replace(/\.pdf$/i, '')}.json`;
-      const reportAt = flag('report');
-      const args = [
-        join('tools', 'chant', 'vu_import.py'),
-        '--in', path!,
-        '--out', out,
+      const rowsAt = join(mkdtempSync(join(tmpdir(), 'sm-pdf-')), 'rows.json');
+      const r = spawnSync('python', [
+        join('tools', 'chant', 'vu_import.py'), '--in', path!, '--rows', rowsAt,
         ...(flag('family') === undefined ? [] : ['--family', flag('family')!]),
-        ...(reportAt === undefined ? [] : ['--report', reportAt]),
-        ...(flag('title') === undefined ? [] : ['--title', flag('title')!]),
-      ];
-      const r = spawnSync('python', args, { encoding: 'utf8' });
+      ], { encoding: 'utf8' });
       if (r.error !== undefined) {
         die(2, 'python is not on PATH — PDF import needs Python with PyMuPDF,'
           + ' or the vu-import sidecar in the desktop app');
       }
       if (r.stderr !== '') say(r.stderr.trimEnd());
       if (r.status !== 0) process.exit(r.status ?? 4);
-
-      // Fill the derived scripts in the same breath: an author who has to run
-      // a second command to get Devanāgarī will one day forget, and a document
-      // with no Devanāgarī renders as nothing in three of the four columns.
-      const doc = readDoc(out);
-      let filled = 0;
-      for (const { v } of verses(doc)) {
-        for (const t of v.tokens) {
-          if (t.t !== 'syl') continue;
-          const units = t.units.map((u) => ({ c: u.c }));
-          for (const sc of ['deva', 'tel', 'tam'] as ScriptKey[]) {
-            if (t[sc] !== undefined && t[sc] !== '') continue;
-            const form = transliterateSyllable(units, sc);
-            if (form !== '') { t[sc] = form; filled += 1; }
-          }
-        }
-      }
-      writeFileSync(out, `${writeChantFile(doc)}
-`, 'utf8');
-      say(`  ${filled} script forms filled by the engine`);
-      say(`  → ${out}`);
-      emit({ out, scriptFormsFilled: filled });
-      break;
+      const page = JSON.parse(readFileSync(rowsAt, 'utf8')) as { rows: PdfRow[] };
+      imported = importPdfRows(page.rows, {
+        ...(given === undefined ? {} : { title: given }), fallbackTitle, bytes: bytes.length,
+      });
+    } else {
+      imported = importDocx(bytes, given, fallbackTitle);
     }
-
-    const bytes = new Uint8Array(readFileSync(path!));
-    const title = flag('title') ?? basename(path!).replace(/\.docx$/i, '');
-    const { doc, report } = importDocx(bytes, title);
+    const { doc, report } = imported;
     say(`\n  ${report.structure.paragraphs} paragraphs · ${report.structure.runs} runs`);
     say(`  → ${report.structure.sections} sections · ${report.structure.verses} verses`
       + ` · ${report.structure.syllables} syllables`);
@@ -794,7 +782,12 @@ switch (cmd) {
       writeFileSync(out, `${writeChantFile(doc)}\n`, 'utf8');
       say(`  → ${out}`);
     }
-    emit({ report, ...(flag('out') === undefined ? { doc } : {}) });
+    const reportAt = flag('report');
+    if (reportAt !== undefined) {
+      mkdirSync(dirname(reportAt), { recursive: true });
+      writeFileSync(reportAt, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    }
+    emit({ report, ...(out === undefined ? { doc } : {}) });
     break;
   }
 

@@ -24,7 +24,7 @@
  * Every rule cites the section it implements. A rule with no citation does not
  * merge; the registry-hygiene test asserts it.
  */
-import { applyRigvedaSvarita } from './rigveda.js';
+import { applyAnunasika, applyRigvedaSvarita } from './rigveda.js';
 import { applyHoldings } from './holdings.js';
 import {
   applyAnusvara, applyAnusvaraBeforeVowel, applyGum, applySemivowelAid,
@@ -106,6 +106,14 @@ export const RULES: readonly Rule[] = [
     spec: 'MARKING-RULES §7 step 2',
     title: 'Reading aids: g inside jñ, u inside vy',
     apply: applyReadingAids,
+  },
+  {
+    id: 'sandhi.rigveda.anunasika',
+    stage: 'Anusvara',
+    spec: "ṚPrāt 4.80; the owner's note beside agnimīḻe 1.1.2",
+    title: 'Ṛgveda: -ān before a vowel is -ām̐',
+    when: (p) => p.recension === 'rigveda',
+    apply: applyAnunasika,
   },
   {
     id: 'svara.rigveda',

@@ -16,14 +16,21 @@
  *     or dropping it, lost the letter in the add-in's corpus round trip.
  */
 import type { ChantSyllable, ChantUnit } from '@siksamitra/format';
-import { attachHyphen, isVowel, syllabify, transliterateSyllable } from '@siksamitra/engine';
+import { attachHyphen, isVowel, syllabify, transliterateSyllable, typedAs } from '@siksamitra/engine';
 
 /** The syllables of one run of letters with no hyphen inside it. */
 function plain(word: readonly ChantUnit[]): ChantSyllable[] {
-  const fake = word.map((u) => ({
-    kind: 'letter' as const, ch: u.c, src: { line: 0, start: 0, end: 0 },
-    word: 0, line: 0, vowel: isVowel(u.c), cons: !isVowel(u.c),
-  }));
+  /* A letter the rules replaced says what it was (`typedAs`), because a
+     nasal that was an anusvāra CLOSES its syllable — `rājan̎·tam`, as the
+     engine writes it — where an ordinary `n` would open the next. */
+  const fake = word.map((u) => {
+    const was = u.change === true ? typedAs(u.c) : undefined;
+    return {
+      kind: 'letter' as const, ch: u.c, src: { line: 0, start: 0, end: 0 },
+      word: 0, line: 0, vowel: isVowel(u.c), cons: !isVowel(u.c),
+      ...(was === undefined ? {} : { wasCh: was }),
+    };
+  });
   const out: ChantSyllable[] = [];
   let at = 0;
   for (const g of syllabify(fake as never)) {

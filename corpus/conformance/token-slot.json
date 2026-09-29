@@ -672,6 +672,10 @@
     "primaryScript": "iast",
     "profile": {
       "patch": {
+        "holdings": {
+          "noInitialBox": true,
+          "sibilantHosts": false
+        },
         "svara": {
           "lengthening": false
         }

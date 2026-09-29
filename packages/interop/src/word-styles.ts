@@ -165,6 +165,8 @@ export function roleOf(rStyle: string | null): WordMarkRole | null {
 
 /** What a paragraph style means structurally. */
 export type WordParaRole =
+  /** The document's title: Word's `Title`, or `Heading1`. A second one is a part. */
+  | 'title'
   | 'verse-line'
   | 'translation'
   | 'part'
@@ -185,6 +187,8 @@ export interface WordParaStyle {
 export const WORD_PARA_STYLES: readonly WordParaStyle[] = [
   { id: 'Translit', role: 'verse-line', seen: 434, note: 'the mantra lines' },
   { id: 'Prijevod', role: 'translation', seen: 197, note: 'Croatian for "translation"' },
+  { id: 'Title', role: 'title' },
+  { id: 'Heading1', role: 'title' },
   { id: 'Heading2', role: 'part', seen: 13 },
   { id: 'Heading3', role: 'section', seen: 23 },
   { id: 'Heading4', role: 'step', seen: 42 },

@@ -231,8 +231,15 @@ for (const file of files) {
  * It does not touch losslessness — every document still round-trips EXACT, and
  * `separatorDrift` measures a heuristic that re-derives from a RENDERING,
  * which the document never travels in.
+ *
+ * 312 since a verse ends at a DOUBLE daṇḍa or a numbered one, and never at a
+ * bare single daṇḍa, which is the half-verse. Measured on his own files: the
+ * old reading split kanakadhārā's 21 numbered ślokas into 41 halves and
+ * agnimīḻe's 9 verses into 19. The corpus, segmented by v1, ends some verses
+ * at a single daṇḍa with nothing between them, which a body cannot show — the
+ * 167 separators that moved are exactly those, and no letter or mark moved.
  */
-const SEPARATOR_DRIFT = 145;
+const SEPARATOR_DRIFT = 312;
 if (drift > SEPARATOR_DRIFT) {
   fail('body separators', `${drift} against a ceiling of ${SEPARATOR_DRIFT}`);
 }

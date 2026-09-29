@@ -32,20 +32,13 @@
  */
 import { unlengthen } from './rules/rigveda.js';
 import type { ChantSvara, ChantToken, ChantUnit } from '@siksamitra/format';
-import { ANU, VIS } from './alphabet.js';
+import { typedAs } from './changes.js';
 import { norm } from './normalize.js';
 import { witnessLine } from './rules/witness.js';
 
-/** Which trigger a substituted letter came from. */
-const NASALS: ReadonlySet<string> = new Set(['ṅ', 'ñ', 'ṇ', 'n', 'm']);
-const SIBILANTS: ReadonlySet<string> = new Set(['ś', 'ṣ', 's', 'r']);
 
-const undoChange = (u: ChantUnit): string => {
-  if (u.change !== true) return u.c;
-  if (NASALS.has(u.c)) return ANU;
-  if (SIBILANTS.has(u.c)) return VIS;
-  return u.c;
-};
+/** A substituted letter back to what was typed — `typedAs`, the one answer. */
+const undoChange = (u: ChantUnit): string => (u.change === true ? typedAs(u.c) ?? u.c : u.c);
 
 export interface InvertedSource {
   /** The pre-sandhi letters, one string per displayed line. */
@@ -144,8 +137,13 @@ function unlengthenTokens(tokens: readonly ChantToken[]): ChantToken[] {
     if (t.t !== 'syl') return t;
     const units = t.units.map((u) => {
       const b = back[k++]!;
-      const { svara: _drop, ...rest } = u;
-      return { ...rest, c: b.c, ...(b.svara === undefined ? {} : { svara: b.svara as ChantSvara }) };
+      const { svara: _drop, candra: _c, change: _ch, ...rest } = u;
+      return {
+        ...rest, c: b.c,
+        ...(b.svara === undefined ? {} : { svara: b.svara as ChantSvara }),
+        ...(b.candra === true ? { candra: true } : {}),
+        ...(b.change === true ? { change: true } : {}),
+      };
     });
     return { ...t, units };
   });

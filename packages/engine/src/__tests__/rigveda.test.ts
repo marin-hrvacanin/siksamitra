@@ -87,3 +87,61 @@ describe('reading a marked Ṛgveda back', () => {
     expect(inv.accented[0]).toContain('̎');
   });
 });
+
+describe('rule 3 looks at the NEXT syllable\'s cluster', () => {
+  it('past the visarga that closes this one: viśvata̍ḥ ▫pari takes no overline', () => {
+    const t = derive({ lines: ['viśvataḥ paribhūr'], accented: ['vi̱śvata̍ḥ pari̱bhūr'] },
+      resolveProfile([{ preset: 'rigveda' } as never]), { trace: false }).tokens;
+    expect(shown(t)).not.toContain('a̅');
+  });
+  it('held if ANY letter of the cluster is: saca̍ s▫vā takes none', () => {
+    expect(shown(mark('saca̍svā'))).not.toContain('̅');
+  });
+});
+
+describe('rule 2 across a hyphen: sa̱tyama-ṅ̎giraḥ', () => {
+  it('the svarita moves onto the nasal after the hyphen', () => {
+    const out = shown(mark('sa̱tyama̍-ṅgiraḥ'));
+    expect(out).toContain('ṅ̎');
+    expect(out).not.toContain('a̍-');
+  });
+});
+
+describe('the anunāsika: -ān before a vowel is -ām̐ (ṚPrāt 4.80)', () => {
+  const run = (line: string, preset = 'rigveda') => derive({ lines: [line] },
+    resolveProfile([{ preset } as never]), { trace: false }).tokens;
+  const units = (ts: ChantToken[]) => ts.flatMap((t) => (t.t === 'syl' ? t.units : []));
+  it('sa devān eha → devām̐ eha, a letter the rules replaced', () => {
+    const m = units(run('sa devān eha')).find((u) => u.c === 'm');
+    expect(m).toMatchObject({ c: 'm', candra: true, change: true });
+  });
+  it('not before a consonant: devān vakṣati keeps its n — the control', () => {
+    expect(units(run('devān vakṣati')).some((u) => u.candra === true)).toBe(false);
+  });
+  it('not after a short vowel: agnin eha', () => {
+    expect(units(run('agnin eha')).some((u) => u.candra === true)).toBe(false);
+  });
+  it('not in another register', () => {
+    expect(units(run('sa devān eha', 'taittiriya')).some((u) => u.candra === true)).toBe(false);
+  });
+  it('read back, it is the n that was typed', () => {
+    expect(invertVerse(run('sa devān eha'), { recension: 'rigveda' }).lines[0]).toBe('sa devān eha');
+  });
+});
+
+describe('the Ṛgveda\'s holdings', () => {
+  const holds = (line: string, preset = 'rigveda') => derive({ lines: [line] },
+    resolveProfile([{ preset } as never]), { trace: false }).tokens
+    .flatMap((t) => (t.t === 'syl' ? t.units : [])).filter((u) => u.hold !== undefined).map((u) => u.c).join('');
+  it('a word-initial sibilant cluster hosts on the sibilant: citra ▫śravas', () => {
+    expect(holds('citra śravas')).toContain('ś');
+  });
+  it('but after a HYPHEN it is one word: rayima-ś▫navat boxes the n', () => {
+    const h = holds('rayima-śnavat');
+    expect(h).toContain('n');
+    expect(h).not.toContain('ś');
+  });
+  it('the Taittirīya keeps the shipped behaviour — the control', () => {
+    expect(holds('citra śravas', 'taittiriya')).not.toContain('ś');
+  });
+});

@@ -38,24 +38,41 @@ const NASALS = new Set(['ṁ', 'n', 'ñ', 'ṅ', 'ṇ', 'm']);
 
 const isLong = (e: Elem): boolean => LONG_VOWELS.has(e.ch);
 
-/** The next letter after `i` in the same word, skipping nothing else. */
+/** Letters that only ever CLOSE a syllable: a visarga, an anusvāra, the tick. */
+const CODA = new Set(['ḥ', 'ṁ', 'ˎ']);
+
+/**
+ * The next letter after `i` in the same word — a hyphen does not end the word
+ * here: `sa̱tyama-ṅ̎giraḥ` moves the svarita across it, as a joined word does.
+ */
 function nextInWord(elems: readonly Elem[], i: number): Elem | undefined {
   const here = elems[i]!;
-  const next = elems[i + 1];
-  return next !== undefined && next.kind === 'letter' && next.word === here.word ? next : undefined;
+  for (let k = i + 1; k < elems.length; k += 1) {
+    const e = elems[k]!;
+    if (e.kind === 'hyphen') continue;
+    return e.kind === 'letter' && (e.word === here.word || elems[k - 1]?.kind === 'hyphen') ? e : undefined;
+  }
+  return undefined;
 }
 
-/** The first consonant after `i`, across a word boundary but not a pause or line. */
-function nextConsonant(elems: readonly Elem[], i: number): Elem | undefined {
+/**
+ * Is the cluster that opens the NEXT syllable held? The letters after the
+ * vowel up to the next vowel — past the syllable's own coda (`viśvata̍ḥᶠ
+ * ▫pari`: the visarga closes `taḥ`, and `p` opens the next) — across a word
+ * boundary, but not a pause or a line. Held if ANY letter of it is: `saca̍
+ * s▫vā` boxes the `v` of `sv`.
+ */
+function nextClusterHeld(elems: readonly Elem[], i: number): boolean {
   const line = elems[i]!.line;
   for (let k = i + 1; k < elems.length; k += 1) {
     const e = elems[k]!;
-    if (e.line !== line || e.kind === 'pause' || e.kind === 'vpause' || e.kind === 'ompause') return undefined;
+    if (e.line !== line || e.kind === 'pause' || e.kind === 'vpause' || e.kind === 'ompause') return false;
     if (e.kind !== 'letter') continue;
-    if (e.vowel) return undefined;
-    return e;
+    if (e.vowel) return false;
+    if (CODA.has(e.wasCh ?? e.ch) && k === i + 1) continue;
+    if (e.hold !== undefined) return true;
   }
-  return undefined;
+  return false;
 }
 
 export function applyRigvedaSvarita(ctx: RuleCtx): void {
@@ -80,8 +97,7 @@ export function applyRigvedaSvarita(ctx: RuleCtx): void {
       continue;
     }
 
-    const held = nextConsonant(elems, i)?.hold !== undefined;
-    if (!held) {
+    if (!nextClusterHeld(elems, i)) {
       e.dirgha = true;
       ctx.trace(i, 'short svarita, next cluster not held → overline', 'svara.rigveda.overline');
     }
@@ -95,9 +111,18 @@ export function applyRigvedaSvarita(ctx: RuleCtx): void {
  * before it; the overline goes. Pure over one syllable-unit list, so the
  * inverter and its tests call exactly this.
  */
-export interface AccentUnit { c: string; svara?: string }
+export interface AccentUnit { c: string; svara?: string; candra?: boolean; change?: boolean }
 export function unlengthen(units: AccentUnit[]): AccentUnit[] {
   const out = units.map((u) => ({ ...u, c: u.c.replace(/̅/g, '') }));
+  /* The anunāsika back to the `n` it was: in the Ṛgveda a replaced `m` with a
+     candrabindu has no other source (no g-forms are made). */
+  for (const u of out) {
+    if (u.c === 'm' && u.candra === true && u.change === true) {
+      u.c = 'n';
+      delete u.candra;
+      delete u.change;
+    }
+  }
   for (const [i, u] of out.entries()) {
     if (u.svara !== 'dirgha-svarita') continue;
     const base = u.c.normalize('NFC');
@@ -109,4 +134,27 @@ export function unlengthen(units: AccentUnit[]): AccentUnit[] {
     }
   }
   return out;
+}
+
+/**
+ * THE ANUNĀSIKA — `-ān` before a vowel is recited `-ām̐` (Ṛgveda Prātiśākhya
+ * 4.80), in the owner's own words beside agnimīḻe 1.1.2: "ān + vowel = ām̐ +
+ * vowel", printed `sa devām̐ eha` with the `m̐` in the blue of a letter the rules
+ * replaced. So a word-final `n` after `ā`, followed on the line by a word that
+ * begins with a vowel, is shown as `m` with a candrabindu, and records the `n`.
+ */
+export function applyAnunasika(ctx: RuleCtx): void {
+  const { elems } = ctx;
+  for (const [i, e] of elems.entries()) {
+    if (e.kind !== 'letter' || e.ch !== 'n') continue;
+    const before = elems[i - 1];
+    if (before === undefined || before.kind !== 'letter' || before.word !== e.word || before.ch !== 'ā') continue;
+    const next = elems.slice(i + 1).find((x) => x.kind !== 'hyphen');
+    if (next === undefined || next.kind !== 'letter' || next.word === e.word || next.line !== e.line || !next.vowel) continue;
+    e.wasCh = 'n';
+    e.ch = 'm';
+    e.candra = true;
+    e.change = true;
+    ctx.trace(i, 'ān before a vowel → ām̐', 'sandhi.rigveda.anunasika', 'n', 'm̐');
+  }
 }
