@@ -71,12 +71,12 @@ describe('reading a marked Ṛgveda back', () => {
   ];
   for (const accented of verses) {
     it(`gives back what was typed: ${accented.slice(0, 24)}…`, () => {
-      const inv = invertVerse(mark(accented), { recension: 'rigveda' });
+      const inv = invertVerse(mark(accented), { lengthened: true });
       expect(inv.accented.join(' ').normalize('NFC')).toBe(accented.normalize('NFC'));
     });
     it(`and marking it again is idempotent: ${accented.slice(0, 24)}…`, () => {
       const once = mark(accented);
-      const inv = invertVerse(once, { recension: 'rigveda' });
+      const inv = invertVerse(once, { lengthened: true });
       const twice = derive({ lines: inv.lines, accented: inv.accented },
         resolveProfile([{ preset: 'rigveda' } as never]), { trace: false }).tokens;
       expect(JSON.stringify(twice)).toBe(JSON.stringify(once));
@@ -125,7 +125,7 @@ describe('the anunāsika: -ān before a vowel is -ām̐ (ṚPrāt 4.80)', () => 
     expect(units(run('sa devān eha', 'taittiriya')).some((u) => u.candra === true)).toBe(false);
   });
   it('read back, it is the n that was typed', () => {
-    expect(invertVerse(run('sa devān eha'), { recension: 'rigveda' }).lines[0]).toBe('sa devān eha');
+    expect(invertVerse(run('sa devān eha'), { lengthened: true }).lines[0]).toBe('sa devān eha');
   });
 });
 

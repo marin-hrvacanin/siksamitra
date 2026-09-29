@@ -70,9 +70,13 @@ describe('a keep-hand re-run over the corpus', () => {
    * guess — `openspec/changes/text-and-marks` counts 153 of them — so this
    * number is a reading of the corpus rather than of this file, and it may only
    * go UP.
+   *
+   * 422 → 454 when the re-run started handing the accents to the svara stage
+   * as its witness: 32 verses whose letters depend on where the accents are
+   * (the Ṛgveda's overline) now come back as the document shows them.
    */
-  it('reproduces the letters of at least 422 verses', () => {
-    expect(corpus.reproduced).toBeGreaterThanOrEqual(422);
+  it('reproduces the letters of at least 454 verses', () => {
+    expect(corpus.reproduced).toBeGreaterThanOrEqual(454);
   });
 
   it('keeps every hand marking in every verse it reproduced', () => {

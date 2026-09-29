@@ -30,7 +30,7 @@
  */
 import {
   decodeMarks, normalizeChantDoc, toTokens, withVerses,
-  type ChantDoc, type ChantSyllable, type ChantUnit, type ChantVerse,
+  type ChantDoc, type ChantToken, type TextAndMarks, type ChantSyllable, type ChantUnit, type ChantVerse,
 } from '@siksamitra/format';
 import { DIGRAPHS } from './alphabet.js';
 import { transliterateSyllable } from './script/index.js';
@@ -91,14 +91,15 @@ const spell = (
   } as Omit<ChantSyllable, 't' | 'units' | 'iast'>;
 };
 
+/** A text and its markings as tokens — syllabified and spelt in every script. */
+export function tokensOf(tm: TextAndMarks): ChantToken[] {
+  return toTokens(tm, { spell, split: splitLetters });
+}
+
 /** One verse's tokens, rebuilt from its text and markings. */
 export function hydrateVerse(v: ChantVerse): ChantVerse {
   if (v.text === undefined) return v;
-  const tokens = toTokens(
-    { text: v.text, marks: decodeMarks(v.marks ?? []) },
-    { spell, split: splitLetters },
-  );
-  return { ...v, tokens };
+  return { ...v, tokens: tokensOf({ text: v.text, marks: decodeMarks(v.marks ?? []) }) };
 }
 
 /**

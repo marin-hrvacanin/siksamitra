@@ -22,6 +22,7 @@ import type { ChantSyllable, ChantToken, ChantUnit } from '@siksamitra/format';
 import type { Elem, SrcSpan } from './lex.js';
 import { syllabify } from './syllable.js';
 import { VIRAMA_TICK } from './alphabet.js';
+import { typedAs } from './changes.js';
 import { transliterateSyllable } from './script/index.js';
 import type { ScriptKey, ScriptOptions } from './script/index.js';
 
@@ -60,6 +61,8 @@ export function unitOf(l: Elem): ChantUnit {
   // from its own IAST. It is document data, not a transliteration detail.
   if (l.cj !== undefined) u.cj = l.cj;
   if (l.change === true) u.change = true;
+  /* What was typed, where the letter alone cannot say: the anunāsika's n. */
+  if (l.change === true && l.wasCh !== undefined && l.wasCh !== (typedAs(u.c) ?? u.c)) u.was = l.wasCh;
   if (l.svara !== undefined) u.svara = l.svara;
   if (l.sup !== undefined) u.sup = l.sup;
   if (l.candra === true) u.candra = true;

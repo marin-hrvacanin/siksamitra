@@ -33,6 +33,8 @@ export const host = {
   missing: [] as string[],
   docLines: [] as DocLine[],
   selectionChanged: null as (() => void) | null,
+  /** What `Office.context.document.settings` holds. */
+  settings: new Map<string, unknown>(),
   /** Further lines of the selection, after `located`. */
   more: [] as (typeof located)[],
 };
@@ -83,7 +85,15 @@ export const clientMock = {
 (globalThis as { Office?: unknown }).Office = {
   context: {
     officeTheme: { bodyBackgroundColor: '#1B1A19' },
-    document: { addHandlerAsync: (_e: unknown, h: () => void) => { host.selectionChanged = h; } },
+    document: {
+      addHandlerAsync: (_e: unknown, h: () => void) => { host.selectionChanged = h; },
+      /* The document's own settings, where the pane records its register. */
+      settings: {
+        get: (k: string) => host.settings.get(k) ?? null,
+        set: (k: string, v: unknown) => { host.settings.set(k, v); },
+        saveAsync: (done: () => void) => { done(); },
+      },
+    },
   },
   EventType: { DocumentSelectionChanged: 'documentSelectionChanged' },
 };
@@ -97,7 +107,16 @@ export { ARM_MS } from '../../apps/word-addin/src/ui/dom.js';
 
 /** Let the pane's promises settle, inside React's act so every update lands. */
 export const settle = async (): Promise<void> => {
-  await act(async () => { for (let i = 0; i < 12; i += 1) await Promise.resolve(); });
+  /* Microtasks AND a real turn of the event loop, three times over: a press is
+     a chain of awaits of no fixed length, and counting microtasks alone passed
+     on a quiet machine and failed under the full suite's load. Not under fake
+     timers, where a real timeout would never fire. */
+  for (let round = 0; round < 3; round += 1) {
+    await act(async () => {
+      for (let i = 0; i < 12; i += 1) await Promise.resolve();
+      if (!vi.isFakeTimers()) await new Promise((r) => { setTimeout(r, 0); });
+    });
+  }
 };
 
 /** The reader moved the caret. */
@@ -130,6 +149,7 @@ beforeEach(() => {
      — including the text. Leaving one behind made two later tests fail with a
      message about a button, which says nothing about the cause. */
   located.tm = { text: 'oṁ agnim īḷe puraḥ', marks: [] };
+  located.wordText = located.tm.text;
   host.missing = [];
   calls.addStyles = [];
   calls.writeDocument = 0;
@@ -137,6 +157,7 @@ beforeEach(() => {
   calls.writeParagraph = 0;
   calls.linesWritten = 0;
   host.more = [];
+  host.settings.clear();
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   located.from = 3;
   located.to = 8;

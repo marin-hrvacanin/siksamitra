@@ -29,7 +29,11 @@
  * the sādhanā is accented but carries none of it (`śatata̍maṁ`), and that is
  * recorded as data on those verses, not as an exception here.
  */
-import { LONG_VOWELS } from '../alphabet.js';
+import type { TextAndMarks } from '@siksamitra/format';
+import { LONG_VOWELS, isConsonant } from '../alphabet.js';
+
+/** U+0305, the overline rule 3 lays on a short vowel. */
+const OVERLINE = '̅';
 import type { Elem } from '../lex.js';
 import type { RuleCtx } from './types.js';
 
@@ -157,4 +161,18 @@ export function applyAnunasika(ctx: RuleCtx): void {
     e.change = true;
     ctx.trace(i, 'ān before a vowel → ām̐', 'sandhi.rigveda.anunasika', 'n', 'm̐');
   }
+}
+
+/**
+ * Does a marked line show the Ṛgveda's lengthening — a mark no other register
+ * makes? The overline (rule 3) is one, and an accent on a consonant (rule 2's
+ * nasal) is the other; a dīrgha-svarita on a long vowel is not, because the
+ * Taittirīya types those. EVIDENCE, NOT PROOF: a Ṛgvedic text with the
+ * lengthening switched off may carry overlines it was given by hand, so the
+ * register a document RECORDS always wins, and this speaks only where none is
+ * recorded.
+ */
+export function showsLengthening(tm: TextAndMarks): boolean {
+  if (tm.text.includes(OVERLINE)) return true;
+  return tm.marks.some((m) => m.k === 'svara' && isConsonant(tm.text.slice(m.from, m.to)));
 }

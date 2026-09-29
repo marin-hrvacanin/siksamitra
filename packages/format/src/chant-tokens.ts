@@ -44,6 +44,12 @@ export interface ChantUnit {
   cj?: 'split' | 'join';
   /** Anusvāra/visarga-derived letter — rendered in the "change" colour. */
   change?: boolean;
+  /**
+   * What a changed letter was TYPED as, when `typedLetter` cannot tell it from
+   * the letter alone. Only the Ṛgveda's anunāsika needs it: its `m̐` was an
+   * `n`, where every other `m̐` was an anusvāra. Absent everywhere else.
+   */
+  was?: string;
   /** Svara (attested Vedic data, or a sanctioned positional convention). */
   svara?: ChantSvara;
   /** Superscript annotation (e.g. upadhmānīya "f" after visarga before p). */

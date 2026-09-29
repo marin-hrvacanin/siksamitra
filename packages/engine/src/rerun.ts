@@ -35,6 +35,9 @@ import {
 import type { ChantVerse } from '@siksamitra/format';
 import type { Profile } from './profile.js';
 import { derive } from './pipeline.js';
+import { lengthens } from './profile.js';
+import { invertVerse } from './invert.js';
+import { tokensOf } from './open-doc.js';
 
 export type ReRunMode = 'keep-hand' | 'replace-all';
 
@@ -58,6 +61,14 @@ export interface ReRunRequest {
    * Durgā Sūktam v-1 lost 75 of them to a single missing `1`.
    */
   verseN?: string | null;
+  /**
+   * The register the range is marked in NOW, when it is not the one being
+   * applied — a Taittirīya line a person is re-marking as Ṛgveda. What that
+   * register made of the typed letters is undone first (`invertVerse`), so
+   * switching register and back again gives back exactly what was there.
+   * Absent: the range is taken to be marked in `profile` already.
+   */
+  previous?: Profile;
 }
 
 export interface ReRun extends TextAndMarks {
@@ -145,6 +156,11 @@ function withoutRerunStages(
       : m.to > from && m.from < to;
     if (!touches) return true;
     if (!drop.has(STAGE_OF[m.k])) return true;
+    /* An accent is the svara stage's INPUT, whoever placed it: it went into
+       the witness above and comes back out of the derivation, transformed by
+       the register. Keeping the old one too would leave the Ṛgveda's svarita
+       standing where the rule has lengthened it. */
+    if (m.k === 'svara') return false;
     return req.mode === 'keep-hand' && m.by === 'hand';
   });
 }
@@ -156,8 +172,24 @@ export function rerun(tm: TextAndMarks, req: ReRunRequest): ReRun {
     .filter((m) => (m.from === m.to ? m.from >= from && m.from <= to : m.to > from && m.from < to))
     .map((m) => ({ ...m, from: m.from - from, to: m.to - from }));
 
-  const source = typedText(slice, inside);
-  const d = derive({ lines: source.split('\n') }, req.profile, { trace: false });
+  /*
+   * WHAT WAS TYPED — the letters and the accents both.
+   *
+   * The letters with the substitutions undone; and the ACCENTS, which are the
+   * svara stage's input and not an opinion about it. A svarita on a vowel is
+   * what the person typed, and what the Ṛgveda makes of it — a dīrgha-svarita,
+   * an overline — is the rule's. Not handing them over meant the Ṛgveda's
+   * svara rules never ran on a re-run at all, in the app or in Word. Read back
+   * through the register the range is marked in NOW, so a Ṛgveda line's
+   * overlines come off before any register puts its own on.
+   */
+  const typed = invertVerse(tokensOf({ text: slice, marks: inside }), {
+    lengthened: lengthens(req.previous ?? req.profile),
+  });
+  const d = derive({
+    lines: typed.lines.length === 0 ? [''] : typed.lines,
+    ...(typed.accents > 0 ? { accented: typed.accented } : {}),
+  }, req.profile, { trace: false });
   const made = produced(d.tokens, req.stages);
 
   const changed = made.text !== slice;
@@ -182,9 +214,17 @@ export function rerun(tm: TextAndMarks, req: ReRunRequest): ReRun {
      */
     let moving = tm.marks;
     const dropped: Mark[] = [];
-    for (const e of [...textEdits(slice, made.text)].reverse()) {
+    /* Where each edit's new characters sit in the NEW text, so an insertion of
+       combining marks alone — the Ṛgveda's overline — can be told apart. */
+    let drift = 0;
+    const edits = textEdits(slice, made.text).map((e) => {
+      const put = made.text.slice(e.from + drift, e.from + drift + e.inserted);
+      drift += e.inserted - (e.to - e.from);
+      return { ...e, combining: put !== '' && /^\p{M}+$/u.test(put) };
+    });
+    for (const e of edits.reverse()) {
       const step = shiftForEdit(moving, {
-        from: from + e.from, to: from + e.to, inserted: e.inserted,
+        from: from + e.from, to: from + e.to, inserted: e.inserted, combining: e.combining,
       });
       moving = step.marks;
       dropped.push(...step.dropped);

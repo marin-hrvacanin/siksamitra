@@ -13,14 +13,15 @@
  * being done, and the pane stays usable.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChantProfileKey, Stage, TextAndMarks } from '@siksamitra/format';
-import { STAGES, rerun, resolveProfile } from '@siksamitra/engine';
+import { CHANT_PROFILE_NOTES, type ChantProfileKey, type Stage, type TextAndMarks } from '@siksamitra/format';
+import { STAGES, rerun, resolveProfile, showsLengthening } from '@siksamitra/engine';
 import { applyAcross, selectionAcross } from '@siksamitra/edit';
 import { notCarried } from '../model/carry.js';
 import {
   addStyles, documentStyles, readDocument, writeDocument, type DocStyles,
 } from '../word/client.js';
 import { locate, writeLines, type Line, type LineWrite, type Located } from '../word/selection.js';
+import { recordRegister, recordedRegister } from '../word/settings.js';
 import type { Control } from './controls.js';
 
 export interface Message {
@@ -48,9 +49,13 @@ export function usePane() {
   const [message, setMessage] = useState<Message>(quiet);
   const [styles, setStyles] = useState<DocStyles | null>(null);
   const [busy, setBusy] = useState(false);
-  const [rules, setRules] = useState<Rules>({
-    register: 'taittiriya', stages: new Set(STAGES), mode: 'keep-hand',
-  });
+  /* The register the document RECORDS it is marked in, and the one chosen for
+     the next run. They differ when a person picks another; nothing is
+     rewritten until they run it. */
+  const [marked, setMarked] = useState<ChantProfileKey | null>(() => recordedRegister());
+  const [rules, setRules] = useState<Rules>(() => ({
+    register: recordedRegister() ?? 'taittiriya', stages: new Set(STAGES), mode: 'keep-hand',
+  }));
   const atRef = useRef(at);
   atRef.current = at;
 
@@ -143,6 +148,30 @@ export function usePane() {
     profile: resolveProfile([{ preset: rules.register }]),
   }), [rules]);
 
+  /**
+   * The register a line is marked in NOW, to be undone before the chosen one
+   * runs. What the document RECORDS decides, because a register may carry
+   * marks another would read differently — the corpus has overlines under a
+   * Ṛgveda with lengthening switched off. Only where nothing is recorded does
+   * the line's own evidence speak: the Ṛgveda's marks mean the Ṛgveda, and
+   * otherwise the line is taken as marked in the register chosen.
+   */
+  const previousOf = useCallback((tm: Line['tm']) => resolveProfile([{
+    preset: marked ?? (showsLengthening(tm) ? 'rigveda' : rules.register),
+  }]), [marked, rules.register]);
+
+  /** After a run: the document is marked in the register just used — unless
+   *  only part of it was, into a register the rest is not in. */
+  const remember = useCallback(async (whole: boolean): Promise<string | null> => {
+    if (whole || marked === null || marked === rules.register) {
+      await recordRegister(rules.register);
+      setMarked(rules.register);
+      return null;
+    }
+    return `Only these lines are ${CHANT_PROFILE_NOTES[rules.register].name} now; `
+      + `the rest of the document stays ${CHANT_PROFILE_NOTES[marked].name}.`;
+  }, [marked, rules.register]);
+
   const runHere = useCallback(async () => {
     const here = atRef.current;
     if (here === null || refused(here)) return;
@@ -154,7 +183,7 @@ export function usePane() {
       const range = (l: Line): [number, number] => (whole ? [0, l.tm.text.length] : [l.from, l.to]);
       const outs = here.lines.map((l) => {
         const [from, to] = range(l);
-        return to > from ? rerun(l.tm, { stages, mode, profile, from, to }) : null;
+        return to > from ? rerun(l.tm, { stages, mode, profile, from, to, previous: previousOf(l.tm) }) : null;
       });
       const writes: LineWrite[] = [];
       outs.forEach((out, i) => {
@@ -164,16 +193,18 @@ export function usePane() {
         if (!sameText(tm, l.tm)) writes.push({ line: i, tm, style: l.style, wordText: l.wordText });
       });
       await writeLines(writes);
+      const mixed = await remember(false);
       const done = outs.filter((o): o is NonNullable<typeof o> => o !== null);
       const lost = done.flatMap((o) => o.lost);
       const head = here.lines.length > 1
         ? `The selection: ${writes.length === 0 ? 'nothing to change' : `${writes.length} line(s) re-marked`}`
         : `${whole ? 'This line' : 'The selection'}: ${writes.length === 0 ? 'nothing to change' : done[0]?.note ?? ''}`;
       say(head, lost.length === 0 ? 'plain' : 'warn',
-        [...done.flatMap((o) => o.warnings), ...lost.map((m) => `${m.k} at ${m.from} was placed by hand`)]);
+        [...(mixed === null ? [] : [mixed]), ...done.flatMap((o) => o.warnings),
+          ...lost.map((m) => `${m.k} at ${m.from} was placed by hand`)]);
       await refresh();
     });
-  }, [guard, refresh, refused, request, say]);
+  }, [guard, previousOf, refresh, refused, remember, request, say]);
 
   const runDocument = useCallback(async () => {
     await guard('the rules would not run over the document', async () => {
@@ -185,12 +216,15 @@ export function usePane() {
       /* Only the lines the rules actually change are written: a second run
          over a marked document writes nothing, and says so. */
       const changed = lines.filter((p) => p.blocked.length === 0).flatMap((p) => {
-        const out = rerun(p.tm, { stages, mode, profile, from: 0, to: p.tm.text.length });
+        const out = rerun(p.tm, {
+          stages, mode, profile, from: 0, to: p.tm.text.length, previous: previousOf(p.tm),
+        });
         lost += out.lost.length;
         const tm = { text: out.text, marks: out.marks };
         return sameText(tm, p.tm) ? [] : [{ ...p, tm }];
       });
       const written = await writeDocument(changed, total);
+      await remember(true);
       say(`${written === 0 ? 'Nothing to change' : `${written} mantra line(s) re-marked`}`
         + `${lost === 0 ? '' : `, ${lost} hand marking(s) could not be carried`}`
         + `${skipped.length === 0 ? '' : `, ${skipped.length} left alone`}.`,
@@ -198,7 +232,7 @@ export function usePane() {
       skipped.map((p) => `line ${p.index + 1}: it has ${p.blocked.join(' and ')} on it`));
       await refresh();
     });
-  }, [guard, refresh, request, say]);
+  }, [guard, previousOf, refresh, remember, request, say]);
 
   const putStyles = useCallback(async (keep: boolean) => {
     await guard(keep ? 'the specimen would not go in' : 'the styles would not go in', async () => {
@@ -218,7 +252,7 @@ export function usePane() {
   const state: ReturnType<typeof selectionAcross> | null = at === null ? null : selectionAcross(at.lines);
 
   return {
-    at, state, message, styles, busy, rules, setRules,
+    at, state, message, styles, busy, rules, setRules, marked,
     refresh, press, runHere, runDocument, putStyles,
   };
 }

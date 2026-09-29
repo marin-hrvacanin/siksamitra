@@ -11,7 +11,7 @@
  * Split out of `main.ts`, which had reached 984 lines. The commands are thin
  * by design: everything they do is a function in a module they call.
  */
-import { derive, invertVerse, resolveProfile } from '@siksamitra/engine';
+import { derive, invertVerse, lengthens, resolveProfile } from '@siksamitra/engine';
 import type { Profile } from '@siksamitra/engine';
 import { profileChain } from '@siksamitra/edit';
 import type { ChantDoc, ChantSection, ChantVerse } from '@siksamitra/format';
@@ -132,7 +132,7 @@ export function score(doc: ChantDoc, profile: Profile, opts?: ScoreOptions): Sco
      */
     const stored = v.src?.lines;
     const rebuilt = opts?.witness === true && (stored === undefined || stored.length === 0)
-      ? invertVerse(v.tokens, { recension: resolveProfile(profileChain(v, section, doc.profile)).recension })
+      ? invertVerse(v.tokens, { lengthened: lengthens(resolveProfile(profileChain(v, section, doc.profile))) })
       : undefined;
     const lines = stored !== undefined && stored.length > 0 ? [...stored]
       : rebuilt !== undefined ? rebuilt.lines : invert(v).lines;

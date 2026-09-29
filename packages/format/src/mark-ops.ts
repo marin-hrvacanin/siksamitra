@@ -142,6 +142,12 @@ export interface TextEdit {
   to: number;
   /** How many characters went in. */
   inserted: number;
+  /**
+   * What went in is combining marks only — an overline, a candrabindu — and
+   * belongs to the letter BEFORE it, so a boundary or a marking that ends
+   * there moves past it rather than cutting the letter from its mark.
+   */
+  combining?: boolean;
 }
 
 /**
@@ -166,7 +172,9 @@ export function shiftForEdit(
   const delta = edit.inserted - (edit.to - edit.from);
   const kept: Mark[] = [];
   const dropped: Mark[] = [];
+  const attaches = edit.combining === true && edit.to === edit.from;
   const move = (at: number): number => {
+    if (attaches && at === edit.from) return at + edit.inserted;
     if (at <= edit.from) return at;
     if (at >= edit.to) return at + delta;
     return edit.from + Math.min(at - edit.from, edit.inserted);

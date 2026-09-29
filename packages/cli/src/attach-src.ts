@@ -30,7 +30,7 @@
  * reconstructed from the marks themselves, so it cannot. That check needs the
  * edition and a reader, and its outcome belongs in `src.departures`.
  */
-import { PROFILES, derive, invertVerse, resolveProfile } from '@siksamitra/engine';
+import { PROFILES, derive, invertVerse, lengthens, resolveProfile } from '@siksamitra/engine';
 import type { Profile, ProfileKey } from '@siksamitra/engine';
 import { withVerses } from '@siksamitra/format';
 import type {
@@ -151,7 +151,7 @@ function attachWith(
       }
       /* Read back under the register being tried: a Ṛgveda verse's typed
          accent is the plain svarita, and `unlengthen` recovers it. */
-      const source = invertVerse(verse.tokens, { recension: profile.recension });
+      const source = invertVerse(verse.tokens, { lengthened: lengthens(profile) });
       if (source.lines.length === 0) {
         report.refused.push({ verseId: verse.id, why: 'no letters to invert' });
         return verse;

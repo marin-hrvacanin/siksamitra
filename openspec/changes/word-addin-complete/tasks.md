@@ -65,7 +65,7 @@
       app imports them from there, every browser gate still green
 - [ ] 6.2 Layout per D8, built from `packages/ui`: status line, grouped icon tools, rules
       collapsible, "This document" only when needed
-- [ ] 6.3 Register stored in document settings
+- [x] 6.3 Register stored in document settings
 - [ ] 6.4 Tests: component (theme chosen from each input; sections shown only
       when needed; every control labelled), browser `check:word:pane` (light,
       dark, high contrast × 300/320/400/600 px: no clip, no sideways scroll,

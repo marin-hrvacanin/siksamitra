@@ -219,6 +219,13 @@ function TheRules({ pane }: { pane: PaneModel }): ReactNode {
           ))}
         </select>
       </label>
+      {pane.marked !== null && pane.marked !== rules.register && (
+        <p className="rules__note" role="note">
+          Marked as {CHANT_PROFILE_NOTES[pane.marked].name}. Nothing changes until you run the
+          rules; then the {CHANT_PROFILE_NOTES[pane.marked].name} marks are taken off and
+          the {CHANT_PROFILE_NOTES[rules.register].name} ones put on.
+        </p>
+      )}
       <fieldset className="rules__stages">
         <legend>Stages</legend>
         {STAGES.map((s) => (

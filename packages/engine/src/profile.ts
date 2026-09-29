@@ -257,3 +257,7 @@ export function resolveProfile(
   cache.set(key, frozen);
   return frozen;
 }
+
+/** Does this register lengthen the svarita — and so must reading its marks
+ *  back undo that? One question, asked by every inverter. */
+export const lengthens = (p: Pick<Profile, 'svara'>): boolean => p.svara.lengthening === true;

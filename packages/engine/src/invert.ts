@@ -38,7 +38,7 @@ import { witnessLine } from './rules/witness.js';
 
 
 /** A substituted letter back to what was typed — `typedAs`, the one answer. */
-const undoChange = (u: ChantUnit): string => (u.change === true ? typedAs(u.c) ?? u.c : u.c);
+const undoChange = (u: ChantUnit): string => (u.change === true ? u.was ?? typedAs(u.c) ?? u.c : u.c);
 
 export interface InvertedSource {
   /** The pre-sandhi letters, one string per displayed line. */
@@ -53,15 +53,21 @@ export interface InvertedSource {
 /** Reconstruct a verse's source from its tokens. */
 export interface InvertOptions {
   /**
-   * The recension the verse was marked in. A Ṛgveda verse is read back through
+   * Was the verse marked under a register that LENGTHENS the svarita — the
+   * Ṛgveda's (`svara.lengthening`)? Then it is read back through
    * `unlengthen`: the accent a person TYPES is the plain svarita on the vowel,
    * and the dīrgha-svarita and the overline are what the rules made of it.
+   *
+   * Asked of the register's setting and never of its recension: a Ṛgvedic
+   * text with lengthening switched off — the Pūjā Vidhi — has dīrgha-svaritas
+   * that were TYPED, and reading them back as lengthened svaritas took them
+   * off. `lengthens(profile)` answers it.
    */
-  recension?: string;
+  lengthened?: boolean;
 }
 
 export function invertVerse(tokens: readonly ChantToken[], opts: InvertOptions = {}): InvertedSource {
-  if (opts.recension === 'rigveda') tokens = unlengthenTokens(tokens);
+  if (opts.lengthened === true) tokens = unlengthenTokens(tokens);
   const lines: string[] = [];
   const accented: string[] = [];
   let plain = '';
@@ -143,6 +149,7 @@ function unlengthenTokens(tokens: readonly ChantToken[]): ChantToken[] {
         ...(b.svara === undefined ? {} : { svara: b.svara as ChantSvara }),
         ...(b.candra === true ? { candra: true } : {}),
         ...(b.change === true ? { change: true } : {}),
+        ...(u.was === undefined ? {} : { was: u.was }),
       };
     });
     return { ...t, units };

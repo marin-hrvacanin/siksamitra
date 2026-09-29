@@ -28,7 +28,7 @@ export { applyOverrides, isOverrideField } from './overrides.js';
 export type { OverrideField, OverrideResult } from './overrides.js';
 
 // ── parametrization ─────────────────────────────────────────────────────────
-export { PROFILES, DEFAULT_PROFILE, resolveProfile } from './profile.js';
+export { PROFILES, DEFAULT_PROFILE, lengthens, resolveProfile } from './profile.js';
 export type {
   Profile, ProfileKey, ChantProfileRef, Recension, MeterKey, SvaraRegister,
 } from './profile.js';
@@ -102,5 +102,7 @@ export { hydrateVerse, openChantDoc, splitLetters } from './open-doc.js';
    run. Typing never calls this; a person pressing a button does. See
    `rerun.ts`, and `openspec/changes/text-and-marks` §4.2. */
 export { STAGES, rerun, typedText } from './rerun.js';
+/* A line that certainly carries the Ṛgveda's lengthening. See `rules/rigveda.ts`. */
+export { showsLengthening } from './rules/rigveda.js';
 export type { ReRun, ReRunMode, ReRunRequest } from './rerun.js';
 export { typedAs } from './changes.js';

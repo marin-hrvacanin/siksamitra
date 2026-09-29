@@ -23,7 +23,7 @@
  * the spellings are recomputed by the renderer, at draw time, from the text.
  */
 import type { ChantSyllable, ChantToken, ChantUnit } from './chant-tokens.js';
-import { CANDRA, structuralText, typedAs } from './typed-letter.js';
+import { CANDRA, structuralText, typedAs, typedLetter } from './typed-letter.js';
 
 export { CANDRA } from './typed-letter.js';
 import type { ChantVerse } from './chant-verse.js';
@@ -169,6 +169,7 @@ interface LetterMarks {
   sup?: string;
   cj?: string;
   change?: boolean;
+  was?: string;
 }
 
 /**
@@ -244,7 +245,10 @@ export function toTokens(
       else if (m.k === 'svara') cell.svara = m.v;
       else if (m.k === 'sup') cell.sup = m.v;
       else if (m.k === 'cj') cell.cj = m.v;
-      else if (m.k === 'was') cell.change = true;
+      else if (m.k === 'was') {
+        cell.change = true;
+        if (m.v !== undefined) cell.was = m.v;
+      }
     }
   }
   for (const [pos, list] of points) {
@@ -349,6 +353,10 @@ export function toTokens(
     if (cell.sup !== undefined) unit.sup = cell.sup;
     if (cell.cj !== undefined) unit.cj = cell.cj as ChantUnit['cj'];
     if (cell.change === true) unit.change = true;
+    /* Kept only where the table would guess otherwise — the anunāsika. */
+    if (cell.change === true && cell.was !== undefined && cell.was !== (typedLetter(unit.c) ?? unit.c)) {
+      unit.was = cell.was;
+    }
     if (units.length === 0) sylAt = i;
     units.push(unit);
     iast += bare;
