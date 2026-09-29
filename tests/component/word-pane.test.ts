@@ -30,6 +30,8 @@ import { act } from 'react';
 
 vi.mock('../../apps/word-addin/src/word/client.js',
   async () => (await import('./word-pane-harness.js')).clientMock);
+vi.mock('../../apps/word-addin/src/word/selection.js',
+  async () => (await import('./word-pane-harness.js')).selectionMock);
 const H = await import('./word-pane-harness.js');
 const { ARM_MS, button, calls, host, located, mount, refresh, settle, text } = H;
 

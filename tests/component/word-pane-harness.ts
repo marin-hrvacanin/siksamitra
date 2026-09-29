@@ -6,7 +6,8 @@
  * `host`. Everything above it is the code under test. Shared so that a second
  * pane test file does not grow a second fake.
  *
- * Use: `vi.mock(CLIENT, async () => (await import('./word-pane-harness.js')).clientMock);`
+ * Use: `vi.mock(CLIENT, async () => (await import('./word-pane-harness.js')).clientMock);`,
+ * the same for `word/selection.js` with `selectionMock`,
  * and then `await import` this module. `root` is read through the module
  * namespace (`H.root`), because it is reassigned by every `mount`.
  */
@@ -32,17 +33,32 @@ export const host = {
   missing: [] as string[],
   docLines: [] as DocLine[],
   selectionChanged: null as (() => void) | null,
+  /** Further lines of the selection, after `located`. */
+  more: [] as (typeof located)[],
 };
 
 
 export const calls = {
   addStyles: [] as boolean[], writeDocument: 0, writeParagraph: 0,
-  writeDocumentTotal: 0, written: 0,
+  writeDocumentTotal: 0, written: 0, linesWritten: 0,
+};
+
+/** The selection: `located` is its one line, unless a test sets `more`. */
+export const selectionMock = {
+  locate: vi.fn(async () => {
+    const one = structuredClone(located);
+    return { ...one, lines: [one, ...structuredClone(host.more)] };
+  }),
+  /* A press writes the selection's lines in ONE call; this counts calls. */
+  writeLines: vi.fn(async (writes: unknown[]) => {
+    if (writes.length > 0) calls.writeParagraph += 1;
+    calls.linesWritten += writes.length;
+    return writes.length;
+  }),
+  LineChanged: class extends Error {},
 };
 
 export const clientMock = {
-  locate: vi.fn(async () => structuredClone(located)),
-  writeParagraph: vi.fn(async () => { calls.writeParagraph += 1; }),
   readDocument: vi.fn(async () => ({
     lines: host.docLines,
     /* `total` is every paragraph, not just the mantra ones: `writeDocument`
@@ -119,6 +135,8 @@ beforeEach(() => {
   calls.writeDocument = 0;
   calls.writeDocumentTotal = 0;
   calls.writeParagraph = 0;
+  calls.linesWritten = 0;
+  host.more = [];
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   located.from = 3;
   located.to = 8;

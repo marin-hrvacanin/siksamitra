@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TextAndMarks } from '@siksamitra/format';
 import { ANU, VIS } from '@siksamitra/engine';
-import { applyCommand, selectionState } from '../index.js';
+import { applyAcross, applyCommand, selectionAcross, selectionState } from '../index.js';
 
 const tm = (text: string): TextAndMarks => ({ text, marks: [] });
 const TEXT = 'taṅ kavim';
@@ -49,5 +49,43 @@ describe('any text may be marked, but a likely slip is said', () => {
   });
   it('nothing selected: nothing happens', () => {
     expect(applyCommand(tm(TEXT), 2, 2, { k: 'was', v: ANU }).marks).toEqual([]);
+  });
+});
+
+describe('a press over several lines is decided once, for the whole selection', () => {
+  const boxed = applyCommand(tm('agnim'), 0, 5, { k: 'hold', v: 'short' }).marks;
+  const lines = () => [
+    { tm: { text: 'agnim', marks: boxed }, from: 0, to: 5 },
+    { tm: tm('īḷe'), from: 0, to: 3 },
+    { tm: tm('purohitam'), from: 0, to: 4 },
+  ];
+  const holds = (r: { marks: readonly { k: string }[] }) => r.marks.filter((m) => m.k === 'hold').length;
+  it('one line already on: it goes ON everywhere, and that line is left as it was', () => {
+    const out = applyAcross(lines(), { k: 'hold', v: 'short' });
+    expect(out.map(holds)).toEqual([1, 1, 1]);
+    expect(out[0]!.marks).toEqual(boxed);
+  });
+  it('every line on: it comes OFF everywhere', () => {
+    const on = applyAcross(lines(), { k: 'hold', v: 'short' });
+    const again = lines().map((l, i) => ({ ...l, tm: { text: l.tm.text, marks: on[i]!.marks } }));
+    expect(applyAcross(again, { k: 'hold', v: 'short' }).map(holds)).toEqual([0, 0, 0]);
+  });
+  it('the buttons say "some" for the mixed selection, "all" after the press', () => {
+    expect(selectionAcross(lines())['hold-short']).toBe('some');
+    const on = applyAcross(lines(), { k: 'hold', v: 'short' });
+    expect(selectionAcross(lines().map((l, i) => ({ ...l, tm: { text: l.tm.text, marks: on[i]!.marks } })))['hold-short'])
+      .toBe('all');
+  });
+  it('a pause goes where the selection starts, and only there', () => {
+    const out = applyAcross(lines(), { k: 'pause', v: 'short' });
+    expect(out.map((r) => r.marks.filter((m) => m.k === 'pause').length)).toEqual([1, 0, 0]);
+  });
+  it('a line with nothing of it selected is untouched', () => {
+    const out = applyAcross([...lines(), { tm: tm('x'), from: 0, to: 0 }], { k: 'svara', v: 'svarita' });
+    expect(out[3]!.marks).toEqual([]);
+  });
+  it('one line: the same as a single press — the control', () => {
+    const [l] = lines();
+    expect(applyAcross([l!], { k: 'hold', v: 'short' })[0]).toEqual(applyCommand(l!.tm, 0, 5, { k: 'hold', v: 'short' }));
   });
 });

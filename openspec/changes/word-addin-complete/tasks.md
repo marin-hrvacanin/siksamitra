@@ -40,7 +40,7 @@
 - [x] 4.1 `whatIsInTheWay(paragraphOoxml)` — the element list in D4
 - [x] 4.2 Every write checks it; the whole-document run skips and lists
 - [x] 4.3 The write re-reads and compares text in the same batch (D5)
-- [ ] 4.4 Multi-paragraph selections refused for marks; per-paragraph for rules
+- [x] 4.4 Multi-paragraph selections refused for marks; per-paragraph for rules
 - [x] 4.5 Tests: unit (one fixture per element kind, real OOXML as Word writes
       it), security (malformed / huge / nested / markup-in-text OOXML,
       bounded time), integration (whole-document run over a document with

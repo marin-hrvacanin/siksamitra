@@ -49,9 +49,7 @@ import { styleSheet, styleSheetFor } from '../model/sheet.js';
 import { missingStyles, specimenBody, styleIds } from '../model/setup.js';
 import { specimenMarks } from '../model/specimen-text.js';
 import { documentPartOf, flatPackage, restyle } from '../model/opc.js';
-import { decodeRuns, isVerseParagraph, paragraphsXml, unresolvedIn } from '../model/paragraph.js';
-import type { Unaccounted } from '../model/paragraph.js';
-import { offsetMap, modelRange, type OffsetMap } from '../model/offsets.js';
+import { decodeRuns, isVerseParagraph, paragraphsXml } from '../model/paragraph.js';
 import {
   inTheWay, inVocabulary, mergeRuns, paragraphXml, readParagraphs, vocabularyOf,
 } from '@siksamitra/interop';
@@ -66,129 +64,14 @@ import type { Vocabulary } from '@siksamitra/interop';
  * his ids and translated only here, on the way into Word. See `vocabulary.ts`.
  */
 let spoken: Vocabulary = 'clean';
-function learn(xml: string): void {
+export function learn(xml: string): void {
   if (vocabularyOf(xml) === 'legacy') spoken = 'legacy';
 }
 /** The package to insert, in the document's own vocabulary. */
-const packageOf = (body: string, sheet: string): string =>
+export const packageOf = (body: string, sheet: string): string =>
   flatPackage(inVocabulary(body, spoken), inVocabulary(sheet, spoken));
 /** For the pane: which names the document uses. */
 export const documentVocabulary = (): Vocabulary => spoken;
-
-/** The paragraph the caret is in, as the model sees it. */
-export interface Located {
-  tm: TextAndMarks;
-  map: OffsetMap;
-  /** The selection, in model offsets. Equal when the caret is a caret. */
-  from: number;
-  to: number;
-  /** The paragraph's own style, kept when it is written back. */
-  style: string | null;
-  /** Is this a mantra line, or something the add-in is about to make one? */
-  isVerse: boolean;
-  /** What the reader could not account for. A `lossy` one refuses a write. */
-  unresolved: Unaccounted[];
-  /** What a rewrite would lose — a picture, a comment. Any refuses a write. */
-  blocked: string[];
-  /** The paragraph's text as Word reported it, to check the write against. */
-  wordText: string;
-}
-
-/**
- * THE LINE CHANGED UNDERNEATH US. Word on the web is co-authored, so between
- * the read a command was computed on and the write, somebody may have typed
- * into the line; writing then would undo their typing.
- */
-export class LineChanged extends Error {
-  constructor() {
-    super('this line changed while it was being marked — nothing was written. Press again.');
-  }
-}
-
-
-/**
- * Where the selection is, and what the paragraph around it says.
- *
- * `expandTo` from the paragraph's start to the selection's start measures the
- * characters before it, which is the only way Word will say how far in a
- * selection begins. Those are WORD characters; `offsetMap` turns them into
- * model offsets, and the difference is one per accent.
- */
-export async function locate(): Promise<Located> {
-  return Word.run(async (context) => {
-    const selection = context.document.getSelection();
-    const paragraph = selection.paragraphs.getFirst();
-    const before = paragraph.getRange('Start').expandTo(selection.getRange('Start'));
-    before.load('text');
-    selection.load('text');
-    paragraph.load('style,text');
-    const ooxml = paragraph.getOoxml();
-    await context.sync();
-
-    learn(ooxml.value);
-    const [read] = readParagraphs(documentPartOf(ooxml.value), ooxml.value);
-    if (read === undefined) throw new Error('Word returned a paragraph with no content');
-    const runs = mergeRuns(read.runs);
-    const tm = decodeRuns(runs);
-    const map = offsetMap(runs);
-    const start = before.text.length;
-    const [from, to] = modelRange(map, start, start + selection.text.length);
-    return {
-      tm,
-      map,
-      from,
-      to,
-      style: read.pStyle,
-      isVerse: isVerseParagraph(read),
-      unresolved: unresolvedIn([read]),
-      blocked: inTheWay(paragraphXml(documentPartOf(ooxml.value)).join('')),
-      wordText: paragraph.text,
-    };
-  });
-}
-
-/**
- * Put a paragraph back.
- *
- * The whole paragraph, replaced. A narrower write is not available: a marking
- * can change where the runs are cut anywhere in the line — a holding that now
- * covers two letters instead of one, a substitution that turned a letter blue —
- * and `insertOoxml` over a partial range is documented for a range, not for a
- * splice into the middle of a paragraph.
- *
- * WHAT THIS COSTS. A comment, a bookmark or a tracked change inside the
- * paragraph does not survive the replacement, and the caret lands at the end of
- * it. Both are worth saying in the pane rather than discovering.
- *
- * THE RANGE IS THE PARAGRAPH'S CONTENT, NOT THE PARAGRAPH.
- * `Paragraph.getRange('Content')` ends BEFORE the paragraph mark;
- * `paragraph.insertOoxml(…, replace)` replaces the mark as well, and when the
- * NEXT paragraph was empty Word coalesced the two and the document lost a
- * paragraph. Measured against his own file in `tools/word-live.mjs`: writing
- * twelve mantra lines took 872 paragraphs to 871, and from that write onwards
- * every index was off by one — so `writeDocument` below, which addresses
- * paragraphs BY INDEX, was writing mantras into the wrong lines. Replacing the
- * content alone holds all twelve writes at 872, byte for byte. `WordApi 1.3`,
- * which the manifest already requires.
- */
-export async function writeParagraph(
-  tm: TextAndMarks, style: string | null, wordText: string,
-): Promise<void> {
-  const body = restyle(paragraphsXml(tm), style);
-  /* `styleSheetFor(body)` and never `styleSheet()`: the sheet has to define
-     every style the body NAMES. Sending the plain one omitted `Reference` and
-     Word silently dropped the style, which spliced every raised reading aid
-     into the recitation. See `model/sheet.ts`. */
-  const pkg = packageOf(body, styleSheetFor(body));
-  await Word.run(async (context) => {
-    const paragraph = context.document.getSelection().paragraphs.getFirst();
-    paragraph.load('text');
-    await context.sync();
-    if (paragraph.text !== wordText) throw new LineChanged();
-    paragraph.getRange(Word.RangeLocation.content).insertOoxml(pkg, Word.InsertLocation.replace);
-    await context.sync();
-  });
-}
 
 /** One paragraph of the document, addressed by index — for a whole-document run. */
 export interface DocParagraph {

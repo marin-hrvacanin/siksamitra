@@ -15,12 +15,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChantProfileKey, Stage, TextAndMarks } from '@siksamitra/format';
 import { STAGES, rerun, resolveProfile } from '@siksamitra/engine';
-import { applyCommand, selectionState } from '@siksamitra/edit';
+import { applyAcross, selectionAcross } from '@siksamitra/edit';
 import { notCarried } from '../model/carry.js';
 import {
-  addStyles, documentStyles, locate, readDocument, writeDocument, writeParagraph,
-  type DocStyles, type Located,
+  addStyles, documentStyles, readDocument, writeDocument, type DocStyles,
 } from '../word/client.js';
+import { locate, writeLines, type Line, type LineWrite, type Located } from '../word/selection.js';
 import type { Control } from './controls.js';
 
 export interface Message {
@@ -87,19 +87,26 @@ export function usePane() {
   useEffect(() => { void refresh(); void readStyles(); }, [refresh, readStyles]);
 
   /**
-   * A line that may not be written, said — and `true` so the caller stops.
-   * Checked before anything is computed, for every button alike.
+   * A selection with a line that may not be written, said — and `true` so the
+   * caller stops. Checked before anything is computed, for every button
+   * alike, and for EVERY line: a press over five lines where one has a picture
+   * writes none of them rather than four, so nothing half-happens.
    */
   const refused = useCallback((here: Located): boolean => {
-    if (here.blocked.length > 0) {
-      say(`Left alone: this line has ${here.blocked.join(' and ')} on it, and rewriting it would lose that.`,
+    const many = here.lines.length > 1;
+    const where = (i: number): string => (many ? `line ${i + 1} of the selection` : 'this line');
+    const blocked = here.lines.flatMap((l, i) => (l.blocked.length > 0 ? [[i, l] as const] : []));
+    if (blocked.length > 0) {
+      const [i, l] = blocked[0]!;
+      say(`Left alone: ${where(i)} has ${l.blocked.join(' and ')} on it, and rewriting it would lose that.`,
         'warn', ['Move it to a line of its own, or remove it, and press again.']);
       return true;
     }
-    const lost = here.unresolved.filter((u) => u.lossy);
+    const lost = here.lines.flatMap((l, i) => l.unresolved.filter((u) => u.lossy)
+      .map((u) => `${many ? `line ${i + 1}: ` : ''}${u.what}: ${u.raw}`));
     if (lost.length > 0) {
-      say('Refusing to write: this line carries text the reader cannot place.', 'warn',
-        lost.map((u) => `${u.what}: ${u.raw}`));
+      say(`Refusing to write: ${many ? 'the selection' : 'this line'} carries text the reader cannot place.`,
+        'warn', lost);
       return true;
     }
     return false;
@@ -110,11 +117,18 @@ export function usePane() {
     if (here === null) return;
     if (refused(here)) return;
     await guard('cannot mark', async () => {
-      const result = applyCommand(here.tm, here.from, here.to, control.command);
-      const tm = { text: result.text ?? here.tm.text, marks: result.marks };
-      await writeParagraph(tm, here.style, here.wordText);
-      const undrawable = notCarried(result.marks);
-      say(result.note, undrawable.length === 0 ? 'plain' : 'warn', undrawable.map((l) => l.why));
+      const results = applyAcross(here.lines, control.command);
+      const writes: LineWrite[] = [];
+      results.forEach((r, i) => {
+        const l = here.lines[i]!;
+        const tm = { text: r.text ?? l.tm.text, marks: r.marks };
+        if (!sameText(tm, l.tm)) writes.push({ line: i, tm, style: l.style, wordText: l.wordText });
+      });
+      await writeLines(writes);
+      const undrawable = results.flatMap((r) => notCarried(r.marks));
+      const note = here.lines.length === 1 ? results[0]!.note
+        : `${writes.length} of ${here.lines.length} lines changed`;
+      say(note, undrawable.length === 0 ? 'plain' : 'warn', undrawable.map((l) => l.why));
       await refresh();
       /* A marking brings the style it needs; re-read the table only while
          something is missing — a whole-body getOoxml on every press is what
@@ -134,16 +148,29 @@ export function usePane() {
     if (here === null || refused(here)) return;
     await guard('the rules would not run', async () => {
       const { stages, mode, profile } = request();
-      const whole = here.from === here.to;
-      const out = rerun(here.tm, {
-        stages, mode, profile,
-        from: whole ? 0 : here.from,
-        to: whole ? here.tm.text.length : here.to,
+      /* A caret means its whole line; a selection means the part of each line
+         that is selected — recompute over a range, as the app does. */
+      const whole = here.lines.length === 1 && here.from === here.to;
+      const range = (l: Line): [number, number] => (whole ? [0, l.tm.text.length] : [l.from, l.to]);
+      const outs = here.lines.map((l) => {
+        const [from, to] = range(l);
+        return to > from ? rerun(l.tm, { stages, mode, profile, from, to }) : null;
       });
-      await writeParagraph({ text: out.text, marks: out.marks }, here.style, here.wordText);
-      say(`${whole ? 'This line' : 'The selection'}: ${out.note}`,
-        out.lost.length === 0 ? 'plain' : 'warn',
-        [...out.warnings, ...out.lost.map((m) => `${m.k} at ${m.from} was placed by hand`)]);
+      const writes: LineWrite[] = [];
+      outs.forEach((out, i) => {
+        const l = here.lines[i]!;
+        if (out === null) return;
+        const tm = { text: out.text, marks: out.marks };
+        if (!sameText(tm, l.tm)) writes.push({ line: i, tm, style: l.style, wordText: l.wordText });
+      });
+      await writeLines(writes);
+      const done = outs.filter((o): o is NonNullable<typeof o> => o !== null);
+      const lost = done.flatMap((o) => o.lost);
+      const head = here.lines.length > 1
+        ? `The selection: ${writes.length === 0 ? 'nothing to change' : `${writes.length} line(s) re-marked`}`
+        : `${whole ? 'This line' : 'The selection'}: ${writes.length === 0 ? 'nothing to change' : done[0]?.note ?? ''}`;
+      say(head, lost.length === 0 ? 'plain' : 'warn',
+        [...done.flatMap((o) => o.warnings), ...lost.map((m) => `${m.k} at ${m.from} was placed by hand`)]);
       await refresh();
     });
   }, [guard, refresh, refused, request, say]);
@@ -188,7 +215,7 @@ export function usePane() {
     });
   }, [guard, refresh, say]);
 
-  const state: ReturnType<typeof selectionState> | null = at === null ? null : selectionState(at.tm, at.from, at.to);
+  const state: ReturnType<typeof selectionAcross> | null = at === null ? null : selectionAcross(at.lines);
 
   return {
     at, state, message, styles, busy, rules, setRules,

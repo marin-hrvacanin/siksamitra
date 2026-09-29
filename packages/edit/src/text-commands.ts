@@ -212,3 +212,53 @@ export function selectionState(
     'change-visarga': at('was', VIS),
   };
 }
+
+/** One line's part of a selection that runs over several lines. */
+export interface Span {
+  tm: TextAndMarks;
+  from: number;
+  to: number;
+}
+
+/** The kinds a press toggles, bold's way, and the value it toggles. */
+const toggled = (cmd: MarkCommand): { k: MarkKind; v?: string } | null =>
+  cmd.k === 'hold' || cmd.k === 'svara' || cmd.k === 'was' ? { k: cmd.k, v: cmd.v } : null;
+
+/**
+ * A press over a selection of SEVERAL lines — bold's rule over the whole of it.
+ *
+ * Toggling each line on its own would be wrong in exactly the case that
+ * matters: select three lines, one already boxed, press Short, and that one
+ * would come OFF while the other two went on. Word's rule is decided once, for
+ * the selection: if every selected letter already has it, it comes off
+ * everywhere; otherwise it goes on everywhere, and a line that already had it
+ * is left as it is. A point marking goes where the selection starts.
+ */
+export function applyAcross(spans: readonly Span[], cmd: MarkCommand): CommandResult[] {
+  const unchanged = (s: Span): CommandResult => ({ marks: [...s.tm.marks], note: '' });
+  if (cmd.k === 'sbhakti' || cmd.k === 'pause') {
+    return spans.map((s, i) => (i === 0 ? applyCommand(s.tm, s.from, s.to, cmd) : unchanged(s)));
+  }
+  const t = toggled(cmd);
+  const full = (s: Span): boolean => t !== null && coverage(s.tm.marks, t.k, s.from, s.to, t.v) === 'all';
+  const everywhere = spans.every((s) => s.to <= s.from || full(s));
+  return spans.map((s) => (s.to <= s.from || (!everywhere && full(s))
+    ? unchanged(s)
+    : applyCommand(s.tm, s.from, s.to, cmd)));
+}
+
+/**
+ * What the buttons look like for a selection of several lines: lit only when
+ * every line is, dark only when none is — the same answer `applyAcross` acts
+ * on, so a button cannot say one thing and the press do another.
+ */
+export function selectionAcross(spans: readonly Span[]): Record<string, 'all' | 'some' | 'none'> {
+  const each = spans.filter((s) => s.to > s.from || spans.length === 1)
+    .map((s) => selectionState(s.tm, s.from, s.to));
+  const out: Record<string, 'all' | 'some' | 'none'> = {};
+  for (const key of Object.keys(each[0] ?? {})) {
+    const got = each.map((e) => e[key]);
+    out[key] = got.every((g) => g === 'all') ? 'all' : got.every((g) => g === 'none') ? 'none' : 'some';
+  }
+  return out;
+}

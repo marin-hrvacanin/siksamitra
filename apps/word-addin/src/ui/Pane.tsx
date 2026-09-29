@@ -81,18 +81,29 @@ function Where({ pane }: { pane: PaneModel }): ReactNode {
   if (at === null) {
     return <div className="where" data-state="none">Put the caret in a line of text.</div>;
   }
-  const { tm, from, to } = at;
-  const notes = at.unresolved.filter((u) => u.advisory !== true);
-  const lossy = at.unresolved.some((u) => u.lossy);
+  const { tm, from, to, lines } = at;
+  const many = lines.length > 1;
+  const notes = lines.flatMap((l) => l.unresolved).filter((u) => u.advisory !== true);
+  const lossy = lines.some((l) => l.unresolved.some((u) => u.lossy));
+  const blocked = [...new Set(lines.flatMap((l) => l.blocked))];
   return (
-    <div className="where" data-state={from === to ? 'caret' : 'range'} data-lossy={lossy || undefined}>
-      {from === to
-        ? <span>The caret is at letter {from} of {tm.text.length}.</span>
-        : <span>Selected <strong>{tm.text.slice(from, to)}</strong></span>}
+    <div className="where" data-state={many ? 'lines' : from === to ? 'caret' : 'range'}
+      data-lossy={lossy || blocked.length > 0 || undefined}>
+      {many
+        ? <span>Selected <strong>{lines.length} lines</strong></span>
+        : from === to
+          ? <span>The caret is at letter {from} of {tm.text.length}.</span>
+          : <span>Selected <strong>{tm.text.slice(from, to)}</strong></span>}
       {lossy && (
         <p className="where__refuse">
-          This line carries text the reader cannot place. Marking it would delete that text, so
-          the marking buttons are refused here.
+          {many ? 'A line here' : 'This line'} carries text the reader cannot place. Marking it
+          would delete that text, so the marking buttons are refused here.
+        </p>
+      )}
+      {blocked.length > 0 && (
+        <p className="where__refuse">
+          {many ? 'A line here' : 'This line'} has {blocked.join(' and ')} on it. Rewriting it
+          would lose that, so it is left alone.
         </p>
       )}
       {notes.length > 0 && (
@@ -143,10 +154,13 @@ function ThisDocument({ pane }: { pane: PaneModel }): ReactNode {
 
 function whyNot(control: Control, pane: PaneModel): string | undefined {
   if (pane.at === null) return 'Put the caret in a line of text first.';
-  if (pane.at.unresolved.some((u) => u.lossy)) {
+  if (pane.at.lines.some((l) => l.unresolved.some((u) => u.lossy))) {
     return 'This line carries text the reader cannot place; writing it would delete that text.';
   }
-  if (control.point !== true && pane.at.from === pane.at.to) {
+  if (pane.at.lines.some((l) => l.blocked.length > 0)) {
+    return 'A picture, a comment or a field is on this line; rewriting it would lose that.';
+  }
+  if (control.point !== true && pane.at.lines.every((l) => l.from === l.to)) {
     return 'Select at least one letter — this marks a range.';
   }
   return undefined;

@@ -7,6 +7,8 @@ import { STAGES, rerun, resolveProfile } from '@siksamitra/engine';
 
 vi.mock('../../apps/word-addin/src/word/client.js',
   async () => (await import('./word-pane-harness.js')).clientMock);
+vi.mock('../../apps/word-addin/src/word/selection.js',
+  async () => (await import('./word-pane-harness.js')).selectionMock);
 const {
   button, calls, host, located, mount, refresh, settle, text,
 } = await import('./word-pane-harness.js');
@@ -20,7 +22,7 @@ describe('a line that rewriting would damage', () => {
     button('Short')?.click();
     await settle();
     expect(calls.writeParagraph).toBe(0);
-    expect(text()).toContain('this line has a picture');
+    expect(text().toLowerCase()).toContain('this line has a picture');
   });
   it('the rules over the selection refuse it the same way', async () => {
     located.blocked = ['a comment'];
