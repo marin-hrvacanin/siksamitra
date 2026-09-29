@@ -28,6 +28,7 @@ import {
   DEFAULT_EXPORT_STYLE, exportStyle, styleStacks,
 } from '@siksamitra/tokens/export-styles';
 import { attachSource } from './attach-src.js';
+import { rederive } from './rederive.js';
 import {
   EDIT_HELP, EDIT_VERBS, runEditVerb, type EditVerb,
 } from './edit-commands.js';
@@ -226,31 +227,18 @@ switch (cmd) {
   case 'derive': {
     const path = positional(0);
     if (path === undefined) die(2, 'which document?');
-    const doc = readDoc(path!);
-    const profile = profileFor();
-    let derived = 0;
-    let frozen = 0;
-    const warnings: string[] = [];
-    for (const { v } of verses(doc)) {
-      const src = v.src;
-      if (src?.lines === undefined || src.lines.length === 0) {
-        // A verse with no source layer is TRANSCRIBED: re-deriving it is
-        // refused, not attempted (01 §2.3). Its svaras are attested and exist
-        // nowhere in its letters.
-        frozen += 1;
-        continue;
-      }
-      const d = derive({ lines: src.lines }, profile, { verseId: v.id, trace: false });
-      v.tokens = d.tokens;
-      derived += 1;
-      for (const w of d.warnings) warnings.push(`${v.id}: ${w.message}`);
-    }
-    say(`\n  ${derived} verses re-derived · ${frozen} transcribed and left alone`);
+    /* A register given with --preset / --patch wins; otherwise every verse
+       under its own. See `rederive.ts`. */
+    const forced = flag('preset') !== undefined || flag('patch') !== undefined ? profileFor() : undefined;
+    const { doc, derived, frozen, warnings } = rederive(readDoc(path!), forced);
+    say(`
+  ${derived} verses re-derived · ${frozen} transcribed and left alone`);
     for (const w of warnings.slice(0, 20)) say(`  ! ${w}`);
-    const out = flag('out');
+    const out = flag('out') ?? (argv.includes('--write') ? path! : undefined);
     if (out !== undefined) {
       mkdirSync(dirname(out), { recursive: true });
-      writeFileSync(out, `${writeChantFile(doc)}\n`, 'utf8');
+      writeFileSync(out, `${writeChantFile(doc)}
+`, 'utf8');
       say(`  → ${out}`);
     }
     emit({ derived, frozen, warnings });

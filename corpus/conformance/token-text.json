@@ -26,10 +26,6 @@
     "primaryScript": "iast",
     "profile": {
       "patch": {
-        "holdings": {
-          "firstHost": false,
-          "lineContinues": false
-        },
         "pauses": {
           "bija": false,
           "hiatus": true

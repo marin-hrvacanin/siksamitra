@@ -3,7 +3,7 @@
  *
  * Every claim measured against the corpus is measured over the eleven real
  * documents rather than over a fixture written to agree with the code. 573
- * verses, 4 788 holdings and 6 086 svaras is a sample no invented example
+ * verses, 4 812 holdings and 6 086 svaras is a sample no invented example
  * reaches, and it is also the material the owner actually marks.
  *
  * Shared, because two packages need it: the add-in checks what survives Word

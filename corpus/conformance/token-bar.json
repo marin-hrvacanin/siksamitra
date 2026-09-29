@@ -13,12 +13,7 @@
     "id": "purusha-suktam",
     "primaryScript": "iast",
     "profile": {
-      "patch": {
-        "holdings": {
-          "firstHost": false,
-          "lineContinues": false
-        }
-      },
+      "patch": {},
       "preset": "taittiriya"
     },
     "recording": {

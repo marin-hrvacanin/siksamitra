@@ -1,18 +1,18 @@
 {
   "bhagya-suktam": {
-    "matched": 333,
+    "matched": 335,
     "syllables": 349,
     "note": "holdings: word-initial sibilant hosts, unresolved (00 §5.6)"
   },
   "durga-suktam": {
-    "matched": 319,
+    "matched": 320,
     "syllables": 337,
     "note": "the transcription sets 10 avagrahas apart as their own syllable; the corpus joins them 131 times to 10, so the engine follows the majority"
   },
   "ganapati-atharvashirsham": {
-    "matched": 1210,
+    "matched": 1189,
     "syllables": 1266,
-    "note": "holdings: word-initial sibilant hosts, unresolved (00 §5.6)"
+    "note": "holdings: word-initial sibilant hosts, settled 2026-09-29 (the first consonant); its TRANSCRIBED verses keep v1’s holding placement, which the ruling of 2026-09-29 (the first consonant, no exceptions) changes"
   },
   "ganesha-ashtottara": {
     "matched": 146,
@@ -24,14 +24,14 @@
     "note": "praṇava written `om` in the file, `oṁ` by the engine"
   },
   "mantra-pushpam": {
-    "matched": 895,
+    "matched": 894,
     "syllables": 904,
-    "note": "praṇava written `om` in the file, `oṁ` by the engine"
+    "note": "praṇava written `om` in the file, `oṁ` by the engine; its TRANSCRIBED verses keep v1’s holding placement, which the ruling of 2026-09-29 (the first consonant, no exceptions) changes"
   },
   "puja-vidhi": {
-    "matched": 2409,
+    "matched": 2405,
     "syllables": 2440,
-    "note": "praṇava written `om` in the file, `oṁ` by the engine; scored under taittiriya, where its own profile is `prose` (99.34%)"
+    "note": "praṇava written `om` in the file, `oṁ` by the engine; scored under taittiriya, where its own profile is `prose` (99.34%); its TRANSCRIBED verses keep v1’s holding placement, which the ruling of 2026-09-29 (the first consonant, no exceptions) changes"
   },
   "purusha-suktam": {
     "matched": 917,
@@ -43,7 +43,7 @@
     "syllables": 1693
   },
   "sri-rudram": {
-    "matched": 6216,
+    "matched": 6246,
     "syllables": 6400,
     "note": "holdings: word-initial sibilant hosts, unresolved (00 §5.6); scored under taittiriya, where its own profile drops the bīja pause"
   },

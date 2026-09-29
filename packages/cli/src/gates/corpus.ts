@@ -57,14 +57,20 @@ const NOTES: Readonly<Record<string, string>> = {
     'the transcription sets 10 avagrahas apart as their own syllable; the corpus '
     + 'joins them 131 times to 10, so the engine follows the majority',
   'ganapati-atharvashirsham':
-    'holdings: word-initial sibilant hosts, unresolved (00 §5.6)',
+    'holdings: word-initial sibilant hosts, settled 2026-09-29 (the first consonant)'
+    + '; its TRANSCRIBED verses keep v1’s holding placement, which the '
+    + 'ruling of 2026-09-29 (the first consonant, no exceptions) changes',
   'lakshmi-ashtottara':
     'praṇava written `om` in the file, `oṁ` by the engine',
   'mantra-pushpam':
-    'praṇava written `om` in the file, `oṁ` by the engine',
+    'praṇava written `om` in the file, `oṁ` by the engine'
+    + '; its TRANSCRIBED verses keep v1’s holding placement, which the '
+    + 'ruling of 2026-09-29 (the first consonant, no exceptions) changes',
   'puja-vidhi':
     'praṇava written `om` in the file, `oṁ` by the engine; scored under '
-    + 'taittiriya, where its own profile is `prose` (99.34%)',
+    + 'taittiriya, where its own profile is `prose` (99.34%)'
+    + '; its TRANSCRIBED verses keep v1’s holding placement, which the '
+    + 'ruling of 2026-09-29 (the first consonant, no exceptions) changes',
   'purusha-suktam':
     'holdings: word-initial sibilant hosts, unresolved (00 §5.6); scored under '
     + 'taittiriya, where its own profile drops the bīja pause',

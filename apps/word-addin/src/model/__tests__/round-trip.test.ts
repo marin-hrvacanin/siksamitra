@@ -5,7 +5,7 @@
  * so a document marked in Word must open in śikṣāmitra carrying what it was
  * marked with. This is that claim, per marking, over 573 verses.
  *
- * NOT TAUTOLOGICAL: the input is the corpus on disk — 4 788 holdings and 6 086
+ * NOT TAUTOLOGICAL: the input is the corpus on disk — 4 812 holdings and 6 086
  * svaras somebody placed by hand in Word years ago — and each is compared by
  * the LETTERS it covers, which is a fact about the document rather than about
  * the offsets either side computes. A holding that came back on the right
@@ -99,8 +99,11 @@ describe('a verse through Word and back', () => {
     expect(tally.same['letters']).toBe(573);
   });
 
-  it('keeps all 4 788 holdings, on the same letters, at the same weight', () => {
-    expect(tally.total['in.hold']).toBe(4788);
+  it('keeps all 4 812 holdings, on the same letters, at the same weight', () => {
+    /* 4 812 since the corpus was re-derived under the owner's ruling of
+       2026-09-29 (a holding on the first consonant; a new line inside a verse
+       continues): 24 line-opening clusters gained a box. Was 4 788. */
+    expect(tally.total['in.hold']).toBe(4812);
     expect(tally.same['hold']).toBe(573);
   });
 

@@ -2,7 +2,7 @@
  * SPLITTING EVERY MARKED VERSE IN THE CORPUS, AND COUNTING WHAT SURVIVES.
  *
  * The unit tests state the rule on fixtures. This states it on the 573 verses
- * the owner actually marks — 4 788 holdings and 6 086 svaras — which is the
+ * the owner actually marks — 4 812 holdings and 6 086 svaras — which is the
  * only place the claim can be wrong in a way nobody typed.
  *
  * THE CONTROL IS ARITHMETIC NOTHING HERE COMPUTES: the number of markings

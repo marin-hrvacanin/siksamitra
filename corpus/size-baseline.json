@@ -1,16 +1,16 @@
 {
-  "total": 1915554,
+  "total": 1915533,
   "files": {
-    "bhagya-suktam.json": 62136,
-    "durga-suktam.json": 56666,
-    "ganapati-atharvashirsham.json": 181517,
-    "ganesha-ashtottara.json": 21235,
-    "lakshmi-ashtottara.json": 160199,
-    "mantra-pushpam.json": 132713,
-    "puja-vidhi.json": 415868,
-    "purusha-suktam.json": 161971,
-    "shiva-sankalpa-suktam.json": 295037,
-    "sri-rudram.json": 347229,
-    "vishnu-suktam.json": 80983
+    "bhagya-suktam.json": 62083,
+    "durga-suktam.json": 56635,
+    "ganapati-atharvashirsham.json": 181464,
+    "ganesha-ashtottara.json": 21183,
+    "lakshmi-ashtottara.json": 160180,
+    "mantra-pushpam.json": 132727,
+    "puja-vidhi.json": 416022,
+    "purusha-suktam.json": 161919,
+    "shiva-sankalpa-suktam.json": 295115,
+    "sri-rudram.json": 347189,
+    "vishnu-suktam.json": 81016
   }
 }
