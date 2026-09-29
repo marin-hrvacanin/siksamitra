@@ -129,9 +129,9 @@ describe('the anunāsika: -ān before a vowel is -ām̐ (ṚPrāt 4.80)', () => 
   });
 });
 
-describe('the Ṛgveda\'s holdings', () => {
-  const holds = (line: string, preset = 'rigveda') => derive({ lines: [line] },
-    resolveProfile([{ preset } as never]), { trace: false }).tokens
+describe('the Ṛgveda\'s holdings, as his agnimīḻe marks them', () => {
+  const holds = (line: string, patch: object = {}) => derive({ lines: [line] },
+    resolveProfile([{ preset: 'rigveda', patch } as never]), { trace: false }).tokens
     .flatMap((t) => (t.t === 'syl' ? t.units : [])).filter((u) => u.hold !== undefined).map((u) => u.c).join('');
   it('a word-initial sibilant cluster hosts on the sibilant: citra ▫śravas', () => {
     expect(holds('citra śravas')).toContain('ś');
@@ -141,7 +141,7 @@ describe('the Ṛgveda\'s holdings', () => {
     expect(h).toContain('n');
     expect(h).not.toContain('ś');
   });
-  it('the Taittirīya keeps the shipped behaviour — the control', () => {
-    expect(holds('citra śravas', 'taittiriya')).not.toContain('ś');
+  it('under the older convention a shipped chant records, the ś is skipped — the control', () => {
+    expect(holds('citra śravas', { holdings: { firstHost: false } })).not.toContain('ś');
   });
 });

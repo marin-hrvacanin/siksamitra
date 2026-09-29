@@ -14,9 +14,7 @@
  *
  * See specs/chant-editor/02-ENGINE.md §14.
  */
-import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import {
   PROFILES, derive, headword, normalize, resolveProfile, surfacesOf,
@@ -24,8 +22,8 @@ import {
   type Profile, type ProfileKey,
   openChantDoc,
 } from '@siksamitra/engine';
-import { exportWord, importDocx, importPdfRows, pack, readManifest, unpack } from '@siksamitra/interop';
-import type { ImportReport, PdfRow } from '@siksamitra/interop';
+import { exportWord, pack, readManifest, unpack } from '@siksamitra/interop';
+import { ImportFailure, importFile, type ImportedFile } from './import-file.js';
 import {
   DEFAULT_EXPORT_STYLE, exportStyle, styleStacks,
 } from '@siksamitra/tokens/export-styles';
@@ -742,29 +740,17 @@ switch (cmd) {
      * one text cannot be read two ways. The title: one given with --title wins,
      * then the file's own, then its name.
      */
-    const bytes = new Uint8Array(readFileSync(path!));
-    const fallbackTitle = basename(path!).replace(/\.(docx|pdf)$/i, '').normalize('NFC');
-    const given = flag('title');
-    let imported: { doc: ChantDoc; report: ImportReport };
-    if (/\.pdf$/i.test(path!)) {
-      const rowsAt = join(mkdtempSync(join(tmpdir(), 'sm-pdf-')), 'rows.json');
-      const r = spawnSync('python', [
-        join('tools', 'chant', 'vu_import.py'), '--in', path!, '--rows', rowsAt,
-        ...(flag('family') === undefined ? [] : ['--family', flag('family')!]),
-      ], { encoding: 'utf8' });
-      if (r.error !== undefined) {
-        die(2, 'python is not on PATH — PDF import needs Python with PyMuPDF,'
-          + ' or the vu-import sidecar in the desktop app');
-      }
-      if (r.stderr !== '') say(r.stderr.trimEnd());
-      if (r.status !== 0) process.exit(r.status ?? 4);
-      const page = JSON.parse(readFileSync(rowsAt, 'utf8')) as { rows: PdfRow[] };
-      imported = importPdfRows(page.rows, {
-        ...(given === undefined ? {} : { title: given }), fallbackTitle, bytes: bytes.length,
+    let imported: ImportedFile;
+    try {
+      imported = importFile(path!, {
+        ...(flag('title') === undefined ? {} : { title: flag('title')! }),
+        ...(flag('family') === undefined ? {} : { family: flag('family')! }),
       });
-    } else {
-      imported = importDocx(bytes, given, fallbackTitle);
+    } catch (e) {
+      if (e instanceof ImportFailure) die(e.code, e.message);
+      throw e;
     }
+    if (imported.notes !== '') say(imported.notes);
     const { doc, report } = imported;
     say(`\n  ${report.structure.paragraphs} paragraphs · ${report.structure.runs} runs`);
     say(`  → ${report.structure.sections} sections · ${report.structure.verses} verses`

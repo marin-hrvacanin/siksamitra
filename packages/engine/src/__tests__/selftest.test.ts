@@ -31,6 +31,11 @@ const LEGACY: Profile = {
   ...PROFILES.taittiriya,
   gum: false,
   svara: { register: 'prose' },
+  /* The holding convention those older files were marked with. The owner's
+     ruling of 2026-09-29 made the correct position — the first consonant, no
+     exceptions — the default for NEW documents; these cases are facts about
+     the old ones, which record the older convention as their own. */
+  holdings: { ...PROFILES.taittiriya.holdings, firstHost: false, lineContinues: false },
 };
 
 /** `(letter, short|long)` for every holding, in order. */

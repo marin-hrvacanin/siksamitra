@@ -654,6 +654,27 @@ order to follow by hand or in a generator:
 9. recension-specific svarita adjustments (Ṛgveda) — AFTER the svaras, which
    they adjust, and after the holdings, which rule 3 below reads (§5c)
 
+## 5b′. Where a holding goes — the correct position, without exceptions
+
+**The owner's ruling (2026-09-29), the default for every new document:** a
+holding goes on the FIRST consonant of the cluster that follows the vowel —
+whatever that consonant is. Measured in his newest hand-marked document (the
+Veda Union sādhanā v9.1.4), which marks it this way throughout:
+
+| where | the box | his examples |
+| --- | --- | --- |
+| a word-initial cluster | its first consonant, even `ś s r n` (`holdings.firstHost`) | `tasmai ▫śrī` · `rase ▫svā` · `prathama ▫rco` · `eto ▫nvi` |
+| a new line inside a verse | boxed from the vowel that ended the line before (`holdings.lineContinues`) | `…me / ▪pri…` |
+| the verse's first line | bare — nothing precedes it | |
+| right after a pause | bare — the pause breaks the recitation | `oṁ | śrī` |
+
+The OLDER convention — a leading `r`, sibilant or nasal skipped to the next
+consonant, and every line opening bare — is what the eleven shipped chants were
+marked with, and each of them records it in its own register
+(`firstHost: false, lineContinues: false`), so none of them changes. A
+hyphen joins a word: a cluster after one is not word-initial
+(`rayima-ś▫navat`).
+
 ## 5c. The Ṛgveda's svarita — `svara.rigveda` (`rules/rigveda.ts`)
 
 v1's `applyRigvedaSvaritaRules` (`editor-quill.js` L9468-9560), confirmed

@@ -62,6 +62,14 @@ export interface Score {
 }
 
 export interface ScoreOptions {
+  /**
+   * Give a verse with no source layer its RECONSTRUCTED accented witness, read
+   * back under its own recension (`invertVerse`). For the owner's reference
+   * documents, whose accents are exactly what the Ṛgveda's rules act on; the
+   * corpus gate leaves it off, where a copied accent would only measure rule
+   * zero.
+   */
+  witness?: boolean;
   /** Compare the Tamil column too. Off by default: the corpus's Tamil has
    *  never been checked by the owner, so a disagreement there says nothing
    *  about the engine. */
@@ -123,7 +131,11 @@ export function score(doc: ChantDoc, profile: Profile, opts?: ScoreOptions): Sco
      * whole point of this gate.
      */
     const stored = v.src?.lines;
-    const lines = stored !== undefined && stored.length > 0 ? [...stored] : invert(v).lines;
+    const rebuilt = opts?.witness === true && (stored === undefined || stored.length === 0)
+      ? invertVerse(v.tokens, { recension: resolveProfile(profileChain(v, section, doc.profile)).recension })
+      : undefined;
+    const lines = stored !== undefined && stored.length > 0 ? [...stored]
+      : rebuilt !== undefined ? rebuilt.lines : invert(v).lines;
     if (lines.length === 0) continue;
     /*
      * THE DOCUMENT'S OWN PARAMETRIZATION, when it declares one.
@@ -151,7 +163,8 @@ export function score(doc: ChantDoc, profile: Profile, opts?: ScoreOptions): Sco
     const d = derive(
       {
         lines,
-        ...(v.src?.accented === undefined ? {} : { accented: [...v.src.accented] }),
+        ...(v.src?.accented !== undefined ? { accented: [...v.src.accented] }
+          : rebuilt !== undefined && rebuilt.accents > 0 ? { accented: rebuilt.accented } : {}),
       },
       forVerse,
       {

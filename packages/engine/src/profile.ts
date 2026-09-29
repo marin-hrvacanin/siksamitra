@@ -119,13 +119,21 @@ export interface Profile {
      */
     readonly crosswordHost: 'aspirate' | 'homorganic' | 'all' | false;
     /**
-     * Whether a word-initial SIBILANT cluster hosts its box on the sibilant
-     * (`▫śravas`, `▫sve`) rather than the consonant after it. An open question
-     * for the Taittirīya (00 §5.6: 67 against 28 in the corpus, and his own
-     * `svāhā` takes the second), and settled for the Ṛgveda by his own marked
-     * agnimīḻe, which boxes the sibilant every time.
+     * THE CORRECT POSITION, WITHOUT EXCEPTIONS — the owner's ruling
+     * (2026-09-29) for every new document: a word-initial cluster hosts its box
+     * on its FIRST consonant, whatever that is (`tasmai ▫śrī`, `rase ▫svā`,
+     * `prathama ▫rco`, `eto ▫nvi`), as his sādhanā v9.1.4 marks it 140 times.
+     * Off, a leading `r`, sibilant or nasal is skipped to the consonant after
+     * it — the older convention the shipped chants record as their own.
      */
-    readonly sibilantHosts?: boolean;
+    readonly firstHost?: boolean;
+    /**
+     * A new LINE inside a verse continues the recitation: its opening cluster
+     * is boxed from the vowel that ended the line before (`…me / ▪pri…`, 38
+     * times in v9.1.4). Only the verse's first line opens bare, because nothing
+     * precedes it. Off, every line opens bare (the older convention).
+     */
+    readonly lineContinues?: boolean;
   };
 
   readonly scripts: readonly ChantScriptKey[];
@@ -155,7 +163,7 @@ const BASE = {
   aids: { jna: true, vy: true, sv: false, semivowel: true },
   svarabhakti: true,
   pauses: { bija: true, hiatus: true },
-  holdings: { noInitialBox: true, crosswordHost: 'aspirate' as const },
+  holdings: { noInitialBox: true, crosswordHost: 'aspirate' as const, firstHost: true, lineContinues: true },
   scripts: ['iast', 'deva', 'tel', 'tam'] as readonly ChantScriptKey[],
 };
 
@@ -179,10 +187,6 @@ export const PROFILES: Readonly<Record<ProfileKey, Profile>> = Object.freeze({
     recension: 'rigveda',
     gum: false,
     svara: { register: 'attested', lengthening: true },
-    /* His Ṛgveda boxes the word-initial clusters the Taittirīya ruling leaves
-       bare — agnimīḻe's `agnir·▫hotā`, the sādhanā's `saṅ [g]acchadhvam` — and
-       hosts a sibilant cluster on the sibilant. */
-    holdings: { ...BASE.holdings, noInitialBox: false, sibilantHosts: true },
   }),
   'sukla-yajurveda': Object.freeze({
     ...BASE,

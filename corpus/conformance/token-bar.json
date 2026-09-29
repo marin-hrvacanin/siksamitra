@@ -12,6 +12,15 @@
     "format": "vedaunion.chant",
     "id": "purusha-suktam",
     "primaryScript": "iast",
+    "profile": {
+      "patch": {
+        "holdings": {
+          "firstHost": false,
+          "lineContinues": false
+        }
+      },
+      "preset": "taittiriya"
+    },
     "recording": {
       "byVerse": {
         "v-10": {

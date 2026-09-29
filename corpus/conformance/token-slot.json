@@ -673,8 +673,9 @@
     "profile": {
       "patch": {
         "holdings": {
-          "noInitialBox": true,
-          "sibilantHosts": false
+          "firstHost": false,
+          "lineContinues": false,
+          "noInitialBox": true
         },
         "svara": {
           "lengthening": false

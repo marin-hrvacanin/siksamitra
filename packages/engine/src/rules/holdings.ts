@@ -151,6 +151,13 @@ export function selectHoldingComponent(comps: Comp[], profile: Profile): number 
     cand = b >= 0 ? b : 0;
   }
 
+  // 2b. THE CORRECT POSITION (`firstHost`): a cluster that opens a word —
+  //    after a SPACE; a hyphen joins, so `rayima-ś▫navat` is not one — hosts on
+  //    its first consonant, whatever it is.
+  if (profile.holdings.firstHost === true && b < 0 && comps[0]!.wordInitial && !comps[0]!.afterHyphen) {
+    return 0;
+  }
+
   // 3. step forward over consonants that cannot host — UNLESS it is a sibilant
   //    that BEGINS A WORD, which can. A WORD-FINAL visarga cannot host either
   //    (`durgiḥ pracodayāt` boxes the `p`); inside a word it can (`duḥkha`),
@@ -168,10 +175,7 @@ export function selectHoldingComponent(comps: Comp[], profile: Profile): number 
     const c = comps[cand]!;
     const skip = SKIP.has(c.elem.ch) || (c.elem.ch === VIS && cand < b);
     if (!skip || (c.boundaryBefore && SIBILANTS.has(c.elem.ch))) break;
-    /* A register that settles §5.6 for the sibilant: see `sibilantHosts`. After
-       a SPACE only — a hyphen joins (`rayima-ś▫navat` boxes the `n`). */
-    if (profile.holdings.sibilantHosts === true && c.wordInitial && SIBILANTS.has(c.elem.ch)
-      && !c.afterHyphen) break;
+
     cand += 1;
   }
 
@@ -253,6 +257,7 @@ function lineFirstLetters(elems: Elem[]): Set<number> {
 export function applyHoldings(ctx: RuleCtx): void {
   const { elems, profile } = ctx;
   const lineFirst = lineFirstLetters(elems);
+  const verseFirst = elems.findIndex((e) => e.kind === 'letter');
   let hg = 0;
   let i = 0;
   while (i < elems.length) {
@@ -277,7 +282,9 @@ export function applyHoldings(ctx: RuleCtx): void {
     // the line's first letter; one that merely reaches into the first word from
     // a preceding word-final consonant is an ordinary cross-word cluster and is
     // boxed normally. Not in `sanskrit_rules.js` — his rule on top of it.
-    if (profile.holdings.noInitialBox && lineFirst.has(comps[0]!.index)) {
+    const opensVerse = comps[0]!.index === verseFirst;
+    if (profile.holdings.noInitialBox && lineFirst.has(comps[0]!.index)
+      && (opensVerse || profile.holdings.lineContinues !== true)) {
       i = step;
       continue;
     }

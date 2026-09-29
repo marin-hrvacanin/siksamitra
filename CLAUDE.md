@@ -402,6 +402,16 @@ were invisible in the source — `shots/` in `.gitignore` had no leading slash s
 every screenshot 404ed on the live site, and the Word install steps ran 552 px
 wide on a 390 px screen with their text cut off.
 
+**And the owner's own reference documents have a gate, outside `npm run check`
+because they are not in the repository.** `npm run check:reference` reads
+every file in `Library/reference/` (his marked `.docx` and `.pdf` — ignored by
+git, present on his machine) exactly as `sm import` does, fits each section's
+register, and re-derives every syllable against his marks. It ratchets in
+`corpus/reference-baseline.json` (numbers only), prints what differs with
+`--why`, and says SKIPPED loudly when the folder is absent. PDFs need the
+`.venv` with PyMuPDF on the PATH. Run it after any change to the engine, the
+reader or the registers.
+
 **They refuse a stale build.** Every one of them checks the stamp the build
 writes (`tools/build-stamp.mjs`) against the source on disk, and stops if they
 disagree — or if a built bundle carries no stamp at all. They were once pointed
