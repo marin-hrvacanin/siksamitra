@@ -101,7 +101,7 @@ export function readParagraphs(documentXml: string, stylesXml?: string): WordPar
       if (RE_BR.test(rb)) text += '\n';
       runs.push({
         text,
-        rStyle: RE_RSTYLE.exec(rb)?.[1] ?? null,
+        rStyle: canonicalStyleId(RE_RSTYLE.exec(rb)?.[1] ?? null, table),
         superscript: /vertAlign\s+w:val="superscript"/.test(rb),
       });
     }

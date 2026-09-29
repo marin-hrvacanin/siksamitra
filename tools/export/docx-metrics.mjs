@@ -15,6 +15,7 @@
  * it, and Word offered to repair every file it wrote.
  */
 import { strFromU8, unzipSync } from 'fflate';
+import { fromClean } from '@siksamitra/interop';
 
 const attr = (xml, name) => new RegExp(`${name}="([^"]*)"`).exec(xml)?.[1] ?? null;
 const num = (xml, name) => {
@@ -109,7 +110,9 @@ export function stylesOf(stylesXml) {
   for (const m of stylesXml.matchAll(/<w:style ([^>]*)>([\s\S]*?)<\/w:style>/g)) {
     const head = m[1];
     const body = m[2];
-    const id = attr(head, 'w:styleId');
+    /* Keyed by HIS id whichever vocabulary the file speaks, so a clean file
+       and his compare style for style (`Mantra` is `Translit`). */
+    const id = fromClean(attr(head, 'w:styleId'));
     const kind = attr(head, 'w:type');
     const pPr = /<w:pPr>([\s\S]*?)<\/w:pPr>/.exec(body)?.[1] ?? '';
     const rPr = /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(body)?.[1] ?? '';
@@ -160,7 +163,7 @@ export function linesOf(documentXml) {
   const out = [];
   for (const p of documentXml.matchAll(/<w:p>([\s\S]*?)<\/w:p>/g)) {
     const body = p[1];
-    const style = attr(/<w:pStyle\b[^>]*\/>/.exec(body)?.[0] ?? '', 'w:val') ?? 'Normal';
+    const style = fromClean(attr(/<w:pStyle\b[^>]*\/>/.exec(body)?.[0] ?? '', 'w:val') ?? 'Normal');
     const runStyles = new Set();
     let line = '';
     let up = '';

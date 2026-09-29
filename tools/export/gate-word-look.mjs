@@ -86,12 +86,17 @@ export function compareLook(mine, his, fail) {
    * (more general) style, such as `reference`". The format has one marking for
    * it (`sup`), so there is one style; his two are READ as it.
    *
-   * All three are written only when the body actually references them, so a
+   * `Visarga` is the fourth, asked for by the owner: "also difference between
+   * anusvara and visarga". His files write a replaced visarga in `Anusvara`;
+   * the two never produce the same letter (`typedAs`, 971 of 971), so the
+   * writer names each for what it is, in the same ink.
+   *
+   * All four are written only when the body actually references them, so a
    * document without the case does not carry the style. That rule is what the
    * allowance rests on, and this is the check that it is still one style per
    * marking rather than a growing pile.
    */
-  const OURS_BY_DESIGN = new Set(['HoldingChange', '2HoldingChange', 'Reference']);
+  const OURS_BY_DESIGN = new Set(['HoldingChange', '2HoldingChange', 'Reference', 'Visarga']);
   const invented = Object.values(mine)
     .filter((s) => s.kind === 'character' && his[s.id] === undefined)
     .map((s) => s.id);

@@ -26,7 +26,7 @@
  * silently. ECMA-376 §17.7.4.4: an `rStyle` naming a style that does not
  * exist is IGNORED.
  */
-import { builtInStyleIds, styledParagraph, styledRun } from '@siksamitra/interop';
+import { builtInStyleIds, canonicalStyleId, styledParagraph, styledRun } from '@siksamitra/interop';
 
 /** A style the sheet declares, and what kind of style it is. */
 export interface SheetStyle {
@@ -73,7 +73,8 @@ export function missingStyles(pkg: string, sheet: string): string[] {
   /* Read through the document's own table: in a Croatian Word `Heading1` is
      `Naslov1`, and matched by id it was reported missing while in use. */
   const english = builtInStyleIds(pkg);
-  const have = new Set(styleIds(pkg).map((s) => english.get(s.id) ?? s.id));
+  /* And through the clean vocabulary: `Mantra` IS `Translit`. */
+  const have = new Set(styleIds(pkg).map((s) => canonicalStyleId(s.id, english) ?? s.id));
   return styleIds(sheet)
     .map((s) => s.id)
     .filter((id) => id !== 'Normal' && !have.has(id))
@@ -102,7 +103,8 @@ export const STYLE_MEANS: Readonly<Record<string, string>> = {
   '2Holding': 'a long holding — a thick box',
   Svara: 'an accent mark',
   Virama: 'the virāma tick',
-  Anusvara: 'a letter the rules replaced',
+  Anusvara: 'a letter recited in place of an anusvāra',
+  Visarga: 'a letter recited in place of a visarga',
   VedicAnusvara: 'a Vedic nasal',
   Pause: 'a pause — one bar, or two',
   Comment: 'where the words come from',

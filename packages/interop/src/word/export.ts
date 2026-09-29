@@ -37,6 +37,7 @@ import {
 import { EMU_PER_INCH, mediaFor } from './drawing.js';
 import { WORD_FORMAT, WORD_VERSION } from './manifest.js';
 import { sectPr, stylesXml } from './styles.js';
+import { inVocabulary, type Vocabulary } from './vocabulary.js';
 
 export interface WordExportInput extends Omit<EmbedInput, 'style'> {
   style: ExportStyle;
@@ -54,6 +55,12 @@ export interface WordExportInput extends Omit<EmbedInput, 'style'> {
    * a chain of unknown programs.
    */
   fallback?: 'hidden-text';
+  /**
+   * His style names (`Translit`, `Holding`) or clean ones (`Mantra`,
+   * `Holding · Short`). Clean by default: a file we write from scratch has no
+   * legacy to keep. See `vocabulary.ts`.
+   */
+  vocabulary?: Vocabulary;
 }
 
 /**
@@ -108,18 +115,19 @@ export async function exportWord(input: WordExportInput): Promise<Uint8Array> {
   const usedStyles = new Set(
     [...body.matchAll(/<w:rStyle w:val="([^"]+)"/g)].map((m) => m[1] as string),
   );
+  const vocabulary = input.vocabulary ?? 'clean';
   const parts: Record<string, Uint8Array> = {
     [WORD_PARTS.contentTypes]: strToU8(contentTypes([...media.values()].map((m) => m.extension))),
     [WORD_PARTS.rootRels]: strToU8(rootRels()),
-    [WORD_PARTS.document]: strToU8(body),
+    [WORD_PARTS.document]: strToU8(inVocabulary(body, vocabulary)),
     [WORD_PARTS.documentRels]: strToU8(documentRels([...media.values()])),
-    [WORD_PARTS.styles]: strToU8(stylesXml({
+    [WORD_PARTS.styles]: strToU8(inVocabulary(stylesXml({
       theme,
       mode: input.style.mode,
       textStack: input.textStack,
       uiStack: input.uiStack,
       usedStyles,
-    })),
+    }), vocabulary)),
     [WORD_PARTS.settings]: strToU8(settings()),
     [WORD_PARTS.item]: strToU8(item),
     [WORD_PARTS.itemProps]: strToU8(itemProps()),

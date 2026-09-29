@@ -21,6 +21,8 @@
  * through unchanged.
  */
 
+import { fromClean } from './vocabulary.js';
+
 /** The built-in names this program uses, and the English id each one has. */
 const BUILT_IN: ReadonlyMap<string, string> = new Map([
   ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [`heading ${n}`, `Heading${n}`] as const),
@@ -56,11 +58,14 @@ export function builtInStyleIds(stylesXml: string): Map<string, string> {
   return out;
 }
 
-/** A style id in the program's vocabulary: the English id of a built-in, or itself. */
+/**
+ * A style id in the program's vocabulary: the English id of a built-in, his id
+ * for a clean one (`Mantra` is `Translit` — see `vocabulary.ts`), or itself.
+ */
 export function canonicalStyleId(
   id: string | null,
   table: ReadonlyMap<string, string> | undefined,
 ): string | null {
-  if (id === null || table === undefined) return id;
-  return table.get(id) ?? id;
+  if (id === null) return id;
+  return fromClean(table?.get(id) ?? id);
 }

@@ -52,7 +52,26 @@ import { documentPartOf, flatPackage, restyle } from '../model/opc.js';
 import { decodeRuns, isVerseParagraph, paragraphsXml, unresolvedIn } from '../model/paragraph.js';
 import type { Unaccounted } from '../model/paragraph.js';
 import { offsetMap, modelRange, type OffsetMap } from '../model/offsets.js';
-import { mergeRuns, readParagraphs } from '@siksamitra/interop';
+import { inVocabulary, mergeRuns, readParagraphs, vocabularyOf } from '@siksamitra/interop';
+import type { Vocabulary } from '@siksamitra/interop';
+
+/*
+ * WHICH NAMES THIS DOCUMENT'S STYLES GO BY — his, or clean ones.
+ *
+ * Learnt from every package Word hands back, and LEGACY IS STICKY: one of his
+ * ids seen anywhere means the document is his, and a later read of a paragraph
+ * that happens to carry none cannot make it clean again. Everything is built in
+ * his ids and translated only here, on the way into Word. See `vocabulary.ts`.
+ */
+let spoken: Vocabulary = 'clean';
+function learn(xml: string): void {
+  if (vocabularyOf(xml) === 'legacy') spoken = 'legacy';
+}
+/** The package to insert, in the document's own vocabulary. */
+const packageOf = (body: string, sheet: string): string =>
+  flatPackage(inVocabulary(body, spoken), inVocabulary(sheet, spoken));
+/** For the pane: which names the document uses. */
+export const documentVocabulary = (): Vocabulary => spoken;
 
 /** The paragraph the caret is in, as the model sees it. */
 export interface Located {
@@ -89,6 +108,7 @@ export async function locate(): Promise<Located> {
     const ooxml = paragraph.getOoxml();
     await context.sync();
 
+    learn(ooxml.value);
     const [read] = readParagraphs(documentPartOf(ooxml.value), ooxml.value);
     if (read === undefined) throw new Error('Word returned a paragraph with no content');
     const runs = mergeRuns(read.runs);
@@ -138,7 +158,7 @@ export async function writeParagraph(tm: TextAndMarks, style: string | null): Pr
      every style the body NAMES. Sending the plain one omitted `Reference` and
      Word silently dropped the style, which spliced every raised reading aid
      into the recitation. See `model/sheet.ts`. */
-  const pkg = flatPackage(body, styleSheetFor(body));
+  const pkg = packageOf(body, styleSheetFor(body));
   await Word.run(async (context) => {
     const paragraph = context.document.getSelection().paragraphs.getFirst();
     paragraph.getRange(Word.RangeLocation.content).insertOoxml(pkg, Word.InsertLocation.replace);
@@ -182,6 +202,7 @@ export async function readDocument(): Promise<DocumentRead> {
   return Word.run(async (context) => {
     const ooxml = context.document.body.getOoxml();
     await context.sync();
+    learn(ooxml.value);
     const all = readParagraphs(documentPartOf(ooxml.value), ooxml.value);
     const lines: DocParagraph[] = [];
     all.forEach((p, index) => {
@@ -231,7 +252,7 @@ export async function writeDocument(
       /* Per body, for the reason in `model/sheet.ts` — and cached on the set
          of styles a body names, so 434 paragraphs build a handful of sheets. */
       target.getRange(Word.RangeLocation.content)
-        .insertOoxml(flatPackage(body, styleSheetFor(body)), Word.InsertLocation.replace);
+        .insertOoxml(packageOf(body, styleSheetFor(body)), Word.InsertLocation.replace);
     }
     await context.sync();
     return changed.length;
@@ -268,6 +289,7 @@ export async function documentStyles(): Promise<DocStyles> {
   return Word.run(async (context) => {
     const ooxml = context.document.body.getOoxml();
     await context.sync();
+    learn(ooxml.value);
     return {
       missing: missingStyles(ooxml.value, sheet),
       total: styleIds(sheet).filter((x) => x.id !== 'Normal').length,
@@ -297,7 +319,7 @@ export async function addStyles(keep: boolean): Promise<void> {
      in their Styles pane named after nothing on their page. */
   const sheet = styleSheet();
   const body = specimenBody(sheet, paragraphsXml(specimenMarks()));
-  const pkg = flatPackage(body, sheet);
+  const pkg = packageOf(body, sheet);
   await Word.run(async (context) => {
     const before = context.document.body.paragraphs;
     before.load('items');

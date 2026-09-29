@@ -10,20 +10,20 @@
 
 ## 2. Two vocabularies
 
-- [ ] 2.1 `word/vocabulary.ts`: the table in design D1, one entry per role with
+- [x] 2.1 `word/vocabulary.ts`: the table in design D1, one entry per role with
       clean id, clean name, legacy id; `vocabularyOf(stylesXml, bodyXml)`
-- [ ] 2.2 Readers: every role reachable from both ids (`roleOf`, `paraRoleOf`)
-- [ ] 2.3 Writers: the add-in's sheet, `paragraphsXml`, and the app's Word export
+- [x] 2.2 Readers: every role reachable from both ids (`roleOf`, `paraRoleOf`)
+- [x] 2.3 Writers: the add-in's sheet, `paragraphsXml`, and the app's Word export
       write the vocabulary chosen; the app's "Veda Union" export style is legacy
 - [ ] 2.4 Existing style definitions are never replaced (D2) — measured on the web
-- [ ] 2.5 Tests: unit (choice for empty / legacy / mixed / clean docs; every
+- [x] 2.5 Tests: unit (choice for empty / legacy / mixed / clean docs; every
       role both ways; name clash), integration (the corpus written in each and
       read back byte-identical; legacy doc stays legacy after a write),
       component (the pane says which vocabulary, and "holds both")
 
 ## 3. Anusvāra and visarga
 
-- [ ] 3.1 The `Visarga` style in both vocabularies; the writer picks by `was`
+- [x] 3.1 The `Visarga` style in both vocabularies; the writer picks by `was`
 - [ ] 3.2 `classifyBlueRun` — the upgrade table in D3, pure
 - [ ] 3.3 "Upgrade this document": counts first, then one pass, then the list
       of what was left; idempotent

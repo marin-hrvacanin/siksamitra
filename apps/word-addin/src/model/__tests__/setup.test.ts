@@ -17,6 +17,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { styleSheet } from '../sheet.js';
 import { paragraphsXml } from '../paragraph.js';
+import { inVocabulary } from '@siksamitra/interop';
 import {
   SPECIMEN_NOTE, SPECIMEN_TITLE, STYLE_MEANS, missingStyles, specimenBody, styleIds,
 } from '../setup.js';
@@ -232,15 +233,24 @@ describe('a document from a Word that is not in English', () => {
   const hr = readFileSync(new URL('./fixtures/word-web-hr.xml', import.meta.url), 'utf8');
   const sheet = styleSheet();
 
-  it('reports nothing missing, because nothing is', () => {
-    expect(missingStyles(hr, sheet)).toEqual([]);
+  /* The fixture was captured before `Visarga` joined the sheet, so that one
+     style IS missing from it — and is the only one. */
+  it('reports nothing missing but the style added since, because nothing is', () => {
+    expect(missingStyles(hr, sheet)).toEqual(['Visarga']);
   });
 
   it('the control: matched by id alone, six would be "missing"', () => {
     const have = new Set(styleIds(hr).map((s) => s.id));
     const byId = styleIds(sheet).map((s) => s.id)
-      .filter((id) => id !== 'Normal' && !have.has(id));
+      .filter((id) => id !== 'Normal' && id !== 'Visarga' && !have.has(id));
     expect([...new Set(byId)].sort())
       .toEqual(['Caption', 'Header', 'Heading1', 'Heading2', 'Heading3', 'Heading4']);
+  });
+});
+
+describe('a document in the clean vocabulary', () => {
+  it('is not missing `Translit` when it has `Mantra` — they are one style', () => {
+    const clean = inVocabulary(styleSheet(), 'clean');
+    expect(missingStyles(clean, styleSheet())).toEqual([]);
   });
 });

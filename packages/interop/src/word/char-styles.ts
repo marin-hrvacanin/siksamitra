@@ -133,6 +133,8 @@ export function charStyles(
      * carry a style in its Styles pane named after nothing on its page — which
      * is the report the owner made about `2holdingchange`.
      */
+    /* `Visarga` likewise: his files write a replaced visarga in `Anusvara`. */
+    ...(used.has('Visarga') ? [ink('Visarga', mode.change, { italic: true })] : []),
     ...(used.has('Reference')
       ? [ink('Reference', roleColor(WORD_MARKS.reference.color, mode), {
         superscript: WORD_MARKS.reference.superscript,

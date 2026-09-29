@@ -118,4 +118,7 @@ export {
 export type { BadEntryName } from './entry-name.js';
 
 export { builtInStyleIds, canonicalStyleId } from './word/style-names.js';
+/* His style names or clean ones, chosen per document. See `word/vocabulary.ts`. */
+export { fromClean, inVocabulary, VOCABULARY, vocabularyOf } from './word/vocabulary.js';
+export type { Vocabulary } from './word/vocabulary.js';
 export { wordRun } from './docx-read.js';

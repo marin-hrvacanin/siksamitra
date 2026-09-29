@@ -31,7 +31,7 @@ import { FIGURE_DEFAULTS, figureItem } from '@siksamitra/format';
 import { CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
 import { ROLE_OF_ELEMENT } from '@siksamitra/tokens/document-type';
 import { xmlEscape } from '../xml.js';
-import { BAR_GLYPH, SVARA_CHAR, holdingStyle } from '../word-styles.js';
+import { BAR_GLYPH, SVARA_CHAR, changeStyle, holdingStyle } from '../word-styles.js';
 import { PARA_STYLE_OF } from './styles.js';
 import {
   figureDrawing, figurePlaceholderText, missingFigureText, type WordMedia,
@@ -285,7 +285,8 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
         } else if (u.c === VIRAMA_TICK) {
           runs += run(VIRAMA_TICK, 'Virama');
         } else {
-          runs += run(group.map(glyph).join(''), u.change === true ? 'Anusvara' : null);
+          const letters = group.map(glyph).join('');
+          runs += run(letters, u.change === true ? changeStyle(letters) : null);
         }
         for (const g of group) runs += trailing(g);
       }

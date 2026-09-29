@@ -17,6 +17,7 @@
  */
 import { WORD_MARKS } from '@siksamitra/tokens/word';
 import type { ChantSvara } from '@siksamitra/format';
+import { typedAs, VIS } from '@siksamitra/engine';
 
 /** What a character style means in the chant model. */
 export type WordMarkRole =
@@ -91,6 +92,20 @@ export const WORD_CHAR_STYLES: readonly WordCharStyle[] = [
   {
     id: 'Anusvara', role: 'change', color: '0070C0', italic: true, seen: 1115,
     note: 'the letter actually recited; superscript when w:vertAlign says so',
+  },
+  /*
+   * THE VISARGA CHANGE, told from the anusvāra's by what the letter IS.
+   *
+   * His file writes both in `Anusvara`: a replaced visarga (`ś s r`) is blue
+   * italic exactly like a replaced anusvāra (`ṅ ñ n m`). By the sandhi rules
+   * the two never produce the same letter — measured over all 971 of the
+   * corpus's substitutions, no overlap (`typedAs` in the engine) — so the
+   * writer can name each one for what it is and a reader loses nothing: both
+   * are a change. Ours; the same ink as his, so the page does not move.
+   */
+  {
+    id: 'Visarga', role: 'change', color: '0070C0', italic: true, seen: 0,
+    note: 'OURS — a letter recited in place of a visarga',
   },
   /*
    * A LETTER CAN BE BOTH BOXED AND SUBSTITUTED, and a run carries exactly one
@@ -227,6 +242,12 @@ export const BAR_GLYPH = '¦';
 export function holdingStyle(hold: 'short' | 'long', change: boolean): string {
   const base = hold === 'long' ? '2Holding' : 'Holding';
   return change ? `${base}Change` : base;
+}
+
+/** The character style a replaced letter takes: `Visarga` when what was typed
+ *  was a visarga, `Anusvara` otherwise — his own style for both, before. */
+export function changeStyle(letters: string): 'Anusvara' | 'Visarga' {
+  return typedAs(letters) === VIS ? 'Visarga' : 'Anusvara';
 }
 
 /** The two marks a combined holding style carries. */
