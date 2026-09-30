@@ -70,7 +70,7 @@ describe('each host gets a manifest that points at it', () => {
 
     it(`${key}: the pane, the icons and the get-started link all resolve`, () => {
       const out = manifestFor(xml, host, '2.0.0.0');
-      for (const path of ['/taskpane.html', '/commands.html', '/icon-32.png', '/icon-80.png', '/ribbon/hold-short-16.png']) {
+      for (const path of ['/taskpane.html', '/shortcuts.json', '/icon-32.png', '/icon-80.png', '/ribbon/hold-short-16.png']) {
         expect(out, path).toContain(`${host.base}${path}`);
       }
     });
@@ -156,8 +156,21 @@ describe('the element order is not disturbed', () => {
       .map((l) => l.split(host.base).join(ADDIN_HOSTS.local.base))
       .map((l) => l.replace(/<Id>[^<]*<\/Id>/, '<Id/>'))
       .map((l) => l.replace(/<Version>[^<]*<\/Version>/, '<Version/>'))
+      .map((l) => l.replace(/\.png\?v=[^"]*"/g, '.png"'))
       .map((l) => l.replace(/<DisplayName [^/]*\/>/, '<DisplayName/>'));
     expect(strip(out)).toEqual(strip(xml));
+  });
+
+  it('every picture URL carries the version, so Word fetches new icons on an update', () => {
+    /* Word caches a command icon by URL: recoloured icons under the same URL
+       drew the old grey after the version had risen. */
+    const out = manifestFor(xml, ADDIN_HOSTS.pages, '2.0.0.41');
+    const pngs = [...out.matchAll(/"(https:[^"]+\.png[^"]*)"/g)].map((m) => m[1]);
+    expect(pngs.length).toBeGreaterThan(100);
+    for (const u of pngs) expect(u, u).toMatch(/\.png\?v=2\.0\.0\.41$/);
+    /* and a later version is a different URL for every one of them */
+    const later = manifestFor(xml, ADDIN_HOSTS.pages, '2.0.0.42');
+    expect(later).not.toContain('.png?v=2.0.0.41');
   });
 
   it('and adding an AppDomain twice adds it once', () => {
@@ -237,7 +250,7 @@ describe('what the manifest tells a person', () => {
   });
   it('the Get Started text names what really exists: the tab, its buttons, the menu', () => {
     /* The add-in has its own tab now, with Short and Long on it, and a
-       right-click menu — generated from the pane's controls. */
+       right-click menu — generated from `commands-table.ts`. */
     const text = /id="sm\.GetStarted\.Description" DefaultValue="([^"]*)"/.exec(xml)?.[1] ?? '';
     expect(text).toContain('śikṣāmitra tab');
     expect(text).toContain('Short or Long');

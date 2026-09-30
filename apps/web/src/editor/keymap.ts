@@ -19,7 +19,7 @@
  * (`IAST_LEADER_KEY`). Both are his own binding from v1.
  */
 import type { Session } from './useSession.js';
-import type { IconName } from '@siksamitra/ui';
+import { MARK_KEYS, type IconName } from '@siksamitra/ui';
 
 export interface Binding {
   /** `KeyboardEvent.key`, matched case-insensitively for letters. Empty for an
@@ -125,8 +125,7 @@ export const EDIT_KEYS: readonly Binding[] = [
 
   // ── marking ───────────────────────────────────────────────────────────────
   {
-    key: 'h',
-    ctrl: true,
+    ...MARK_KEYS.holdShort,
     label: 'Short',
     ribbon: 'marks',
     icon: 'hold-short',
@@ -136,9 +135,7 @@ export const EDIT_KEYS: readonly Binding[] = [
     run: (s) => s.toggleHold('short'),
   },
   {
-    key: 'h',
-    ctrl: true,
-    shift: true,
+    ...MARK_KEYS.holdLong,
     label: 'Long',
     ribbon: 'marks',
     icon: 'hold-long',
@@ -148,8 +145,7 @@ export const EDIT_KEYS: readonly Binding[] = [
     run: (s) => s.toggleHold('long'),
   },
   {
-    key: 'k',
-    ctrl: true,
+    ...MARK_KEYS.clearHold,
     label: 'Clear',
     ribbon: 'marks',
     icon: 'marks-clear',
@@ -204,9 +200,7 @@ export const EDIT_KEYS: readonly Binding[] = [
    * document, with user action".
    */
   {
-    key: 'r',
-    ctrl: true,
-    shift: true,
+    ...MARK_KEYS.reapply,
     label: 'Re-apply rules',
     ribbon: 'auto',
     icon: 'auto-keep',

@@ -110,10 +110,18 @@ export function FileGroup(
         if (interop.isSiksamitraDocx(bytes)) {
           const read = await interop.importWord(bytes);
           onImport(read.doc, file.name);
-          onNote(read.intact
-            ? `${file.name}: opened exactly — the document was inside the file`
-            : `${file.name}: the text was edited in Word after it was written, so the `
-              + 'document inside it no longer matches what the page shows');
+          /* What was done to the page in Word since is IN the document: the
+             verses edited, added or removed there (`body-edits.ts`). */
+          const { edited, added, removed } = read.inWord;
+          const inWord = [
+            edited > 0 ? `${edited} verse(s) edited` : '', added > 0 ? `${added} added` : '',
+            removed > 0 ? `${removed} removed` : '',
+          ].filter((x) => x !== '').join(', ');
+          onNote(inWord !== ''
+            ? `${file.name}: opened, with what was done in Word — ${inWord}`
+            : read.intact
+              ? `${file.name}: opened exactly — the document was inside the file`
+              : `${file.name}: the document inside the file no longer hashes to what it recorded`);
         } else {
           const result = interop.importDocx(bytes);
           onImport(result.doc, file.name);

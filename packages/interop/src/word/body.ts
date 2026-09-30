@@ -28,73 +28,26 @@
  */
 import type { ChantDoc, ChantFigure, ChantToken, ChantUnit } from '@siksamitra/format';
 import { FIGURE_DEFAULTS, figureItem } from '@siksamitra/format';
-import { CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
-import { ROLE_OF_ELEMENT } from '@siksamitra/tokens/document-type';
-import { xmlEscape } from '../xml.js';
+import { CANDRA, VIRAMA_TICK, digitsIn, type ScriptKey } from '@siksamitra/engine';
 import { BAR_GLYPH, SVARA_CHAR, changeStyle, holdingStyle } from '../word-styles.js';
-import { PARA_STYLE_OF } from './styles.js';
 import {
-  figureDrawing, figurePlaceholderText, missingFigureText, type WordMedia,
-} from './drawing.js';
+  bridging, signature, styleOf, styledParagraph, styledRun, type WordPictures,
+} from './body-parts.js';
+import { lettersOfIast, scriptWordRuns } from './script-runs.js';
+import { readParagraphs } from '../docx-read.js';
+import { registerOf } from '@siksamitra/edit';
+import { withParts, type Region } from './rule-parts.js';
+import { syllablesOf } from '../docx-syllables.js';
+import { figureDrawing, figurePlaceholderText, missingFigureText } from './drawing.js';
 
-/**
- * Which Word style each of the page's elements is written in.
- *
- * READ OFF THE PAGE, through the two tables that already exist:
- * `ROLE_OF_ELEMENT` says which type role a class name takes and
- * `PARA_STYLE_OF` says which of his paragraph styles that role is. So the
- * `.docx` cannot put a section heading at a different level from the one the
- * page draws it at — which it did, until this was measured: `doc__part` came
- * out as Heading2 where the page sets it as Heading3, two points larger and at
- * the wrong indent.
- */
-const styleOf = (element: keyof typeof ROLE_OF_ELEMENT): string => {
-  const found = PARA_STYLE_OF[ROLE_OF_ELEMENT[element]];
-  if (found === undefined) throw new Error(`no Word paragraph style for ${element}`);
-  return found;
-};
-
-/** A unit's character-style signature, so a run covers only letters that agree. */
-const signature = (u: ChantUnit): string =>
-  `${u.hold ?? '-'}/${u.hg ?? '-'}/${u.change === true ? 'c' : '-'}`;
-
-/**
- * What a picture needs in order to be drawn: its bytes' place in the package,
- * and the column the five width steps are a fraction of.
- *
- * Optional as a whole, because two callers — the add-in's paragraph reader and
- * the determinism check — want the paragraphs and not the pictures. Without it
- * a figure writes its alternative text, which is what the page does for a
- * picture whose bytes are not there either.
- */
-export interface WordPictures {
-  /** Keyed by the picture's `src`, so one photograph is one part. */
-  readonly media: ReadonlyMap<string, WordMedia>;
-  /** The section's content width, in EMU. */
-  readonly columnEmu: number;
-}
-
-/**
- * ONE RUN OF TEXT, in a character style.
- *
- * Module-level and exported, rather than a closure inside `documentXml`,
- * because the Word add-in needs it too: its style specimen has to write a run
- * in `VedicAnusvara`, which is a style this writer READS out of the owner's
- * file and never produces, so there is no marked text that would emit one. A
- * second helper over there would be a second answer to what a run is — and
- * `w:rPr`'s children are a schema SEQUENCE, so a second answer is a file Word
- * calls corrupted.
- */
-export const styledRun = (text: string, rStyle: string | null, sup = false): string =>
-  `<w:r>${rStyle === null && !sup ? '' : `<w:rPr>${rStyle === null ? '' : `<w:rStyle w:val="${rStyle}"/>`}${sup ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr>`}`
-  + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
-
-/** One paragraph, in a paragraph style. Exported for the same reason. */
-export const styledParagraph = (style: string | null, runs: string): string =>
-  `<w:p>${style === null ? '' : `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`}${runs}</w:p>`;
+export { bridging, styledParagraph, styledRun, type WordPictures } from './body-parts.js';
 
 /** Write the body. `tail` is appended inside `<w:body>` — see the return. */
-export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): string {
+export function documentXml(
+  doc: ChantDoc, tail = '', pictures?: WordPictures,
+  /** The script the verses are written in. IAST unless said — see `script-runs.ts`. */
+  script: ScriptKey = 'iast',
+): string {
   const paras: string[] = [];
   const p = styledParagraph;
   const run = styledRun;
@@ -162,8 +115,11 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
    * A run covers a maximal group of units sharing a `signature` — the inverse
    * of the importer's merge, which is what makes a round trip stable.
    */
-  const verseRuns = (tokens: readonly ChantToken[]): string => {
+  const verseRuns = (tokens: readonly ChantToken[], as: ScriptKey = script): string => {
     let runs = '';
+    /* In an Indic script a WORD is written at once, cluster by cluster: the
+       syllables of a word share conjuncts, so they cannot be runs apart. */
+    let skipTo = -1;
     /** The dot is written BEFORE its letter, in the `Svara` style. */
     const leading = (u: ChantUnit): string => (u.sbhakti === true ? run('·', 'Svara') : '');
     /*
@@ -203,56 +159,45 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
      * the style is chosen by the letter's other marks, exactly as for any other
      * letter. The importer still reads his `VedicAnusvara`.
      */
-    const glyph = (u: ChantUnit): string => (u.candra === true ? `m${CANDRA}` : u.c);
-
-    /**
-     * The hold group a space falls inside, if it falls inside one.
-     *
-     * A `sp` written unstyled inside a holding closes the box and opens a new
-     * one, so a box spanning two words draws as two rectangles. The space takes
-     * the group's own style when the letters on both sides of it are in the
-     * same group — which is the only case where one rectangle is what was
-     * meant.
-     */
-    const bridging = (at: number): ChantUnit | null => {
-      let before: ChantUnit | null = null;
-      for (let k = at - 1; k >= 0; k -= 1) {
-        const t = tokens[k]!;
-        if (t.t === 'syl') { before = t.units[t.units.length - 1] ?? null; break; }
-        if (t.t !== 'sp') return null;
-      }
-      for (let k = at + 1; k < tokens.length; k += 1) {
-        const t = tokens[k]!;
-        if (t.t === 'syl') {
-          const after = t.units[0];
-          if (before === null || after === undefined) return null;
-          /* BOTH must be in the SAME NUMBERED group. Comparing only `hold`
-             matched two ADJACENT boxes with no group id at all — `undefined`
-             equals `undefined` — and the styled space between them was then
-             swallowed by the importer, turning `dadan naḥ` into `dadannaḥ`. */
-          return before.hold !== undefined && before.hg !== undefined
-            && before.hold === after.hold && before.hg === after.hg ? before : null;
-        }
-        if (t.t !== 'sp') return null;
-      }
-      return null;
-    };
+    /* The candrabindu rides on ITS letter: `m̐` for the gum, and on whatever
+       else carries one — `o̐` typed with the Candrabindu button. Writing `m̐`
+       for every one put an `m` into `o̐n`, and dropped the `o` it replaced. */
+    const glyph = (u: ChantUnit): string => (u.candra === true ? `${u.c}${CANDRA}` : u.c);
 
     tokens.forEach((t, at) => {
       if (t.t === 'br') { runs += '<w:r><w:br/></w:r>'; return; }
       if (t.t === 'sp') {
-        const inside = bridging(at);
+        const inside = bridging(tokens, at);
         runs += run(' ', inside === null ? null : holdingStyle(inside.hold!, inside.change === true));
         return;
       }
-      if (t.t === 'pause') { runs += run(t.len === 'long' ? '||' : '|', 'Pause'); return; }
+      /* A pause the rules placed is in the substitution blue, as in his files
+         (the bīja pause of `oṁ |`); one placed by hand is his red `Pause`. */
+      if (t.t === 'pause') { runs += run(t.len === 'long' ? '||' : '|', t.rule === true ? changeStyle('') : 'Pause'); return; }
       /* A BAR IS NOT A PAUSE. Both were written as `|` in the `Pause` style, so
          all 59 bars in the corpus came back from a round trip as short pauses.
          `¦` is a different character in the same style: the same colour and
          weight on the page, and unambiguous to the reader. */
       if (t.t === 'bar') { runs += run(BAR_GLYPH, 'Pause'); return; }
-      if (t.t === 'danda' || t.t === 'num' || t.t === 'text') { runs += run(t.s, null); return; }
+      if (t.t === 'num') { runs += run(digitsIn(t.s, as), null); return; }
+      if (t.t === 'danda' || t.t === 'text') { runs += run(t.s, null); return; }
       if (t.t !== 'syl') return;
+      if (at < skipTo) return;
+      if (as !== 'iast') {
+        let end = at;
+        while (end < tokens.length && tokens[end]!.t === 'syl') end += 1;
+        const word = tokens.slice(at, end) as Extract<ChantToken, { t: 'syl' }>[];
+        /* The word in IAST is the truth the script must read back to. */
+        const truth = lettersOfIast(readParagraphs(`<w:p>${verseRuns(word, 'iast')}</w:p>`)[0]?.runs ?? []);
+        /* Its akṣaras by the rule the READER divides by (`syllablesOf`): the
+           model's own division can be missing — letters typed into a line
+           carry none — and one "syllable" with two vowels is no akṣara:
+           `śiva` in one came out `शिव्अ`. */
+        const aksaras = syllablesOf(word.flatMap((s) => s.units));
+        for (const r of scriptWordRuns(aksaras, as, truth)) runs += run(r.text, r.rStyle, false, r.hidden === true);
+        skipTo = end;
+        return;
+      }
 
       let i = 0;
       while (i < t.units.length) {
@@ -294,7 +239,14 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
     return runs;
   };
 
+  /* Where each section's paragraphs are, and which register marks it: a
+     section marked by other rules than the rest is a PART in Word. */
+  /* The document's own name, first, where the page draws it — and where his
+     own single documents put theirs, in Heading 2. */
+  if (doc.title.trim() !== '') paras.push(p(styleOf('doc__name'), run(doc.title, null)));
+  const regions: Region[] = [];
   for (const s of doc.sections) {
+    const from = paras.length;
     if (s.part !== undefined && s.part !== part) {
       paras.push(p(styleOf('doc__part'), run(s.part, null)));
     }
@@ -304,6 +256,11 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
     const head = title === undefined || title === ''
       ? '' : s.n === undefined ? title : `${s.n}. ${title}`;
     if (head !== '') paras.push(p(styleOf('section__title'), run(head, null)));
+    /* A SOURCE LINE GOES ABOVE WHAT IT NAMES, as in his files — the section's
+       under its heading, a verse's over the verse — and that is also where the
+       reader looks for it: one written under its verse came back as the NEXT
+       verse's. The page draws them under; a file keeps them where he does. */
+    if (s.source != null && s.source !== '') prose(null, 'Comment', s.source);
 
     /* The section's own item list when it has one, its verses otherwise —
        `itemsOf` in `DocumentBlocks`. */
@@ -326,6 +283,9 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
         continue;
       }
       if (item.t !== 'verse') continue;
+      /* `Comment` is a CHARACTER style in his file, so a source line is an
+         ordinary paragraph with one styled run in it. */
+      if (item.source !== undefined) prose(null, 'Comment', item.source);
       const runs = verseRuns(item.tokens);
       if (runs !== '') paras.push(p(styleOf('pada'), runs));
       for (const ins of item.instructions ?? []) {
@@ -333,15 +293,14 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
       }
       for (const f of item.figures ?? []) picture(f);
       if (item.translation?.en !== undefined) {
-        prose(styleOf('doc__translation'), null, item.translation.en);
+        /* A paragraph per line, as his sādhanā and Kanakadhārā write them —
+           each line at the margin, a line too long for the column hanging in
+           as it wraps. (His Śivopāsana breaks one paragraph instead; the text
+           cannot tell the two apart, and this is the one his files use most.) */
+        for (const line of item.translation.en.split('\n')) prose(styleOf('doc__translation'), null, line);
       }
-      /* `Comment` is a CHARACTER style in his file, so a source line is an
-         ordinary paragraph with one styled run in it. */
-      if (item.source !== undefined) prose(null, 'Comment', item.source);
     }
-
-    /* Under the section's verses, where the page draws it. */
-    if (s.source != null && s.source !== '') prose(null, 'Comment', s.source);
+    regions.push({ from, to: paras.length, register: registerOf(doc, s) });
   }
 
   /* `tail` is the section properties — the sheet size and its margins — which
@@ -354,5 +313,5 @@ export function documentXml(doc: ChantDoc, tail = '', pictures?: WordPictures): 
        namespace that appears only sometimes is a file that parses only
        sometimes. */
     + 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-    + `<w:body>${paras.join('')}${tail}</w:body></w:document>`;
+    + `<w:body>${withParts(paras, regions)}${tail}</w:body></w:document>`;
 }

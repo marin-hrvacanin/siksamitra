@@ -39,6 +39,10 @@ export function Icon(
          twice. */
       aria-hidden
       focusable="false"
+      /* The colour, on the element itself: `.ic` in `ribbon.css` says the same,
+         but a page without that sheet — the Word add-in's dialogs — drew every
+         icon black, the warning triangle invisible on a dark dialog. */
+      fill="currentColor"
       /* `dangerouslySetInnerHTML` for one generated string of path data, from a
          table this repository generates and a gate checks — not from a
          document, a file or a network. The alternative is parsing SVG into

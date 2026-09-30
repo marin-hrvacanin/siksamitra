@@ -38,6 +38,8 @@ import { EMU_PER_INCH, mediaFor } from './drawing.js';
 import { WORD_FORMAT, WORD_VERSION } from './manifest.js';
 import { sectPr, stylesXml } from './styles.js';
 import { inVocabulary, type Vocabulary } from './vocabulary.js';
+import { wordScript } from './script-reader.js';
+import { HEADER_REL, runningHeadXml } from './running-head.js';
 
 export interface WordExportInput extends Omit<EmbedInput, 'style'> {
   style: ExportStyle;
@@ -82,7 +84,8 @@ export async function exportWord(input: WordExportInput): Promise<Uint8Array> {
   const page = input.page ?? pageGeometry(DEFAULT_PAGE);
   const theme = documentThemeOf(input.style);
 
-  const tail = (input.fallback === 'hidden-text' ? hiddenPayload(item) : '') + sectPr(page);
+  const head = input.style.runningHead === true ? HEADER_REL : undefined;
+  const tail = (input.fallback === 'hidden-text' ? hiddenPayload(item) : '') + sectPr(page, head);
 
   /*
    * THE PICTURES GO IN THE PACKAGE, as `word/media/…`.
@@ -111,16 +114,18 @@ export async function exportWord(input: WordExportInput): Promise<Uint8Array> {
    * regardless. Asking the body which ids it actually wrote is exact, and it
    * still writes them for a document that has such a letter.
    */
-  const body = documentXml(input.doc, tail, { media, columnEmu });
+  /* The verses in the script the document is being read in — every mark kept
+     (`script-runs.ts`), and the manifest records which, for `withBodyEdits`. */
+  const body = documentXml(input.doc, tail, { media, columnEmu }, wordScript(input.script));
   const usedStyles = new Set(
     [...body.matchAll(/<w:rStyle w:val="([^"]+)"/g)].map((m) => m[1] as string),
   );
   const vocabulary = input.vocabulary ?? 'clean';
   const parts: Record<string, Uint8Array> = {
-    [WORD_PARTS.contentTypes]: strToU8(contentTypes([...media.values()].map((m) => m.extension))),
+    [WORD_PARTS.contentTypes]: strToU8(contentTypes([...media.values()].map((m) => m.extension), head !== undefined)),
     [WORD_PARTS.rootRels]: strToU8(rootRels()),
     [WORD_PARTS.document]: strToU8(inVocabulary(body, vocabulary)),
-    [WORD_PARTS.documentRels]: strToU8(documentRels([...media.values()])),
+    [WORD_PARTS.documentRels]: strToU8(documentRels([...media.values()], head)),
     [WORD_PARTS.styles]: strToU8(inVocabulary(stylesXml({
       theme,
       mode: input.style.mode,
@@ -137,5 +142,6 @@ export async function exportWord(input: WordExportInput): Promise<Uint8Array> {
     [WORD_PARTS.custom]: strToU8(customProps(manifest)),
   };
   for (const m of media.values()) parts[m.part] = m.bytes;
+  if (head !== undefined) parts[WORD_PARTS.header] = strToU8(runningHeadXml());
   return zipSync(parts, { level: 6, mtime: FIXED_MTIME });
 }

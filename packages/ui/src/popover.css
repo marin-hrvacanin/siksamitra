@@ -252,7 +252,9 @@
   font-size: var(--text-ui-sm);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--chrome-ink-mute);
+  /* ink-SOFT, as the ribbon's labels are: mute measured 2.56:1 here, in the
+     Word add-in's typing help and in the app's palette alike. */
+  color: var(--chrome-ink-soft);
 }
 .iast__keys { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 
@@ -268,6 +270,10 @@
  */
 .iast__key {
   position: relative;
+  /* A button does not inherit the page's face: without this the letter in its
+     corner drew in the browser's own (Arial) wherever no reset said otherwise
+     — the Word add-in's dialog, measured by tools/word-pane.mjs. */
+  font: inherit;
   min-width: var(--control-h);
   min-height: var(--control-h);
   display: grid;
@@ -294,7 +300,8 @@
   right: var(--space-1);
   font-size: var(--text-ui-sm);
   line-height: 1;
-  color: var(--chrome-ink-mute);
+  /* The letter to press is read, not decoration: mute measured 2.86:1 on a key. */
+  color: var(--chrome-ink-soft);
 }
 .iast__tip {
   grid-column: 1 / -1;
@@ -302,6 +309,6 @@
   padding: var(--space-2) var(--space-1) 0;
   border-top: var(--border-hair) solid var(--chrome-line);
   font-size: var(--text-ui-sm);
-  color: var(--chrome-ink-mute);
+  color: var(--chrome-ink-soft);
 }
 

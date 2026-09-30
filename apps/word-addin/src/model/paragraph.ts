@@ -39,7 +39,7 @@ import type { ImportReport, WordParagraph, WordRun } from '@siksamitra/interop';
 import {
   documentXml, mergeRuns, paraRoleOf, readParagraphs, tokensFromRuns,
 } from '@siksamitra/interop';
-import { parseLetters } from '@siksamitra/engine';
+import { parseLetters, type ScriptKey } from '@siksamitra/engine';
 import { carriable } from './carry.js';
 
 /**
@@ -88,9 +88,9 @@ const writable = (tm: TextAndMarks): TextAndMarks =>
  * The body of a `word/document.xml`, ready to go into a flat OPC package. One
  * paragraph per line of the text.
  */
-export function paragraphsXml(tm: TextAndMarks): string {
+export function paragraphsXml(tm: TextAndMarks, script: ScriptKey = 'iast'): string {
   const doc = oneVerse(toTokens(writable(tm), TOKEN_HELP));
-  return BODY.exec(documentXml(doc))?.[1] ?? '';
+  return BODY.exec(documentXml(doc, '', undefined, script))?.[1] ?? '';
 }
 
 /**
@@ -99,9 +99,9 @@ export function paragraphsXml(tm: TextAndMarks): string {
  * Parsed back out of the XML rather than produced beside it, so there is one
  * writer and this cannot drift from what actually reaches Word.
  */
-export function paragraphRuns(tm: TextAndMarks): WordRun[][] {
+export function paragraphRuns(tm: TextAndMarks, script: ScriptKey = 'iast'): WordRun[][] {
   const doc = oneVerse(toTokens(writable(tm), TOKEN_HELP));
-  return readParagraphs(documentXml(doc))
+  return readParagraphs(documentXml(doc, '', undefined, script))
     .filter(isVerseParagraph)
     .map((p) => mergeRuns(p.runs));
 }
@@ -126,24 +126,6 @@ export function blankReport(): ImportReport {
 }
 
 /**
- * Consecutive Word paragraphs as one text and one list of markings.
- *
- * Each paragraph is decoded on its own and joined with a `br` token, which is
- * what puts a real `\n` in the text. Feeding the paragraphs to the importer as
- * one run list instead would lose every line break: a `\n` in a plain run is
- * whitespace to `tokensFromRuns` and becomes a space.
- */
-export function decodeParagraphs(paras: readonly WordParagraph[]): TextAndMarks {
-  const report = blankReport();
-  const tokens: ChantToken[] = [];
-  for (const [i, p] of paras.entries()) {
-    if (i > 0) tokens.push({ t: 'br' });
-    tokens.push(...tokensFromRuns(p.runs, report, `p-${i + 1}`));
-  }
-  return toTextAndMarks({ id: 'v', tokens } as ChantVerse);
-}
-
-/**
  * One paragraph's runs as text and markings.
  *
  * A `<w:br/>` inside the paragraph is a LINE, and `readParagraphs` gives it to
@@ -152,12 +134,12 @@ export function decodeParagraphs(paras: readonly WordParagraph[]): TextAndMarks 
  * verse of four pādas would come back as one long line. `importDocx` has the
  * same gap and loses every line break inside a verse.
  */
-export function decodeRuns(runs: readonly WordRun[]): TextAndMarks {
+export function decodeRuns(runs: readonly WordRun[], script: ScriptKey = 'iast'): TextAndMarks {
   const report = blankReport();
   const tokens: ChantToken[] = [];
   let line: WordRun[] = [];
   const flush = (): void => {
-    tokens.push(...tokensFromRuns(line, report, `l-${tokens.length}`));
+    tokens.push(...tokensFromRuns(line, report, `l-${tokens.length}`, script));
     line = [];
   };
   for (const r of runs) {
@@ -214,10 +196,10 @@ export interface Unaccounted {
 }
 
 /** What the importer could not account for in these paragraphs. */
-export function unresolvedIn(paras: readonly WordParagraph[]): Unaccounted[] {
+export function unresolvedIn(paras: readonly WordParagraph[], script: ScriptKey = 'iast'): Unaccounted[] {
   const report = blankReport();
   const decoded = paras
-    .map((p, i) => tokensFromRuns(p.runs, report, `p-${i + 1}`))
+    .map((p, i) => tokensFromRuns(p.runs, report, `p-${i + 1}`, script))
     .map((tokens) => toTextAndMarks({ id: 'v', tokens } as ChantVerse).text)
     .join(' ');
   return report.unresolved.map((u) => ({

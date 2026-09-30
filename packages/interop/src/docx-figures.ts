@@ -30,6 +30,7 @@
 import { toBase64 } from './base64.js';
 import { imageDataUri, type ChantFigure } from '@siksamitra/format';
 import { xmlText } from './xml.js';
+import { DEFAULT_PAGE, pageGeometry } from '@siksamitra/layout';
 
 /** One `<w:drawing>`, as the XML has it. */
 export interface DocxDrawing {
@@ -228,11 +229,12 @@ export function columnEmuOf(documentXml: string): number {
   const margins = /<w:pgMar\b[^>]*>/.exec(documentXml)?.[0] ?? '';
   const twip = (re: RegExp, fallback: number): number =>
     Number(re.exec(margins)?.[1] ?? fallback);
-  /* Twips — a twentieth of a point — throughout `w:pgSz` and `w:pgMar`. A4 at
-     his 25 mm margins if the file says nothing, which is what `sectPr` writes. */
-  const width = Number(size?.[1] ?? 11906);
-  const left = twip(/w:left="(\d+)"/, 1418);
-  const right = twip(/w:right="(\d+)"/, 1418);
+  /* Twips — a twentieth of a point — throughout `w:pgSz` and `w:pgMar`. His
+     A4 if the file says nothing, which is what `sectPr` writes. */
+  const sheet = pageGeometry(DEFAULT_PAGE);
+  const width = Number(size?.[1] ?? Math.round(sheet.width * 20));
+  const left = twip(/w:left="(\d+)"/, Math.round(sheet.margins.left * 20));
+  const right = twip(/w:right="(\d+)"/, Math.round(sheet.margins.right * 20));
   return Math.round(((width - left - right) / 20 / 72) * 914400);
 }
 

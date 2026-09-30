@@ -28,7 +28,7 @@ export { applyOverrides, isOverrideField } from './overrides.js';
 export type { OverrideField, OverrideResult } from './overrides.js';
 
 // ── parametrization ─────────────────────────────────────────────────────────
-export { PROFILES, DEFAULT_PROFILE, lengthens, resolveProfile } from './profile.js';
+export { PROFILES, DEFAULT_PROFILE, DEFAULT_PROFILE_KEY, lengthens, resolveProfile } from './profile.js';
 export type {
   Profile, ProfileKey, ChantProfileRef, Recension, MeterKey, SvaraRegister,
 } from './profile.js';
@@ -58,7 +58,7 @@ export type { Surface } from './words.js';
 
 // ── scripts ─────────────────────────────────────────────────────────────────
 export {
-  transliterate, transliterateSyllable, toIast, detectScript,
+  transliterate, transliterateSyllable, transliterateSyllableSpans, toIast, detectScript,
   ambiguitiesIn, isLosslessScript, hasSelectors, stripSelectors,
   PHONEMES, VOWEL_SIGNS, VIRAMA, PRANAVA_FORMS,
 } from './script/index.js';
@@ -106,3 +106,5 @@ export { STAGES, rerun, typedText } from './rerun.js';
 export { showsLengthening } from './rules/rigveda.js';
 export type { ReRun, ReRunMode, ReRunRequest } from './rerun.js';
 export { typedAs } from './changes.js';
+export { CANDRA_SIGN, SCRIPT_DIGITS, digitsFrom, digitsIn, scriptClusters } from './script/signs.js';
+export { holdingHostOf } from './rules/holdings.js';

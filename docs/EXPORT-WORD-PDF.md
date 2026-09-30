@@ -141,6 +141,15 @@ size, exact leading, space after, left indent, hanging indent and right indent,
 for `Translit`, `Heading1`–`Heading4`, `Prijevod`, `Header`, `Normal` and
 `Comment`. Mark colours agree too: `538135` holding green, `943634` svara red.
 
+**The template was brought up to his current files** (2026-09-30). It was
+older than every document he now writes: its long box was 1.5 pt where the
+Lalitā v9.3.1, the Śivopāsana v2 and the Kanakadhārā v1.3 all say 1 pt
+(`w:sz="8"`), its mantra line's right indent −276 twips where they say −284,
+and its Heading 2 had no space after where two of the three have 6 pt. Those
+three values in the template's `styles.xml` are now his; nothing else in it
+changed. His current files, not the template, are the reference — pages are
+compared with them rendered through Word itself.
+
 ## What could NOT be made identical, and why
 
 Five things. Each is measured and each has a reason.

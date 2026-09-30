@@ -26,7 +26,8 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ADDIN_HOSTS, manifestFaults, manifestFor, manifestVersion } from './word-addin.mjs';
-import { CATALOG_ROOT, catalogEntries, catalogFolder, catalogId } from './word-catalog.mjs';
+import { CATALOG_ROOT, catalogFolder, catalogId } from './word-catalog.mjs';
+import { WINDOWS_KEY } from './word-friend-installers.mjs';
 
 const ADDIN = 'apps/word-addin';
 const argv = process.argv.slice(2);
@@ -45,15 +46,19 @@ function list() {
     return;
   }
   try {
-    console.log(reg(['query', `${CATALOG_ROOT}\\{${id}}`]));
+    console.log(reg(['query', WINDOWS_KEY]));
   } catch {
-    console.log('\n  no śikṣāmitra catalog is registered\n');
+    console.log('\n  no add-in is sideloaded\n');
   }
 }
 
 function uninstall() {
   rmSync(folder, { recursive: true, force: true });
   if (process.platform !== 'darwin') {
+    for (const h of Object.values(ADDIN_HOSTS)) {
+      try { reg(['delete', WINDOWS_KEY, '/v', h.id, '/f']); } catch { /* not this one */ }
+    }
+    /* The shared-folder catalog an earlier version registered, if it is there. */
     try {
       reg(['delete', `${CATALOG_ROOT}\\{${id}}`, '/f']);
     } catch { /* it was not registered; the folder is gone either way */ }
@@ -87,16 +92,19 @@ function install(key) {
     return;
   }
 
-  for (const entry of catalogEntries(folder, id)) {
-    reg(['add', entry.key, '/v', entry.name, '/t', entry.type, '/d', entry.value, '/f']);
-  }
+  /* WORD'S DOCUMENTED SIDELOAD: a value named with the add-in's id, holding
+     the manifest's path. Word loads it at start, so the tab is simply there.
+     The shared-folder catalog this used to register — a local folder — was
+     accepted and never shown. The friends' installer
+     (`word-friend-installers.mjs`) writes the same key. */
+  reg(['add', WINDOWS_KEY, '/v', host.id, '/t', 'REG_SZ', '/d', file, '/f']);
   console.log(`\n  ${host.name}  ->  ${file}`);
-  console.log(`  catalog        {${id}}  ->  ${folder}`);
+  console.log(`  sideloaded     ${WINDOWS_KEY} ${host.id}`);
   console.log(`  serving from   ${host.base}`);
   if (key === 'local') {
     console.log('\n  It needs `npm run word-addin:serve` running.');
   }
-  console.log('\n  Restart Word, then: Insert -> My Add-ins -> Shared Folder\n');
+  console.log('\n  Restart Word: the tab is on the ribbon.\n');
 }
 
 /* The macOS drop folder wants the manifest named for the add-in and nothing

@@ -4,10 +4,14 @@
  * There is no installer for an Office add-in. Word looks in places, and
  * putting the manifest in one of those places IS the installation:
  *
- *   Windows   a folder registered as a trusted catalog, under
- *             `HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs`.
- *             The add-in then appears under Insert → My Add-ins → Shared
- *             Folder.
+ *   Windows   the manifest's path under
+ *             `HKCU\Software\Microsoft\Office\16.0\WEF\Developer`, named with
+ *             the add-in's id — Microsoft's documented sideload, and what
+ *             `word-install.mjs` and the friends' installer write. A folder
+ *             registered as a trusted catalog under `...\WEF\TrustedCatalogs`
+ *             was the first route; Word accepted a local folder there and
+ *             never showed it, so the catalog below survives only for where
+ *             the manifests live and to remove the old registration.
  *   macOS     the manifest dropped into
  *             `~/Library/Containers/com.microsoft.Word/Data/Documents/wef`.
  *             No registry, no catalog, no setting.

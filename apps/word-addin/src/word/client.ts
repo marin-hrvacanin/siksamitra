@@ -51,9 +51,10 @@ import { specimenMarks } from '../model/specimen-text.js';
 import { documentPartOf, flatPackage, restyle } from '../model/opc.js';
 import { decodeRuns, isVerseParagraph, paragraphsXml } from '../model/paragraph.js';
 import {
-  inTheWay, inVocabulary, mergeRuns, paragraphXml, readParagraphs, vocabularyOf,
+  inTheWay, inVocabulary, mergeRuns, paragraphXml, partOf, readParagraphs, scriptOfLine, vocabularyOf,
 } from '@siksamitra/interop';
-import type { Vocabulary } from '@siksamitra/interop';
+import type { ScriptKey } from '@siksamitra/engine';
+import type { PartRules, Vocabulary } from '@siksamitra/interop';
 
 /*
  * WHICH NAMES THIS DOCUMENT'S STYLES GO BY — his, or clean ones.
@@ -80,6 +81,10 @@ export interface DocParagraph {
   style: string | null;
   /** What a rewrite would lose. A whole-document run skips and lists it. */
   blocked: string[];
+  /** The part it belongs to, whose rules mark it; `null` outside every part. */
+  part: PartRules | null;
+  /** The script it is written in, and is written back in. */
+  script: ScriptKey;
 }
 
 /** What one read of the whole document saw. */
@@ -118,8 +123,11 @@ export async function readDocument(): Promise<DocumentRead> {
     const lines: DocParagraph[] = [];
     all.forEach((p, index) => {
       if (!isVerseParagraph(p)) return;
+      const runs = mergeRuns(p.runs);
+      const script = scriptOfLine(runs.filter((r) => r.hidden !== true).map((r) => r.text).join(''));
       lines.push({
-        index, tm: decodeRuns(mergeRuns(p.runs)), style: p.pStyle, blocked: inTheWay(raw[index] ?? ''),
+        index, tm: decodeRuns(runs, script), style: p.pStyle, blocked: inTheWay(raw[index] ?? ''),
+        part: partOf(p.sdt), script,
       });
     });
     return { lines, total: all.length };
@@ -161,7 +169,7 @@ export async function writeDocument(
     for (const one of changed) {
       const target = paragraphs.items[one.index];
       if (target === undefined || one.blocked.length > 0) continue;
-      const body = restyle(paragraphsXml(one.tm), one.style);
+      const body = restyle(paragraphsXml(one.tm, one.script), one.style);
       /* Per body, for the reason in `model/sheet.ts` — and cached on the set
          of styles a body names, so 434 paragraphs build a handful of sheets. */
       target.getRange(Word.RangeLocation.content)
@@ -234,19 +242,42 @@ export async function addStyles(keep: boolean): Promise<void> {
   const body = specimenBody(sheet, paragraphsXml(specimenMarks()));
   const pkg = packageOf(body, sheet);
   await Word.run(async (context) => {
-    const before = context.document.body.paragraphs;
-    before.load('items');
-    await context.sync();
-    const had = before.items.length;
+    const body = context.document.body;
+    const count = async (): Promise<number> => {
+      const ps = body.paragraphs;
+      ps.load('items');
+      await context.sync();
+      return ps.items.length;
+    };
+    const had = await count();
 
-    context.document.body.insertOoxml(pkg, Word.InsertLocation.end);
+    /*
+     * INTO A PARAGRAPH OF ITS OWN — and, to be taken out again, AT THE START.
+     *
+     * THE FAULT. This inserted at the body's end and deleted the paragraphs
+     * past the old COUNT. But a document ending in an empty paragraph — a new
+     * one, and most — has the insertion's first paragraph MERGED into that
+     * empty one, so the count was one short and the specimen's title stayed:
+     * every press of Add styles left "śikṣāmitra styles" in the person's
+     * document, seen after two presses as two headings.
+     *
+     * Deleting "everything after their last paragraph" instead is worse: it
+     * removes THEIR last paragraph mark, and a merged paragraph takes the
+     * formatting of the mark that survives — the specimen's. So the specimen
+     * goes into a fresh paragraph BEFORE their first: nothing of theirs can
+     * merge with it, none of it is the document's final paragraph, and what
+     * is deleted afterwards is exactly the paragraphs it added, counted.
+     */
+    const room = body.insertParagraph('', keep ? Word.InsertLocation.end : Word.InsertLocation.start);
+    room.insertOoxml(pkg, Word.InsertLocation.replace);
     await context.sync();
     if (keep) return;
 
-    const after = context.document.body.paragraphs;
-    after.load('items');
+    const added = (await count()) - had;
+    const ps = body.paragraphs;
+    ps.load('items');
     await context.sync();
-    for (const paragraph of after.items.slice(had)) paragraph.delete();
+    for (const p of ps.items.slice(0, added)) p.delete();
     await context.sync();
   });
 }

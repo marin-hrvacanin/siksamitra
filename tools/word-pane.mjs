@@ -1,44 +1,42 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
- * DOES THE PUBLISHED TASK PANE ACTUALLY RENDER?
+ * DO THE PUBLISHED PAGES ACTUALLY RENDER — Settings and both dialogs?
  *
  *   CHROME=<path> npm run check:word:pane
- *   CHROME=<path> node tools/word-pane.mjs --url https://localhost:3000/taskpane.html
+ *   CHROME=<path> node tools/word-pane.mjs --base https://localhost:3000
  *
- * THE ONE THING NOTHING ELSE COULD ANSWER. The component test builds the pane
- * into a jsdom, which has no layout engine and no stylesheet; the live gate
- * drives Word but never loads the page; and Word draws a task pane that fails
- * to load as a BLANK WHITE RECTANGLE with no message in it. So the failures
- * this catches are the ones with no symptom anywhere:
+ * THE ONE THING NOTHING ELSE CAN ANSWER. The component tests build these
+ * pages into a jsdom, which has no layout engine and no stylesheet; the live
+ * gate drives Word but never loads them; and Word draws a page that fails to
+ * load as a BLANK WHITE RECTANGLE with no message in it. So this loads the
+ * three pages Word loads — `taskpane.html` (the Settings panel), `said.html`
+ * (a message, and a question) and `type.html` (the typing help) — in a real
+ * browser, at the sizes Word gives them, in Word's light and dark themes and
+ * in Windows high contrast, and measures what a person would see:
  *
- *   - the bundle 404s, because it was built with a root-relative base and the
- *     add-in is served from a folder;
- *   - the stylesheet 404s, so the pane renders as unstyled black-on-white
- *     text with every button full width;
- *   - `tokens.css` did not arrive, so every colour resolves to nothing and
- *     the marking buttons are indistinguishable;
- *   - something in the bundle throws before `build()` runs, and `#root` stays
- *     empty.
+ *   - it built at all, nothing 404ed, nothing threw, and office.js was asked for;
+ *   - every text is legible against what is actually behind it;
+ *   - nothing is wider than the window, and no control lies on another;
+ *   - every control has a label, and every dialog button its words;
+ *   - the faces the page names are the ones that drew it.
  *
- * IT LOADS THE REAL URL by default â€” the published one, over the internet â€”
- * because that is the page Word will load. A bundle that works from disk and
- * 404s from the server is exactly the failure this exists for.
+ * IT LOADS THE PUBLISHED URL by default — the pages Word will load, over the
+ * internet — because a bundle that works from disk and 404s from the server is
+ * exactly the failure this exists for. `--base` points it at a local build.
  *
- * THE OFFICE HOST IS STUBBED, and only as far as the pane needs. `office.js`
- * from Microsoft's CDN does load (the page asks for it), but it finds no Word
- * around it and never resolves `Office.onReady` â€” so the stub is installed
- * BEFORE the bundle runs and answers as Word would. What it hands back is a
- * real flat OPC package, built by the add-in's own writer, so the pane shows a
- * real marked paragraph rather than an error.
+ * THE OFFICE HOST IS STUBBED, only as far as the pages need: `office.js` from
+ * the CDN finds no Word around it and never resolves `Office.onReady`, so the
+ * stub is installed before the bundle runs and answers as Word would.
+ *
+ * The pictures go to `artifacts/word-pane/` — LOOK at them.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
 import { browserPath } from './_browser.mjs';
-import { mark } from '@siksamitra/format';
 import { flatPackage } from '../apps/word-addin/src/model/opc.js';
-import { paragraphsXml } from '../apps/word-addin/src/model/paragraph.js';
-import { styleSheet, styleSheetFor } from '../apps/word-addin/src/model/sheet.js';
+import { styleSheet } from '../apps/word-addin/src/model/sheet.js';
 import { ADDIN_HOSTS } from '../scripts/word-addin.mjs';
+import { DIALOG_SIZE } from '../apps/word-addin/src/word/dialog.js';
 
 const OUT = 'artifacts/word-pane';
 const argv = process.argv.slice(2);
@@ -46,37 +44,39 @@ const flag = (name) => {
   const i = argv.indexOf(`--${name}`);
   return i === -1 ? undefined : argv[i + 1];
 };
-const url = flag('url') ?? `${ADDIN_HOSTS.pages.base}/taskpane.html`;
+const base = (flag('base') ?? ADDIN_HOSTS.pages.base).replace(/\/$/, '');
 
-/** A task pane's real width, and a narrow one at that â€” a person can drag it. */
-const WIDTH = Number(flag('width') ?? 320);
+/* A document that already has every style, built by the add-in's own code. */
+const DOCUMENT = flatPackage('<w:p><w:r><w:t>agnim</w:t></w:r></w:p>', styleSheet());
 
-/* What the stubbed Word hands back: one marked paragraph, and a document that
-   already has the styles. Both built by the add-in's own code. */
-const tm = {
-  text: 'oáą agnim Ä«á¸·e puraá¸Ą',
-  marks: [
-    mark({ k: 'hold', from: 3, to: 8, v: 'short' }),
-    mark({ k: 'svara', from: 13, to: 14, v: 'anudatta' }),
-  ],
-};
-const body = paragraphsXml(tm);
-const PARAGRAPH = flatPackage(body, styleSheetFor(body));
-const DOCUMENT = flatPackage(body, styleSheet());
-
-/*
- * THE MATRIX. The pane is looked at at every width a person can drag it to,
- * in every theme Word can be in, because that is where it used to fail: light
- * inside a dark Word. Each case is a fresh page, with Word's own theme stubbed
- * the way Word on the web reports it (`Office.context.officeTheme`, measured:
- * #1B1A19 in dark), plus Windows high contrast.
- */
 const THEMES = {
   light: { bodyBackgroundColor: '#FFFFFF' },
   dark: { bodyBackgroundColor: '#1B1A19' },
 };
-const WIDTHS = flag('width') === undefined ? [300, 320, 400, 600] : [WIDTH];
 const CONTRAST = 4.5;
+
+/*
+ * THE PAGES, at the sizes Word gives them. Settings is a side panel a person
+ * drags between about 300 and 600 px. The dialogs are sized in PERCENT of the
+ * screen, by `DIALOG_SIZE` in `word/dialog.ts` — measured here on a 1366 × 768
+ * laptop, the smallest screen they must fit, and on a 1920 × 1080 one.
+ */
+const q = (o) => new URLSearchParams(o).toString();
+const sized = (pct, sw, sh) => ({ width: Math.round((sw * pct.width) / 100), height: Math.round((sh * pct.height) / 100) });
+const PAGES = [
+  ...[300, 360, 600].map((w) => ({ name: `settings-${w}`, path: 'taskpane.html', width: w, height: 900, root: '.set' })),
+  ...[[1366, 768], [1920, 1080]].flatMap(([sw, sh]) => [
+    {
+      name: `said-warn-${sw}`, ...sized(DIALOG_SIZE.said, sw, sh), root: '.dlg',
+      path: `said.html?${q({ text: 'Nothing to mark: the caret is not after a letter.', kind: 'warn', lines: JSON.stringify(['Type the letter first, or select the letters, and press again.']) })}`,
+    },
+    {
+      name: `said-ask-${sw}`, ...sized(DIALOG_SIZE.said, sw, sh), root: '.dlg',
+      path: `said.html?${q({ text: 'Write the whole document in Devanāgarī?', kind: 'ask', yes: 'Write it', lines: JSON.stringify(['Every mantra line is rewritten in Devanāgarī, with every mark kept. Headings and translations stay as they are.']) })}`,
+    },
+    { name: `type-${sw}`, path: 'type.html', ...sized(DIALOG_SIZE.type, sw, sh), root: '.dlg' },
+  ]),
+];
 
 const results = [];
 const check = (what, got, want) => {
@@ -90,11 +90,10 @@ const browser = await puppeteer.launch({
   args: ['--no-sandbox', '--ignore-certificate-errors'],
 });
 
-const ours = (u) => !u.startsWith('https://appsforoffice.microsoft.com/')
-  && !u.endsWith('/favicon.ico');
+const ours = (u) => !u.startsWith('https://appsforoffice.microsoft.com/') && !u.endsWith('/favicon.ico');
 
 /** Everything measured inside the page, for one case. */
-function measure(limit) {
+function measure([rootSel, limit]) {
   const rgb = (s) => (s.match(/[\d.]+/g) ?? []).map(Number);
   const lum = ([r, g, b]) => [r, g, b]
     .map((c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; })
@@ -106,11 +105,10 @@ function measure(limit) {
     }
     return [255, 255, 255];
   };
-  /* Every element that draws text of its own, and its contrast against what
-     is actually behind it. A disabled control is allowed 3:1 (WCAG exempts
-     it; 3:1 keeps it readable). */
+  const root = document.querySelector(rootSel);
+  const all = root === null ? [] : [root, ...root.querySelectorAll('*')];
   const poor = [];
-  for (const el of document.querySelectorAll('.pane *')) {
+  for (const el of all) {
     const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim() !== '');
     if (!own || el.getClientRects().length === 0) continue;
     const cs = getComputedStyle(el);
@@ -121,60 +119,47 @@ function measure(limit) {
     const disabled = el.closest('button:disabled') !== null;
     if (ratio < (disabled ? 3 : limit)) poor.push(`${el.textContent.trim().slice(0, 30)} ${ratio.toFixed(2)}`);
   }
-  const buttons = [...document.querySelectorAll('.pane button')].map((b) => {
-    const r = b.getBoundingClientRect();
-    return {
-      label: (b.textContent ?? '').trim(), w: Math.round(r.width), h: Math.round(r.height),
-      icon: b.querySelector('svg') !== null, title: b.title,
-    };
-  });
+  const controls = [...(root?.querySelectorAll('button, input, select, a') ?? [])];
+  const boxes = controls.map((e) => ({ n: (e.textContent ?? '').trim().slice(0, 20), r: e.getBoundingClientRect() }))
+    .filter((x) => x.r.width > 0 && x.r.height > 0);
+  const overlaps = [];
+  for (let i = 0; i < boxes.length; i += 1) {
+    for (let j = i + 1; j < boxes.length; j += 1) {
+      const a = boxes[i].r; const b = boxes[j].r;
+      const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (w > 1 && h > 1) overlaps.push(`${boxes[i].n} × ${boxes[j].n}`);
+    }
+  }
+  /* The faces that actually drew: every family a text element asks for that
+     the document has loaded. A family asked for and not loaded falls back to
+     whatever the machine has, which is the failure. */
+  const asked = new Set(all.filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim() !== ''))
+    .map((e) => getComputedStyle(e).fontFamily.split(',')[0].trim().replace(/^["']|["']$/g, '')));
+  const loaded = new Set([...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/^["']|["']$/g, '')));
   return {
-    mode: document.querySelector('.pane')?.getAttribute('data-mode'),
-    groups: [...document.querySelectorAll('.pane .grp__label')].map((h) => h.textContent.trim()),
-    buttons,
+    built: root !== null,
+    mode: root?.getAttribute('data-mode') ?? null,
     poor,
-    where: document.querySelector('.where')?.getAttribute('data-state') ?? '',
-    version: (document.querySelector('.pane__foot span')?.textContent ?? '').trim(),
-    widest: Math.max(...[...document.querySelectorAll('.pane *')]
-      .map((e) => Math.ceil(e.getBoundingClientRect().right))),
+    overlaps,
+    widest: Math.max(0, ...all.map((e) => Math.ceil(e.getBoundingClientRect().right))),
     sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    /* No control lies on another — measured, because a ribbon button that
-       wrapped out of its group once sat on top of the Register box and every
-       other check passed. */
-    overlaps: (() => {
-      const els = [...document.querySelectorAll('.pane button, .pane select, .pane summary, .pane .grp__label')]
-        .map((e) => ({ n: (e.textContent ?? '').trim().slice(0, 20), r: e.getBoundingClientRect() }))
-        .filter((x) => x.r.width > 0 && x.r.height > 0);
-      const out = [];
-      for (let i = 0; i < els.length; i += 1) {
-        for (let j = i + 1; j < els.length; j += 1) {
-          const a = els[i].r; const b = els[j].r;
-          const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-          const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-          if (w > 1 && h > 1) out.push(`${els[i].n} × ${els[j].n}`);
-        }
-      }
-      return out;
-    })(),
-    /* Nothing sticks out of the group frame that holds it. */
-    escaped: [...document.querySelectorAll('.pane .grp')].flatMap((g) => {
-      const f = g.getBoundingClientRect();
-      return [...g.querySelectorAll('button')].filter((b) => {
-        const r = b.getBoundingClientRect();
-        return r.bottom > f.bottom + 1 || r.top < f.top - 1 || r.right > f.right + 1 || r.left < f.left - 1;
-      }).map((b) => (b.textContent ?? '').trim());
-    }),
-    unlabelled: [...document.querySelectorAll('.pane button, .pane select, .pane input')]
-      .filter((e) => (e.textContent ?? '').trim() === '' && e.closest('label') === null
-        && !e.getAttribute('aria-label')).length,
+    tall: document.documentElement.scrollHeight > window.innerHeight + 1,
+    /* An icon draws in its element's colour (`currentColor`): one that drew
+       black on a dark dialog was invisible, and no text check can see it. */
+    blackIcons: [...(root?.querySelectorAll('svg') ?? [])]
+      .filter((g) => getComputedStyle(g).fill !== getComputedStyle(g).color).length,
+    unlabelled: controls.filter((e) => (e.textContent ?? '').trim() === '' && e.closest('label') === null
+      && !e.getAttribute('aria-label')).length,
+    buttons: [...(root?.querySelectorAll('button') ?? [])].map((b) => (b.textContent ?? '').trim()).filter((t) => t.length < 40),
+    unloadedFaces: [...asked].filter((f) => !loaded.has(f) && !/^(system-ui|sans-serif|serif|monospace)$/i.test(f)),
+    version: (document.querySelector('.set__foot span')?.textContent ?? '').trim(),
   };
 }
 
-async function look(width, themeName, forced) {
-  const theme = THEMES[themeName];
+async function look(pg, themeName, forced) {
   const page = await browser.newPage();
-  await page.setViewport({ width, height: 900, deviceScaleFactor: 2 });
-  /* Puppeteer's helper refuses forced-colors; the protocol itself does not. */
+  await page.setViewport({ width: pg.width, height: pg.height, deviceScaleFactor: 2 });
   if (forced) {
     const cdp = await page.createCDPSession();
     await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'forced-colors', value: 'active' }] });
@@ -182,131 +167,97 @@ async function look(width, themeName, forced) {
   const failures = [];
   let askedForOfficeJs = false;
   page.on('pageerror', (e) => failures.push(`page error: ${e.message}`));
-  page.on('response', (r) => {
-    if (r.status() >= 400 && ours(r.url())) failures.push(`${r.status()} ${r.url()}`);
-  });
+  page.on('response', (r) => { if (r.status() >= 400 && ours(r.url())) failures.push(`${r.status()} ${r.url()}`); });
   await page.setRequestInterception(true);
   page.on('request', (r) => {
-    if (r.url().startsWith('https://appsforoffice.microsoft.com/')) {
-      askedForOfficeJs = true;
-      void r.abort();
-      return;
-    }
+    if (r.url().startsWith('https://appsforoffice.microsoft.com/')) { askedForOfficeJs = true; void r.abort(); return; }
     void r.continue();
   });
   page.on('requestfailed', (r) => { if (ours(r.url())) failures.push(`failed: ${r.url()}`); });
 
-  await page.evaluateOnNewDocument((paragraphPkg, documentPkg, theme) => {
-  const loaded = (value) => ({ value, load() {}, });
-  const range = () => ({
-    load() {}, insertOoxml() {}, getRange: () => range(), expandTo: () => range(),
-    getOoxml: () => loaded(paragraphPkg), text: 'agnim',
-  });
-  const paragraph = () => ({
-    ...range(), style: 'Translit', delete() {},
-  });
-  const context = {
-    document: {
-      getSelection: () => ({
-        ...range(),
-        text: 'agnim',
-        paragraphs: { getFirst: paragraph, load() {}, items: [paragraph()] },
-      }),
-      body: {
-        getOoxml: () => loaded(documentPkg),
-        insertOoxml() {},
-        paragraphs: { load() {}, items: [paragraph()] },
+  await page.evaluateOnNewDocument((documentPkg, theme) => {
+    const loaded = (value) => ({ value, load() {} });
+    const control = { isNullObject: true, tag: '', load() {} };
+    const paragraph = () => ({ load() {}, parentContentControlOrNullObject: control });
+    const context = {
+      document: {
+        getSelection: () => ({ paragraphs: { getFirst: paragraph, load() {}, items: [paragraph()] } }),
+        body: { getOoxml: () => loaded(documentPkg), paragraphs: { load() {}, items: [] } },
+        getStyles: () => ({ getByNameOrNullObject: () => ({ isNullObject: true, load() {} }) }),
       },
-    },
-    sync: async () => {},
-  };
-  Object.assign(window, {
-    Office: {
-      HostType: { Word: 'Word' },
-      EventType: { DocumentSelectionChanged: 'sel' },
-      context: { document: { addHandlerAsync: () => {} }, officeTheme: theme },
-      onReady: (cb) => { setTimeout(() => cb({ host: 'Word' }), 0); },
-    },
-    Word: {
-      InsertLocation: { replace: 'Replace', end: 'End' },
-      RangeLocation: { content: 'Content', whole: 'Whole' },
-      run: async (fn) => fn(context),
-    },
-  });
-}, PARAGRAPH, DOCUMENT, theme);
+      sync: async () => {},
+    };
+    const settings = new Map();
+    Object.assign(window, {
+      Office: {
+        HostType: { Word: 'Word' },
+        EventType: { DocumentSelectionChanged: 'sel', DialogMessageReceived: 'm', DialogEventReceived: 'e' },
+        context: {
+          document: {
+            addHandlerAsync: () => {}, removeHandlerAsync: () => {},
+            settings: { get: (k) => settings.get(k) ?? null, set: (k, v) => settings.set(k, v), saveAsync: (d) => d() },
+          },
+          officeTheme: theme,
+          requirements: { isSetSupported: () => true },
+          ui: { messageParent: () => {} },
+        },
+        addin: { onVisibilityModeChanged: () => {}, showAsTaskpane: async () => {} },
+        actions: { associate: () => {} },
+        onReady: (cb) => { setTimeout(() => cb({ host: 'Word' }), 0); },
+      },
+      Word: { run: async (fn) => fn(context) },
+    });
+  }, DOCUMENT, THEMES[themeName]);
 
+  const url = `${base}/${pg.path}`;
   await page.goto(url, { waitUntil: 'networkidle2', timeout: 60_000 });
   try {
-    await page.waitForSelector('.pane .grp', { timeout: 20_000 });
+    await page.waitForSelector(pg.root, { timeout: 20_000 });
   } catch {
-    const root = await page.evaluate(() => document.getElementById('root')?.innerHTML ?? '(no #root)');
-    console.error(`\n  the pane did not build at ${width} px ${themeName}. #root held:\n    ${root.slice(0, 400)}\n`);
+    const root = await page.evaluate(() => document.body.innerHTML.slice(0, 400));
+    console.error(`\n  ${pg.name} did not build (${themeName}). The body held:\n    ${root}\n`);
     for (const f of failures) console.error(`    ${f}`);
     await browser.close();
     process.exit(1);
   }
   await page.evaluate(() => document.fonts.ready);
-  await new Promise((r) => setTimeout(r, 400));
-  /* Open what is folded, so it is measured too. */
-  await page.evaluate(() => { const d = document.querySelector('details.rules'); if (d) d.open = true; });
-  await new Promise((r) => setTimeout(r, 200));
-  const seen = await page.evaluate(measure, CONTRAST);
-
-  /* Hover a disabled button: its tooltip must say why. */
-  const target = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('.pane button')].find((x) => x.disabled && x.dataset.why);
-    if (!b) return null;
-    const r = b.getBoundingClientRect();
-    return { x: r.x + r.width / 2, y: r.y + r.height / 2, why: b.dataset.why };
-  });
-  let tipSaid = null;
-  if (target !== null) {
-    await page.mouse.move(target.x, target.y);
-    await new Promise((r) => setTimeout(r, 700));
-    tipSaid = await page.evaluate(() => document.querySelector('[role="tooltip"]')?.textContent ?? null);
-  }
-
-  const name = `${width}-${forced ? 'contrast' : themeName}`;
-  await page.screenshot({ path: `${OUT}/pane-${name}.png`, fullPage: true });
-  const at = ` â€” ${name}`;
+  await new Promise((r) => setTimeout(r, 500));
+  const seen = await page.evaluate(measure, [pg.root, CONTRAST]);
+  const name = `${pg.name}-${forced ? 'contrast' : themeName}`;
+  await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: pg.name.startsWith('settings') });
+  const at = ` — ${name}`;
+  check(`it built${at}`, seen.built, true);
   check(`follows Word's theme${at}`, forced || seen.mode === themeName, true);
-  check(`every group is there${at}`, seen.groups, ['Holding', 'Svara', 'Aids']);
-  check(`every button has its icon${at}`, seen.buttons.filter((b) => !b.icon).map((b) => b.label), []);
-  check(`none is invisible${at}`, seen.buttons.filter((b) => b.w === 0 || b.h === 0).map((b) => b.label), []);
-  check(`every tooltip is ours, not the browser's${at}`,
-    seen.buttons.filter((b) => b.title !== '').map((b) => b.label), []);
-  check(`nothing wider than the pane, no sideways scroll${at}`, seen.widest <= width && !seen.sideways, true);
+  check(`nothing wider than the window, no sideways scroll${at}`, seen.widest <= pg.width && !seen.sideways, true);
   check(`every control has a label${at}`, seen.unlabelled, 0);
+  check(`every icon draws in its own colour${at}`, seen.blackIcons, 0);
+  if (!pg.name.startsWith('settings')) check(`it fits its window with no scrollbar${at}`, seen.tall, false);
   check(`no control lies on another${at}`, seen.overlaps, []);
-  check(`no button escapes its group${at}`, seen.escaped, []);
   if (!forced) check(`every text is legible, ${CONTRAST}:1 or better${at}`, seen.poor, []);
-  check(`a disabled button's tooltip says why${at}`,
-    target === null || (tipSaid ?? '').includes(target.why), true);
-  check(`it read the selection${at}`, seen.where === 'range' || seen.where === 'caret', true);
-  check(`it says which build it is${at}`, /^v\d+\.\d+\.\d+/.test(seen.version), true);
+  check(`every face it asks for is the one that drew it${at}`, seen.unloadedFaces, []);
   check(`nothing 404ed and nothing threw${at}`, failures, []);
   check(`it asks Word for office.js${at}`, askedForOfficeJs, true);
+  if (pg.name.startsWith('settings')) check(`it says which build it is${at}`, /^v\d+\.\d+\.\d+/.test(seen.version), true);
+  if (pg.name.startsWith('said-warn')) check(`a message has one OK${at}`, seen.buttons, ['OK']);
+  if (pg.name.startsWith('said-ask')) check(`a question offers Cancel and its yes${at}`, seen.buttons, ['Cancel', 'Write it']);
   await page.close();
-  return seen;
 }
 
-console.log(`\nâ”€â”€ the task pane\n\n  ${url}\n`);
-let last;
-for (const width of WIDTHS) {
-  for (const t of Object.keys(THEMES)) last = await look(width, t, false);
+console.log(`\n── the published pages\n\n  ${base}\n`);
+for (const pg of PAGES) {
+  for (const t of Object.keys(THEMES)) await look(pg, t, false);
+  await look(pg, 'light', true);
 }
-await look(WIDTHS[0], 'light', true);
 await browser.close();
 
 for (const r of results) {
   if (!r.ok || argv.includes('--all')) {
-    console.log(`  ${r.ok ? 'ok  ' : 'FAIL'} ${r.what.padEnd(62)} ${
+    console.log(`  ${r.ok ? 'ok  ' : 'FAIL'} ${r.what.padEnd(70)} ${
       r.ok ? '' : `${JSON.stringify(r.got)} (want ${JSON.stringify(r.want)})`}`);
   }
 }
 const bad = results.filter((r) => !r.ok).length;
-console.log(`\n  ${results.length} checks over ${WIDTHS.length} widths Ă— light, dark, and high contrast; ${bad} failed`);
-console.log(`  ${last.groups.length} groups, ${last.buttons.length} buttons`);
-console.log(`  the pictures are ${OUT}/pane-*.png â€” look at them\n`);
+console.log(`\n  ${results.length} checks over ${PAGES.length} pages × light, dark, and high contrast; ${bad} failed`);
+console.log(`  the pictures are ${OUT}/*.png — look at them\n`);
 if (bad > 0) process.exit(1);
-console.log(`WORD PANE GATE PASSES â€” ${results.length} checks`);
+console.log(`WORD PAGES GATE PASSES — ${results.length} checks`);

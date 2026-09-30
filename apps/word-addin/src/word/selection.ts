@@ -16,14 +16,17 @@
  * and write stay there.
  */
 import type { TextAndMarks } from '@siksamitra/format';
-import { inTheWay, mergeRuns, paragraphXml, readParagraphs } from '@siksamitra/interop';
+import {
+  inTheWay, mergeRuns, paragraphXml, partOf, readParagraphs, scriptOfLine, type PartRules,
+} from '@siksamitra/interop';
+import type { ScriptKey } from '@siksamitra/engine';
 import { styleSheetFor } from '../model/sheet.js';
 import { documentPartOf, restyle } from '../model/opc.js';
 import { decodeRuns, isVerseParagraph, paragraphsXml, unresolvedIn } from '../model/paragraph.js';
 import type { Unaccounted } from '../model/paragraph.js';
 import { offsetMap, modelRange, type OffsetMap } from '../model/offsets.js';
 import { learn, packageOf } from './client.js';
-import { CARET_BOOKMARK, withCaretAt, wordOffsetIn } from '../model/caret.js';
+import { CARET_BOOKMARK, SELECTION_END_BOOKMARK, withCaretAt, wordOffsetIn } from '../model/caret.js';
 
 /** Lines queued per `context.sync()`. */
 const CHUNK = 40;
@@ -45,6 +48,10 @@ export interface Line {
   blocked: string[];
   /** The paragraph's text as Word reported it, to check the write against. */
   wordText: string;
+  /** The part it belongs to, whose rules mark it; `null` outside every part. */
+  part: PartRules | null;
+  /** The script the line is written in — read in it, and written back in it. */
+  script: ScriptKey;
 }
 
 /** The selection: the first line's fields, for everything that shows one, and
@@ -91,6 +98,11 @@ export async function locate(): Promise<Located> {
     for (let at = 0; at < items.length; at += CHUNK) {
       const chunk = items.slice(at, at + CHUNK);
       const xml = chunk.map((p) => p.getOoxml());
+      const parts = chunk.map((p) => {
+        const cc = p.parentContentControlOrNullObject;
+        cc.load('isNullObject,tag');
+        return cc;
+      });
       await context.sync();
       chunk.forEach((p, i) => {
         const n = at + i;
@@ -100,25 +112,55 @@ export async function locate(): Promise<Located> {
         const [read] = readParagraphs(part, ooxml);
         if (read === undefined) throw new Error('Word returned a paragraph with no content');
         const runs = mergeRuns(read.runs);
-        const map = offsetMap(runs);
+        const script = scriptOfLine(p.text);
+        /* Whether Word's own text of the paragraph — what the selection is
+           measured in — counts the hidden runs a script line carries. */
+        const visible = runs.filter((r) => r.hidden !== true).reduce((n, r) => n + r.text.length, 0);
+        const map = offsetMap(runs, script, p.text.length !== visible);
         const start = n === 0 ? before.text.length : 0;
         const end = n === items.length - 1 ? upto.text.length : p.text.length;
         const [from, to] = modelRange(map, start, Math.max(start, end));
         lines.push({
-          tm: decodeRuns(runs),
+          tm: decodeRuns(runs, script),
           map,
           from,
           to,
           style: read.pStyle,
           isVerse: isVerseParagraph(read),
-          unresolved: unresolvedIn([read]),
+          unresolved: unresolvedIn([read], script),
           blocked: inTheWay(paragraphXml(part).join('')),
           wordText: p.text,
+          part: parts[i]!.isNullObject ? null : partOf(parts[i]!.tag),
+          script,
         });
       });
     }
     return { ...lines[0]!, lines };
   });
+}
+
+/**
+ * NOTHING THE PERSON TYPES NEXT TAKES OUR STYLE.
+ *
+ * Word gives a typed letter the character style of the one before it, the way
+ * bold carries on — so after Short boxed the `e` just typed, every letter that
+ * followed went into the box, and after Svarita the next word came out red and
+ * was read back as accent. The caret, once placed, is given the default
+ * character style, which is what Ctrl+Space does in Word.
+ *
+ * BY ITS LOCAL NAME. `Range.style` takes the name the person's Word shows —
+ * "Zadani font odlomka" in a Croatian one — so the style is looked up by its
+ * English name, which `getByNameOrNullObject` accepts, and set by `nameLocal`.
+ * WordApi 1.5; where there is none, typing is sticky as it always was.
+ */
+async function unstick(context: Word.RequestContext): Promise<void> {
+  if (!Office.context.requirements.isSetSupported('WordApi', '1.5')) return;
+  const plain = context.document.getStyles().getByNameOrNullObject('Default Paragraph Font');
+  plain.load('isNullObject,nameLocal');
+  await context.sync();
+  if (plain.isNullObject) return;
+  context.document.getSelection().style = plain.nameLocal;
+  await context.sync();
 }
 
 /** A line to put back: which line of the selection, and what it now holds. */
@@ -128,6 +170,8 @@ export interface LineWrite {
   tm: TextAndMarks;
   style: string | null;
   wordText: string;
+  /** The script to write it in — by default the one it is written in now. */
+  script?: ScriptKey;
 }
 
 /**
@@ -150,13 +194,21 @@ export interface LineWrite {
  */
 export async function writeLines(
   writes: readonly LineWrite[],
-  /** Put the caret back here — a line of the selection, and a MODEL offset. */
-  caret?: { line: number; at: number },
+  /**
+   * Put the caret back here — a line of the selection, and a MODEL offset —
+   * or, with `to`, the selection from `at` to `to`: a person who pressed
+   * Short over three letters still has those three letters selected, so a
+   * second press (Long, a svara) lands on the same ones.
+   */
+  caret?: { line: number; at: number; to?: number },
 ): Promise<number> {
   if (writes.length === 0) return 0;
   /* A caret needs `getBookmarkRangeOrNullObject`, WordApi 1.4; without it the
-     caret stays where Word leaves it, at the end of the line. */
-  const canPlace = caret !== undefined && Office.context.requirements.isSetSupported('WordApi', '1.4');
+     caret stays where Word leaves it, at the end of the line. And only on a
+     line that is written: on one that is not, no mark would be found, and the
+     caret would be sent to the end of a line nobody touched. */
+  const canPlace = caret !== undefined && writes.some((w) => w.line === caret.line)
+    && Office.context.requirements.isSetSupported('WordApi', '1.4');
   await Word.run(async (context) => {
     const paragraphs = context.document.getSelection().paragraphs;
     paragraphs.load('items/text');
@@ -167,8 +219,13 @@ export async function writeLines(
     }
     for (let at = 0; at < writes.length; at += CHUNK) {
       for (const w of writes.slice(at, at + CHUNK)) {
-        const plain = restyle(paragraphsXml(w.tm), w.style);
-        const body = canPlace && caret!.line === w.line ? withCaretAt(plain, wordOffsetIn(plain, caret!.at)) : plain;
+        const script = w.script ?? scriptOfLine(w.wordText);
+        const plain = restyle(paragraphsXml(w.tm, script), w.style);
+        const here = canPlace && caret!.line === w.line;
+        const span = here && caret!.to !== undefined && caret!.to > caret!.at;
+        const offset = (at: number): number => wordOffsetIn(plain, at, script);
+        const ended = span ? withCaretAt(plain, offset(caret!.to!), SELECTION_END_BOOKMARK) : plain;
+        const body = here ? withCaretAt(ended, offset(caret!.at)) : plain;
         items[w.line]!.getRange(Word.RangeLocation.content)
           .insertOoxml(packageOf(body, styleSheetFor(body)), Word.InsertLocation.replace);
       }
@@ -176,16 +233,22 @@ export async function writeLines(
     }
     if (canPlace) {
       const mark = context.document.getBookmarkRangeOrNullObject(CARET_BOOKMARK);
+      const end = context.document.getBookmarkRangeOrNullObject(SELECTION_END_BOOKMARK);
       mark.load('isNullObject');
+      end.load('isNullObject');
       await context.sync();
-      if (!mark.isNullObject) {
-        mark.select();
-        context.document.deleteBookmark(CARET_BOOKMARK);
-      } else {
-        /* No mark: the caret belongs at the end of the line (see `caret.ts`). */
-        items[caret!.line]?.getRange(Word.RangeLocation.content).getRange('End').select();
-      }
+      const lineEnd = (): Word.Range =>
+        items[caret!.line]!.getRange(Word.RangeLocation.content).getRange('End');
+      /* No mark means the end of the line — Word drops a bookmark there
+         (see `caret.ts`) — for either end of a selection as for a caret. */
+      const from = mark.isNullObject ? lineEnd() : mark;
+      const spans = caret!.to !== undefined && caret!.to > caret!.at;
+      if (spans) from.expandTo(end.isNullObject ? lineEnd() : end).select();
+      else from.select();
+      if (!mark.isNullObject) context.document.deleteBookmark(CARET_BOOKMARK);
+      if (!end.isNullObject) context.document.deleteBookmark(SELECTION_END_BOOKMARK);
       await context.sync();
+      if (!spans) await unstick(context);
     } else if (items.length > 1) {
       items[0]!.getRange('Start').expandTo(items[items.length - 1]!.getRange('End')).select();
       await context.sync();

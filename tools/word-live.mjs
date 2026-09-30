@@ -54,6 +54,7 @@ import { styleSheet, styleSheetFor } from '../apps/word-addin/src/model/sheet.js
 import { missingStyles, styleIds } from '../apps/word-addin/src/model/setup.js';
 import { specimenMarks } from '../apps/word-addin/src/model/specimen-text.js';
 import { writePayloads } from './word-com/emit.mjs';
+import { checkScripts, scriptPayloads } from './word-com/scripts-arm.mjs';
 
 const DIR = 'artifacts/word-live';
 const HIS = 'tools/chant/fixtures-sadhana.docx';
@@ -134,7 +135,9 @@ const marksOf = (marks) => [...marks]
   .sort();
 
 const his = hisWrites();
+const scripts = scriptPayloads(DIR);
 const job = {
+  scripts: Object.fromEntries(Object.entries(scripts).map(([k, v]) => [k, v.file])),
   specimen: payloads.specimen.split('\\').join('/'),
   marked: payloads.marked.split('\\').join('/'),
   his: { file: his.file, writes: his.writes, mode: process.env.WORD_WRITE_MODE ?? 'content' },
@@ -190,14 +193,15 @@ console.log(`\n── Microsoft Word ${live.version}\n`);
 /*
  * 1. A FRESH DOCUMENT HAS NONE OF THE CUSTOM ONES.
  *
- * Not none of the seventeen: seven of them are WORD'S OWN — `Normal`, the four
- * headings, `Header`, `Caption` — and a new document declares those already.
+ * Not none of the vocabulary: eight of its styles are WORD'S OWN — `Normal`,
+ * the four headings, `Header`, `Caption`, `Title` — restyled to his look, and
+ * a new document declares those already.
  * That is why the check is against the custom vocabulary, which is his
  * (`Translit`, `Prijevod`, the marks) plus ours, and why the built-ins are
  * listed here rather than counted: they are a fact about Word.
  */
 const WORD_BUILT_IN = new Set([
-  'Normal', 'Heading1', 'Heading2', 'Heading3', 'Heading4', 'Header', 'Caption',
+  'Normal', 'Heading1', 'Heading2', 'Heading3', 'Heading4', 'Header', 'Caption', 'Title',
 ]);
 {
   const missing = new Set(missingStyles(body('freshBody'), sheet));
@@ -329,6 +333,9 @@ if (his.writes.length === 0) {
     same, his.expect.length,
     wrong.length === 0 ? '' : `\n    ${wrong.slice(0, 4).join('\n    ')}`);
 }
+
+/* 6. EVERY SCRIPT, invisible markers and all — see `word-com/scripts-arm.mjs`. */
+checkScripts(scripts, live, (file) => readFileSync(join(DIR, file), 'utf8'), check);
 
 /* ── the report ─────────────────────────────────────────────────────────── */
 

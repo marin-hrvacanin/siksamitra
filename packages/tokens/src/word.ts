@@ -24,10 +24,9 @@
  * available at any price.
  */
 
-/** Word's units, converted once. */
-export const fromHalfPoints = (halves: number): number => halves / 2;
-export const fromTwips = (twips: number): number => twips / 20;
-export const fromEighths = (eighths: number): number => eighths / 8;
+import { fromEighths, fromHalfPoints, fromTwips } from './word-units.js';
+
+export { fromEighths, fromHalfPoints, fromTwips } from './word-units.js';
 
 /** One paragraph style of the VU document, in points. */
 export interface WordParagraphMetric {
@@ -60,7 +59,17 @@ export interface WordParagraphMetric {
    * into the right margin rather than wrap.
    */
   right: number;
-  /** Which vendored face stands in for the file's. */
+  /**
+   * Which vendored face stands in for the file's.
+   *
+   * THE HEADINGS AND THE BODY ARE ARIAL — `'sans'` — in his documents. They
+   * were recorded as `'ui'` (Calibri) off `vu-word-template.docx`, whose
+   * theme fonts are Calibri; but in his own files `Normal` sets Arial and the
+   * heading styles set no ascii face, so they inherit it. Measured in the PDF
+   * Word itself renders of three of them (the Lalitā Sahasranāma v9.3.1, the
+   * Śivopāsana mantrāḥ v2, the Kanakadhārā v1.3): every heading, every
+   * header and every Normal line is `ArialMT`. Only `Title` is Calibri Light.
+   */
   face: 'sans' | 'serif' | 'ui';
   italic?: boolean;
   /** None of his heading styles is bold — the size and the grey carry them. */
@@ -85,7 +94,9 @@ export const WORD_PARAGRAPHS: readonly WordParagraphMetric[] = [
     after: 0,
     indent: fromTwips(284),
     hanging: fromTwips(284),
-    right: fromTwips(-276),
+    /* −284 in the Lalitā v9.3.1 and the Śivopāsana v2 (−282 in the
+       Kanakadhārā v1.3); the template's −276 is older than both. */
+    right: fromTwips(-284),
     face: 'sans',
   },
   {
@@ -97,18 +108,18 @@ export const WORD_PARAGRAPHS: readonly WordParagraphMetric[] = [
     indent: fromTwips(397),
     hanging: 0,
     right: 0,
-    face: 'ui',
+    face: 'sans',
   },
   {
     style: 'Heading2',
     role: 'part',
     size: fromHalfPoints(44),
     leading: null,
-    after: 0,
+    after: fromTwips(120),
     indent: 0,
     hanging: 0,
     right: 0,
-    face: 'ui',
+    face: 'sans',
   },
   {
     style: 'Heading3',
@@ -119,7 +130,7 @@ export const WORD_PARAGRAPHS: readonly WordParagraphMetric[] = [
     indent: fromTwips(397),
     hanging: 0,
     right: 0,
-    face: 'ui',
+    face: 'sans',
     color: '7F7F7F',
   },
   {
@@ -131,7 +142,7 @@ export const WORD_PARAGRAPHS: readonly WordParagraphMetric[] = [
     indent: fromTwips(567),
     hanging: 0,
     right: 0,
-    face: 'ui',
+    face: 'sans',
     color: '7F7F7F',
   },
   {
@@ -164,7 +175,7 @@ export const WORD_PARAGRAPHS: readonly WordParagraphMetric[] = [
     indent: 0,
     hanging: 0,
     right: 0,
-    face: 'ui',
+    face: 'sans',
   },
   {
     style: 'Normal',
@@ -175,7 +186,7 @@ export const WORD_PARAGRAPHS: readonly WordParagraphMetric[] = [
     indent: 0,
     hanging: 0,
     right: 0,
-    face: 'ui',
+    face: 'sans',
   },
   {
     style: 'Comment',
@@ -247,7 +258,10 @@ export const WORD_MARKS = {
   /** `Holding` — `w:bdr w:sz="2"`. */
   holdShort: { color: '538135', weight: fromEighths(2) },
   /** `2Holding` — `w:bdr w:sz="12"`. */
-  holdLong: { color: '538135', weight: fromEighths(12) },
+  /* 1 pt, `w:sz="8"`, in all three of his documents measured (the Lalitā
+     v9.3.1, the Śivopāsana v2, the Kanakadhārā v1.3). The template this was
+     first read from says 12; his documents are what a page must look like. */
+  holdLong: { color: '538135', weight: fromEighths(8) },
   /** `Svara` — URW Palladio ITU, BOLD, 18 pt, #943634. All four measured. */
   svara: { color: '943634', size: fromHalfPoints(36), face: MARK_FACES.palladio, bold: true },
   /** `Virama` — the svara's colour and size, Arial, and not bold. */
@@ -315,7 +329,10 @@ export const WORD_PAGE = {
   /** A4's width in points, as Word writes it (`w:pgSz w:w="11906"` twips). */
   widthPt: 11906 / 20,
   /**
-   * The text column, in points: A4 less both margins.
+   * The text column the screen themes' fluid type is measured against, in
+   * points: A4 less 25 mm each side. His files' own sheet is narrower at the
+   * right (`PAGE_SIZES.a4` in the layout package, 9 mm) — this is a reference
+   * width for type on a screen, not the page's margins.
    *
    * Here because it is what a document line actually has to fit in, and the
    * screen themes' fluid mantra size is expressed against it — the line reaches
@@ -347,3 +364,6 @@ export const WORD_SUBSTITUTES = {
   serif: { of: 'Times New Roman', use: 'Tinos' },
   ui: { of: 'Calibri', use: 'Carlito' },
 } as const;
+
+/* His `Title`, his `Normal` line, and his running head: `word-furniture.ts`. */
+export * from './word-furniture.js';

@@ -124,3 +124,13 @@ export type { Vocabulary } from './word/vocabulary.js';
 /* What a paragraph carries that rewriting it would lose. See `word/in-the-way.ts`. */
 export { inTheWay } from './word/in-the-way.js';
 export { wordRun } from './docx-read.js';
+export {
+  SAID, WORD_SCRIPTS, iastPositions, iastRunsOf, lettersOfIast, scriptOfLine, scriptWordRuns, wordInScript, wordScript,
+  type Said,
+} from './word/script-runs.js';
+export { withBodyEdits, type BodyEdits } from './word/body-edits.js';
+export { bridging } from './word/body.js';
+/* A part of a document with rules of its own. See `word/rule-parts.ts`. */
+export {
+  REGISTER_SETTING, partOf, partTag, partTitle, partXml, recordedRegisterIn, type PartRules,
+} from './word/rule-parts.js';

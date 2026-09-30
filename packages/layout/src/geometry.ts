@@ -46,16 +46,30 @@ const MARGINS_25MM: Margins = {
   top: pt(25), right: pt(25), bottom: pt(25), left: pt(25),
 };
 
+/*
+ * HIS SHEET, as his current files set it: 25 mm at the left, where the binding
+ * is — a line at the margin starts at x = 70.9 pt in his PDF — 15 mm at the
+ * top, 9 mm at the right, which his mantra line runs a further 5 mm into, and
+ * 10 mm at the bottom. The Lalitā v9.3.1, the Śivopāsana v2 and the sādhanā
+ * all say `w:top="851" w:right="510" w:bottom="567" w:left="1418"`. Only the
+ * left was ever measured before; the other three were his old template's
+ * 25 mm, and his pages ran shorter and narrower in ours than in his.
+ */
+const fromTwips = (t: number): number => t / 20;
+const MARGINS_HIS: Margins = {
+  top: fromTwips(851), right: fromTwips(510), bottom: fromTwips(567), left: fromTwips(1418),
+};
+
 /**
  * The page sizes an export can target.
  *
- * A4 first because it is what the owner's own documents use. Margins default to
- * 25 mm, which is what the Word template measures — a page preview with
- * different margins from the export is a preview of a different document.
+ * A4 first because it is what the owner's own documents use, with his margins.
+ * A page preview with different margins from the export is a preview of a
+ * different document, so the two share this table.
  */
 export const PAGE_SIZES: Readonly<Record<string, PageGeometry>> = {
   a4: {
-    id: 'a4', label: 'A4', width: pt(210), height: pt(297), margins: MARGINS_25MM,
+    id: 'a4', label: 'A4', width: pt(210), height: pt(297), margins: MARGINS_HIS,
   },
   letter: {
     id: 'letter', label: 'Letter', width: 612, height: 792, margins: MARGINS_25MM,

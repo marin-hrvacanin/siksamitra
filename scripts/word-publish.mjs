@@ -32,6 +32,7 @@ import { join, relative } from 'node:path';
 import {
   ADDIN_HOSTS, INSTALL_URL, manifestFaults, manifestFor, manifestVersion,
 } from './word-addin.mjs';
+import { macInstaller, windowsInstaller, windowsUninstaller } from './word-friend-installers.mjs';
 
 const ADDIN = 'apps/word-addin';
 const DIST = join(ADDIN, 'dist');
@@ -117,13 +118,20 @@ function publish(key, out, build) {
   cpSync(DIST, out, { recursive: true });
   writeFileSync(join(out, 'manifest.xml'), xml, 'utf8');
   writeFileSync(join(out, 'index.html'), landingPage(host), 'utf8');
+  /* For somebody who is not a developer: one file to double-click. */
+  writeFileSync(join(out, 'install-windows.cmd'), windowsInstaller(host), 'utf8');
+  writeFileSync(join(out, 'uninstall-windows.cmd'), windowsUninstaller(host), 'utf8');
+  writeFileSync(join(out, 'install-mac.command'), macInstaller(host), 'utf8');
 
   /* Every URL the manifest names has to be a file in the folder. This is the
      check that would have caught the icons: they were published at the root
      and the manifest asked for them under `/assets/`, which is a ribbon button
      with no icon and no error. */
   const escaped = host.base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const missing = [...xml.matchAll(new RegExp(`${escaped}/([^"'<>\\s]+)`, 'g'))]
+  /* A file is named without its query: `?v=` is the version stamp that makes
+     Word fetch an icon again after an update (`withIconVersion`), not part
+     of the file's name. */
+  const missing = [...xml.matchAll(new RegExp(`${escaped}/([^"'<>\\s?]+)`, 'g'))]
     .map((m) => m[1])
     .filter((path, i, all) => all.indexOf(path) === i)
     .filter((path) => !existsSync(join(out, path)));

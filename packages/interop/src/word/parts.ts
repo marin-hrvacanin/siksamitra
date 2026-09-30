@@ -51,6 +51,8 @@ export const WORD_PARTS = {
   documentRels: 'word/_rels/document.xml.rels',
   styles: 'word/styles.xml',
   settings: 'word/settings.xml',
+  /** The running head, when the style has one (`running-head.ts`). */
+  header: 'word/header1.xml',
   item: 'customXml/item1.xml',
   itemProps: 'customXml/itemProps1.xml',
   itemRels: 'customXml/_rels/item1.xml.rels',
@@ -100,7 +102,7 @@ const MEDIA_TYPES: Record<string, string> = {
 };
 
 /** @param extensions the picture extensions the package actually contains. */
-export function contentTypes(extensions: readonly string[] = []): string {
+export function contentTypes(extensions: readonly string[] = [], header = false): string {
   const wml = 'application/vnd.openxmlformats-officedocument.wordprocessingml';
   const over = (part: string, type: string): string =>
     `<Override PartName="/${part}" ContentType="${type}"/>`;
@@ -116,6 +118,7 @@ export function contentTypes(extensions: readonly string[] = []): string {
     + over(WORD_PARTS.document, `${wml}.document.main+xml`)
     + over(WORD_PARTS.styles, `${wml}.styles+xml`)
     + over(WORD_PARTS.settings, `${wml}.settings+xml`)
+    + (header ? over(WORD_PARTS.header, `${wml}.header+xml`) : '')
     + over(
       WORD_PARTS.itemProps,
       'application/vnd.openxmlformats-officedocument.customXmlProperties+xml',
@@ -147,6 +150,8 @@ export const FIRST_MEDIA_REL = 4;
 /** @param media the pictures in the package: their rel id and their target. */
 export function documentRels(
   media: readonly { relId: string; target: string }[] = [],
+  /** The running head's relationship id, when there is one. */
+  header?: string,
 ): string {
   return relationships([
     { id: 'rId1', type: `${OFFICE_REL}/styles`, target: 'styles.xml' },
@@ -155,6 +160,7 @@ export function documentRels(
        rather than loose in the zip. Without it Word has no reason to keep it. */
     { id: 'rId3', type: `${OFFICE_REL}/customXml`, target: '../customXml/item1.xml' },
     ...media.map((m) => ({ id: m.relId, type: `${OFFICE_REL}/image`, target: m.target })),
+    ...(header === undefined ? [] : [{ id: header, type: `${OFFICE_REL}/header`, target: 'header1.xml' }]),
   ]);
 }
 

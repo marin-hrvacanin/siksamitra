@@ -24,18 +24,22 @@ describe('the page, in points', () => {
     expect(MM_TO_PT).toBeCloseTo(2.8346, 3);
   });
 
-  it('has his own 25 mm margins, not an inch', () => {
-    /* Measured off his PDF: a line at the margin starts at x = 70.9pt. */
-    expect(A4.margins.left).toBeCloseTo(70.87, 1);
-    expect(A4.margins.top).toBeCloseTo(70.87, 1);
+  it('has his own margins, as his files set them — not an inch, and not 25 mm all round', () => {
+    /* Measured off his PDF: a line at the margin starts at x = 70.9pt. And
+       his current files' `w:pgMar`: top 851, right 510, bottom 567, left 1418
+       twips. */
+    expect(A4.margins.left).toBeCloseTo(70.9, 2);
+    expect(A4.margins.top).toBeCloseTo(42.55, 2);
+    expect(A4.margins.right).toBeCloseTo(25.5, 2);
+    expect(A4.margins.bottom).toBeCloseTo(28.35, 2);
   });
 
   it('has a text column of trim less margins', () => {
     const box = contentBox(A4);
-    expect(box.width).toBeCloseTo(A4.width - 2 * A4.margins.left, 3);
-    expect(box.height).toBeCloseTo(A4.height - 2 * A4.margins.top, 3);
-    // 453.5pt, which is what a line has to fit in.
-    expect(box.width).toBeCloseTo(453.5, 0);
+    expect(box.width).toBeCloseTo(A4.width - A4.margins.left - A4.margins.right, 3);
+    expect(box.height).toBeCloseTo(A4.height - A4.margins.top - A4.margins.bottom, 3);
+    // 498.9pt, which is what a line has to fit in: his 9 978 twips.
+    expect(box.width).toBeCloseTo(498.9, 0);
   });
 
   it('refuses a size it does not know, by name', () => {

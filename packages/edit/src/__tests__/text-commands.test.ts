@@ -142,3 +142,34 @@ describe('typing from the palette is never sticky', () => {
     expect(t.caret).toBe(2);
   });
 });
+
+describe('typing into a line written in an abugida', () => {
+  const abugida = { abugida: true } as const;
+  it('a vowel after a consonant takes the place of its a — क then ā is का', () => {
+    const t = typeAt(tm('ka'), 2, 2, 'ā', abugida);
+    expect(t.text).toBe('kā');
+    expect(t.caret).toBe(2);
+  });
+  it('so does a vocalic ṛ, and after an aspirate', () => {
+    expect(typeAt(tm('kha'), 3, 3, 'ṛ', abugida).text).toBe('khṛ');
+  });
+  it('an a typed there is an a of its own — कअ', () => {
+    expect(typeAt(tm('ka'), 2, 2, 'a', abugida).text).toBe('kaa');
+  });
+  it('a consonant goes after the a, as it is written', () => {
+    expect(typeAt(tm('ka'), 2, 2, 'ś', abugida).text).toBe('kaś');
+  });
+  it('a vowel after a vowel, or at a word’s start, stands alone', () => {
+    expect(typeAt(tm('kai'), 3, 3, 'ā', abugida).text).toBe('kaiā');
+    expect(typeAt(tm('ka '), 3, 3, 'ā', abugida).text).toBe('ka ā');
+  });
+  it('and in IAST nothing of the kind happens', () => {
+    expect(typeAt(tm('ka'), 2, 2, 'ā').text).toBe('kaā');
+  });
+  it('a mark on the replaced a stays on the vowel that took its place', () => {
+    const accented = { text: 'ka', marks: applyCommand(tm('ka'), 1, 2, { k: 'svara', v: 'svarita' }).marks };
+    const t = typeAt(accented, 2, 2, 'ā', abugida);
+    expect(t.text).toBe('kā');
+    expect(t.marks.filter((m) => m.k === 'svara')).toEqual([expect.objectContaining({ from: 1, to: 2 })]);
+  });
+});

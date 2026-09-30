@@ -164,6 +164,17 @@ export const FAMILIES = [
 export const DEFAULT_SUBSETS = ['latin', 'latin-ext'];
 
 /**
+ * THE FACES THE WORD ADD-IN'S OWN PAGES DRAW IN — Settings and the dialogs.
+ * The interface face; the verse face a palette key is drawn in, which for a
+ * Word document is Arial's stand-in, Arimo (`document-themes.ts`); and the
+ * app's default verse faces, for a key drawn outside a Word theme. `gen-css.mjs`
+ * writes their rules, and only theirs, for the add-in: the add-in is loaded
+ * over the network by every Word that opens it, and the other seven families
+ * would be nothing but weight.
+ */
+export const ADDIN_FAMILIES = ['ibm-plex-sans', 'arimo', 'gentium-book-plus', 'noto-serif-devanagari'];
+
+/**
  * The face every text stack ends with.
  *
  * Measured, not assumed: of the four text faces, only Gentium Book Plus and

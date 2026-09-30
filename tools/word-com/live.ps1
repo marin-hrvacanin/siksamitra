@@ -177,6 +177,23 @@ try {
     $his.Close(0)
   }
 
+  # ══ 5. a line in every script, invisible markers and all ═════════════════
+  # What a Devanagari, Telugu or Tamil line cannot show it says in characters
+  # that show nothing. Only Word can say whether Word keeps them.
+  if ($plan.scripts) {
+    $result.scripts = [ordered]@{}
+    foreach ($one in $plan.scripts.PSObject.Properties) {
+      Step "lines in $($one.Name)"
+      $doc = $word.Documents.Add()
+      $doc.Content.InsertXML((Get-Content -LiteralPath (Join-Path $dir $one.Value) -Raw -Encoding UTF8))
+      $result.scripts[$one.Name] = [ordered]@{
+        body = Save-Text "live-script-$($one.Name).xml" $doc.Content.WordOpenXML
+        text = $doc.Content.Text
+      }
+      $doc.Close(0)
+    }
+  }
+
   try { $fresh.Close(0) } catch { }
 } finally {
   try { $word.Quit(0) } catch { }

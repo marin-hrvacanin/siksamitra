@@ -71,21 +71,24 @@
     xsi:type="VersionOverridesV1_0">
     <Hosts>
       <Host xsi:type="Document">
+        <Runtimes>
+          <Runtime resid="sm.Taskpane.Url" lifetime="long"/>
+        </Runtimes>
         <DesktopFormFactor>
           <GetStarted>
             <Title resid="sm.GetStarted.Title"/>
             <Description resid="sm.GetStarted.Description"/>
             <LearnMoreUrl resid="sm.Support.Url"/>
           </GetStarted>
-          <FunctionFile resid="sm.Commands.Url"/>
+          <FunctionFile resid="sm.Taskpane.Url"/>
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
             <CustomTab id="sm.Tab">
               <Group id="sm.grp.holding">
                 <Label resid="sm.grp.holding"/>
                 <Icon>
-                  <bt:Image size="16" resid="sm.hold-short.16"/>
-                  <bt:Image size="32" resid="sm.hold-short.32"/>
-                  <bt:Image size="80" resid="sm.hold-short.80"/>
+                  <bt:Image size="16" resid="sm.i.hold-short.16"/>
+                  <bt:Image size="32" resid="sm.i.hold-short.32"/>
+                  <bt:Image size="80" resid="sm.i.hold-short.80"/>
                 </Icon>
                 <Control xsi:type="Button" id="sm.tab.hold-short">
                   <Label resid="sm.hold-short.L"/>
@@ -94,9 +97,9 @@
                     <Description resid="sm.hold-short.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.hold-short.16"/>
-                    <bt:Image size="32" resid="sm.hold-short.32"/>
-                    <bt:Image size="80" resid="sm.hold-short.80"/>
+                    <bt:Image size="16" resid="sm.i.hold-short.16"/>
+                    <bt:Image size="32" resid="sm.i.hold-short.32"/>
+                    <bt:Image size="80" resid="sm.i.hold-short.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>smHoldShort</FunctionName>
@@ -109,21 +112,36 @@
                     <Description resid="sm.hold-long.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.hold-long.16"/>
-                    <bt:Image size="32" resid="sm.hold-long.32"/>
-                    <bt:Image size="80" resid="sm.hold-long.80"/>
+                    <bt:Image size="16" resid="sm.i.hold-long.16"/>
+                    <bt:Image size="32" resid="sm.i.hold-long.32"/>
+                    <bt:Image size="80" resid="sm.i.hold-long.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>smHoldLong</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.hold-clear">
+                  <Label resid="sm.hold-clear.L"/>
+                  <Supertip>
+                    <Title resid="sm.hold-clear.L"/>
+                    <Description resid="sm.hold-clear.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.marks-clear.16"/>
+                    <bt:Image size="32" resid="sm.i.marks-clear.32"/>
+                    <bt:Image size="80" resid="sm.i.marks-clear.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smHoldClear</FunctionName>
                   </Action>
                 </Control>
               </Group>
               <Group id="sm.grp.svara">
                 <Label resid="sm.grp.svara"/>
                 <Icon>
-                  <bt:Image size="16" resid="sm.svara-anudatta.16"/>
-                  <bt:Image size="32" resid="sm.svara-anudatta.32"/>
-                  <bt:Image size="80" resid="sm.svara-anudatta.80"/>
+                  <bt:Image size="16" resid="sm.i.svara-anudatta.16"/>
+                  <bt:Image size="32" resid="sm.i.svara-anudatta.32"/>
+                  <bt:Image size="80" resid="sm.i.svara-anudatta.80"/>
                 </Icon>
                 <Control xsi:type="Button" id="sm.tab.svara-anudatta">
                   <Label resid="sm.svara-anudatta.L"/>
@@ -132,9 +150,9 @@
                     <Description resid="sm.svara-anudatta.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.svara-anudatta.16"/>
-                    <bt:Image size="32" resid="sm.svara-anudatta.32"/>
-                    <bt:Image size="80" resid="sm.svara-anudatta.80"/>
+                    <bt:Image size="16" resid="sm.i.svara-anudatta.16"/>
+                    <bt:Image size="32" resid="sm.i.svara-anudatta.32"/>
+                    <bt:Image size="80" resid="sm.i.svara-anudatta.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>smSvaraAnudatta</FunctionName>
@@ -147,9 +165,9 @@
                     <Description resid="sm.svara-svarita.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.svara-svarita.16"/>
-                    <bt:Image size="32" resid="sm.svara-svarita.32"/>
-                    <bt:Image size="80" resid="sm.svara-svarita.80"/>
+                    <bt:Image size="16" resid="sm.i.svara-svarita.16"/>
+                    <bt:Image size="32" resid="sm.i.svara-svarita.32"/>
+                    <bt:Image size="80" resid="sm.i.svara-svarita.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>smSvaraSvarita</FunctionName>
@@ -162,9 +180,9 @@
                     <Description resid="sm.svara-dirgha.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.svara-dirgha.16"/>
-                    <bt:Image size="32" resid="sm.svara-dirgha.32"/>
-                    <bt:Image size="80" resid="sm.svara-dirgha.80"/>
+                    <bt:Image size="16" resid="sm.i.svara-dirgha.16"/>
+                    <bt:Image size="32" resid="sm.i.svara-dirgha.32"/>
+                    <bt:Image size="80" resid="sm.i.svara-dirgha.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>smSvaraDirgha</FunctionName>
@@ -174,9 +192,9 @@
               <Group id="sm.grp.change">
                 <Label resid="sm.grp.change"/>
                 <Icon>
-                  <bt:Image size="16" resid="sm.change-anusvara.16"/>
-                  <bt:Image size="32" resid="sm.change-anusvara.32"/>
-                  <bt:Image size="80" resid="sm.change-anusvara.80"/>
+                  <bt:Image size="16" resid="sm.i.change-anusvara.16"/>
+                  <bt:Image size="32" resid="sm.i.change-anusvara.32"/>
+                  <bt:Image size="80" resid="sm.i.change-anusvara.80"/>
                 </Icon>
                 <Control xsi:type="Button" id="sm.tab.change-anusvara">
                   <Label resid="sm.change-anusvara.L"/>
@@ -185,9 +203,9 @@
                     <Description resid="sm.change-anusvara.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.change-anusvara.16"/>
-                    <bt:Image size="32" resid="sm.change-anusvara.32"/>
-                    <bt:Image size="80" resid="sm.change-anusvara.80"/>
+                    <bt:Image size="16" resid="sm.i.change-anusvara.16"/>
+                    <bt:Image size="32" resid="sm.i.change-anusvara.32"/>
+                    <bt:Image size="80" resid="sm.i.change-anusvara.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>smChangeAnusvara</FunctionName>
@@ -200,9 +218,9 @@
                     <Description resid="sm.change-visarga.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.change-visarga.16"/>
-                    <bt:Image size="32" resid="sm.change-visarga.32"/>
-                    <bt:Image size="80" resid="sm.change-visarga.80"/>
+                    <bt:Image size="16" resid="sm.i.change-visarga.16"/>
+                    <bt:Image size="32" resid="sm.i.change-visarga.32"/>
+                    <bt:Image size="80" resid="sm.i.change-visarga.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>smChangeVisarga</FunctionName>
@@ -212,9 +230,9 @@
               <Group id="sm.grp.aids">
                 <Label resid="sm.grp.aids"/>
                 <Icon>
-                  <bt:Image size="16" resid="sm.candrabindu.16"/>
-                  <bt:Image size="32" resid="sm.candrabindu.32"/>
-                  <bt:Image size="80" resid="sm.candrabindu.80"/>
+                  <bt:Image size="16" resid="sm.i.candrabindu.16"/>
+                  <bt:Image size="32" resid="sm.i.candrabindu.32"/>
+                  <bt:Image size="80" resid="sm.i.candrabindu.80"/>
                 </Icon>
                 <Control xsi:type="Button" id="sm.tab.candrabindu">
                   <Label resid="sm.candrabindu.L"/>
@@ -223,9 +241,9 @@
                     <Description resid="sm.candrabindu.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.candrabindu.16"/>
-                    <bt:Image size="32" resid="sm.candrabindu.32"/>
-                    <bt:Image size="80" resid="sm.candrabindu.80"/>
+                    <bt:Image size="16" resid="sm.i.candrabindu.16"/>
+                    <bt:Image size="32" resid="sm.i.candrabindu.32"/>
+                    <bt:Image size="80" resid="sm.i.candrabindu.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>smCandrabindu</FunctionName>
@@ -238,96 +256,1254 @@
                     <Description resid="sm.svarabhakti.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.svarabhakti.16"/>
-                    <bt:Image size="32" resid="sm.svarabhakti.32"/>
-                    <bt:Image size="80" resid="sm.svarabhakti.80"/>
+                    <bt:Image size="16" resid="sm.i.svarabhakti.16"/>
+                    <bt:Image size="32" resid="sm.i.svarabhakti.32"/>
+                    <bt:Image size="80" resid="sm.i.svarabhakti.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
                     <FunctionName>smSvarabhakti</FunctionName>
                   </Action>
                 </Control>
-                <Control xsi:type="Button" id="sm.tab.bar-short">
-                  <Label resid="sm.bar-short.L"/>
+                <Control xsi:type="Button" id="sm.tab.pause-short">
+                  <Label resid="sm.pause-short.L"/>
                   <Supertip>
-                    <Title resid="sm.bar-short.L"/>
-                    <Description resid="sm.bar-short.T"/>
+                    <Title resid="sm.pause-short.L"/>
+                    <Description resid="sm.pause-short.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.bar-short.16"/>
-                    <bt:Image size="32" resid="sm.bar-short.32"/>
-                    <bt:Image size="80" resid="sm.bar-short.80"/>
+                    <bt:Image size="16" resid="sm.i.bar-short.16"/>
+                    <bt:Image size="32" resid="sm.i.bar-short.32"/>
+                    <bt:Image size="80" resid="sm.i.bar-short.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
-                    <FunctionName>smBarShort</FunctionName>
+                    <FunctionName>smPauseShort</FunctionName>
                   </Action>
                 </Control>
-                <Control xsi:type="Button" id="sm.tab.bar-long">
-                  <Label resid="sm.bar-long.L"/>
+                <Control xsi:type="Button" id="sm.tab.pause-long">
+                  <Label resid="sm.pause-long.L"/>
                   <Supertip>
-                    <Title resid="sm.bar-long.L"/>
-                    <Description resid="sm.bar-long.T"/>
+                    <Title resid="sm.pause-long.L"/>
+                    <Description resid="sm.pause-long.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.bar-long.16"/>
-                    <bt:Image size="32" resid="sm.bar-long.32"/>
-                    <bt:Image size="80" resid="sm.bar-long.80"/>
+                    <bt:Image size="16" resid="sm.i.bar-long.16"/>
+                    <bt:Image size="32" resid="sm.i.bar-long.32"/>
+                    <bt:Image size="80" resid="sm.i.bar-long.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
-                    <FunctionName>smBarLong</FunctionName>
+                    <FunctionName>smPauseLong</FunctionName>
                   </Action>
                 </Control>
-                <Control xsi:type="Button" id="sm.tab.marks-clear">
-                  <Label resid="sm.marks-clear.L"/>
+                <Control xsi:type="Button" id="sm.tab.clear-all">
+                  <Label resid="sm.clear-all.L"/>
                   <Supertip>
-                    <Title resid="sm.marks-clear.L"/>
-                    <Description resid="sm.marks-clear.T"/>
+                    <Title resid="sm.clear-all.L"/>
+                    <Description resid="sm.clear-all.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.marks-clear.16"/>
-                    <bt:Image size="32" resid="sm.marks-clear.32"/>
-                    <bt:Image size="80" resid="sm.marks-clear.80"/>
+                    <bt:Image size="16" resid="sm.i.marks-clear.16"/>
+                    <bt:Image size="32" resid="sm.i.marks-clear.32"/>
+                    <bt:Image size="80" resid="sm.i.marks-clear.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
-                    <FunctionName>smMarksClear</FunctionName>
+                    <FunctionName>smClearAll</FunctionName>
                   </Action>
+                </Control>
+              </Group>
+              <Group id="sm.grp.insert">
+                <Label resid="sm.grp.insert"/>
+                <Icon>
+                  <bt:Image size="16" resid="sm.i.keyboard.16"/>
+                  <bt:Image size="32" resid="sm.i.keyboard.32"/>
+                  <bt:Image size="80" resid="sm.i.keyboard.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="sm.tab.typing-help">
+                  <Label resid="sm.typing-help.L"/>
+                  <Supertip>
+                    <Title resid="sm.typing-help.L"/>
+                    <Description resid="sm.typing-help.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.keyboard.16"/>
+                    <bt:Image size="32" resid="sm.i.keyboard.32"/>
+                    <bt:Image size="80" resid="sm.i.keyboard.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smTypingHelp</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Menu" id="sm.tab.ins-vowels">
+                  <Label resid="sm.ins-vowels.L"/>
+                  <Supertip>
+                    <Title resid="sm.ins-vowels.L"/>
+                    <Description resid="sm.ins-vowels.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.ch-101.16"/>
+                    <bt:Image size="32" resid="sm.i.ch-101.32"/>
+                    <bt:Image size="80" resid="sm.i.ch-101.80"/>
+                  </Icon>
+                  <Items>
+                    <Item id="sm.tab.ins-101">
+                      <Label resid="sm.ins-101.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-101.L"/>
+                        <Description resid="sm.ins-101.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-101.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-101.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-101.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_101</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-12b">
+                      <Label resid="sm.ins-12b.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-12b.L"/>
+                        <Description resid="sm.ins-12b.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-12b.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-12b.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-12b.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_12b</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-16b">
+                      <Label resid="sm.ins-16b.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-16b.L"/>
+                        <Description resid="sm.ins-16b.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-16b.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-16b.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-16b.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_16b</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e5b">
+                      <Label resid="sm.ins-1e5b.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e5b.L"/>
+                        <Description resid="sm.ins-1e5b.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e5b.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e5b.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e5b.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e5b</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e5d">
+                      <Label resid="sm.ins-1e5d.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e5d.L"/>
+                        <Description resid="sm.ins-1e5d.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e5d.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e5d.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e5d.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e5d</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e37">
+                      <Label resid="sm.ins-1e37.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e37.L"/>
+                        <Description resid="sm.ins-1e37.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e37.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e37.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e37.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e37</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e39">
+                      <Label resid="sm.ins-1e39.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e39.L"/>
+                        <Description resid="sm.ins-1e39.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e39.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e39.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e39.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e39</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e41">
+                      <Label resid="sm.ins-1e41.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e41.L"/>
+                        <Description resid="sm.ins-1e41.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e41.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e41.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e41.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e41</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e25">
+                      <Label resid="sm.ins-1e25.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e25.L"/>
+                        <Description resid="sm.ins-1e25.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e25.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e25.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e25.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e25</FunctionName>
+                      </Action>
+                    </Item>
+                  </Items>
+                </Control>
+                <Control xsi:type="Menu" id="sm.tab.ins-consonants">
+                  <Label resid="sm.ins-consonants.L"/>
+                  <Supertip>
+                    <Title resid="sm.ins-consonants.L"/>
+                    <Description resid="sm.ins-consonants.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.ch-1e6d.16"/>
+                    <bt:Image size="32" resid="sm.i.ch-1e6d.32"/>
+                    <bt:Image size="80" resid="sm.i.ch-1e6d.80"/>
+                  </Icon>
+                  <Items>
+                    <Item id="sm.tab.ins-6b">
+                      <Label resid="sm.ins-6b.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-6b.L"/>
+                        <Description resid="sm.ins-6b.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-6b.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-6b.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-6b.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_6b</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-6b-68">
+                      <Label resid="sm.ins-6b-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-6b-68.L"/>
+                        <Description resid="sm.ins-6b-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-6b-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-6b-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-6b-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_6b_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-67">
+                      <Label resid="sm.ins-67.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-67.L"/>
+                        <Description resid="sm.ins-67.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-67.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-67.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-67.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_67</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-67-68">
+                      <Label resid="sm.ins-67-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-67-68.L"/>
+                        <Description resid="sm.ins-67-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-67-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-67-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-67-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_67_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e45">
+                      <Label resid="sm.ins-1e45.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e45.L"/>
+                        <Description resid="sm.ins-1e45.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e45.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e45.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e45.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e45</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-63">
+                      <Label resid="sm.ins-63.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-63.L"/>
+                        <Description resid="sm.ins-63.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-63.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-63.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-63.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_63</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-63-68">
+                      <Label resid="sm.ins-63-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-63-68.L"/>
+                        <Description resid="sm.ins-63-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-63-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-63-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-63-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_63_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-6a">
+                      <Label resid="sm.ins-6a.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-6a.L"/>
+                        <Description resid="sm.ins-6a.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-6a.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-6a.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-6a.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_6a</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-6a-68">
+                      <Label resid="sm.ins-6a-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-6a-68.L"/>
+                        <Description resid="sm.ins-6a-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-6a-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-6a-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-6a-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_6a_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-f1">
+                      <Label resid="sm.ins-f1.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-f1.L"/>
+                        <Description resid="sm.ins-f1.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-f1.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-f1.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-f1.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_f1</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e6d">
+                      <Label resid="sm.ins-1e6d.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e6d.L"/>
+                        <Description resid="sm.ins-1e6d.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e6d.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e6d.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e6d.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e6d</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e6d-68">
+                      <Label resid="sm.ins-1e6d-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e6d-68.L"/>
+                        <Description resid="sm.ins-1e6d-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e6d-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e6d-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e6d-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e6d_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e0d">
+                      <Label resid="sm.ins-1e0d.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e0d.L"/>
+                        <Description resid="sm.ins-1e0d.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e0d.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e0d.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e0d.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e0d</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e0d-68">
+                      <Label resid="sm.ins-1e0d-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e0d-68.L"/>
+                        <Description resid="sm.ins-1e0d-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e0d-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e0d-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e0d-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e0d_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e47">
+                      <Label resid="sm.ins-1e47.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e47.L"/>
+                        <Description resid="sm.ins-1e47.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e47.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e47.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e47.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e47</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-74">
+                      <Label resid="sm.ins-74.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-74.L"/>
+                        <Description resid="sm.ins-74.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-74.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-74.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-74.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_74</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-74-68">
+                      <Label resid="sm.ins-74-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-74-68.L"/>
+                        <Description resid="sm.ins-74-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-74-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-74-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-74-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_74_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-64">
+                      <Label resid="sm.ins-64.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-64.L"/>
+                        <Description resid="sm.ins-64.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-64.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-64.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-64.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_64</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-64-68">
+                      <Label resid="sm.ins-64-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-64-68.L"/>
+                        <Description resid="sm.ins-64-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-64-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-64-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-64-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_64_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-6e">
+                      <Label resid="sm.ins-6e.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-6e.L"/>
+                        <Description resid="sm.ins-6e.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-6e.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-6e.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-6e.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_6e</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-70">
+                      <Label resid="sm.ins-70.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-70.L"/>
+                        <Description resid="sm.ins-70.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-70.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-70.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-70.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_70</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-70-68">
+                      <Label resid="sm.ins-70-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-70-68.L"/>
+                        <Description resid="sm.ins-70-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-70-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-70-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-70-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_70_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-62">
+                      <Label resid="sm.ins-62.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-62.L"/>
+                        <Description resid="sm.ins-62.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-62.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-62.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-62.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_62</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-62-68">
+                      <Label resid="sm.ins-62-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-62-68.L"/>
+                        <Description resid="sm.ins-62-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-62-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-62-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-62-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_62_68</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-6d">
+                      <Label resid="sm.ins-6d.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-6d.L"/>
+                        <Description resid="sm.ins-6d.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-6d.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-6d.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-6d.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_6d</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-79">
+                      <Label resid="sm.ins-79.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-79.L"/>
+                        <Description resid="sm.ins-79.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-79.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-79.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-79.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_79</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-72">
+                      <Label resid="sm.ins-72.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-72.L"/>
+                        <Description resid="sm.ins-72.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-72.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-72.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-72.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_72</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-6c">
+                      <Label resid="sm.ins-6c.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-6c.L"/>
+                        <Description resid="sm.ins-6c.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-6c.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-6c.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-6c.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_6c</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-76">
+                      <Label resid="sm.ins-76.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-76.L"/>
+                        <Description resid="sm.ins-76.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-76.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-76.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-76.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_76</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-15b">
+                      <Label resid="sm.ins-15b.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-15b.L"/>
+                        <Description resid="sm.ins-15b.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-15b.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-15b.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-15b.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_15b</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e63">
+                      <Label resid="sm.ins-1e63.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e63.L"/>
+                        <Description resid="sm.ins-1e63.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e63.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e63.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e63.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e63</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-73">
+                      <Label resid="sm.ins-73.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-73.L"/>
+                        <Description resid="sm.ins-73.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-73.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-73.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-73.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_73</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-68">
+                      <Label resid="sm.ins-68.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-68.L"/>
+                        <Description resid="sm.ins-68.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-68.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-68.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-68.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_68</FunctionName>
+                      </Action>
+                    </Item>
+                  </Items>
+                </Control>
+                <Control xsi:type="Menu" id="sm.tab.ins-vedic">
+                  <Label resid="sm.ins-vedic.L"/>
+                  <Supertip>
+                    <Title resid="sm.ins-vedic.L"/>
+                    <Description resid="sm.ins-vedic.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.ch-964.16"/>
+                    <bt:Image size="32" resid="sm.i.ch-964.32"/>
+                    <bt:Image size="80" resid="sm.i.ch-964.80"/>
+                  </Icon>
+                  <Items>
+                    <Item id="sm.tab.ins-1e3b">
+                      <Label resid="sm.ins-1e3b.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e3b.L"/>
+                        <Description resid="sm.ins-1e3b.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e3b.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e3b.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e3b.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e3b</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-1e43">
+                      <Label resid="sm.ins-1e43.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-1e43.L"/>
+                        <Description resid="sm.ins-1e43.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-1e43.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-1e43.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-1e43.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_1e43</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-964">
+                      <Label resid="sm.ins-964.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-964.L"/>
+                        <Description resid="sm.ins-964.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-964.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-964.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-964.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_964</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-965">
+                      <Label resid="sm.ins-965.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-965.L"/>
+                        <Description resid="sm.ins-965.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-965.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-965.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-965.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_965</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-a8f3">
+                      <Label resid="sm.ins-a8f3.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-a8f3.L"/>
+                        <Description resid="sm.ins-a8f3.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-a8f3.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-a8f3.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-a8f3.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_a8f3</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-331">
+                      <Label resid="sm.ins-331.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-331.L"/>
+                        <Description resid="sm.ins-331.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-61-331.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-61-331.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-61-331.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_331</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-30d">
+                      <Label resid="sm.ins-30d.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-30d.L"/>
+                        <Description resid="sm.ins-30d.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-61-30d.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-61-30d.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-61-30d.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_30d</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-30e">
+                      <Label resid="sm.ins-30e.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-30e.L"/>
+                        <Description resid="sm.ins-30e.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-61-30e.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-61-30e.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-61-30e.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_30e</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-310">
+                      <Label resid="sm.ins-310.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-310.L"/>
+                        <Description resid="sm.ins-310.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-6d-310.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-6d-310.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-6d-310.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_310</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-a8fb">
+                      <Label resid="sm.ins-a8fb.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-a8fb.L"/>
+                        <Description resid="sm.ins-a8fb.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-a8fb.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-a8fb.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-a8fb.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_a8fb</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-305">
+                      <Label resid="sm.ins-305.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-305.L"/>
+                        <Description resid="sm.ins-305.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-61-305.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-61-305.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-61-305.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_305</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-2ce">
+                      <Label resid="sm.ins-2ce.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-2ce.L"/>
+                        <Description resid="sm.ins-2ce.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-2ce.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-2ce.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-2ce.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_2ce</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.ins-93d">
+                      <Label resid="sm.ins-93d.L"/>
+                      <Supertip>
+                        <Title resid="sm.ins-93d.L"/>
+                        <Description resid="sm.ins-93d.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-93d.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-93d.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-93d.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smIns_93d</FunctionName>
+                      </Action>
+                    </Item>
+                  </Items>
+                </Control>
+              </Group>
+              <Group id="sm.grp.script">
+                <Label resid="sm.grp.script"/>
+                <Icon>
+                  <bt:Image size="16" resid="sm.i.script.16"/>
+                  <bt:Image size="32" resid="sm.i.script.32"/>
+                  <bt:Image size="80" resid="sm.i.script.80"/>
+                </Icon>
+                <Control xsi:type="Menu" id="sm.tab.script">
+                  <Label resid="sm.script.L"/>
+                  <Supertip>
+                    <Title resid="sm.script.L"/>
+                    <Description resid="sm.script.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.script.16"/>
+                    <bt:Image size="32" resid="sm.i.script.32"/>
+                    <bt:Image size="80" resid="sm.i.script.80"/>
+                  </Icon>
+                  <Items>
+                    <Item id="sm.tab.script-iast">
+                      <Label resid="sm.script-iast.L"/>
+                      <Supertip>
+                        <Title resid="sm.script-iast.L"/>
+                        <Description resid="sm.script-iast.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-101.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-101.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-101.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smScriptIast</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.script-deva">
+                      <Label resid="sm.script-deva.L"/>
+                      <Supertip>
+                        <Title resid="sm.script-deva.L"/>
+                        <Description resid="sm.script-deva.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-905.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-905.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-905.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smScriptDeva</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.script-tel">
+                      <Label resid="sm.script-tel.L"/>
+                      <Supertip>
+                        <Title resid="sm.script-tel.L"/>
+                        <Description resid="sm.script-tel.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-c05.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-c05.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-c05.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smScriptTel</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.script-tam">
+                      <Label resid="sm.script-tam.L"/>
+                      <Supertip>
+                        <Title resid="sm.script-tam.L"/>
+                        <Description resid="sm.script-tam.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.ch-b85.16"/>
+                        <bt:Image size="32" resid="sm.i.ch-b85.32"/>
+                        <bt:Image size="80" resid="sm.i.ch-b85.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smScriptTam</FunctionName>
+                      </Action>
+                    </Item>
+                  </Items>
                 </Control>
               </Group>
               <Group id="sm.grp.rules">
                 <Label resid="sm.grp.rules"/>
                 <Icon>
-                  <bt:Image size="16" resid="sm.auto-keep.16"/>
-                  <bt:Image size="32" resid="sm.auto-keep.32"/>
-                  <bt:Image size="80" resid="sm.auto-keep.80"/>
+                  <bt:Image size="16" resid="sm.i.tree.16"/>
+                  <bt:Image size="32" resid="sm.i.tree.32"/>
+                  <bt:Image size="80" resid="sm.i.tree.80"/>
                 </Icon>
-                <Control xsi:type="Button" id="sm.tab.auto-keep">
-                  <Label resid="sm.auto-keep.L"/>
+                <Control xsi:type="Menu" id="sm.tab.register">
+                  <Label resid="sm.register.L"/>
                   <Supertip>
-                    <Title resid="sm.auto-keep.L"/>
-                    <Description resid="sm.auto-keep.T"/>
+                    <Title resid="sm.register.L"/>
+                    <Description resid="sm.register.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.auto-keep.16"/>
-                    <bt:Image size="32" resid="sm.auto-keep.32"/>
-                    <bt:Image size="80" resid="sm.auto-keep.80"/>
+                    <bt:Image size="16" resid="sm.i.tree.16"/>
+                    <bt:Image size="32" resid="sm.i.tree.32"/>
+                    <bt:Image size="80" resid="sm.i.tree.80"/>
+                  </Icon>
+                  <Items>
+                    <Item id="sm.tab.reg-taittiriya">
+                      <Label resid="sm.reg-taittiriya.L"/>
+                      <Supertip>
+                        <Title resid="sm.reg-taittiriya.L"/>
+                        <Description resid="sm.reg-taittiriya.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.tree.16"/>
+                        <bt:Image size="32" resid="sm.i.tree.32"/>
+                        <bt:Image size="80" resid="sm.i.tree.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smRegTaittiriya</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.reg-rigveda">
+                      <Label resid="sm.reg-rigveda.L"/>
+                      <Supertip>
+                        <Title resid="sm.reg-rigveda.L"/>
+                        <Description resid="sm.reg-rigveda.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.tree.16"/>
+                        <bt:Image size="32" resid="sm.i.tree.32"/>
+                        <bt:Image size="80" resid="sm.i.tree.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smRegRigveda</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.reg-sukla-yajurveda">
+                      <Label resid="sm.reg-sukla-yajurveda.L"/>
+                      <Supertip>
+                        <Title resid="sm.reg-sukla-yajurveda.L"/>
+                        <Description resid="sm.reg-sukla-yajurveda.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.tree.16"/>
+                        <bt:Image size="32" resid="sm.i.tree.32"/>
+                        <bt:Image size="80" resid="sm.i.tree.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smRegSuklaYajurveda</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.reg-smarta">
+                      <Label resid="sm.reg-smarta.L"/>
+                      <Supertip>
+                        <Title resid="sm.reg-smarta.L"/>
+                        <Description resid="sm.reg-smarta.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.tree.16"/>
+                        <bt:Image size="32" resid="sm.i.tree.32"/>
+                        <bt:Image size="80" resid="sm.i.tree.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smRegSmarta</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.reg-prose">
+                      <Label resid="sm.reg-prose.L"/>
+                      <Supertip>
+                        <Title resid="sm.reg-prose.L"/>
+                        <Description resid="sm.reg-prose.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.tree.16"/>
+                        <bt:Image size="32" resid="sm.i.tree.32"/>
+                        <bt:Image size="80" resid="sm.i.tree.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smRegProse</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.part-new">
+                      <Label resid="sm.part-new.L"/>
+                      <Supertip>
+                        <Title resid="sm.part-new.L"/>
+                        <Description resid="sm.part-new.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.part-new.16"/>
+                        <bt:Image size="32" resid="sm.i.part-new.32"/>
+                        <bt:Image size="80" resid="sm.i.part-new.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smPartNew</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="sm.tab.part-dissolve">
+                      <Label resid="sm.part-dissolve.L"/>
+                      <Supertip>
+                        <Title resid="sm.part-dissolve.L"/>
+                        <Description resid="sm.part-dissolve.T"/>
+                      </Supertip>
+                      <Icon>
+                        <bt:Image size="16" resid="sm.i.part-dissolve.16"/>
+                        <bt:Image size="32" resid="sm.i.part-dissolve.32"/>
+                        <bt:Image size="80" resid="sm.i.part-dissolve.80"/>
+                      </Icon>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>smPartDissolve</FunctionName>
+                      </Action>
+                    </Item>
+                  </Items>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.reapply">
+                  <Label resid="sm.reapply.L"/>
+                  <Supertip>
+                    <Title resid="sm.reapply.L"/>
+                    <Description resid="sm.reapply.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.auto-keep.16"/>
+                    <bt:Image size="32" resid="sm.i.auto-keep.32"/>
+                    <bt:Image size="80" resid="sm.i.auto-keep.80"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
-                    <FunctionName>smAutoKeep</FunctionName>
+                    <FunctionName>smReapply</FunctionName>
                   </Action>
                 </Control>
-                <Control xsi:type="Button" id="sm.tab.panel-open">
-                  <Label resid="sm.panel-open.L"/>
+                <Control xsi:type="Button" id="sm.tab.reapply-mine-out">
+                  <Label resid="sm.reapply-mine-out.L"/>
                   <Supertip>
-                    <Title resid="sm.panel-open.L"/>
-                    <Description resid="sm.panel-open.T"/>
+                    <Title resid="sm.reapply-mine-out.L"/>
+                    <Description resid="sm.reapply-mine-out.T"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="sm.panel-open.16"/>
-                    <bt:Image size="32" resid="sm.panel-open.32"/>
-                    <bt:Image size="80" resid="sm.panel-open.80"/>
+                    <bt:Image size="16" resid="sm.i.auto-replace.16"/>
+                    <bt:Image size="32" resid="sm.i.auto-replace.32"/>
+                    <bt:Image size="80" resid="sm.i.auto-replace.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smReapplyMineOut</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              <Group id="sm.grp.document">
+                <Label resid="sm.grp.document"/>
+                <Icon>
+                  <bt:Image size="16" resid="sm.i.style-import.16"/>
+                  <bt:Image size="32" resid="sm.i.style-import.32"/>
+                  <bt:Image size="80" resid="sm.i.style-import.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="sm.tab.import-styles">
+                  <Label resid="sm.import-styles.L"/>
+                  <Supertip>
+                    <Title resid="sm.import-styles.L"/>
+                    <Description resid="sm.import-styles.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.style-import.16"/>
+                    <bt:Image size="32" resid="sm.i.style-import.32"/>
+                    <bt:Image size="80" resid="sm.i.style-import.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smImportStyles</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.specimen">
+                  <Label resid="sm.specimen.L"/>
+                  <Supertip>
+                    <Title resid="sm.specimen.L"/>
+                    <Description resid="sm.specimen.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.document.16"/>
+                    <bt:Image size="32" resid="sm.i.document.32"/>
+                    <bt:Image size="80" resid="sm.i.document.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smSpecimen</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.settings">
+                  <Label resid="sm.settings.L"/>
+                  <Supertip>
+                    <Title resid="sm.settings.L"/>
+                    <Description resid="sm.settings.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.settings.16"/>
+                    <bt:Image size="32" resid="sm.i.settings.32"/>
+                    <bt:Image size="80" resid="sm.i.settings.80"/>
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>sm.Taskpane</TaskpaneId>
                     <SourceLocation resid="sm.Taskpane.Url"/>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="sm.tab.guide">
+                  <Label resid="sm.guide.L"/>
+                  <Supertip>
+                    <Title resid="sm.guide.L"/>
+                    <Description resid="sm.guide.T"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="sm.i.help.16"/>
+                    <bt:Image size="32" resid="sm.i.help.32"/>
+                    <bt:Image size="80" resid="sm.i.help.80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>smGuide</FunctionName>
                   </Action>
                 </Control>
               </Group>
@@ -343,9 +1519,9 @@
                   <Description resid="sm.Ctx.Tip"/>
                 </Supertip>
                 <Icon>
-                  <bt:Image size="16" resid="sm.marks.16"/>
-                  <bt:Image size="32" resid="sm.marks.32"/>
-                  <bt:Image size="80" resid="sm.marks.80"/>
+                  <bt:Image size="16" resid="sm.i.marks.16"/>
+                  <bt:Image size="32" resid="sm.i.marks.32"/>
+                  <bt:Image size="80" resid="sm.i.marks.80"/>
                 </Icon>
                 <Items>
                   <Item id="sm.ctx.hold-short">
@@ -355,9 +1531,9 @@
                       <Description resid="sm.hold-short.T"/>
                     </Supertip>
                     <Icon>
-                      <bt:Image size="16" resid="sm.hold-short.16"/>
-                      <bt:Image size="32" resid="sm.hold-short.32"/>
-                      <bt:Image size="80" resid="sm.hold-short.80"/>
+                      <bt:Image size="16" resid="sm.i.hold-short.16"/>
+                      <bt:Image size="32" resid="sm.i.hold-short.32"/>
+                      <bt:Image size="80" resid="sm.i.hold-short.80"/>
                     </Icon>
                     <Action xsi:type="ExecuteFunction">
                       <FunctionName>smHoldShort</FunctionName>
@@ -370,12 +1546,27 @@
                       <Description resid="sm.hold-long.T"/>
                     </Supertip>
                     <Icon>
-                      <bt:Image size="16" resid="sm.hold-long.16"/>
-                      <bt:Image size="32" resid="sm.hold-long.32"/>
-                      <bt:Image size="80" resid="sm.hold-long.80"/>
+                      <bt:Image size="16" resid="sm.i.hold-long.16"/>
+                      <bt:Image size="32" resid="sm.i.hold-long.32"/>
+                      <bt:Image size="80" resid="sm.i.hold-long.80"/>
                     </Icon>
                     <Action xsi:type="ExecuteFunction">
                       <FunctionName>smHoldLong</FunctionName>
+                    </Action>
+                  </Item>
+                  <Item id="sm.ctx.hold-clear">
+                    <Label resid="sm.hold-clear.L"/>
+                    <Supertip>
+                      <Title resid="sm.hold-clear.L"/>
+                      <Description resid="sm.hold-clear.T"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="sm.i.marks-clear.16"/>
+                      <bt:Image size="32" resid="sm.i.marks-clear.32"/>
+                      <bt:Image size="80" resid="sm.i.marks-clear.80"/>
+                    </Icon>
+                    <Action xsi:type="ExecuteFunction">
+                      <FunctionName>smHoldClear</FunctionName>
                     </Action>
                   </Item>
                   <Item id="sm.ctx.svara-anudatta">
@@ -385,9 +1576,9 @@
                       <Description resid="sm.svara-anudatta.T"/>
                     </Supertip>
                     <Icon>
-                      <bt:Image size="16" resid="sm.svara-anudatta.16"/>
-                      <bt:Image size="32" resid="sm.svara-anudatta.32"/>
-                      <bt:Image size="80" resid="sm.svara-anudatta.80"/>
+                      <bt:Image size="16" resid="sm.i.svara-anudatta.16"/>
+                      <bt:Image size="32" resid="sm.i.svara-anudatta.32"/>
+                      <bt:Image size="80" resid="sm.i.svara-anudatta.80"/>
                     </Icon>
                     <Action xsi:type="ExecuteFunction">
                       <FunctionName>smSvaraAnudatta</FunctionName>
@@ -400,9 +1591,9 @@
                       <Description resid="sm.svara-svarita.T"/>
                     </Supertip>
                     <Icon>
-                      <bt:Image size="16" resid="sm.svara-svarita.16"/>
-                      <bt:Image size="32" resid="sm.svara-svarita.32"/>
-                      <bt:Image size="80" resid="sm.svara-svarita.80"/>
+                      <bt:Image size="16" resid="sm.i.svara-svarita.16"/>
+                      <bt:Image size="32" resid="sm.i.svara-svarita.32"/>
+                      <bt:Image size="80" resid="sm.i.svara-svarita.80"/>
                     </Icon>
                     <Action xsi:type="ExecuteFunction">
                       <FunctionName>smSvaraSvarita</FunctionName>
@@ -415,9 +1606,9 @@
                       <Description resid="sm.svara-dirgha.T"/>
                     </Supertip>
                     <Icon>
-                      <bt:Image size="16" resid="sm.svara-dirgha.16"/>
-                      <bt:Image size="32" resid="sm.svara-dirgha.32"/>
-                      <bt:Image size="80" resid="sm.svara-dirgha.80"/>
+                      <bt:Image size="16" resid="sm.i.svara-dirgha.16"/>
+                      <bt:Image size="32" resid="sm.i.svara-dirgha.32"/>
+                      <bt:Image size="80" resid="sm.i.svara-dirgha.80"/>
                     </Icon>
                     <Action xsi:type="ExecuteFunction">
                       <FunctionName>smSvaraDirgha</FunctionName>
@@ -430,9 +1621,9 @@
                       <Description resid="sm.change-anusvara.T"/>
                     </Supertip>
                     <Icon>
-                      <bt:Image size="16" resid="sm.change-anusvara.16"/>
-                      <bt:Image size="32" resid="sm.change-anusvara.32"/>
-                      <bt:Image size="80" resid="sm.change-anusvara.80"/>
+                      <bt:Image size="16" resid="sm.i.change-anusvara.16"/>
+                      <bt:Image size="32" resid="sm.i.change-anusvara.32"/>
+                      <bt:Image size="80" resid="sm.i.change-anusvara.80"/>
                     </Icon>
                     <Action xsi:type="ExecuteFunction">
                       <FunctionName>smChangeAnusvara</FunctionName>
@@ -445,42 +1636,27 @@
                       <Description resid="sm.change-visarga.T"/>
                     </Supertip>
                     <Icon>
-                      <bt:Image size="16" resid="sm.change-visarga.16"/>
-                      <bt:Image size="32" resid="sm.change-visarga.32"/>
-                      <bt:Image size="80" resid="sm.change-visarga.80"/>
+                      <bt:Image size="16" resid="sm.i.change-visarga.16"/>
+                      <bt:Image size="32" resid="sm.i.change-visarga.32"/>
+                      <bt:Image size="80" resid="sm.i.change-visarga.80"/>
                     </Icon>
                     <Action xsi:type="ExecuteFunction">
                       <FunctionName>smChangeVisarga</FunctionName>
                     </Action>
                   </Item>
-                  <Item id="sm.ctx.marks-clear">
-                    <Label resid="sm.marks-clear.L"/>
+                  <Item id="sm.ctx.reapply">
+                    <Label resid="sm.reapply.L"/>
                     <Supertip>
-                      <Title resid="sm.marks-clear.L"/>
-                      <Description resid="sm.marks-clear.T"/>
+                      <Title resid="sm.reapply.L"/>
+                      <Description resid="sm.reapply.T"/>
                     </Supertip>
                     <Icon>
-                      <bt:Image size="16" resid="sm.marks-clear.16"/>
-                      <bt:Image size="32" resid="sm.marks-clear.32"/>
-                      <bt:Image size="80" resid="sm.marks-clear.80"/>
+                      <bt:Image size="16" resid="sm.i.auto-keep.16"/>
+                      <bt:Image size="32" resid="sm.i.auto-keep.32"/>
+                      <bt:Image size="80" resid="sm.i.auto-keep.80"/>
                     </Icon>
                     <Action xsi:type="ExecuteFunction">
-                      <FunctionName>smMarksClear</FunctionName>
-                    </Action>
-                  </Item>
-                  <Item id="sm.ctx.auto-keep">
-                    <Label resid="sm.auto-keep.L"/>
-                    <Supertip>
-                      <Title resid="sm.auto-keep.L"/>
-                      <Description resid="sm.auto-keep.T"/>
-                    </Supertip>
-                    <Icon>
-                      <bt:Image size="16" resid="sm.auto-keep.16"/>
-                      <bt:Image size="32" resid="sm.auto-keep.32"/>
-                      <bt:Image size="80" resid="sm.auto-keep.80"/>
-                    </Icon>
-                    <Action xsi:type="ExecuteFunction">
-                      <FunctionName>smAutoKeep</FunctionName>
+                      <FunctionName>smReapply</FunctionName>
                     </Action>
                   </Item>
                 </Items>
@@ -492,55 +1668,255 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="sm.hold-short.16" DefaultValue="https://localhost:3000/ribbon/hold-short-16.png"/>
-        <bt:Image id="sm.hold-short.32" DefaultValue="https://localhost:3000/ribbon/hold-short-32.png"/>
-        <bt:Image id="sm.hold-short.80" DefaultValue="https://localhost:3000/ribbon/hold-short-80.png"/>
-        <bt:Image id="sm.hold-long.16" DefaultValue="https://localhost:3000/ribbon/hold-long-16.png"/>
-        <bt:Image id="sm.hold-long.32" DefaultValue="https://localhost:3000/ribbon/hold-long-32.png"/>
-        <bt:Image id="sm.hold-long.80" DefaultValue="https://localhost:3000/ribbon/hold-long-80.png"/>
-        <bt:Image id="sm.svara-anudatta.16" DefaultValue="https://localhost:3000/ribbon/svara-anudatta-16.png"/>
-        <bt:Image id="sm.svara-anudatta.32" DefaultValue="https://localhost:3000/ribbon/svara-anudatta-32.png"/>
-        <bt:Image id="sm.svara-anudatta.80" DefaultValue="https://localhost:3000/ribbon/svara-anudatta-80.png"/>
-        <bt:Image id="sm.svara-svarita.16" DefaultValue="https://localhost:3000/ribbon/svara-svarita-16.png"/>
-        <bt:Image id="sm.svara-svarita.32" DefaultValue="https://localhost:3000/ribbon/svara-svarita-32.png"/>
-        <bt:Image id="sm.svara-svarita.80" DefaultValue="https://localhost:3000/ribbon/svara-svarita-80.png"/>
-        <bt:Image id="sm.svara-dirgha.16" DefaultValue="https://localhost:3000/ribbon/svara-dirgha-16.png"/>
-        <bt:Image id="sm.svara-dirgha.32" DefaultValue="https://localhost:3000/ribbon/svara-dirgha-32.png"/>
-        <bt:Image id="sm.svara-dirgha.80" DefaultValue="https://localhost:3000/ribbon/svara-dirgha-80.png"/>
-        <bt:Image id="sm.change-anusvara.16" DefaultValue="https://localhost:3000/ribbon/change-anusvara-16.png"/>
-        <bt:Image id="sm.change-anusvara.32" DefaultValue="https://localhost:3000/ribbon/change-anusvara-32.png"/>
-        <bt:Image id="sm.change-anusvara.80" DefaultValue="https://localhost:3000/ribbon/change-anusvara-80.png"/>
-        <bt:Image id="sm.change-visarga.16" DefaultValue="https://localhost:3000/ribbon/change-visarga-16.png"/>
-        <bt:Image id="sm.change-visarga.32" DefaultValue="https://localhost:3000/ribbon/change-visarga-32.png"/>
-        <bt:Image id="sm.change-visarga.80" DefaultValue="https://localhost:3000/ribbon/change-visarga-80.png"/>
-        <bt:Image id="sm.candrabindu.16" DefaultValue="https://localhost:3000/ribbon/candrabindu-16.png"/>
-        <bt:Image id="sm.candrabindu.32" DefaultValue="https://localhost:3000/ribbon/candrabindu-32.png"/>
-        <bt:Image id="sm.candrabindu.80" DefaultValue="https://localhost:3000/ribbon/candrabindu-80.png"/>
-        <bt:Image id="sm.svarabhakti.16" DefaultValue="https://localhost:3000/ribbon/svarabhakti-16.png"/>
-        <bt:Image id="sm.svarabhakti.32" DefaultValue="https://localhost:3000/ribbon/svarabhakti-32.png"/>
-        <bt:Image id="sm.svarabhakti.80" DefaultValue="https://localhost:3000/ribbon/svarabhakti-80.png"/>
-        <bt:Image id="sm.bar-short.16" DefaultValue="https://localhost:3000/ribbon/bar-short-16.png"/>
-        <bt:Image id="sm.bar-short.32" DefaultValue="https://localhost:3000/ribbon/bar-short-32.png"/>
-        <bt:Image id="sm.bar-short.80" DefaultValue="https://localhost:3000/ribbon/bar-short-80.png"/>
-        <bt:Image id="sm.bar-long.16" DefaultValue="https://localhost:3000/ribbon/bar-long-16.png"/>
-        <bt:Image id="sm.bar-long.32" DefaultValue="https://localhost:3000/ribbon/bar-long-32.png"/>
-        <bt:Image id="sm.bar-long.80" DefaultValue="https://localhost:3000/ribbon/bar-long-80.png"/>
-        <bt:Image id="sm.marks-clear.16" DefaultValue="https://localhost:3000/ribbon/marks-clear-16.png"/>
-        <bt:Image id="sm.marks-clear.32" DefaultValue="https://localhost:3000/ribbon/marks-clear-32.png"/>
-        <bt:Image id="sm.marks-clear.80" DefaultValue="https://localhost:3000/ribbon/marks-clear-80.png"/>
-        <bt:Image id="sm.auto-keep.16" DefaultValue="https://localhost:3000/ribbon/auto-keep-16.png"/>
-        <bt:Image id="sm.auto-keep.32" DefaultValue="https://localhost:3000/ribbon/auto-keep-32.png"/>
-        <bt:Image id="sm.auto-keep.80" DefaultValue="https://localhost:3000/ribbon/auto-keep-80.png"/>
-        <bt:Image id="sm.panel-open.16" DefaultValue="https://localhost:3000/ribbon/panel-open-16.png"/>
-        <bt:Image id="sm.panel-open.32" DefaultValue="https://localhost:3000/ribbon/panel-open-32.png"/>
-        <bt:Image id="sm.panel-open.80" DefaultValue="https://localhost:3000/ribbon/panel-open-80.png"/>
-        <bt:Image id="sm.marks.16" DefaultValue="https://localhost:3000/ribbon/marks-16.png"/>
-        <bt:Image id="sm.marks.32" DefaultValue="https://localhost:3000/ribbon/marks-32.png"/>
-        <bt:Image id="sm.marks.80" DefaultValue="https://localhost:3000/ribbon/marks-80.png"/>
+        <bt:Image id="sm.i.hold-short.16" DefaultValue="https://localhost:3000/ribbon/hold-short-16.png"/>
+        <bt:Image id="sm.i.hold-short.32" DefaultValue="https://localhost:3000/ribbon/hold-short-32.png"/>
+        <bt:Image id="sm.i.hold-short.80" DefaultValue="https://localhost:3000/ribbon/hold-short-80.png"/>
+        <bt:Image id="sm.i.hold-long.16" DefaultValue="https://localhost:3000/ribbon/hold-long-16.png"/>
+        <bt:Image id="sm.i.hold-long.32" DefaultValue="https://localhost:3000/ribbon/hold-long-32.png"/>
+        <bt:Image id="sm.i.hold-long.80" DefaultValue="https://localhost:3000/ribbon/hold-long-80.png"/>
+        <bt:Image id="sm.i.marks-clear.16" DefaultValue="https://localhost:3000/ribbon/marks-clear-16.png"/>
+        <bt:Image id="sm.i.marks-clear.32" DefaultValue="https://localhost:3000/ribbon/marks-clear-32.png"/>
+        <bt:Image id="sm.i.marks-clear.80" DefaultValue="https://localhost:3000/ribbon/marks-clear-80.png"/>
+        <bt:Image id="sm.i.svara-anudatta.16" DefaultValue="https://localhost:3000/ribbon/svara-anudatta-16.png"/>
+        <bt:Image id="sm.i.svara-anudatta.32" DefaultValue="https://localhost:3000/ribbon/svara-anudatta-32.png"/>
+        <bt:Image id="sm.i.svara-anudatta.80" DefaultValue="https://localhost:3000/ribbon/svara-anudatta-80.png"/>
+        <bt:Image id="sm.i.svara-svarita.16" DefaultValue="https://localhost:3000/ribbon/svara-svarita-16.png"/>
+        <bt:Image id="sm.i.svara-svarita.32" DefaultValue="https://localhost:3000/ribbon/svara-svarita-32.png"/>
+        <bt:Image id="sm.i.svara-svarita.80" DefaultValue="https://localhost:3000/ribbon/svara-svarita-80.png"/>
+        <bt:Image id="sm.i.svara-dirgha.16" DefaultValue="https://localhost:3000/ribbon/svara-dirgha-16.png"/>
+        <bt:Image id="sm.i.svara-dirgha.32" DefaultValue="https://localhost:3000/ribbon/svara-dirgha-32.png"/>
+        <bt:Image id="sm.i.svara-dirgha.80" DefaultValue="https://localhost:3000/ribbon/svara-dirgha-80.png"/>
+        <bt:Image id="sm.i.change-anusvara.16" DefaultValue="https://localhost:3000/ribbon/change-anusvara-16.png"/>
+        <bt:Image id="sm.i.change-anusvara.32" DefaultValue="https://localhost:3000/ribbon/change-anusvara-32.png"/>
+        <bt:Image id="sm.i.change-anusvara.80" DefaultValue="https://localhost:3000/ribbon/change-anusvara-80.png"/>
+        <bt:Image id="sm.i.change-visarga.16" DefaultValue="https://localhost:3000/ribbon/change-visarga-16.png"/>
+        <bt:Image id="sm.i.change-visarga.32" DefaultValue="https://localhost:3000/ribbon/change-visarga-32.png"/>
+        <bt:Image id="sm.i.change-visarga.80" DefaultValue="https://localhost:3000/ribbon/change-visarga-80.png"/>
+        <bt:Image id="sm.i.candrabindu.16" DefaultValue="https://localhost:3000/ribbon/candrabindu-16.png"/>
+        <bt:Image id="sm.i.candrabindu.32" DefaultValue="https://localhost:3000/ribbon/candrabindu-32.png"/>
+        <bt:Image id="sm.i.candrabindu.80" DefaultValue="https://localhost:3000/ribbon/candrabindu-80.png"/>
+        <bt:Image id="sm.i.svarabhakti.16" DefaultValue="https://localhost:3000/ribbon/svarabhakti-16.png"/>
+        <bt:Image id="sm.i.svarabhakti.32" DefaultValue="https://localhost:3000/ribbon/svarabhakti-32.png"/>
+        <bt:Image id="sm.i.svarabhakti.80" DefaultValue="https://localhost:3000/ribbon/svarabhakti-80.png"/>
+        <bt:Image id="sm.i.bar-short.16" DefaultValue="https://localhost:3000/ribbon/bar-short-16.png"/>
+        <bt:Image id="sm.i.bar-short.32" DefaultValue="https://localhost:3000/ribbon/bar-short-32.png"/>
+        <bt:Image id="sm.i.bar-short.80" DefaultValue="https://localhost:3000/ribbon/bar-short-80.png"/>
+        <bt:Image id="sm.i.bar-long.16" DefaultValue="https://localhost:3000/ribbon/bar-long-16.png"/>
+        <bt:Image id="sm.i.bar-long.32" DefaultValue="https://localhost:3000/ribbon/bar-long-32.png"/>
+        <bt:Image id="sm.i.bar-long.80" DefaultValue="https://localhost:3000/ribbon/bar-long-80.png"/>
+        <bt:Image id="sm.i.keyboard.16" DefaultValue="https://localhost:3000/ribbon/keyboard-16.png"/>
+        <bt:Image id="sm.i.keyboard.32" DefaultValue="https://localhost:3000/ribbon/keyboard-32.png"/>
+        <bt:Image id="sm.i.keyboard.80" DefaultValue="https://localhost:3000/ribbon/keyboard-80.png"/>
+        <bt:Image id="sm.i.ch-101.16" DefaultValue="https://localhost:3000/ribbon/ch-101-16.png"/>
+        <bt:Image id="sm.i.ch-101.32" DefaultValue="https://localhost:3000/ribbon/ch-101-32.png"/>
+        <bt:Image id="sm.i.ch-101.80" DefaultValue="https://localhost:3000/ribbon/ch-101-80.png"/>
+        <bt:Image id="sm.i.ch-12b.16" DefaultValue="https://localhost:3000/ribbon/ch-12b-16.png"/>
+        <bt:Image id="sm.i.ch-12b.32" DefaultValue="https://localhost:3000/ribbon/ch-12b-32.png"/>
+        <bt:Image id="sm.i.ch-12b.80" DefaultValue="https://localhost:3000/ribbon/ch-12b-80.png"/>
+        <bt:Image id="sm.i.ch-16b.16" DefaultValue="https://localhost:3000/ribbon/ch-16b-16.png"/>
+        <bt:Image id="sm.i.ch-16b.32" DefaultValue="https://localhost:3000/ribbon/ch-16b-32.png"/>
+        <bt:Image id="sm.i.ch-16b.80" DefaultValue="https://localhost:3000/ribbon/ch-16b-80.png"/>
+        <bt:Image id="sm.i.ch-1e5b.16" DefaultValue="https://localhost:3000/ribbon/ch-1e5b-16.png"/>
+        <bt:Image id="sm.i.ch-1e5b.32" DefaultValue="https://localhost:3000/ribbon/ch-1e5b-32.png"/>
+        <bt:Image id="sm.i.ch-1e5b.80" DefaultValue="https://localhost:3000/ribbon/ch-1e5b-80.png"/>
+        <bt:Image id="sm.i.ch-1e5d.16" DefaultValue="https://localhost:3000/ribbon/ch-1e5d-16.png"/>
+        <bt:Image id="sm.i.ch-1e5d.32" DefaultValue="https://localhost:3000/ribbon/ch-1e5d-32.png"/>
+        <bt:Image id="sm.i.ch-1e5d.80" DefaultValue="https://localhost:3000/ribbon/ch-1e5d-80.png"/>
+        <bt:Image id="sm.i.ch-1e37.16" DefaultValue="https://localhost:3000/ribbon/ch-1e37-16.png"/>
+        <bt:Image id="sm.i.ch-1e37.32" DefaultValue="https://localhost:3000/ribbon/ch-1e37-32.png"/>
+        <bt:Image id="sm.i.ch-1e37.80" DefaultValue="https://localhost:3000/ribbon/ch-1e37-80.png"/>
+        <bt:Image id="sm.i.ch-1e39.16" DefaultValue="https://localhost:3000/ribbon/ch-1e39-16.png"/>
+        <bt:Image id="sm.i.ch-1e39.32" DefaultValue="https://localhost:3000/ribbon/ch-1e39-32.png"/>
+        <bt:Image id="sm.i.ch-1e39.80" DefaultValue="https://localhost:3000/ribbon/ch-1e39-80.png"/>
+        <bt:Image id="sm.i.ch-1e41.16" DefaultValue="https://localhost:3000/ribbon/ch-1e41-16.png"/>
+        <bt:Image id="sm.i.ch-1e41.32" DefaultValue="https://localhost:3000/ribbon/ch-1e41-32.png"/>
+        <bt:Image id="sm.i.ch-1e41.80" DefaultValue="https://localhost:3000/ribbon/ch-1e41-80.png"/>
+        <bt:Image id="sm.i.ch-1e25.16" DefaultValue="https://localhost:3000/ribbon/ch-1e25-16.png"/>
+        <bt:Image id="sm.i.ch-1e25.32" DefaultValue="https://localhost:3000/ribbon/ch-1e25-32.png"/>
+        <bt:Image id="sm.i.ch-1e25.80" DefaultValue="https://localhost:3000/ribbon/ch-1e25-80.png"/>
+        <bt:Image id="sm.i.ch-1e6d.16" DefaultValue="https://localhost:3000/ribbon/ch-1e6d-16.png"/>
+        <bt:Image id="sm.i.ch-1e6d.32" DefaultValue="https://localhost:3000/ribbon/ch-1e6d-32.png"/>
+        <bt:Image id="sm.i.ch-1e6d.80" DefaultValue="https://localhost:3000/ribbon/ch-1e6d-80.png"/>
+        <bt:Image id="sm.i.ch-6b.16" DefaultValue="https://localhost:3000/ribbon/ch-6b-16.png"/>
+        <bt:Image id="sm.i.ch-6b.32" DefaultValue="https://localhost:3000/ribbon/ch-6b-32.png"/>
+        <bt:Image id="sm.i.ch-6b.80" DefaultValue="https://localhost:3000/ribbon/ch-6b-80.png"/>
+        <bt:Image id="sm.i.ch-6b-68.16" DefaultValue="https://localhost:3000/ribbon/ch-6b-68-16.png"/>
+        <bt:Image id="sm.i.ch-6b-68.32" DefaultValue="https://localhost:3000/ribbon/ch-6b-68-32.png"/>
+        <bt:Image id="sm.i.ch-6b-68.80" DefaultValue="https://localhost:3000/ribbon/ch-6b-68-80.png"/>
+        <bt:Image id="sm.i.ch-67.16" DefaultValue="https://localhost:3000/ribbon/ch-67-16.png"/>
+        <bt:Image id="sm.i.ch-67.32" DefaultValue="https://localhost:3000/ribbon/ch-67-32.png"/>
+        <bt:Image id="sm.i.ch-67.80" DefaultValue="https://localhost:3000/ribbon/ch-67-80.png"/>
+        <bt:Image id="sm.i.ch-67-68.16" DefaultValue="https://localhost:3000/ribbon/ch-67-68-16.png"/>
+        <bt:Image id="sm.i.ch-67-68.32" DefaultValue="https://localhost:3000/ribbon/ch-67-68-32.png"/>
+        <bt:Image id="sm.i.ch-67-68.80" DefaultValue="https://localhost:3000/ribbon/ch-67-68-80.png"/>
+        <bt:Image id="sm.i.ch-1e45.16" DefaultValue="https://localhost:3000/ribbon/ch-1e45-16.png"/>
+        <bt:Image id="sm.i.ch-1e45.32" DefaultValue="https://localhost:3000/ribbon/ch-1e45-32.png"/>
+        <bt:Image id="sm.i.ch-1e45.80" DefaultValue="https://localhost:3000/ribbon/ch-1e45-80.png"/>
+        <bt:Image id="sm.i.ch-63.16" DefaultValue="https://localhost:3000/ribbon/ch-63-16.png"/>
+        <bt:Image id="sm.i.ch-63.32" DefaultValue="https://localhost:3000/ribbon/ch-63-32.png"/>
+        <bt:Image id="sm.i.ch-63.80" DefaultValue="https://localhost:3000/ribbon/ch-63-80.png"/>
+        <bt:Image id="sm.i.ch-63-68.16" DefaultValue="https://localhost:3000/ribbon/ch-63-68-16.png"/>
+        <bt:Image id="sm.i.ch-63-68.32" DefaultValue="https://localhost:3000/ribbon/ch-63-68-32.png"/>
+        <bt:Image id="sm.i.ch-63-68.80" DefaultValue="https://localhost:3000/ribbon/ch-63-68-80.png"/>
+        <bt:Image id="sm.i.ch-6a.16" DefaultValue="https://localhost:3000/ribbon/ch-6a-16.png"/>
+        <bt:Image id="sm.i.ch-6a.32" DefaultValue="https://localhost:3000/ribbon/ch-6a-32.png"/>
+        <bt:Image id="sm.i.ch-6a.80" DefaultValue="https://localhost:3000/ribbon/ch-6a-80.png"/>
+        <bt:Image id="sm.i.ch-6a-68.16" DefaultValue="https://localhost:3000/ribbon/ch-6a-68-16.png"/>
+        <bt:Image id="sm.i.ch-6a-68.32" DefaultValue="https://localhost:3000/ribbon/ch-6a-68-32.png"/>
+        <bt:Image id="sm.i.ch-6a-68.80" DefaultValue="https://localhost:3000/ribbon/ch-6a-68-80.png"/>
+        <bt:Image id="sm.i.ch-f1.16" DefaultValue="https://localhost:3000/ribbon/ch-f1-16.png"/>
+        <bt:Image id="sm.i.ch-f1.32" DefaultValue="https://localhost:3000/ribbon/ch-f1-32.png"/>
+        <bt:Image id="sm.i.ch-f1.80" DefaultValue="https://localhost:3000/ribbon/ch-f1-80.png"/>
+        <bt:Image id="sm.i.ch-1e6d-68.16" DefaultValue="https://localhost:3000/ribbon/ch-1e6d-68-16.png"/>
+        <bt:Image id="sm.i.ch-1e6d-68.32" DefaultValue="https://localhost:3000/ribbon/ch-1e6d-68-32.png"/>
+        <bt:Image id="sm.i.ch-1e6d-68.80" DefaultValue="https://localhost:3000/ribbon/ch-1e6d-68-80.png"/>
+        <bt:Image id="sm.i.ch-1e0d.16" DefaultValue="https://localhost:3000/ribbon/ch-1e0d-16.png"/>
+        <bt:Image id="sm.i.ch-1e0d.32" DefaultValue="https://localhost:3000/ribbon/ch-1e0d-32.png"/>
+        <bt:Image id="sm.i.ch-1e0d.80" DefaultValue="https://localhost:3000/ribbon/ch-1e0d-80.png"/>
+        <bt:Image id="sm.i.ch-1e0d-68.16" DefaultValue="https://localhost:3000/ribbon/ch-1e0d-68-16.png"/>
+        <bt:Image id="sm.i.ch-1e0d-68.32" DefaultValue="https://localhost:3000/ribbon/ch-1e0d-68-32.png"/>
+        <bt:Image id="sm.i.ch-1e0d-68.80" DefaultValue="https://localhost:3000/ribbon/ch-1e0d-68-80.png"/>
+        <bt:Image id="sm.i.ch-1e47.16" DefaultValue="https://localhost:3000/ribbon/ch-1e47-16.png"/>
+        <bt:Image id="sm.i.ch-1e47.32" DefaultValue="https://localhost:3000/ribbon/ch-1e47-32.png"/>
+        <bt:Image id="sm.i.ch-1e47.80" DefaultValue="https://localhost:3000/ribbon/ch-1e47-80.png"/>
+        <bt:Image id="sm.i.ch-74.16" DefaultValue="https://localhost:3000/ribbon/ch-74-16.png"/>
+        <bt:Image id="sm.i.ch-74.32" DefaultValue="https://localhost:3000/ribbon/ch-74-32.png"/>
+        <bt:Image id="sm.i.ch-74.80" DefaultValue="https://localhost:3000/ribbon/ch-74-80.png"/>
+        <bt:Image id="sm.i.ch-74-68.16" DefaultValue="https://localhost:3000/ribbon/ch-74-68-16.png"/>
+        <bt:Image id="sm.i.ch-74-68.32" DefaultValue="https://localhost:3000/ribbon/ch-74-68-32.png"/>
+        <bt:Image id="sm.i.ch-74-68.80" DefaultValue="https://localhost:3000/ribbon/ch-74-68-80.png"/>
+        <bt:Image id="sm.i.ch-64.16" DefaultValue="https://localhost:3000/ribbon/ch-64-16.png"/>
+        <bt:Image id="sm.i.ch-64.32" DefaultValue="https://localhost:3000/ribbon/ch-64-32.png"/>
+        <bt:Image id="sm.i.ch-64.80" DefaultValue="https://localhost:3000/ribbon/ch-64-80.png"/>
+        <bt:Image id="sm.i.ch-64-68.16" DefaultValue="https://localhost:3000/ribbon/ch-64-68-16.png"/>
+        <bt:Image id="sm.i.ch-64-68.32" DefaultValue="https://localhost:3000/ribbon/ch-64-68-32.png"/>
+        <bt:Image id="sm.i.ch-64-68.80" DefaultValue="https://localhost:3000/ribbon/ch-64-68-80.png"/>
+        <bt:Image id="sm.i.ch-6e.16" DefaultValue="https://localhost:3000/ribbon/ch-6e-16.png"/>
+        <bt:Image id="sm.i.ch-6e.32" DefaultValue="https://localhost:3000/ribbon/ch-6e-32.png"/>
+        <bt:Image id="sm.i.ch-6e.80" DefaultValue="https://localhost:3000/ribbon/ch-6e-80.png"/>
+        <bt:Image id="sm.i.ch-70.16" DefaultValue="https://localhost:3000/ribbon/ch-70-16.png"/>
+        <bt:Image id="sm.i.ch-70.32" DefaultValue="https://localhost:3000/ribbon/ch-70-32.png"/>
+        <bt:Image id="sm.i.ch-70.80" DefaultValue="https://localhost:3000/ribbon/ch-70-80.png"/>
+        <bt:Image id="sm.i.ch-70-68.16" DefaultValue="https://localhost:3000/ribbon/ch-70-68-16.png"/>
+        <bt:Image id="sm.i.ch-70-68.32" DefaultValue="https://localhost:3000/ribbon/ch-70-68-32.png"/>
+        <bt:Image id="sm.i.ch-70-68.80" DefaultValue="https://localhost:3000/ribbon/ch-70-68-80.png"/>
+        <bt:Image id="sm.i.ch-62.16" DefaultValue="https://localhost:3000/ribbon/ch-62-16.png"/>
+        <bt:Image id="sm.i.ch-62.32" DefaultValue="https://localhost:3000/ribbon/ch-62-32.png"/>
+        <bt:Image id="sm.i.ch-62.80" DefaultValue="https://localhost:3000/ribbon/ch-62-80.png"/>
+        <bt:Image id="sm.i.ch-62-68.16" DefaultValue="https://localhost:3000/ribbon/ch-62-68-16.png"/>
+        <bt:Image id="sm.i.ch-62-68.32" DefaultValue="https://localhost:3000/ribbon/ch-62-68-32.png"/>
+        <bt:Image id="sm.i.ch-62-68.80" DefaultValue="https://localhost:3000/ribbon/ch-62-68-80.png"/>
+        <bt:Image id="sm.i.ch-6d.16" DefaultValue="https://localhost:3000/ribbon/ch-6d-16.png"/>
+        <bt:Image id="sm.i.ch-6d.32" DefaultValue="https://localhost:3000/ribbon/ch-6d-32.png"/>
+        <bt:Image id="sm.i.ch-6d.80" DefaultValue="https://localhost:3000/ribbon/ch-6d-80.png"/>
+        <bt:Image id="sm.i.ch-79.16" DefaultValue="https://localhost:3000/ribbon/ch-79-16.png"/>
+        <bt:Image id="sm.i.ch-79.32" DefaultValue="https://localhost:3000/ribbon/ch-79-32.png"/>
+        <bt:Image id="sm.i.ch-79.80" DefaultValue="https://localhost:3000/ribbon/ch-79-80.png"/>
+        <bt:Image id="sm.i.ch-72.16" DefaultValue="https://localhost:3000/ribbon/ch-72-16.png"/>
+        <bt:Image id="sm.i.ch-72.32" DefaultValue="https://localhost:3000/ribbon/ch-72-32.png"/>
+        <bt:Image id="sm.i.ch-72.80" DefaultValue="https://localhost:3000/ribbon/ch-72-80.png"/>
+        <bt:Image id="sm.i.ch-6c.16" DefaultValue="https://localhost:3000/ribbon/ch-6c-16.png"/>
+        <bt:Image id="sm.i.ch-6c.32" DefaultValue="https://localhost:3000/ribbon/ch-6c-32.png"/>
+        <bt:Image id="sm.i.ch-6c.80" DefaultValue="https://localhost:3000/ribbon/ch-6c-80.png"/>
+        <bt:Image id="sm.i.ch-76.16" DefaultValue="https://localhost:3000/ribbon/ch-76-16.png"/>
+        <bt:Image id="sm.i.ch-76.32" DefaultValue="https://localhost:3000/ribbon/ch-76-32.png"/>
+        <bt:Image id="sm.i.ch-76.80" DefaultValue="https://localhost:3000/ribbon/ch-76-80.png"/>
+        <bt:Image id="sm.i.ch-15b.16" DefaultValue="https://localhost:3000/ribbon/ch-15b-16.png"/>
+        <bt:Image id="sm.i.ch-15b.32" DefaultValue="https://localhost:3000/ribbon/ch-15b-32.png"/>
+        <bt:Image id="sm.i.ch-15b.80" DefaultValue="https://localhost:3000/ribbon/ch-15b-80.png"/>
+        <bt:Image id="sm.i.ch-1e63.16" DefaultValue="https://localhost:3000/ribbon/ch-1e63-16.png"/>
+        <bt:Image id="sm.i.ch-1e63.32" DefaultValue="https://localhost:3000/ribbon/ch-1e63-32.png"/>
+        <bt:Image id="sm.i.ch-1e63.80" DefaultValue="https://localhost:3000/ribbon/ch-1e63-80.png"/>
+        <bt:Image id="sm.i.ch-73.16" DefaultValue="https://localhost:3000/ribbon/ch-73-16.png"/>
+        <bt:Image id="sm.i.ch-73.32" DefaultValue="https://localhost:3000/ribbon/ch-73-32.png"/>
+        <bt:Image id="sm.i.ch-73.80" DefaultValue="https://localhost:3000/ribbon/ch-73-80.png"/>
+        <bt:Image id="sm.i.ch-68.16" DefaultValue="https://localhost:3000/ribbon/ch-68-16.png"/>
+        <bt:Image id="sm.i.ch-68.32" DefaultValue="https://localhost:3000/ribbon/ch-68-32.png"/>
+        <bt:Image id="sm.i.ch-68.80" DefaultValue="https://localhost:3000/ribbon/ch-68-80.png"/>
+        <bt:Image id="sm.i.ch-964.16" DefaultValue="https://localhost:3000/ribbon/ch-964-16.png"/>
+        <bt:Image id="sm.i.ch-964.32" DefaultValue="https://localhost:3000/ribbon/ch-964-32.png"/>
+        <bt:Image id="sm.i.ch-964.80" DefaultValue="https://localhost:3000/ribbon/ch-964-80.png"/>
+        <bt:Image id="sm.i.ch-1e3b.16" DefaultValue="https://localhost:3000/ribbon/ch-1e3b-16.png"/>
+        <bt:Image id="sm.i.ch-1e3b.32" DefaultValue="https://localhost:3000/ribbon/ch-1e3b-32.png"/>
+        <bt:Image id="sm.i.ch-1e3b.80" DefaultValue="https://localhost:3000/ribbon/ch-1e3b-80.png"/>
+        <bt:Image id="sm.i.ch-1e43.16" DefaultValue="https://localhost:3000/ribbon/ch-1e43-16.png"/>
+        <bt:Image id="sm.i.ch-1e43.32" DefaultValue="https://localhost:3000/ribbon/ch-1e43-32.png"/>
+        <bt:Image id="sm.i.ch-1e43.80" DefaultValue="https://localhost:3000/ribbon/ch-1e43-80.png"/>
+        <bt:Image id="sm.i.ch-965.16" DefaultValue="https://localhost:3000/ribbon/ch-965-16.png"/>
+        <bt:Image id="sm.i.ch-965.32" DefaultValue="https://localhost:3000/ribbon/ch-965-32.png"/>
+        <bt:Image id="sm.i.ch-965.80" DefaultValue="https://localhost:3000/ribbon/ch-965-80.png"/>
+        <bt:Image id="sm.i.ch-a8f3.16" DefaultValue="https://localhost:3000/ribbon/ch-a8f3-16.png"/>
+        <bt:Image id="sm.i.ch-a8f3.32" DefaultValue="https://localhost:3000/ribbon/ch-a8f3-32.png"/>
+        <bt:Image id="sm.i.ch-a8f3.80" DefaultValue="https://localhost:3000/ribbon/ch-a8f3-80.png"/>
+        <bt:Image id="sm.i.ch-61-331.16" DefaultValue="https://localhost:3000/ribbon/ch-61-331-16.png"/>
+        <bt:Image id="sm.i.ch-61-331.32" DefaultValue="https://localhost:3000/ribbon/ch-61-331-32.png"/>
+        <bt:Image id="sm.i.ch-61-331.80" DefaultValue="https://localhost:3000/ribbon/ch-61-331-80.png"/>
+        <bt:Image id="sm.i.ch-61-30d.16" DefaultValue="https://localhost:3000/ribbon/ch-61-30d-16.png"/>
+        <bt:Image id="sm.i.ch-61-30d.32" DefaultValue="https://localhost:3000/ribbon/ch-61-30d-32.png"/>
+        <bt:Image id="sm.i.ch-61-30d.80" DefaultValue="https://localhost:3000/ribbon/ch-61-30d-80.png"/>
+        <bt:Image id="sm.i.ch-61-30e.16" DefaultValue="https://localhost:3000/ribbon/ch-61-30e-16.png"/>
+        <bt:Image id="sm.i.ch-61-30e.32" DefaultValue="https://localhost:3000/ribbon/ch-61-30e-32.png"/>
+        <bt:Image id="sm.i.ch-61-30e.80" DefaultValue="https://localhost:3000/ribbon/ch-61-30e-80.png"/>
+        <bt:Image id="sm.i.ch-6d-310.16" DefaultValue="https://localhost:3000/ribbon/ch-6d-310-16.png"/>
+        <bt:Image id="sm.i.ch-6d-310.32" DefaultValue="https://localhost:3000/ribbon/ch-6d-310-32.png"/>
+        <bt:Image id="sm.i.ch-6d-310.80" DefaultValue="https://localhost:3000/ribbon/ch-6d-310-80.png"/>
+        <bt:Image id="sm.i.ch-a8fb.16" DefaultValue="https://localhost:3000/ribbon/ch-a8fb-16.png"/>
+        <bt:Image id="sm.i.ch-a8fb.32" DefaultValue="https://localhost:3000/ribbon/ch-a8fb-32.png"/>
+        <bt:Image id="sm.i.ch-a8fb.80" DefaultValue="https://localhost:3000/ribbon/ch-a8fb-80.png"/>
+        <bt:Image id="sm.i.ch-61-305.16" DefaultValue="https://localhost:3000/ribbon/ch-61-305-16.png"/>
+        <bt:Image id="sm.i.ch-61-305.32" DefaultValue="https://localhost:3000/ribbon/ch-61-305-32.png"/>
+        <bt:Image id="sm.i.ch-61-305.80" DefaultValue="https://localhost:3000/ribbon/ch-61-305-80.png"/>
+        <bt:Image id="sm.i.ch-2ce.16" DefaultValue="https://localhost:3000/ribbon/ch-2ce-16.png"/>
+        <bt:Image id="sm.i.ch-2ce.32" DefaultValue="https://localhost:3000/ribbon/ch-2ce-32.png"/>
+        <bt:Image id="sm.i.ch-2ce.80" DefaultValue="https://localhost:3000/ribbon/ch-2ce-80.png"/>
+        <bt:Image id="sm.i.ch-93d.16" DefaultValue="https://localhost:3000/ribbon/ch-93d-16.png"/>
+        <bt:Image id="sm.i.ch-93d.32" DefaultValue="https://localhost:3000/ribbon/ch-93d-32.png"/>
+        <bt:Image id="sm.i.ch-93d.80" DefaultValue="https://localhost:3000/ribbon/ch-93d-80.png"/>
+        <bt:Image id="sm.i.script.16" DefaultValue="https://localhost:3000/ribbon/script-16.png"/>
+        <bt:Image id="sm.i.script.32" DefaultValue="https://localhost:3000/ribbon/script-32.png"/>
+        <bt:Image id="sm.i.script.80" DefaultValue="https://localhost:3000/ribbon/script-80.png"/>
+        <bt:Image id="sm.i.ch-905.16" DefaultValue="https://localhost:3000/ribbon/ch-905-16.png"/>
+        <bt:Image id="sm.i.ch-905.32" DefaultValue="https://localhost:3000/ribbon/ch-905-32.png"/>
+        <bt:Image id="sm.i.ch-905.80" DefaultValue="https://localhost:3000/ribbon/ch-905-80.png"/>
+        <bt:Image id="sm.i.ch-c05.16" DefaultValue="https://localhost:3000/ribbon/ch-c05-16.png"/>
+        <bt:Image id="sm.i.ch-c05.32" DefaultValue="https://localhost:3000/ribbon/ch-c05-32.png"/>
+        <bt:Image id="sm.i.ch-c05.80" DefaultValue="https://localhost:3000/ribbon/ch-c05-80.png"/>
+        <bt:Image id="sm.i.ch-b85.16" DefaultValue="https://localhost:3000/ribbon/ch-b85-16.png"/>
+        <bt:Image id="sm.i.ch-b85.32" DefaultValue="https://localhost:3000/ribbon/ch-b85-32.png"/>
+        <bt:Image id="sm.i.ch-b85.80" DefaultValue="https://localhost:3000/ribbon/ch-b85-80.png"/>
+        <bt:Image id="sm.i.tree.16" DefaultValue="https://localhost:3000/ribbon/tree-16.png"/>
+        <bt:Image id="sm.i.tree.32" DefaultValue="https://localhost:3000/ribbon/tree-32.png"/>
+        <bt:Image id="sm.i.tree.80" DefaultValue="https://localhost:3000/ribbon/tree-80.png"/>
+        <bt:Image id="sm.i.part-new.16" DefaultValue="https://localhost:3000/ribbon/part-new-16.png"/>
+        <bt:Image id="sm.i.part-new.32" DefaultValue="https://localhost:3000/ribbon/part-new-32.png"/>
+        <bt:Image id="sm.i.part-new.80" DefaultValue="https://localhost:3000/ribbon/part-new-80.png"/>
+        <bt:Image id="sm.i.part-dissolve.16" DefaultValue="https://localhost:3000/ribbon/part-dissolve-16.png"/>
+        <bt:Image id="sm.i.part-dissolve.32" DefaultValue="https://localhost:3000/ribbon/part-dissolve-32.png"/>
+        <bt:Image id="sm.i.part-dissolve.80" DefaultValue="https://localhost:3000/ribbon/part-dissolve-80.png"/>
+        <bt:Image id="sm.i.auto-keep.16" DefaultValue="https://localhost:3000/ribbon/auto-keep-16.png"/>
+        <bt:Image id="sm.i.auto-keep.32" DefaultValue="https://localhost:3000/ribbon/auto-keep-32.png"/>
+        <bt:Image id="sm.i.auto-keep.80" DefaultValue="https://localhost:3000/ribbon/auto-keep-80.png"/>
+        <bt:Image id="sm.i.auto-replace.16" DefaultValue="https://localhost:3000/ribbon/auto-replace-16.png"/>
+        <bt:Image id="sm.i.auto-replace.32" DefaultValue="https://localhost:3000/ribbon/auto-replace-32.png"/>
+        <bt:Image id="sm.i.auto-replace.80" DefaultValue="https://localhost:3000/ribbon/auto-replace-80.png"/>
+        <bt:Image id="sm.i.style-import.16" DefaultValue="https://localhost:3000/ribbon/style-import-16.png"/>
+        <bt:Image id="sm.i.style-import.32" DefaultValue="https://localhost:3000/ribbon/style-import-32.png"/>
+        <bt:Image id="sm.i.style-import.80" DefaultValue="https://localhost:3000/ribbon/style-import-80.png"/>
+        <bt:Image id="sm.i.document.16" DefaultValue="https://localhost:3000/ribbon/document-16.png"/>
+        <bt:Image id="sm.i.document.32" DefaultValue="https://localhost:3000/ribbon/document-32.png"/>
+        <bt:Image id="sm.i.document.80" DefaultValue="https://localhost:3000/ribbon/document-80.png"/>
+        <bt:Image id="sm.i.settings.16" DefaultValue="https://localhost:3000/ribbon/settings-16.png"/>
+        <bt:Image id="sm.i.settings.32" DefaultValue="https://localhost:3000/ribbon/settings-32.png"/>
+        <bt:Image id="sm.i.settings.80" DefaultValue="https://localhost:3000/ribbon/settings-80.png"/>
+        <bt:Image id="sm.i.help.16" DefaultValue="https://localhost:3000/ribbon/help-16.png"/>
+        <bt:Image id="sm.i.help.32" DefaultValue="https://localhost:3000/ribbon/help-32.png"/>
+        <bt:Image id="sm.i.help.80" DefaultValue="https://localhost:3000/ribbon/help-80.png"/>
+        <bt:Image id="sm.i.marks.16" DefaultValue="https://localhost:3000/ribbon/marks-16.png"/>
+        <bt:Image id="sm.i.marks.32" DefaultValue="https://localhost:3000/ribbon/marks-32.png"/>
+        <bt:Image id="sm.i.marks.80" DefaultValue="https://localhost:3000/ribbon/marks-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="sm.Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
-        <bt:Url id="sm.Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
         <bt:Url id="sm.Support.Url" DefaultValue="https://marin-hrvacanin.github.io/siksamitra/#word"/>
       </bt:Urls>
       <bt:ShortStrings>
@@ -550,10 +1926,19 @@
         <bt:String id="sm.grp.holding" DefaultValue="Holding"/>
         <bt:String id="sm.grp.svara" DefaultValue="Svara"/>
         <bt:String id="sm.grp.change" DefaultValue="Change"/>
-        <bt:String id="sm.grp.aids" DefaultValue="Aids"/>
+        <bt:String id="sm.grp.aids" DefaultValue="Reading aids"/>
+        <bt:String id="sm.grp.insert" DefaultValue="Insert"/>
+        <bt:String id="sm.grp.script" DefaultValue="Script"/>
         <bt:String id="sm.grp.rules" DefaultValue="Rules"/>
+        <bt:String id="sm.grp.document" DefaultValue="Document"/>
+        <bt:String id="sm.ins-vowels.L" DefaultValue="Vowels"/>
+        <bt:String id="sm.ins-consonants.L" DefaultValue="Consonants"/>
+        <bt:String id="sm.ins-vedic.L" DefaultValue="Vedic"/>
+        <bt:String id="sm.script.L" DefaultValue="Script"/>
+        <bt:String id="sm.register.L" DefaultValue="Register"/>
         <bt:String id="sm.hold-short.L" DefaultValue="Short"/>
         <bt:String id="sm.hold-long.L" DefaultValue="Long"/>
+        <bt:String id="sm.hold-clear.L" DefaultValue="Clear"/>
         <bt:String id="sm.svara-anudatta.L" DefaultValue="Anudātta"/>
         <bt:String id="sm.svara-svarita.L" DefaultValue="Svarita"/>
         <bt:String id="sm.svara-dirgha.L" DefaultValue="Dīrgha svarita"/>
@@ -561,30 +1946,179 @@
         <bt:String id="sm.change-visarga.L" DefaultValue="Visarga"/>
         <bt:String id="sm.candrabindu.L" DefaultValue="Candrabindu"/>
         <bt:String id="sm.svarabhakti.L" DefaultValue="Svarabhakti"/>
-        <bt:String id="sm.bar-short.L" DefaultValue="Pause"/>
-        <bt:String id="sm.bar-long.L" DefaultValue="Long pause"/>
-        <bt:String id="sm.marks-clear.L" DefaultValue="Clear"/>
-        <bt:String id="sm.auto-keep.L" DefaultValue="Re-mark"/>
-        <bt:String id="sm.panel-open.L" DefaultValue="Pane"/>
+        <bt:String id="sm.pause-short.L" DefaultValue="Short pause"/>
+        <bt:String id="sm.pause-long.L" DefaultValue="Long pause"/>
+        <bt:String id="sm.clear-all.L" DefaultValue="Clear all"/>
+        <bt:String id="sm.typing-help.L" DefaultValue="Typing help"/>
+        <bt:String id="sm.ins-101.L" DefaultValue="ā"/>
+        <bt:String id="sm.ins-12b.L" DefaultValue="ī"/>
+        <bt:String id="sm.ins-16b.L" DefaultValue="ū"/>
+        <bt:String id="sm.ins-1e5b.L" DefaultValue="ṛ"/>
+        <bt:String id="sm.ins-1e5d.L" DefaultValue="ṝ"/>
+        <bt:String id="sm.ins-1e37.L" DefaultValue="ḷ"/>
+        <bt:String id="sm.ins-1e39.L" DefaultValue="ḹ"/>
+        <bt:String id="sm.ins-1e41.L" DefaultValue="ṁ   anusvāra"/>
+        <bt:String id="sm.ins-1e25.L" DefaultValue="ḥ   visarga"/>
+        <bt:String id="sm.ins-6b.L" DefaultValue="k"/>
+        <bt:String id="sm.ins-6b-68.L" DefaultValue="kh"/>
+        <bt:String id="sm.ins-67.L" DefaultValue="g"/>
+        <bt:String id="sm.ins-67-68.L" DefaultValue="gh"/>
+        <bt:String id="sm.ins-1e45.L" DefaultValue="ṅ"/>
+        <bt:String id="sm.ins-63.L" DefaultValue="c"/>
+        <bt:String id="sm.ins-63-68.L" DefaultValue="ch"/>
+        <bt:String id="sm.ins-6a.L" DefaultValue="j"/>
+        <bt:String id="sm.ins-6a-68.L" DefaultValue="jh"/>
+        <bt:String id="sm.ins-f1.L" DefaultValue="ñ"/>
+        <bt:String id="sm.ins-1e6d.L" DefaultValue="ṭ"/>
+        <bt:String id="sm.ins-1e6d-68.L" DefaultValue="ṭh"/>
+        <bt:String id="sm.ins-1e0d.L" DefaultValue="ḍ"/>
+        <bt:String id="sm.ins-1e0d-68.L" DefaultValue="ḍh"/>
+        <bt:String id="sm.ins-1e47.L" DefaultValue="ṇ"/>
+        <bt:String id="sm.ins-74.L" DefaultValue="t"/>
+        <bt:String id="sm.ins-74-68.L" DefaultValue="th"/>
+        <bt:String id="sm.ins-64.L" DefaultValue="d"/>
+        <bt:String id="sm.ins-64-68.L" DefaultValue="dh"/>
+        <bt:String id="sm.ins-6e.L" DefaultValue="n"/>
+        <bt:String id="sm.ins-70.L" DefaultValue="p"/>
+        <bt:String id="sm.ins-70-68.L" DefaultValue="ph"/>
+        <bt:String id="sm.ins-62.L" DefaultValue="b"/>
+        <bt:String id="sm.ins-62-68.L" DefaultValue="bh"/>
+        <bt:String id="sm.ins-6d.L" DefaultValue="m"/>
+        <bt:String id="sm.ins-79.L" DefaultValue="y"/>
+        <bt:String id="sm.ins-72.L" DefaultValue="r"/>
+        <bt:String id="sm.ins-6c.L" DefaultValue="l"/>
+        <bt:String id="sm.ins-76.L" DefaultValue="v"/>
+        <bt:String id="sm.ins-15b.L" DefaultValue="ś"/>
+        <bt:String id="sm.ins-1e63.L" DefaultValue="ṣ"/>
+        <bt:String id="sm.ins-73.L" DefaultValue="s"/>
+        <bt:String id="sm.ins-68.L" DefaultValue="h"/>
+        <bt:String id="sm.ins-1e3b.L" DefaultValue="ḻ   Dravidian ḻ"/>
+        <bt:String id="sm.ins-1e43.L" DefaultValue="ṃ   anusvāra, alternate form"/>
+        <bt:String id="sm.ins-964.L" DefaultValue="।   daṇḍa"/>
+        <bt:String id="sm.ins-965.L" DefaultValue="॥   double daṇḍa"/>
+        <bt:String id="sm.ins-a8f3.L" DefaultValue="ꣳ   Vedic tiryak"/>
+        <bt:String id="sm.ins-331.L" DefaultValue="a̱   anudātta (U+0331)"/>
+        <bt:String id="sm.ins-30d.L" DefaultValue="a̍   svarita (U+030D)"/>
+        <bt:String id="sm.ins-30e.L" DefaultValue="a̎   dīrgha svarita (U+030E)"/>
+        <bt:String id="sm.ins-310.L" DefaultValue="m̐   candrabindu (U+0310)"/>
+        <bt:String id="sm.ins-a8fb.L" DefaultValue="ꣻ   Vedic anusvāra above (U+A8FB)"/>
+        <bt:String id="sm.ins-305.L" DefaultValue="a̅   Ṛgvedic overline (U+0305)"/>
+        <bt:String id="sm.ins-2ce.L" DefaultValue="ˎ   virāma tick (U+02CE)"/>
+        <bt:String id="sm.ins-93d.L" DefaultValue="ऽ   avagraha"/>
+        <bt:String id="sm.script-iast.L" DefaultValue="IAST"/>
+        <bt:String id="sm.script-deva.L" DefaultValue="Devanāgarī"/>
+        <bt:String id="sm.script-tel.L" DefaultValue="Telugu"/>
+        <bt:String id="sm.script-tam.L" DefaultValue="Tamil"/>
+        <bt:String id="sm.reg-taittiriya.L" DefaultValue="Taittirīya"/>
+        <bt:String id="sm.reg-rigveda.L" DefaultValue="Ṛgveda"/>
+        <bt:String id="sm.reg-sukla-yajurveda.L" DefaultValue="Śukla Yajurveda"/>
+        <bt:String id="sm.reg-smarta.L" DefaultValue="Smārta / purāṇic"/>
+        <bt:String id="sm.reg-prose.L" DefaultValue="Prose"/>
+        <bt:String id="sm.part-new.L" DefaultValue="New part from these lines"/>
+        <bt:String id="sm.part-dissolve.L" DefaultValue="Dissolve this part"/>
+        <bt:String id="sm.reapply.L" DefaultValue="Re-apply rules"/>
+        <bt:String id="sm.reapply-mine-out.L" DefaultValue="Re-apply, mine out"/>
+        <bt:String id="sm.import-styles.L" DefaultValue="Import styles"/>
+        <bt:String id="sm.specimen.L" DefaultValue="Specimen"/>
+        <bt:String id="sm.settings.L" DefaultValue="Settings"/>
+        <bt:String id="sm.guide.L" DefaultValue="What the marks mean"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="sm.Ctx.Tip" DefaultValue="Mark the selected letters: a holding, a svara, an anusvāra or visarga change."/>
-        <bt:String id="sm.GetStarted.Description" DefaultValue="Open the śikṣāmitra tab, select letters in a line and press Short or Long to mark a holding — or right-click a selection."/>
-        <bt:String id="sm.hold-short.T" DefaultValue="A thin box — 0.25 pt, his Holding style. Press again to take it off."/>
-        <bt:String id="sm.hold-long.T" DefaultValue="A thick box — 1.5 pt, his 2Holding style. The weight is the only difference between the two."/>
-        <bt:String id="sm.svara-anudatta.T" DefaultValue="The low tone — a bar under the letter."/>
-        <bt:String id="sm.svara-svarita.T" DefaultValue="The falling tone — a stroke over the letter."/>
-        <bt:String id="sm.svara-dirgha.T" DefaultValue="The long falling tone — a double stroke over the letter."/>
-        <bt:String id="sm.change-anusvara.T" DefaultValue="The letters here were typed as ṁ — the nasal a rule put in its place."/>
-        <bt:String id="sm.change-visarga.T" DefaultValue="The letters here were typed as ḥ — the sibilant or r a rule put in its place."/>
-        <bt:String id="sm.candrabindu.T" DefaultValue="The nasalised m̐ — the combining mark, typed onto each letter."/>
-        <bt:String id="sm.svarabhakti.T" DefaultValue="The epenthetic dot, written before the letter it belongs to."/>
-        <bt:String id="sm.bar-short.T" DefaultValue="A short pause — one bar, in his Pause style."/>
-        <bt:String id="sm.bar-long.T" DefaultValue="A long pause — two bars."/>
-        <bt:String id="sm.marks-clear.T" DefaultValue="Withdraw every marking in the selection."/>
-        <bt:String id="sm.auto-keep.T" DefaultValue="Run the śikṣā rules over the selection, in the register this document is marked in. Hand markings are kept."/>
-        <bt:String id="sm.panel-open.T" DefaultValue="Open the śikṣāmitra pane: the register, the stages, the whole-document run and the styles."/>
+        <bt:String id="sm.Ctx.Tip" DefaultValue="Mark the selected letters, or the letter before the caret."/>
+        <bt:String id="sm.GetStarted.Description" DefaultValue="Everything is on the śikṣāmitra tab. Type a letter and press Short or Long, or a svara — or right-click a selection."/>
+        <bt:String id="sm.ins-vowels.T" DefaultValue="Long vowels, vocalic ṛ and ḷ, the anusvāra and the visarga."/>
+        <bt:String id="sm.ins-consonants.T" DefaultValue="The consonants, by where they are spoken: gutturals to sibilants."/>
+        <bt:String id="sm.ins-vedic.T" DefaultValue="Vedic signs, accents and punctuation: ḻ, ꣳ, the daṇḍas and the avagraha."/>
+        <bt:String id="sm.script.T" DefaultValue="Write the mantra lines in IAST, Devanāgarī, Telugu or Tamil — the selected ones, or the whole document when nothing is selected. Every mark is kept, and IAST again gives back exactly what was there."/>
+        <bt:String id="sm.register.T" DefaultValue="Which śākhā’s rules mark the text here — this part, or the document outside every part. A document may hold parts marked by different rules."/>
+        <bt:String id="sm.hold-short.T" DefaultValue="A short holding: a thin box around the letters. With nothing selected, the letter before the caret. Press again to take it off. (Ctrl+H)"/>
+        <bt:String id="sm.hold-long.T" DefaultValue="A long holding: a thick box around the letters. With nothing selected, the letter before the caret. Press again to take it off. (Ctrl+Shift+H)"/>
+        <bt:String id="sm.hold-clear.T" DefaultValue="Take the holding off the letters, and leave every other marking. With nothing selected, the letter before the caret. (Ctrl+K)"/>
+        <bt:String id="sm.svara-anudatta.T" DefaultValue="The low tone: a bar under the letter. With nothing selected, the letter before the caret. Press again to take it off."/>
+        <bt:String id="sm.svara-svarita.T" DefaultValue="The raised tone: a stroke over the letter. With nothing selected, the letter before the caret. Press again to take it off."/>
+        <bt:String id="sm.svara-dirgha.T" DefaultValue="The long raised tone: two strokes over the letter. With nothing selected, the letter before the caret. Press again to take it off."/>
+        <bt:String id="sm.change-anusvara.T" DefaultValue="These letters are recited in place of an anusvāra (ṁ), and are drawn in the change colour. With nothing selected, the letter before the caret."/>
+        <bt:String id="sm.change-visarga.T" DefaultValue="These letters are recited in place of a visarga (ḥ), and are drawn in the change colour. With nothing selected, the letter before the caret."/>
+        <bt:String id="sm.candrabindu.T" DefaultValue="The nasal m̐: the candrabindu laid on the letter. With nothing selected, the letter before the caret. Press again to take it off."/>
+        <bt:String id="sm.svarabhakti.T" DefaultValue="The svarabhakti dot, at the caret: between an r and the sibilant or h after it (var·ṣa)."/>
+        <bt:String id="sm.pause-short.T" DefaultValue="A short pause at the caret: one bar."/>
+        <bt:String id="sm.pause-long.T" DefaultValue="A long pause at the caret: two bars."/>
+        <bt:String id="sm.clear-all.T" DefaultValue="Take every marking off the selected letters: holdings, svaras, changes, aids and pauses."/>
+        <bt:String id="sm.typing-help.T" DefaultValue="Every IAST letter and Vedic sign on one keyboard. Press a letter for its long or dotted form (a → ā, t → ṭ), or click a key. (Ctrl+Shift+I)"/>
+        <bt:String id="sm.ins-101.T" DefaultValue="Type ā at the caret."/>
+        <bt:String id="sm.ins-12b.T" DefaultValue="Type ī at the caret."/>
+        <bt:String id="sm.ins-16b.T" DefaultValue="Type ū at the caret."/>
+        <bt:String id="sm.ins-1e5b.T" DefaultValue="Type ṛ at the caret."/>
+        <bt:String id="sm.ins-1e5d.T" DefaultValue="Type ṝ at the caret."/>
+        <bt:String id="sm.ins-1e37.T" DefaultValue="Type ḷ at the caret."/>
+        <bt:String id="sm.ins-1e39.T" DefaultValue="Type ḹ at the caret."/>
+        <bt:String id="sm.ins-1e41.T" DefaultValue="Type ṁ at the caret — anusvāra."/>
+        <bt:String id="sm.ins-1e25.T" DefaultValue="Type ḥ at the caret — visarga."/>
+        <bt:String id="sm.ins-6b.T" DefaultValue="Type k at the caret."/>
+        <bt:String id="sm.ins-6b-68.T" DefaultValue="Type kh at the caret."/>
+        <bt:String id="sm.ins-67.T" DefaultValue="Type g at the caret."/>
+        <bt:String id="sm.ins-67-68.T" DefaultValue="Type gh at the caret."/>
+        <bt:String id="sm.ins-1e45.T" DefaultValue="Type ṅ at the caret."/>
+        <bt:String id="sm.ins-63.T" DefaultValue="Type c at the caret."/>
+        <bt:String id="sm.ins-63-68.T" DefaultValue="Type ch at the caret."/>
+        <bt:String id="sm.ins-6a.T" DefaultValue="Type j at the caret."/>
+        <bt:String id="sm.ins-6a-68.T" DefaultValue="Type jh at the caret."/>
+        <bt:String id="sm.ins-f1.T" DefaultValue="Type ñ at the caret."/>
+        <bt:String id="sm.ins-1e6d.T" DefaultValue="Type ṭ at the caret."/>
+        <bt:String id="sm.ins-1e6d-68.T" DefaultValue="Type ṭh at the caret."/>
+        <bt:String id="sm.ins-1e0d.T" DefaultValue="Type ḍ at the caret."/>
+        <bt:String id="sm.ins-1e0d-68.T" DefaultValue="Type ḍh at the caret."/>
+        <bt:String id="sm.ins-1e47.T" DefaultValue="Type ṇ at the caret."/>
+        <bt:String id="sm.ins-74.T" DefaultValue="Type t at the caret."/>
+        <bt:String id="sm.ins-74-68.T" DefaultValue="Type th at the caret."/>
+        <bt:String id="sm.ins-64.T" DefaultValue="Type d at the caret."/>
+        <bt:String id="sm.ins-64-68.T" DefaultValue="Type dh at the caret."/>
+        <bt:String id="sm.ins-6e.T" DefaultValue="Type n at the caret."/>
+        <bt:String id="sm.ins-70.T" DefaultValue="Type p at the caret."/>
+        <bt:String id="sm.ins-70-68.T" DefaultValue="Type ph at the caret."/>
+        <bt:String id="sm.ins-62.T" DefaultValue="Type b at the caret."/>
+        <bt:String id="sm.ins-62-68.T" DefaultValue="Type bh at the caret."/>
+        <bt:String id="sm.ins-6d.T" DefaultValue="Type m at the caret."/>
+        <bt:String id="sm.ins-79.T" DefaultValue="Type y at the caret."/>
+        <bt:String id="sm.ins-72.T" DefaultValue="Type r at the caret."/>
+        <bt:String id="sm.ins-6c.T" DefaultValue="Type l at the caret."/>
+        <bt:String id="sm.ins-76.T" DefaultValue="Type v at the caret."/>
+        <bt:String id="sm.ins-15b.T" DefaultValue="Type ś at the caret."/>
+        <bt:String id="sm.ins-1e63.T" DefaultValue="Type ṣ at the caret."/>
+        <bt:String id="sm.ins-73.T" DefaultValue="Type s at the caret."/>
+        <bt:String id="sm.ins-68.T" DefaultValue="Type h at the caret."/>
+        <bt:String id="sm.ins-1e3b.T" DefaultValue="Type ḻ at the caret — Dravidian ḻ."/>
+        <bt:String id="sm.ins-1e43.T" DefaultValue="Type ṃ at the caret — anusvāra, alternate form."/>
+        <bt:String id="sm.ins-964.T" DefaultValue="Type । at the caret — daṇḍa."/>
+        <bt:String id="sm.ins-965.T" DefaultValue="Type ॥ at the caret — double daṇḍa."/>
+        <bt:String id="sm.ins-a8f3.T" DefaultValue="Type ꣳ at the caret — Vedic tiryak."/>
+        <bt:String id="sm.ins-331.T" DefaultValue="Type a̱ at the caret — anudātta (U+0331)."/>
+        <bt:String id="sm.ins-30d.T" DefaultValue="Type a̍ at the caret — svarita (U+030D)."/>
+        <bt:String id="sm.ins-30e.T" DefaultValue="Type a̎ at the caret — dīrgha svarita (U+030E)."/>
+        <bt:String id="sm.ins-310.T" DefaultValue="Type m̐ at the caret — candrabindu (U+0310)."/>
+        <bt:String id="sm.ins-a8fb.T" DefaultValue="Type ꣻ at the caret — Vedic anusvāra above (U+A8FB)."/>
+        <bt:String id="sm.ins-305.T" DefaultValue="Type a̅ at the caret — Ṛgvedic overline (U+0305)."/>
+        <bt:String id="sm.ins-2ce.T" DefaultValue="Type ˎ at the caret — virāma tick (U+02CE)."/>
+        <bt:String id="sm.ins-93d.T" DefaultValue="Type ऽ at the caret — avagraha."/>
+        <bt:String id="sm.script-iast.T" DefaultValue="Write the selected mantra lines in IAST, or the whole document when nothing is selected."/>
+        <bt:String id="sm.script-deva.T" DefaultValue="Write the selected mantra lines in Devanāgarī, or the whole document when nothing is selected."/>
+        <bt:String id="sm.script-tel.T" DefaultValue="Write the selected mantra lines in Telugu, or the whole document when nothing is selected."/>
+        <bt:String id="sm.script-tam.T" DefaultValue="Write the selected mantra lines in Tamil, or the whole document when nothing is selected."/>
+        <bt:String id="sm.reg-taittiriya.T" DefaultValue="Kṛṣṇa Yajurveda — Puruṣa Sūktam, Śrī Rudram, Mantra Puṣpam, Viṣṇu Sūktam. Accents are taken from the source as written, and an anusvāra before a sibilant or h is shown as gṁ / gm."/>
+        <bt:String id="sm.reg-rigveda.T" DefaultValue="Ṛgvedic sūktas — Durgā Sūktam, Śrī Sūktam, Bhāgya Sūktam. Accents are taken from the source as written, and the anusvāra keeps its own form rather than becoming a g-form."/>
+        <bt:String id="sm.reg-sukla-yajurveda.T" DefaultValue="Vājasaneyi texts — Rudrāṣṭādhyāyī and the Mādhyandina recension. As Taittirīya, including the g-forms, over the Śukla recension’s own accentuation."/>
+        <bt:String id="sm.reg-smarta.T" DefaultValue="Stotras, aṣṭakas, āgamic and purāṇic verse — Lalitā, Viṣṇu Sahasranāma. No accents are read from the source; the metre supplies them, the anusvāra is left as it is, and no semivowel aids are added."/>
+        <bt:String id="sm.reg-prose.T" DefaultValue="Saṅkalpa, nāmāvalīs, offerings and instructions. No accents at all, and the only pause is the one after a bīja."/>
+        <bt:String id="sm.part-new.T" DefaultValue="Give the selected lines rules of their own — a sūkta of another śākhā in the middle of the document. Word draws a frame around the part, titled with its register."/>
+        <bt:String id="sm.part-dissolve.T" DefaultValue="Undo the part the caret is in: its lines stay, and the document’s own rules apply to them again."/>
+        <bt:String id="sm.reapply.T" DefaultValue="Run the marking rules over the selection, or over the whole document when nothing is selected. What you placed by hand stays. (Ctrl+Shift+R)"/>
+        <bt:String id="sm.reapply-mine-out.T" DefaultValue="Run the marking rules and DROP what you placed by hand, over the selection or the whole document."/>
+        <bt:String id="sm.import-styles.T" DefaultValue="Bring the śikṣāmitra styles into this document — the mantra line, the translation, the holdings, the svaras and the rest — so it looks like a Veda Union document."/>
+        <bt:String id="sm.specimen.T" DefaultValue="Add the styles and a short marked passage at the end of the document, to see every mark as Word draws it."/>
+        <bt:String id="sm.settings.T" DefaultValue="The register and which rules run, the styles in this document, and the keyboard shortcuts — in the side panel."/>
+        <bt:String id="sm.guide.T" DefaultValue="The notation, mark by mark, in the browser."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
+  <ExtendedOverrides Url="https://localhost:3000/shortcuts.json"/>
 </OfficeApp>

@@ -95,7 +95,10 @@ describe('the measured scale is his file', () => {
     expect(scale.verse.color).toBe('var(--doc-ink)');
     expect(scale.verse.face).toBe('text');
     expect(scale.translation.face).toBe('serif');
-    expect(scale.step.face).toBe('ui');
+    /* His headings are Arial, as his mantra line is — every heading, header
+       and Normal line in the PDFs Word renders of three of his files is
+       ArialMT (`word.ts`). They were Calibri off his old template. */
+    expect(scale.step.face).toBe('text');
   });
 
   it('the page is A4 with 25mm margins, as his PDF measures', () => {

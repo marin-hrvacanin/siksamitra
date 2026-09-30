@@ -39,14 +39,21 @@ if (!existsSync(theirs)) {
 const files = readdirSync(mine).filter((f) => f.endsWith('.md') && f !== 'README.md');
 const stale = [];
 const missing = [];
+let synced = 0;
+
+/* Line endings are not what a guide says. `.gitattributes` checks these copies
+   out with LF while the platform's are CRLF, so a byte comparison called every
+   copy stale on a fresh clone — at line 1, with the two lines printed
+   identical. */
+const read = (path) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 
 for (const file of files) {
   const from = join(theirs, file);
   if (!existsSync(from)) { missing.push(file); continue; }
-  const a = readFileSync(join(mine, file), 'utf8');
-  const b = readFileSync(from, 'utf8');
+  const a = read(join(mine, file));
+  const b = read(from);
   if (a === b) continue;
-  if (sync) { copyFileSync(from, join(mine, file)); continue; }
+  if (sync) { copyFileSync(from, join(mine, file)); synced += 1; continue; }
   /* The first differing line, because "these files differ" sends the reader
      to a diff tool for something this can answer in one line. */
   const la = a.split('\n');
@@ -69,7 +76,7 @@ for (const file of files) {
 }
 
 if (sync) {
-  console.error(`\n  synced ${stale.length} file(s).\n`);
+  console.error(`\n  synced ${synced} file(s).\n`);
   process.exit(0);
 }
 if (stale.length === 0 && missing.length === 0) {
@@ -80,5 +87,7 @@ console.error(
   `\n  ${stale.length} guide(s) have drifted`
   + `${missing.length > 0 ? `, ${missing.length} no longer exist upstream` : ''}.`,
 );
-console.error('  Run `npm run sync:authoring` to bring the copies up to date.\n');
+console.error('  Run `npm run sync:authoring` to bring the copies up to date —');
+console.error('  unless the copy here is the newer one, which sync would erase: carry');
+console.error('  it to the platform instead.\n');
 process.exit(1);

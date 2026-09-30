@@ -77,6 +77,10 @@ export default defineConfig({
   build: {
     outDir: join(here, 'dist'),
     emptyOutDir: true,
-    rollupOptions: { input: { taskpane: join(here, 'taskpane.html'), commands: join(here, 'commands.html') } },
+    rollupOptions: {
+      input: {
+        taskpane: join(here, 'taskpane.html'), said: join(here, 'said.html'), type: join(here, 'type.html'),
+      },
+    },
   },
 });

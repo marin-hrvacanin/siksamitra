@@ -1,23 +1,123 @@
 # śikṣāmitra inside Microsoft Word
 
-What the add-in is, how to run it, how to install it, how it is tested, and
-what it takes to get it into Microsoft's store. For what it does to a document
-— the styles, the marks, what Word can and cannot represent — read
-`apps/word-addin/src/model/paragraph.ts`, which is where that is written down.
+How to install it (the first section is for anybody — no programming needed),
+what it is, how to run and test it, and what it takes to get it into
+Microsoft's store. For what it does to a document — the styles, the marks, what
+Word can and cannot represent — read `apps/word-addin/src/model/paragraph.ts`
+and `packages/interop/src/word/script-runs.ts`, which is where that is written
+down.
+
+---
+
+## Installing it — for anybody
+
+It is not in Microsoft's store yet (that is a submission with an identity check
+behind it — see the end of this page). Until it is, it installs from one small
+file, and **keeps itself up to date**.
+
+**Windows** (Word 2019, 2021, 2024 or Microsoft 365):
+
+1. Download
+   [`install-windows.cmd`](https://marin-hrvacanin.github.io/siksamitra/word-extension/install-windows.cmd).
+2. Double-click it. If Windows says it "protected your PC", choose
+   *More info → Run anyway* — it is a short text file anyone can open and read.
+   It needs no administrator: it installs for you alone.
+3. Close Word if it is open, and start it again. The **śikṣāmitra** tab is on
+   the ribbon.
+
+To remove it,
+[`uninstall-windows.cmd`](https://marin-hrvacanin.github.io/siksamitra/word-extension/uninstall-windows.cmd)
+does the same three things backwards.
+
+**Mac**: download
+[`install-mac.command`](https://marin-hrvacanin.github.io/siksamitra/word-extension/install-mac.command),
+double-click it (the first time, right-click → *Open*), then quit Word and open
+it again.
+
+**Word on the web**: Home → Add-ins → *Upload My Add-in*, and give it
+[`manifest.xml`](https://marin-hrvacanin.github.io/siksamitra/word-extension/manifest.xml).
+
+**Updates are automatic.** Word loads the add-in's pages from the web every time
+it starts, so a new version is simply there. The Windows installer also fetches
+the manifest again once a day, so when a release adds a button, it appears at
+the next start of Word. On a Mac, running `install-mac.command` again does the
+same.
 
 ---
 
 ## What it is, physically
 
 An Office add-in is **a web page Word loads over HTTPS, plus an XML manifest
-naming its URLs.** There is no server, no installer and no binary. So:
+naming its URLs.** There is no server, no binary, and nothing it sends
+anywhere. So:
 
 - **publishing it** is copying a folder somewhere with a certificate;
 - **installing it** is putting the manifest where Word looks;
 - **updating it** is replacing the files in that folder.
 
-The folder is `apps/word-addin/dist` plus one manifest, assembled by
-`scripts/word-publish.mjs`. 257 kB, eight files.
+The folder is `apps/word-addin/dist` plus the manifest and the three installer
+files, assembled by `scripts/word-publish.mjs`.
+
+**Everything is on the ribbon.** The śikṣāmitra tab holds every command —
+Holding, Svara, Change, Reading aids, Insert (typing help and the IAST
+palettes), Script, Rules (registers, parts, re-applying), Document — and the
+right-click menu repeats the marks. The manifest is generated from one table,
+`apps/word-addin/src/commands-table.ts`, together with every icon and every
+keyboard shortcut (`npm run gen:word-commands`), and a test fails if the
+manifest on disk is not what the table generates.
+
+**One page, loaded once.** `taskpane.html` is the shared runtime Word keeps
+loaded behind the tab (`runtime.ts` registers each command). When *Settings* is
+pressed the same page is shown as a side panel: the register (for the part the
+caret is in, or the document), the stages the rules run, the styles in the
+document, and the keyboard shortcuts. What a command has to *say* — a refusal, a
+question before the whole document is changed, the typing help — is an Office
+dialog (`said.html`, `type.html`).
+
+**A marking with nothing selected goes on the letter before the caret**, and the
+caret comes back where it was, so typing carries on; a pause and a svarabhakti
+go *at* the caret. Nothing is sticky: the next letter typed is plain.
+
+**Alt and a letter types its IAST form** — Alt+A ā, Alt+S ś, Alt+Shift+S ṣ —
+the app's F9 table, one chord each, because Word allows a chord and never a
+sequence. Ctrl+Shift+I opens the typing help. In a Devanāgarī, Telugu or Tamil
+line the same keys type that script's letter, and a vowel after a consonant is
+its vowel sign (क then ā is का).
+
+**Scripts.** A mantra line may be written in IAST, Devanāgarī, Telugu or Tamil,
+and every line is read in the script it is in. *Script → Devanāgarī* rewrites
+the selected lines (or, with nothing selected, the whole document, after
+asking) with every mark kept; *Script → IAST* gives back exactly what was
+there. What a cluster cannot show — which consonant of र्ष a box is on, a raised
+reading aid — is kept in Word's own hidden text after it. Headings and
+translations are never transliterated.
+
+**Parts.** One document may hold chants of different traditions: *Rules → New
+part from these lines* makes the selection a content control with rules of its
+own, and *Register* then applies to that part only. Outside every part, the
+document's register (kept in the document's own settings) applies.
+
+---
+
+## The desktop app and Word documents
+
+The app opens and writes all three kinds of `.docx`, with the clean style names
+(`Mantra`, `Translation`, `Holding · Short`) for anything it writes new, and his
+legacy names read and kept wherever a document already uses them:
+
+- **his hand-made files** are read from their styles (`importDocx`);
+- **the add-in's documents** the same way, and a Word part comes back as that
+  section's register, the document's register from the add-in's settings, and a
+  line in any script as the IAST it is;
+- **the app's own exports** carry the whole document inside them, and what was
+  done to the page in Word since — a verse edited, marked, added or deleted —
+  is taken back into it (`word/body-edits.ts`), while untouched verses keep
+  everything the file carried.
+
+A `.docx` in the *Veda Union* style is his document: his sheet (A4, 25 mm left,
+9 mm right, 15 mm top, 10 mm bottom), his running head (the chant and the step
+over a rule, the page number at the right), his styles and colours, the pauses
+the rules placed in his blue and those placed by hand in his red.
 
 ---
 
@@ -25,9 +125,8 @@ The folder is `apps/word-addin/dist` plus one manifest, assembled by
 
 `scripts/word-addin.mjs` holds them as data — the base URL, the `<Id>` Word
 keys the add-in by, and the display name. One manifest
-(`apps/word-addin/manifest.xml`, the localhost one, because that is what
-`office-addin-debugging` and `office-addin-manifest` want) and the published
-ones are derived from it by substitution.
+(`apps/word-addin/manifest.xml`, the localhost one) and the published ones are
+derived from it by substitution.
 
 | host | serves from | for |
 | --- | --- | --- |
@@ -35,17 +134,11 @@ ones are derived from it by substitution.
 | `pages` | `https://marin-hrvacanin.github.io/siksamitra/word-extension` | everybody; published with the landing page |
 | `vedaunion` | `https://vedaunion.org/siksamitra/word-extension` | the same folder, uploaded there |
 
-**Each host has its own GUID.** Word keys an installed add-in by that id, so
-two manifests sharing one would be the same add-in: installing the local build
-would silently replace the published one and the Home-tab button would point
-at whichever was registered last. With separate ids both can be installed at
-once, which is what developing the add-in on the machine you also use it on
-actually needs.
-
-The substitution is **textual, not an XML rewrite**. `CT_OfficeApp` is a schema
-sequence and Word reports a violation of it as an add-in that does nothing —
-no error, no warning, no pane. Any library that pretty-prints or reorders the
-file is a silent failure.
+**Each host has its own GUID**, so the local build and the published one can be
+installed side by side. The substitution is **textual, not an XML rewrite**:
+`CT_OfficeApp` is a schema sequence and Word reports a violation of it as an
+add-in that does nothing. Every icon URL carries `?v=<version>`, because Word
+caches an icon by its URL for good.
 
 ---
 
@@ -53,71 +146,32 @@ file is a silent failure.
 
 ```bash
 npm run check:word-addin      # typecheck, build, and assemble all three folders
+npm run gen:word-commands     # the manifest's tab, menus, shortcuts and every icon, from the table
 npm run word-addin:publish    # out/word-extension for GitHub Pages
-npm run word-addin:publish -- --host vedaunion --out out/vu
 npm run word-addin:validate   # Microsoft's own validator, over all three (needs the network)
 
 npm run word-addin:certs      # once: a local certificate authority (Windows asks you to confirm)
 npm run word-addin:serve      # https://localhost:3000, loopback only, over the BUILT folder
-npm run word-addin:install                    # sideload the published one
 npm run word-addin:install -- --host local    # sideload the local one
+npm run word-addin:install                    # sideload the published one
 npm run word-addin:install -- --list
 npm run word-addin:install -- --uninstall
 
-npm run check:word:live       # the whole add-in against a real Word, over COM
+npm run check:word:live       # the add-in's Word I/O against a real Word, over COM
+CHROME=<path> npm run check:word:pane   # Settings and both dialogs, actually rendered
 ```
 
-`npm run -w @siksamitra/word-addin dev` is Vite over the SOURCE, for editing
-the pane. `word-addin:serve` is the BUILT folder — the same bytes that get
-uploaded — which is what makes "it works locally" mean "it works published".
+`word-addin:serve` serves the BUILT folder — the same bytes that get uploaded —
+which is what makes "it works locally" mean "it works published". The server
+answers `cache-control: no-cache`, so Word revalidates rather than keeps a stale
+page; `no-store` stopped Word caching the ribbon icons at all and drew them
+blank.
 
----
-
-## Installing it, by hand
-
-There is no installer. Word looks in places, and putting the manifest in one
-of those places **is** the installation. `scripts/word-catalog.mjs` holds the
-paths; `npm run word-addin:install` does all of it.
-
-**Windows.** A folder registered as a trusted catalog under
-`HKCU\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs`: a subkey named with
-a GUID, holding `Id` (the same GUID), `Url` (the folder) and `Flags` (a DWORD
-`1`, meaning show it in the menu). `Flags` as a string leaves the folder
-registered and invisible, with nothing written anywhere to say why. Restart
-Word, then **Insert → My Add-ins → Shared Folder**.
-
-**macOS.** No registry and no catalog: drop the manifest into
-`~/Library/Containers/com.microsoft.Word/Data/Documents/wef` and restart Word.
-
-**Word on the web.** Home → Add-ins → Upload My Add-in, and give it the
-manifest.
-
-**A whole organisation.** A Microsoft 365 administrator deploys it from the
-admin centre's *Integrated apps* page with the same manifest, to everybody or
-to a group. Nobody installs anything. This is the route that does not need the
-store, and for an organisation it is better than the store.
-
-The catalog folder is under `%LOCALAPPDATA%`, not in the checkout, because a
-registration outlives a clone: a catalog pointing at a folder that has been
-moved or renamed is an add-in that vanishes from Word's menu with no
-explanation.
-
----
-
-## The certificate, for the local host
-
-`office-addin-dev-certs install` writes a local certificate authority and asks
-Windows to trust it — one dialog, once. Office refuses a task pane over `http`
-in development as much as in production, and reports the refusal as a blank
-pane.
-
-**It expires in 30 days.** `word-addin:serve` prints how many days are left and
-refuses to start once it has gone, because a pane that loaded yesterday and is
-blank today, with no error anywhere in Word, is exactly this.
-
-The server binds `127.0.0.1` only. It is a developer's laptop on hotel and
-conference networks, the manifest says `localhost`, and the certificate is
-valid for nothing else.
+**The sideload** (`word-addin:install` and the friends' installer alike) is
+Microsoft's documented one: the manifest's path under
+`HKCU\Software\Microsoft\Office\16.0\WEF\Developer`, named with the add-in's id.
+Word loads it at start. A shared-folder catalog pointing at a local folder was
+the first route; Word accepted it and never listed it.
 
 ---
 
@@ -127,81 +181,58 @@ Rule 13: every tier that can see it.
 
 | tier | what it holds |
 | --- | --- |
-| unit | `scripts/__tests__/word-addin.test.mjs` — the manifest every host gets, and the five faults that produce a blank pane rather than an error. `word-catalog.test.mjs` — the registry values, including `Flags` being a DWORD. `word-serve.test.mjs` — eight attempts to escape the served folder. `apps/word-addin/src/model/__tests__/setup.test.ts` — the style vocabulary, and that the specimen USES every style rather than merely defining it. |
-| integration | `apps/word-addin/src/model/__tests__/round-trip.test.ts` — a paragraph out and back. |
-| component | `tests/component/word-pane.test.ts` — what a person sees: the buttons, the document group, the confirmation on the destructive button, and that document text is displayed and never interpreted. |
-| security | `tests/security/word-addin.test.ts` — OOXML injection through document text, and what the inserted package is not allowed to contain. |
-| live | `npm run check:word:live` — the whole thing against a real Word, over COM. |
+| unit | the manifest every host gets (`scripts/__tests__/word-addin.test.mjs`); the installers (`word-friend-installers.test.mjs`); the command table against the manifest on disk; the style vocabulary; parts and registers (`packages/interop/src/__tests__/rule-parts.test.ts`, `docx-registers-scripts.test.ts`); script lines, offsets and the caret (`apps/word-addin/src/model/__tests__/script-lines.test.ts`); Word edits merged back (`body-edits.test.ts`); the vowel-sign rule (`packages/edit/src/__tests__/text-commands.test.ts`) |
+| integration | the whole corpus through Word in every script — 573 of 573 verses exact, the same bytes on a second write, and IAST → Devanāgarī → Telugu → Tamil → IAST arriving where it began (`tests/integration/script-round-trip.test.ts`); seeded random lines with random marks in every script, none refused and none changed (`script-fuzz.test.ts`) |
+| component | every ribbon command pressed against a Word faked at its edges (`tests/component/word-runtime.test.ts`); Settings; the dialogs; the page with and without office.js |
+| security | OOXML injection through document text, and what the inserted package may not contain (`tests/security/word-addin.test.ts`) |
+| live | `npm run check:word:live` — a real Word, over COM |
+| browser | `check:word:pane` — the published pages in a real browser, at Word's sizes, in light, dark and high contrast |
 
-**The live gate is where the real faults were.** Four of them, three silent,
-two corrupting the owner's own file. It is not in `npm run check` because it
-needs Word installed, and it skips loudly rather than passing when there is
-none — the same arrangement as the browser gates.
+**The live gate is where the real faults were.** It establishes what nothing
+else can: a fresh document has none of the custom styles; the specimen puts
+them all in and they survive its deletion (*Import styles*); a marked line
+comes back as itself in his mantra style at 16 pt; **his own document is not
+damaged** — his real file, opened read-only, its mantra lines written back as
+the add-in writes them and read out of Word again, letter for letter; Word and
+the reader agree how many paragraphs there are; and **a Devanāgarī, Telugu and
+Tamil line comes back exactly**, hidden runs and all. It is not in
+`npm run check` because it needs Word, and it skips loudly when there is none.
 
-What it establishes that nothing else can:
+**The pages gate** (`tools/word-pane.mjs`) found the typing help's labels at
+2.6:1 contrast, a face the pages asked for and never loaded, an icon drawn
+black on a dark dialog, and a window too short for a 1366 × 768 laptop — all
+fixed, all checked there now.
 
-1. a fresh Word document has none of the custom styles — so the pane's
-   detection is answering a real question;
-2. the specimen puts every one of them in (Word merges the styles an insertion
-   USES, and says nothing about the rest);
-3. they survive the specimen being deleted, which is the whole basis of
-   *Add the styles*;
-4. a marked line comes back out of Word as itself, and Word resolved it to his
-   mantra style at his 16 pt;
-5. **his own document is not damaged** — his real file, opened read-only, its
-   mantra lines written back exactly as the add-in would and read out of Word
-   again, letter for letter;
-6. Word and our reader agree how many paragraphs there are, which
-   `writeDocument` depends on.
-
-`WORD_WRITE_MODE=whole` reproduces the paragraph-eating fault, so arm 6 can be
-seen failing.
+**Invisible characters were tried for what a script line cannot show, and
+Word draws them**: one variation selector after a letter is hidden, a second in
+a row and every TAG character are boxes on the page, and an accent in a run of
+its own sits on a dotted circle. Measured in Word's own PDF; the line is now
+written with the accent in its cluster's run and the rest in hidden text.
 
 **A save cannot be driven from an invisible Word** on this machine: `SaveAs2`
-blocks indefinitely — measured at eighteen minutes on 100% of a core, with no
-dialog anywhere — and every variant blocks the same way. The gate therefore
-does what the add-in does: insert, read back, never save. That is the more
-faithful test in any case; Word's own save fidelity is measured by
-`check:export:word`.
+blocks indefinitely. The gate therefore does what the add-in does — insert,
+read back, never save. A visible Word exports PDFs fine, which is how the
+pages were compared with his.
 
 ---
 
 ## Getting it into AppSource
 
 The store is a **submission**, not a script, and two steps need the owner
-personally. Everything else is done.
-
-**Done:**
-
-- the manifest passes `office-addin-manifest validate` — Microsoft's own
-  acceptance-test service — for all three hosts, with no warnings;
-- it reaches seven platforms: Word on Windows (2019+ and Microsoft 365), Word
-  on Mac (2016+, 2019+, Microsoft 365), Word on the web, Word on iPad;
-- the icons exist at 16, 32 and 80 px and are served over HTTPS from the
-  published host;
-- `<SupportUrl>`, `<GetStarted>` and the localisable strings are filled in;
-- the add-in does not collect, transmit or store anything: it is a static page
-  and every operation is local to the open document. That is the answer to the
-  privacy questions in the submission form, and it is true rather than
-  convenient.
-
-**What only the owner can do:**
+personally:
 
 1. **A Microsoft Partner Center account with a verified publisher identity.**
-   Individual or company, with an identity check behind it. This is the long
-   pole: verification takes days, sometimes longer, and cannot be delegated.
+   Verification takes days, and cannot be delegated.
 2. **Press Submit.** The listing needs a name, a summary, a description,
    screenshots (1366×768), a 300×300 logo, a support URL, a privacy-policy URL
-   and a terms-of-use URL. The last two want pages on a domain — the landing
-   page can carry both.
+   and a terms-of-use URL — the landing page carries the last two.
 
-Then Microsoft validates the add-in on every platform the manifest claims,
-which is why claiming only what the requirement sets actually reach matters:
-`WordApi 1.3`, and nothing higher.
-
-**Until then it is not unavailable.** Anybody can install it from the manifest
-in three steps, and an organisation can deploy it to everyone centrally
-without the store at all. The store is discovery, not access.
+Everything else is done: the manifest passes `office-addin-manifest validate`
+for all three hosts, the icons exist at 16, 32 and 80 px over HTTPS, and the
+add-in collects, transmits and stores nothing — every operation is local to the
+open document. **Until then it is not unavailable**: the installers above, and
+an organisation's administrator can deploy it to everyone from the Microsoft
+365 admin centre's *Integrated apps* page with the same manifest.
 
 ---
 
@@ -210,8 +241,14 @@ without the store at all. The store is discovery, not access.
 Read `apps/word-addin/src/model/carry.ts`. In short: a Word run carries ONE
 character style, so a letter that is both boxed and substituted needs a
 combined style of its own, and a marking with no Word equivalent is reported
-in the pane rather than dropped quietly.
-
-And what the add-in refuses: a paragraph carrying text the reader cannot place
+rather than dropped quietly. A paragraph carrying text the reader cannot place
 — an inline comment, for instance — is not written back at all, because
-writing it would delete that text. The pane says so and disables nothing else.
+writing it would delete that text; the add-in says so.
+
+Known differences from his hand-made files, when the app writes a document from
+its own model rather than editing his: a source line is written above what it
+names (as he does), but blank lines between verse groups and his footer text are
+not in the model and are not written; a verse's lines are one paragraph broken
+by line breaks (as his Kanakadhārā), where some of his files give each pāda a
+paragraph of its own; and a translation's lines are a paragraph each (as his
+sādhanā and Kanakadhārā), where his Śivopāsana breaks one paragraph.

@@ -53,6 +53,14 @@ export function charStyles(
   mode: DocumentMode,
   families: Families,
   used: ReadonlySet<string>,
+  /**
+   * The two box weights, in eighths of a point, when the look is HIS — the
+   * `word` theme. His documents draw a short holding at 0.25 pt and a long
+   * one at 1 pt (`WORD_MARKS`), and a document made in Word beside his must
+   * look like his; the page-proportional stroke below is for every other
+   * theme, where the `.docx` has to match the PDF instead.
+   */
+  measured?: { short: number; long: number },
 ): string {
   const verse = scale.verse;
   const markRatio = WORD_MARKS.svara.size
@@ -71,7 +79,7 @@ export function charStyles(
     `<w:style w:type="character" w:customStyle="1" w:styleId="${id}"><w:name w:val="${id}"/>`
     + '<w:uiPriority w:val="1"/><w:qFormat/><w:rPr>'
     + (also === undefined ? '' : `<w:i/><w:color w:val="${wordHex(also)}"/>`)
-    + `<w:bdr w:val="single" w:sz="${holdStroke(verse.size, which)}" w:space="0"`
+    + `<w:bdr w:val="single" w:sz="${measured?.[which] ?? holdStroke(verse.size, which)}" w:space="0"`
     + ` w:color="${wordHex(color)}"/></w:rPr></w:style>`;
   /*
    * A MARK'S OWN FACE AND WEIGHT, which this used to have no way of writing.

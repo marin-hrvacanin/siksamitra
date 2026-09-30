@@ -20,7 +20,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { TYPES, certDays, fileFor } from '../word-serve.mjs';
+import { LOOPBACKS, TYPES, certDays, fileFor } from '../word-serve.mjs';
 
 /* `<tmp>/root` is what is served. `<tmp>/secret.txt` is beside it, which is
    what an escape would reach. */
@@ -163,5 +163,16 @@ describe('the certificate’s life', () => {
   it('and goes negative once it has expired', () => {
     expect(certDays(FIXTURE_CERT, Date.parse('2036-09-08T14:17:38Z'))).toBe(-1);
     expect(certDays(FIXTURE_CERT, Date.parse('2037-09-07T14:17:38Z'))).toBe(-365);
+  });
+});
+
+describe('where it listens', () => {
+  /*
+   * `localhost` resolves to `::1` first on Windows, so both loopbacks are
+   * bound for any client that does not fall back. And nothing that is not
+   * loopback, because the machine may be on anybody's network.
+   */
+  it('is both loopbacks, and only loopbacks', () => {
+    expect([...LOOPBACKS].sort()).toEqual(['127.0.0.1', '::1']);
   });
 });

@@ -11,11 +11,14 @@ import type { ReactNode } from 'react';
 import { IAST_PALETTE, leaderFor } from './iast.js';
 
 export function IastKeys(
-  { insert, leader = true }: {
+  { insert, leader = true, leaderLabel = 'F9' }: {
     /** Insert a character at the caret, as if it had been typed. */
     insert: (ch: string) => void;
     /** Show the F9 letter on each key — only where F9 does something. */
     leader?: boolean;
+    /** What the tooltip calls the leader: `F9` in the app; in Word's typing
+     *  help the dialog is already armed, so it is just the letter to press. */
+    leaderLabel?: string;
   },
 ): ReactNode {
   return (
@@ -26,7 +29,7 @@ export function IastKeys(
           <div className="iast__keys">
             {group.keys.map((key) => {
               const f9 = leader ? leaderFor(key.ch) : undefined;
-              const hint = [key.name, f9 === undefined ? undefined : `F9 ${f9}`]
+              const hint = [key.name, f9 === undefined ? undefined : `${leaderLabel} ${f9}`]
                 .filter((s) => s !== undefined).join(' · ');
               return (
                 <button

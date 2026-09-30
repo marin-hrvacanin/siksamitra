@@ -28,7 +28,8 @@
  * own: `parseLetters` runs per run, so it cannot combine with the letter before
  * it into a digraph.
  */
-import type { WordRun } from '@siksamitra/interop';
+import { iastPositions, type WordRun } from '@siksamitra/interop';
+import type { ScriptKey } from '@siksamitra/engine';
 import { decodeRuns } from './paragraph.js';
 
 /** A letter that is one character in every script this program reads. */
@@ -56,8 +57,26 @@ function prefix(runs: readonly WordRun[], n: number): WordRun[] {
   return out;
 }
 
-export function offsetMap(runs: readonly WordRun[]): OffsetMap {
-  const wordText = runs.map((r) => r.text).join('');
+/**
+ * The map for a line, in the script it is written in.
+ *
+ * A line in Devanāgarī, Telugu or Tamil is followed into its IAST first — the
+ * reader says where each Word offset lands (`iastPositions`) — and the IAST
+ * map below takes it the rest of the way. An offset inside a conjunct is the
+ * end of the conjunct: a letter of a cluster cannot be marked apart from it.
+ */
+export function offsetMap(
+  runs: readonly WordRun[], script: ScriptKey = 'iast',
+  /** Do Word's offsets count hidden text? The file's do; Word's `text` of a
+   *  paragraph may not, and `locate` asks which it is. */
+  countHidden = true,
+): OffsetMap {
+  const wordText = runs.filter((r) => countHidden || r.hidden !== true).map((r) => r.text).join('');
+  if (script !== 'iast') {
+    const { runs: iast, at } = iastPositions(runs, script, undefined, countHidden);
+    const inner = offsetMap(iast);
+    return { wordText, text: inner.text, model: at.map((i) => inner.model[i] ?? inner.text.length) };
+  }
   const whole = decodeRuns(runs);
   const model: number[] = [];
   let highest = 0;

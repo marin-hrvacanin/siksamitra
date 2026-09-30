@@ -110,7 +110,7 @@ function main(folder) {
   const root = resolve(folder);
   const { port } = new URL(ADDIN_HOSTS.local.base);
 
-  createServer({ key: readFileSync(KEY), cert: readFileSync(CERT) }, (req, res) => {
+  const handler = (req, res) => {
     const file = fileFor(root, req.url);
     if (file === null) {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
@@ -120,27 +120,53 @@ function main(folder) {
     res.writeHead(200, {
       'content-type': TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream',
       /* The pane is reloaded constantly while a person works, and nothing here
-         is versioned by name except the bundle. */
-      'cache-control': 'no-store',
+         is versioned by name except the bundle — so every load revalidates.
+         `no-cache`, NOT `no-store`: Word's ribbon downloads each icon INTO
+         its cache, and an icon it may not store is an icon it never draws —
+         every button was Word's placeholder while the same files from Pages
+         (which allows caching) drew. */
+      'cache-control': 'no-cache',
       /* The add-in is framed BY WORD, which is the point, so framing cannot be
          forbidden — but sniffing a content type into something else can be. */
       'x-content-type-options': 'nosniff',
       'referrer-policy': 'no-referrer',
     });
     res.end(readFileSync(file));
+  };
+
   /*
-   * BOUND TO THE LOOPBACK INTERFACE, not to every interface. `listen(port)`
+   * BOUND TO THE LOOPBACK INTERFACES, not to every interface. `listen(port)`
    * with no host serves the folder to the whole network the machine is on —
    * a laptop on a hotel or conference network included. The manifest says
    * `https://localhost:3000` and the certificate is valid for nothing else,
    * so nobody else has any business reaching it.
+   *
+   * BOTH loopbacks, because `localhost` resolves to `::1` first on Windows,
+   * and a client that does not fall back to 127.0.0.1 would find nothing. The
+   * blank ribbon icons that led here were in fact `no-store` (above) — the
+   * icons drew once it was `no-cache`, with both loopbacks bound — so this is
+   * a precaution for such a client, not a measured fault.
    */
-  }).listen(Number(port), '127.0.0.1', () => {
-    console.log(`\n  ${ADDIN_HOSTS.local.base}  <-  ${folder}`);
-    console.log(`  loopback only; the certificate is good for ${days} more day(s)\n`);
-    console.log('  Word: Insert -> My Add-ins -> Shared Folder -> śikṣāmitra (local)\n');
-  });
+  const tls = { key: readFileSync(KEY), cert: readFileSync(CERT) };
+  for (const host of LOOPBACKS) {
+    const server = createServer(tls, handler);
+    server.on('error', (e) => {
+      /* A machine with IPv6 switched off has no ::1 to bind; that is not a
+         reason to refuse to serve on 127.0.0.1. */
+      if (host !== '127.0.0.1') return;
+      throw e;
+    });
+    server.listen(Number(port), host, () => {
+      if (host !== '127.0.0.1') return;
+      console.log(`\n  ${ADDIN_HOSTS.local.base}  <-  ${folder}`);
+      console.log(`  loopback only; the certificate is good for ${days} more day(s)\n`);
+      console.log('  Word: Insert -> My Add-ins -> Shared Folder -> śikṣāmitra (local)\n');
+    });
+  }
 }
+
+/** Where the server listens: loopback, in both families. */
+export const LOOPBACKS = ['127.0.0.1', '::1'];
 
 /* Run only when this file IS the program. It exports `fileFor`, and a test
    that imports it must not start a server on port 3000. */

@@ -33,10 +33,11 @@ const IN_THE_WAY: readonly (readonly [RegExp, string])[] = [
   [/<w:hyperlink\b/, 'a link'],
   /* Word's own scratch bookmarks go: `_GoBack` marks where the caret last was
      and is rewritten on every save, `_Hlk…` is left behind by a copy and
-     nothing points at it, and `_smCaret` is the Word add-in's own caret
-     mark, deleted in the batch that writes it. Any other — `_Toc…`, `_Ref…`, a named one — is
+     nothing points at it, and `_smCaret` / `_smCaretEnd` are the Word
+     add-in's own caret and selection marks, deleted in the batch that writes
+     them. Any other — `_Toc…`, `_Ref…`, a named one — is
      somebody's cross-reference target. */
-  [/<w:bookmarkStart\b(?![^>]*w:name="(?:_GoBack|_Hlk\d+|_smCaret)")/, 'a bookmark — a table of contents or a cross-reference points here'],
+  [/<w:bookmarkStart\b(?![^>]*w:name="(?:_GoBack|_Hlk\d+|_smCaret|_smCaretEnd)")/, 'a bookmark — a table of contents or a cross-reference points here'],
   [/<w:sym\b/, 'a symbol inserted from a font'],
   /* Direct formatting on a run — bold, a highlight, a colour — is the person's
      own, and our runs carry only a style. His files have none. */

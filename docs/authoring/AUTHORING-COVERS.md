@@ -37,6 +37,34 @@ A multi-class series is numbered; a single self-contained video is "Complete":
 The label is structural — it tells the viewer where in the series they are — so
 only use it when the video really is a numbered part. Don't decorate.
 
+### The label font cannot draw every IAST letter
+
+**Keep dot-below IAST letters out of `--label`.** The label is set in Hanken
+(the grotesk), which carries the acute and macron letters (`ś ā ī ū ñ`) but
+**not** the dot-below family — `ṣ ṛ ṃ ṭ ḍ ṇ ḥ` or their capitals. Cormorant,
+which sets the title and subtitle, has all of them.
+
+Pillow has no font fallback, so a missing glyph is drawn as an empty box and
+nothing complains. That is how `--label "Śikṣā · Part 1"` became **ŚIK□Ā · PART 1**
+on a cover headed for YouTube. On the website the same string is fine, because
+`--font-grotesk` is a CSS chain and the browser falls back per character; here
+there is nothing to fall back to.
+
+So put the Sanskrit term where it can be rendered:
+
+```bash
+# wrong — Ṣ is not in the label font
+--label "Śikṣā · Part 1"  --subtitle "The science of pronunciation"
+
+# right — the term moves to the subtitle (Cormorant)
+--label "Phonetics · Part 1"  --subtitle "Śikṣā — the science of pronunciation"
+```
+
+`gen_cover.py` now **refuses to render** rather than emit a box: it reads each
+font's cmap (via `fonttools`, in `requirements.txt`) and exits non-zero naming the
+offending character. If `fonttools` is missing the check is skipped, and it says
+so loudly on stderr — a skipped guard otherwise looks exactly like a passing one.
+
 ### Run it
 
 ```bash

@@ -27,7 +27,9 @@
 import type { DocumentMode, DocumentTheme } from '@siksamitra/tokens/document-themes';
 import { typeScaleOf } from '@siksamitra/tokens/document-themes';
 import type { DocRole, DocTypeScale, RoleMetric } from '@siksamitra/tokens/document-type';
-import { WORD_SUBSTITUTES } from '@siksamitra/tokens/word';
+import {
+  WORD_BODY_LINE, WORD_HEADER_RULE, WORD_HEADER_TABS, WORD_MARKS, WORD_SUBSTITUTES, WORD_TITLE,
+} from '@siksamitra/tokens/word';
 import type { PageGeometry } from '@siksamitra/layout';
 import { xmlEscape } from '../xml.js';
 import { charStyles } from './char-styles.js';
@@ -231,6 +233,38 @@ function paraStyle(
     + '</w:style>';
 }
 
+/**
+ * THE `word` THEME IS HIS DOCUMENT, so two things the role table cannot say
+ * are written as his file says them: a Normal line and a heading are Word's
+ * 1.08 (his `docDefaults`, which neither sets over), and the header carries his two tab stops. `CT_PPrBase` is a
+ * sequence — `tabs` before `spacing` — so the tabs go in front.
+ */
+function asHis(xml: string): string {
+  if (/w:styleId="(Normal|Heading[1-4])"/.test(xml)) {
+    return xml.replace('w:line="240" w:lineRule="auto"', `w:line="${WORD_BODY_LINE}" w:lineRule="auto"`);
+  }
+  if (xml.includes('w:styleId="Header"')) {
+    return xml.replace('<w:pPr>', '<w:pPr><w:tabs>'
+      + `<w:tab w:val="center" w:pos="${WORD_HEADER_TABS.center}"/>`
+      + `<w:tab w:val="right" w:pos="${WORD_HEADER_TABS.right}"/></w:tabs>`);
+  }
+  return xml;
+}
+
+/** His `Title`, from `WORD_TITLE`. Word knows `Title` by that name. */
+function titleStyle(): string {
+  const t = WORD_TITLE;
+  const hp = Math.round(t.size * 2);
+  return '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/>'
+    + '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>'
+    + `<w:pPr><w:spacing w:after="${Math.round(t.after * 20)}" w:line="${Math.round(t.leading * 20)}"`
+    + ' w:lineRule="exact"/>'
+    + `<w:ind w:left="${Math.round(t.indent * 20)}" w:hanging="${Math.round(t.hanging * 20)}"/>`
+    + '<w:jc w:val="center"/></w:pPr>'
+    + `<w:rPr><w:rFonts w:ascii="${t.face}" w:hAnsi="${t.face}"/>${t.bold ? '<w:b/>' : ''}`
+    + `<w:sz w:val="${hp}"/><w:szCs w:val="${hp}"/></w:rPr></w:style>`;
+}
+
 const W_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
 
 export interface StyleSheetInput {
@@ -268,13 +302,17 @@ export function stylesXml(input: StyleSheetInput): string {
     + '</w:pPrDefault></w:docDefaults>';
   /* What `docDefaults` sets, and therefore what every style inherits. */
   const inherited = roleColor(body.color, mode);
+  const his = input.theme.id === 'word';
   const paras = Object.entries(PARA_STYLE_OF)
     .map(([role, id]) => paraStyle(id, role as DocRole, scale, mode, families, inherited))
-    .join('');
+    .map((xml) => (his ? asHis(xml) : xml))
+    .join('') + (his ? titleStyle() : '');
   const used = input.usedStyles ?? new Set<string>();
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
     + `<w:styles ${W_NS}>${defaults}${paras}`
-    + `${charStyles(scale, mode, families, used)}</w:styles>`;
+    + `${charStyles(scale, mode, families, used, input.theme.id === 'word'
+      ? { short: WORD_MARKS.holdShort.weight * 8, long: WORD_MARKS.holdLong.weight * 8 }
+      : undefined)}</w:styles>`;
 }
 
 /**
@@ -284,10 +322,12 @@ export function stylesXml(input: StyleSheetInput): string {
  * pads the exported page's column with — so the `.docx`'s margins and the
  * PDF's are one number, not two.
  */
-export function sectPr(page: PageGeometry): string {
+export function sectPr(page: PageGeometry, header?: string): string {
   const tw = (pt: number): number => Math.round(pt * 20);
-  return `<w:sectPr><w:pgSz w:w="${tw(page.width)}" w:h="${tw(page.height)}"/>`
+  /* `headerReference` FIRST: `w:sectPr` is a schema sequence. */
+  return `<w:sectPr>${header === undefined ? '' : `<w:headerReference w:type="default" r:id="${header}"/>`}`
+    + `<w:pgSz w:w="${tw(page.width)}" w:h="${tw(page.height)}"/>`
     + `<w:pgMar w:top="${tw(page.margins.top)}" w:right="${tw(page.margins.right)}"`
     + ` w:bottom="${tw(page.margins.bottom)}" w:left="${tw(page.margins.left)}"`
-    + ' w:header="0" w:footer="0" w:gutter="0"/><w:cols w:space="708"/></w:sectPr>';
+    + ` w:header="${header === undefined ? 0 : WORD_HEADER_RULE.distance}" w:footer="0" w:gutter="0"/><w:cols w:space="708"/></w:sectPr>`;
 }

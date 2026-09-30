@@ -133,7 +133,8 @@ export function withAppDomain(xml, origin) {
  * manifest's element ORDER is a schema sequence, and a library that
  * pretty-prints or reorders it produces a file that is not an error a person
  * sees — it is a sideload that does nothing. So the bytes stay the bytes, with
- * four things replaced.
+ * five things replaced: the host, the id, the name, the version, and the
+ * version again on every picture (`withIconVersion`).
  */
 export function manifestFor(xml, host, version) {
   if (!xml.includes(ADDIN_HOSTS.local.base)) {
@@ -148,11 +149,26 @@ export function manifestFor(xml, host, version) {
   );
   if (version !== undefined) {
     out = replaceOnce(out, /<Version>[^<]*<\/Version>/, `<Version>${version}</Version>`, 'Version');
+    out = withIconVersion(out, version);
   }
   /* The host's own origin joins `<AppDomains>`: it is implicitly allowed as
      the source location, but a link the pane opens is a navigation, and a
      navigation to a domain not listed leaves the pane. */
   return withAppDomain(out, originOf(host.base));
+}
+
+/**
+ * Every picture the manifest names, stamped with the version it ships in.
+ *
+ * WORD CACHES A COMMAND ICON BY ITS URL, and a new manifest version does not
+ * make it fetch the same URL again: the icons were recoloured, the version
+ * rose, the manifest was re-read — and every button drew the old grey. A
+ * person who installed the add-in would see the same on every update, new
+ * code under stale pictures. So each `<bt:Image>` and the two icon URLs carry
+ * `?v=<version>`: a new version is a new URL, and a new URL is fetched.
+ */
+export function withIconVersion(xml, version) {
+  return xml.replace(/(\.png)(")/g, (_m, png, quote) => `${png}?v=${version}${quote}`);
 }
 
 /** Every absolute URL the manifest names, in document order. */

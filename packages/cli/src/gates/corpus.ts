@@ -80,8 +80,13 @@ const NOTES: Readonly<Record<string, string>> = {
 };
 
 function measure(file: string): Row {
+  /* `--conditions=development`, as every other gate runs: without it the
+     workspace packages resolve to their BUILT `dist/`, and a stale build
+     answered "does not provide an export named 'importPdfRows'" on stderr —
+     which this discards — leaving stdout empty and the gate dead on
+     `JSON.parse('')` for as long as nobody rebuilt the packages. */
   const args = [
-    join('node_modules', 'tsx', 'dist', 'cli.mjs'),
+    join('node_modules', 'tsx', 'dist', 'cli.mjs'), '--conditions=development',
     'packages/cli/src/main.ts', 'roundtrip', file, '--json',
   ];
   let out: string;

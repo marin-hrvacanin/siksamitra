@@ -24,6 +24,8 @@
  */
 import type { ChantToken, ChantUnit } from '@siksamitra/format';
 import { parseLetters, ANU, CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
+import type { ScriptKey } from '@siksamitra/engine';
+import { iastRunsOf } from './word/script-runs.js';
 import {
   BAR_GLYPH, HOLD_CHANGE_ROLES, SVARA_BY_CHAR, roleOf,
   type WordMarkRole,
@@ -36,8 +38,11 @@ export function tokensFromRuns(
   runs: WordRun[],
   report: ImportReport,
   where: string,
+  /** The script the runs are written in. A line in an Indic script is read
+   *  as IAST first (`word/script-runs.ts`), then exactly as any other. */
+  script: ScriptKey = 'iast',
 ): ChantToken[] {
-  const merged = mergeRuns(runs);
+  const merged = script === 'iast' ? mergeRuns(runs) : mergeRuns(iastRunsOf(mergeRuns(runs), script));
   const tokens: ChantToken[] = [];
   /** Letters of the current word, with their marks. */
   let word: ChantUnit[] = [];
@@ -159,7 +164,12 @@ export function tokensFromRuns(
           bump('virama');
         } else if (ch === '·') {
           pendingSbhakti = true;
-        } else if (ch.trim() !== '') {
+        } else {
+          /* A space, or a letter, in the accent's style is still text: Word
+             gives whatever is typed after an accent the accent's style, so
+             `m̍ ile` arrives as one Svara run. It used to skip the space —
+             the fault `space` above records for the boxes — and a second
+             press on the line wrote `m̍ile` back into the document. */
           addLetters(ch, () => {});
         }
       }
@@ -169,6 +179,8 @@ export function tokensFromRuns(
     if (role === 'virama') {
       word.push({ c: VIRAMA_TICK });
       bump('virama');
+      /* Anything typed after the tick, in its style, is still text. */
+      addLetters(run.text.replaceAll(VIRAMA_TICK, ''), () => {});
       continue;
     }
 
@@ -186,10 +198,17 @@ export function tokensFromRuns(
           for (let k = 0; k < bars; k += 1) tokens.push({ t: 'bar' });
           bump('bar');
         } else {
-          tokens.push({ t: 'pause', len: pipes >= 2 ? 'long' : 'short' });
+          /* In the substitution blue, the RULES placed it — his convention,
+             and what the writer writes for one (`rule` on the token). */
+          const byRule = roleOf(run.rStyle) === 'change';
+          tokens.push({ t: 'pause', len: pipes >= 2 ? 'long' : 'short', ...(byRule ? { rule: true as const } : {}) });
           bump('pause');
         }
       }
+      /* Letters typed after a pause take the pause's style in Word, and they
+         are the person's text: read them, never drop them. */
+      const rest = run.text.replaceAll(BAR_GLYPH, '').replace(/\|/g, '');
+      if (rest.trim() !== '') addLetters(rest, () => {});
       continue;
     }
 

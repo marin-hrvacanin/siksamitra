@@ -185,6 +185,29 @@ export function selectHoldingComponent(comps: Comp[], profile: Profile): number 
 }
 
 /**
+ * Which consonant of a boxed cluster the box is ON — for a reader that knows
+ * only that a whole cluster is boxed.
+ *
+ * A Devanāgarī, Telugu or Tamil line in Word can box only a whole cluster
+ * (`र्ष`): a conjunct styled in two halves falls apart on the page. Reading it
+ * back to IAST, where a box is on one consonant, the question is the one this
+ * rule already answers — so it is asked here rather than guessed again.
+ */
+export function holdingHostOf(
+  consonants: readonly string[],
+  at: { wordInitial: boolean; afterHyphen: boolean },
+  profile: Profile,
+): number {
+  if (consonants.length < 2) return 0;
+  const comps: Comp[] = consonants.map((ch, k) => ({
+    index: k, elem: { ch } as Elem, boundaryBefore: false,
+    wordInitial: k === 0 && at.wordInitial, afterHyphen: k === 0 && at.afterHyphen,
+  }));
+  const host = selectHoldingComponent(comps, profile);
+  return host < 0 ? 0 : host;
+}
+
+/**
  * `findPreviousVowel` (`sanskrit_rules.js` L487–518).
  *
  * Returns the value, whether a word space blocked the search, and the position.

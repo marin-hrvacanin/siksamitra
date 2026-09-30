@@ -21,86 +21,32 @@
  * `verified: false`. This comment used to claim "all three Indic scripts",
  * which was a third more verification than exists.
  */
-import {
-  ANU, DIGRAPHS, PRANAVA, VIS, VIRAMA_TICK, ZWJ, ZWNJ,
-  cjControl, isConsonant, isVowel,
-} from '../alphabet.js';
-import {
-  ACCENT_MARKS, BY_IAST, SIGN_BY_IAST,
-  letterFor, signFor,
-} from './tables.js';
+import { ANU, DIGRAPHS, VIS, ZWJ, ZWNJ, isConsonant, isVowel } from '../alphabet.js';
+import { BY_IAST, SIGN_BY_IAST, letterFor, signFor } from './tables.js';
 import type { ScriptKey } from './tables.js';
-import { formOf, type ScriptModule } from './module.js';
-import { splitRiding } from './riding.js';
+import type { ScriptModule } from './module.js';
 import { PHONEME_INVENTORY } from './phonemes.js';
 import { getScript, registeredScripts, requireScript } from './registry.js';
 import {
   VS_APPROX, isApproximation, isVariationSelector, letterFromSelector,
-  needsApproxMarker, selectorFor,
+  needsApproxMarker,
 } from './lossless.js';
-import { qualifiersIn, qualifiersOut } from './qualifiers.js';
-import { romanisationLossless, romanisationToIast } from './romanisation.js';
+import { qualifiersIn } from './qualifiers.js';
+import { romanisationToIast } from './romanisation.js';
 
 export type { ScriptKey, AnyScriptKey } from './tables.js';
 export { PHONEMES, VOWEL_SIGNS, VIRAMA, PRANAVA_FORMS } from './tables.js';
 export {
   ambiguitiesIn, isLosslessScript, hasSelectors, stripSelectors,
 } from './lossless.js';
+export {
+  transliterateSyllable, transliterateSyllableSpans,
+  type ScriptOptions, type ScriptUnit, type SyllableSpans,
+} from './aksara.js';
+import {
+  PRANAVA_IAST, bare, transliterateSyllable, type ScriptOptions, type ScriptUnit,
+} from './aksara.js';
 
-/**
- * Transliteration options.
- *
- * `lossless` appends a variation selector wherever the target script cannot
- * tell two IAST letters apart (Tamil `க` = k/kh/g/gh). It renders as nothing
- * and makes the reverse conversion exact. OFF by default, because plain output
- * must stay byte-identical to the eleven shipped documents. See ./lossless.ts.
- */
-export interface ScriptOptions {
-  lossless?: boolean;
-}
-
-const ACCENTS = new Set(ACCENT_MARKS);
-/**
- * What counts as the pranava on the way IN.
- *
- * Imported rather than redeclared. There were two of these — this file had
- * {'oṁ','oṃ','om'} and `alphabet.ts` had {'oṁ','oṃ','auṁ','om'} — so `auṁ`
- * was the pranava to the marking rules and an ordinary diphthong to the
- * transliterator, which rendered it `औं` instead of `ॐ`. One definition, one
- * home.
- */
-const PRANAVA_IAST = PRANAVA;
-
-/** One letter of a syllable, as the transliterator needs to see it. */
-export interface ScriptUnit {
-  /** The IAST letter, after sandhi. */
-  c: string;
-  /** A conjunct boundary AFTER this letter. */
-  cj?: 'split' | 'join';
-  /** The Vedic candrabindu. Rendered as a sign; the `sup` aid is IAST-only. */
-  candra?: boolean;
-}
-
-/**
- * Strip what is DATA or IAST-only notation rather than script text.
- *
- *   - the accents and the candrabindu — drawn by the renderer, never glyphs;
- *   - the `ˎ` virāma tick — Devanāgarī already writes that final consonant with
- *     its own halanta, so there is nothing for the tick to add;
- *   - the conjunct controls — they become the `cj` flag;
- *   - the `:` of the special visarga `ḥ:` (MARKING-RULES §5, `ḥ` before `kṣ`)
- *     — an ASCII notation for IAST, not a character any Indic script writes.
- *     Verified: the corpus renders `maḥ:` as `मः` / `మః`, with no colon.
- */
-function bare(s: string): string {
-  let out = '';
-  for (const ch of s) {
-    if (ACCENTS.has(ch) || ch === VIRAMA_TICK || ch === ZWNJ || ch === ZWJ) continue;
-    if (ch === ':') continue;
-    out += ch;
-  }
-  return out;
-}
 
 /** Split a bare IAST string into letters (digraphs are one letter). */
 function letters(s: string): string[] {
@@ -120,140 +66,6 @@ function letters(s: string): string[] {
 }
 
 
-/**
- * Build one akṣara from a syllable's units.
- *
- * The shape of a syllable is: onset consonants, a vowel nucleus, then (on a
- * word's last syllable) coda consonants. Onset consonants before the last take
- * the virāma; the last carries the vowel sign. With no onset the independent
- * vowel form is used.
- */
-export function transliterateSyllable(
-  units: readonly ScriptUnit[],
-  script: ScriptKey,
-  opts?: ScriptOptions,
-): string {
-  const module = requireScript(script);
-  // A romanisation writes its vowels in line — no matras to fold into an onset
-  // — so the forms concatenate: IAST, ITRANS and any romanisation added later.
-  if (module.kind === 'romanisation') {
-    // In lossless mode the conjunct choice is written out, because otherwise a
-    // romanisation drops it: Devanagari distinguishes `क्त्य` from `क्‌त्य`
-    // and IAST spells both `ktya`. This is the same mechanism the Indic scripts
-    // use for their own ambiguities — a marker that survives the round trip —
-    // and without it "IAST" is a one-way export rather than an exchange form.
-    if (opts?.lossless === true) return romanisationLossless(units, module);
-    return units.map((u) => {
-      const form = formOf(module, u.c)?.form ?? u.c;
-      if (u.cj === undefined) return form;
-      // ZWNJ / ZWJ, not the ASCII `_` / `+`: zero-width format characters, invisible, inert in collation
-      // and search, stepped over by every rule (they are in `ANNOTATION`), and
-      // already the canonical internal form — `normalize` rewrites the ASCII
-      // into these before anything else runs. The ASCII pair is a TYPING
-      // convenience for an author, not the representation; emitting it here
-      // would put a visible `_` into text meant to read as Sanskrit, and would
-      // make the same information two different characters depending on which
-      // end of the pipeline produced it.
-      return form + cjControl(u.cj);
-    }).join('');
-  }
-  const ride = splitRiding(units); // the Ṛgvedic overline: see riding.ts
-  if (ride !== null) return transliterateSyllable(ride.bare, script, opts) + ride.riding;
-  const virama = module.virama;
-  const sel = (c: string): string =>
-    opts?.lossless === true ? selectorFor(c, script) : '';
-
-  // The praṇava, when a script has its own ligature for it.
-  const plain = units.map((u) => u.c).join('');
-  if (PRANAVA_IAST.has(bare(plain)) && module.pranava !== null) return module.pranava;
-
-  // Partition into onset / nucleus / coda.
-  const seq = units.filter((u) => bare(u.c) !== '');
-  const nucleusAt = seq.findIndex((u) => isVowel(bare(u.c)));
-  const onset = nucleusAt < 0 ? seq : seq.slice(0, nucleusAt);
-  const nucleus = nucleusAt < 0 ? null : seq[nucleusAt]!;
-  const coda = nucleusAt < 0 ? [] : seq.slice(nucleusAt + 1);
-
-  /**
-   * Does this script have a mātrā for the nucleus?
-   *
-   * Tamil has no vowel sign for the vocalic `ṛ ṝ ḷ ḹ`, so `kṛ` cannot be
-   * written as `க` + a sign. The onset then closes with a virāma and the vowel
-   * is written in FULL (`க்` + `ரு`). Without this the vowel silently vanished
-   * and `kṛṣṇa` came out as `கஷ்ண` — read back as `kaṣṇa`.
-   */
-  const nucleusSign = nucleus === null ? undefined : SIGN_BY_IAST.get(bare(nucleus.c));
-  const nucleusSignGlyph = nucleusSign === undefined ? null : signFor(nucleusSign, script);
-  const spellNucleusInFull = nucleus !== null && onset.length > 0 && nucleusSignGlyph === null;
-
-  let out = '';
-
-  // ── onset ────────────────────────────────────────────────────────────────
-  onset.forEach((u, k) => {
-    const p = BY_IAST.get(bare(u.c));
-    if (p === undefined) {
-      out += u.c;
-      return;
-    }
-    const base = letterFor(p, script);
-    if (base === null) {
-      out += u.c;
-      return;
-    }
-    out += base + sel(bare(u.c));
-    // A `special` letter (avagraha) is not a consonant and never takes a
-    // virāma: `'si` is `ऽसि`, not `ऽ्सि`.
-    if (p.type !== 'consonant') return;
-    const isLast = k === onset.length - 1;
-    if (!isLast || nucleus === null || spellNucleusInFull) {
-      // A medial onset consonant, a cluster with no vowel at all, or a nucleus
-      // this script has no mātrā for: virāma, plus the conjunct control when
-      // the author chose a split or a join.
-      out += virama + cjControl(u.cj);
-    }
-  });
-
-  // ── nucleus ──────────────────────────────────────────────────────────────
-  if (nucleus !== null) {
-    const v = bare(nucleus.c);
-    if (onset.length === 0 || spellNucleusInFull) {
-      const p = BY_IAST.get(v);
-      const base = p === null || p === undefined ? null : letterFor(p, script);
-      out += (base ?? v) + (base === null ? '' : sel(v));
-    } else {
-      out += nucleusSignGlyph ?? '';
-    }
-  }
-
-  // ── coda ─────────────────────────────────────────────────────────────────
-  for (const u of coda) {
-    const c = bare(u.c);
-    const p = BY_IAST.get(c);
-    if (p === undefined) {
-      out += c;
-      continue;
-    }
-    const base = letterFor(p, script);
-    if (base === null) {
-      out += c;
-      continue;
-    }
-    if (c === ANU) {
-      // Devanāgarī and Telugu write a sign, which takes no virāma.
-      out += base;
-    } else if (c === VIS) {
-      out += base;
-    } else if (isConsonant(c)) {
-      out += base + sel(c) + virama + cjControl(u.cj);
-    } else {
-      out += base;
-    }
-  }
-
-  /* The qualifiers belong at the end of the cluster, not after the bare
-     consonant they were composed onto. See `ScriptModule.qualifiers`. */
-  return module.qualifiers === undefined ? out : qualifiersOut(out, module.qualifiers);
-}
 
 /**
  * Transliterate a whole IAST string — a word, a lemma, a title.

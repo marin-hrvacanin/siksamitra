@@ -94,6 +94,9 @@ export interface ExportStyle {
   readonly frame: ExportFrame;
   /** Present only on a `card` frame. */
   readonly card?: CardGeometry;
+  /** A `.docx` in this style carries his running head: the chant, the step and
+   *  the page number over a rule, on every page. */
+  readonly runningHead?: true;
 }
 
 /**
@@ -112,6 +115,7 @@ export const EXPORT_STYLES: readonly ExportStyle[] = [
     doc: 'word',
     mode: 'light',
     frame: 'page',
+    runningHead: true,
   },
   {
     id: 'veda-union-web',

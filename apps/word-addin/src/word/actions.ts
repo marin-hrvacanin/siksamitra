@@ -10,14 +10,10 @@
  * `@siksamitra/engine`, and answers with what to SAY — never with a thrown
  * error for something a person did.
  */
-import type { ChantProfileKey, Stage, TextAndMarks } from '@siksamitra/format';
-import { CHANT_PROFILE_NOTES } from '@siksamitra/format';
-import { STAGES, rerun, resolveProfile, showsLengthening, type ReRunMode } from '@siksamitra/engine';
-import { applyAcross, typeAt, type MarkCommand } from '@siksamitra/edit';
+import type { TextAndMarks } from '@siksamitra/format';
+import { applyAcross, letterBefore, typeAt, type MarkCommand } from '@siksamitra/edit';
 import { notCarried } from '../model/carry.js';
-import { readDocument, writeDocument } from './client.js';
-import { writeLines, type Line, type LineWrite, type Located } from './selection.js';
-import { recordRegister, recordedRegister } from './settings.js';
+import { writeLines, type LineWrite, type Located } from './selection.js';
 
 /** What to tell the person, in one line and any detail under it. */
 export interface Said {
@@ -27,20 +23,6 @@ export interface Said {
 }
 
 const said = (text: string, kind: Said['kind'] = 'plain', lines: string[] = []): Said => ({ text, kind, lines });
-
-/** The rules as the pane sets them: which register, which stages, and what
- *  becomes of markings placed by hand. */
-export interface Rules {
-  register: ChantProfileKey;
-  stages: ReadonlySet<Stage>;
-  mode: ReRunMode;
-}
-
-/** The rules a ribbon button runs: the document's own register, every stage,
- *  and the hand kept. */
-export const defaultRules = (): Rules => ({
-  register: recordedRegister() ?? 'taittiriya', stages: new Set(STAGES), mode: 'keep-hand',
-});
 
 /** One text and its markings, in an order that does not depend on how they
  *  were produced — so "did the rules change this line?" has one answer. `by`
@@ -72,10 +54,32 @@ export function refusalOf(here: Located): Said | null {
   return null;
 }
 
-/** A marking button pressed over the selection. */
+/** A marking placed AT a point rather than over letters. */
+const isPoint = (c: MarkCommand): boolean => c.k === 'sbhakti' || c.k === 'pause';
+
+/**
+ * A marking button pressed over the selection — or, with nothing selected, on
+ * the letter just before the caret, which is the one a person has just typed
+ * (`letterBefore`). The caret goes back where it was, so typing carries on.
+ */
 export async function markSelection(here: Located, command: MarkCommand): Promise<Said> {
   const refused = refusalOf(here);
   if (refused !== null) return refused;
+  const caret = here.lines.length === 1 && here.from === here.to ? here.lines[0]! : null;
+  if (caret !== null && !isPoint(command)) {
+    const letter = letterBefore(caret.tm.text, caret.from);
+    if (letter === null) {
+      return said('Nothing to mark: the caret is not after a letter.', 'warn',
+        ['Type the letter first, or select the letters, and press again.']);
+    }
+    const r = applyAcross([{ ...caret, from: letter[0], to: letter[1] }], command)[0]!;
+    const tm = { text: r.text ?? caret.tm.text, marks: r.marks };
+    if (!sameText(tm, caret.tm)) {
+      await writeLines([{ line: 0, tm, style: caret.style, wordText: caret.wordText }],
+        { line: 0, at: caret.from + (tm.text.length - caret.tm.text.length) });
+    }
+    return said(r.note, notCarried(r.marks).length === 0 ? 'plain' : 'warn', notCarried(r.marks).map((l) => l.why));
+  }
   const results = applyAcross(here.lines, command);
   const writes: LineWrite[] = [];
   results.forEach((r, i) => {
@@ -83,7 +87,12 @@ export async function markSelection(here: Located, command: MarkCommand): Promis
     const tm = { text: r.text ?? l.tm.text, marks: r.marks };
     if (!sameText(tm, l.tm)) writes.push({ line: i, tm, style: l.style, wordText: l.wordText });
   });
-  await writeLines(writes);
+  /* A caret stays where it was; letters selected in one line stay selected,
+     grown by whatever the command typed onto them (a candrabindu). */
+  const one = here.lines.length === 1 ? here.lines[0]! : null;
+  const grew = one === null ? 0 : (results[0]!.text ?? one.tm.text).length - one.tm.text.length;
+  await writeLines(writes, caret !== null ? { line: 0, at: caret.from }
+    : one !== null ? { line: 0, at: one.from, to: one.to + grew } : undefined);
   const undrawable = results.flatMap((r) => notCarried(r.marks));
   const note = here.lines.length === 1 ? results[0]!.note : `${writes.length} of ${here.lines.length} lines changed`;
   return said(note, undrawable.length === 0 ? 'plain' : 'warn', undrawable.map((l) => l.why));
@@ -102,96 +111,13 @@ export async function typeInSelection(here: Located, ch: string): Promise<Said> 
   const refused = refusalOf(here);
   if (refused !== null) return refused;
   const l = here.lines[0]!;
-  const t = typeAt(l.tm, l.from, l.to, ch);
+  /* In a Devanāgarī, Telugu or Tamil line the letter goes in as that script's
+     — the model is IAST and the line is written back in its own script — and
+     a script has no capitals, so a capital is its letter. */
+  const inScript = l.script !== 'iast';
+  const t = typeAt(l.tm, l.from, l.to, inScript ? ch.toLowerCase() : ch, { abugida: inScript });
   const tm = { text: t.text, marks: t.marks };
   if (sameText(tm, l.tm)) return said(t.note, 'warn');
   await writeLines([{ line: 0, tm, style: l.style, wordText: l.wordText }], { line: 0, at: t.caret });
   return said('');
-}
-
-/**
- * The register a line is marked in NOW, to be undone before the chosen one
- * runs. What the document RECORDS decides, because a register may carry marks
- * another would read differently — the corpus has overlines under a Ṛgveda
- * with lengthening switched off. Only where nothing is recorded does the
- * line's own evidence speak: the Ṛgveda's marks mean the Ṛgveda, and otherwise
- * the line is taken as marked in the register chosen.
- */
-function previousOf(tm: TextAndMarks, chosen: ChantProfileKey) {
-  const marked = recordedRegister();
-  return resolveProfile([{ preset: marked ?? (showsLengthening(tm) ? 'rigveda' : chosen) }]);
-}
-
-/** After a run: the document is marked in the register just used — unless only
- *  part of it was, into a register the rest is not in; then that is said. */
-async function remember(whole: boolean, chosen: ChantProfileKey): Promise<string | null> {
-  const marked = recordedRegister();
-  if (whole || marked === null || marked === chosen) {
-    await recordRegister(chosen);
-    return null;
-  }
-  return `Only these lines are ${CHANT_PROFILE_NOTES[chosen].name} now; `
-    + `the rest of the document stays ${CHANT_PROFILE_NOTES[marked].name}.`;
-}
-
-const requestOf = (rules: Rules) => ({
-  stages: STAGES.filter((s) => rules.stages.has(s)),
-  mode: rules.mode,
-  profile: resolveProfile([{ preset: rules.register }]),
-});
-
-/** The rules over the selection: a caret means its whole line, a selection the
- *  part of each line that is selected — recompute over a range, as the app does. */
-export async function runOverSelection(here: Located, rules: Rules): Promise<Said> {
-  const refused = refusalOf(here);
-  if (refused !== null) return refused;
-  const { stages, mode, profile } = requestOf(rules);
-  const whole = here.lines.length === 1 && here.from === here.to;
-  const range = (l: Line): [number, number] => (whole ? [0, l.tm.text.length] : [l.from, l.to]);
-  const outs = here.lines.map((l) => {
-    const [from, to] = range(l);
-    return to > from ? rerun(l.tm, { stages, mode, profile, from, to, previous: previousOf(l.tm, rules.register) }) : null;
-  });
-  const writes: LineWrite[] = [];
-  outs.forEach((out, i) => {
-    const l = here.lines[i]!;
-    if (out === null) return;
-    const tm = { text: out.text, marks: out.marks };
-    if (!sameText(tm, l.tm)) writes.push({ line: i, tm, style: l.style, wordText: l.wordText });
-  });
-  await writeLines(writes);
-  const mixed = await remember(false, rules.register);
-  const done = outs.filter((o): o is NonNullable<typeof o> => o !== null);
-  const lost = done.flatMap((o) => o.lost);
-  const head = here.lines.length > 1
-    ? `The selection: ${writes.length === 0 ? 'nothing to change' : `${writes.length} line(s) re-marked`}`
-    : `${whole ? 'This line' : 'The selection'}: ${writes.length === 0 ? 'nothing to change' : done[0]?.note ?? ''}`;
-  return said(head, lost.length === 0 ? 'plain' : 'warn', [
-    ...(mixed === null ? [] : [mixed]), ...done.flatMap((o) => o.warnings),
-    ...lost.map((m) => `${m.k} at ${m.from} was placed by hand`),
-  ]);
-}
-
-/** The rules over every mantra line. Only lines the rules change are written,
- *  so a second run writes nothing; a line in the way is left and listed. */
-export async function runOverDocument(rules: Rules): Promise<Said> {
-  const { stages, mode, profile } = requestOf(rules);
-  const { lines, total } = await readDocument();
-  let lost = 0;
-  const skipped = lines.filter((p) => p.blocked.length > 0);
-  const changed = lines.filter((p) => p.blocked.length === 0).flatMap((p) => {
-    const out = rerun(p.tm, {
-      stages, mode, profile, from: 0, to: p.tm.text.length, previous: previousOf(p.tm, rules.register),
-    });
-    lost += out.lost.length;
-    const tm = { text: out.text, marks: out.marks };
-    return sameText(tm, p.tm) ? [] : [{ ...p, tm }];
-  });
-  const written = await writeDocument(changed, total);
-  await remember(true, rules.register);
-  return said(`${written === 0 ? 'Nothing to change' : `${written} mantra line(s) re-marked`}`
-    + `${lost === 0 ? '' : `, ${lost} hand marking(s) could not be carried`}`
-    + `${skipped.length === 0 ? '' : `, ${skipped.length} left alone`}.`,
-  lost === 0 && skipped.length === 0 ? 'plain' : 'warn',
-  skipped.map((p) => `line ${p.index + 1}: it has ${p.blocked.join(' and ')} on it`));
 }

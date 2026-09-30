@@ -21,7 +21,7 @@ import type { Mark, MarkKind, TextAndMarks } from '@siksamitra/format';
 import {
   assertMarks, coverage, mark, normalise, removeMark, shiftForEdit, toggleMark,
 } from '@siksamitra/format';
-import { ANU, CANDRA, PLAN_MARK, typedAs, VIS } from '@siksamitra/engine';
+import { ANU, CANDRA, PLAN_MARK, isConsonant, isVowel, typedAs, VIS } from '@siksamitra/engine';
 
 export type MarkCommand =
   | { k: 'hold'; v: 'short' | 'long' }
@@ -45,8 +45,10 @@ export type MarkCommand =
    * protects it.
    */
   | { k: 'combining'; v: string }
-  /** Every marking in the range, gone. */
-  | { k: 'clear' };
+  /** Every marking in the range, gone — or only the kinds in `only`: the
+   *  holding group's Clear takes the box off and leaves the svaras alone,
+   *  exactly as the app's does. */
+  | { k: 'clear'; only?: readonly MarkKind[] };
 
 /** The kinds `clear` withdraws. `syl` is division, not an opinion. */
 const CLEARABLE: readonly MarkKind[] =
@@ -120,7 +122,7 @@ export function applyCommand(
   const { text, marks } = tm;
   if (cmd.k === 'clear') {
     let out = [...marks];
-    for (const k of CLEARABLE) out = removeMark(out, k, from, to);
+    for (const k of cmd.only ?? CLEARABLE) out = removeMark(out, k, from, to);
     assertMarks(out, text, 'after clear');
     return { marks: out, note: `${marks.length - out.length} marking(s) withdrawn` };
   }
@@ -263,6 +265,23 @@ export function selectionAcross(spans: readonly Span[]): Record<string, 'all' | 
   return out;
 }
 
+/**
+ * The letter just before a caret, with whatever already rides on it — as
+ * `[from, to)`, or `null` when the caret follows a space or starts the line.
+ *
+ * WHAT A BUTTON PRESSED WITH NOTHING SELECTED MARKS. A person types `a`,
+ * presses Svarita, and means the `a` they just typed; making them select it
+ * first is what made every button feel broken. `to` is the caret, so an
+ * accent covers the letter and every combining mark on it (a marking may not
+ * end between the two).
+ */
+export function letterBefore(text: string, at: number): [number, number] | null {
+  let start = at - 1;
+  while (start > 0 && /\p{M}/u.test(text[start] ?? '')) start -= 1;
+  if (start < 0 || text[start] === undefined || /\s/u.test(text[start]!)) return null;
+  return [start, at];
+}
+
 /** What typing one character did: the text, and where the caret now is. */
 export interface Typed extends CommandResult {
   text: string;
@@ -285,16 +304,22 @@ const COMBINING = /^\p{M}+$/u;
  * is `applyCommand`, on the letter before the caret. So is the candrabindu, as
  * the combining character it is. Any other combining mark (the overline) is
  * text and rides on the letter before it.
+ *
+ * IN AN ABUGIDA a consonant is written with its `a` — `क` is `ka` — so a vowel
+ * typed straight after one TAKES THE PLACE of that `a`, the vowel sign an
+ * Indic keyboard gives: `क` then `ā` is `का`, not `कआ`. `abugida` says the
+ * line is written in one; an `a` typed there stays an `a` of its own.
  */
-export function typeAt(tm: TextAndMarks, from: number, to: number, ch: string): Typed {
+export function typeAt(
+  tm: TextAndMarks, from: number, to: number, ch: string, opts: { abugida?: boolean } = {},
+): Typed {
   const svara = PLAN_MARK.get(ch);
   if (svara !== undefined || ch === CANDRA) {
-    /* The letter before the caret, with whatever already rides on it. */
-    let start = from - 1;
-    while (start > 0 && /\p{M}/u.test(tm.text[start] ?? '')) start -= 1;
-    if (start < 0 || tm.text[start] === undefined || /\s/u.test(tm.text[start]!)) {
+    const letter = letterBefore(tm.text, from);
+    if (letter === null) {
       return { marks: [...tm.marks], text: tm.text, caret: from, note: 'there is no letter before the caret to put it on' };
     }
+    const [start] = letter;
     /* An accent covers the letter AND what already rides on it (a marking may
        not end between a letter and its combining mark); the candrabindu is
        typed onto the letter itself. */
@@ -303,6 +328,14 @@ export function typeAt(tm: TextAndMarks, from: number, to: number, ch: string): 
       : applyCommand(tm, start, start + 1, { k: 'combining', v: ch });
     const text = r.text ?? tm.text;
     return { ...r, text, caret: from + (text.length - tm.text.length) };
+  }
+  /* The vowel is ONE character, as the `a` is, so it takes the `a`'s place and
+     every marking stays exactly where it was: an accent on `क॑` is on `का॑`. */
+  if (opts.abugida === true && from === to && ch !== 'a' && ch.length === 1 && isVowel(ch)
+    && tm.text[from - 1] === 'a' && isConsonant(tm.text[from - 2] ?? '')) {
+    const text = tm.text.slice(0, from - 1) + ch + tm.text.slice(from);
+    assertMarks(tm.marks, text, 'after typing');
+    return { marks: [...tm.marks], text, caret: from, note: `${ch} typed` };
   }
   const text = tm.text.slice(0, from) + ch + tm.text.slice(to);
   const { marks } = shiftForEdit(tm.marks, {

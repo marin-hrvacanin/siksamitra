@@ -110,7 +110,14 @@ export type ChantToken =
   | ChantText
   | ChantSlot
   | { t: 'sp' }
-  | { t: 'pause'; len: 'short' | 'long' }
+  /**
+   * A pause. `rule` when the RULES placed it rather than a person — which a
+   * Word document says by its colour: his files write what the rules did in
+   * the substitution blue, the bīja pause of `oṁ |` above all, and a pause he
+   * placed himself in the red `Pause` style. Carried so the two come back as
+   * they went, and look in Word as they did in his files.
+   */
+  | { t: 'pause'; len: 'short' | 'long'; rule?: true }
   | { t: 'bar' }
   | { t: 'br' }
   | { t: 'danda'; s: string }

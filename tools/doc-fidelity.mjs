@@ -155,7 +155,10 @@ else {
   near('word heading size', w.heading?.size, h.size);
   near('word heading indent', w.heading?.indent, h.indent);
   near('word heading after', w.heading?.after, h.after);
-  is('word heading face', w.heading?.family, 'Carlito');
+  /* Arial's stand-in: his headings are Arial in his current files — every
+     heading Word renders of the Lalitā v9.3.1, the Śivopāsana v2 and the
+     Kanakadhārā v1.3 is ArialMT (`word.ts`). Calibri was his old template's. */
+  is('word heading face', w.heading?.family, 'Arimo');
   is('word heading bold', w.heading?.bold, false);
   is('word heading colour', w.heading?.color, 'rgb(127, 127, 127)');
 

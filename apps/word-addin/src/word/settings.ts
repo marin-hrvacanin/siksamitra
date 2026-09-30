@@ -12,9 +12,11 @@
  * Every call is guarded: a host without settings, or a read-only document, is
  * answered with "not recorded", never with a thrown error.
  */
-import { CHANT_PROFILE_KEYS, type ChantProfileKey } from '@siksamitra/format';
+import { CHANT_PROFILE_KEYS, type ChantProfileKey, type Stage } from '@siksamitra/format';
+import { STAGES } from '@siksamitra/engine';
+import { REGISTER_SETTING } from '@siksamitra/interop';
 
-const KEY = 'siksamitra.register';
+const KEY = REGISTER_SETTING;
 
 export function recordedRegister(): ChantProfileKey | null {
   try {
@@ -33,5 +35,26 @@ export async function recordRegister(key: ChantProfileKey): Promise<void> {
     await new Promise<void>((done) => { s.saveAsync(() => done()); });
   } catch {
     /* Not recorded; the next run asks the pane's choice instead. */
+  }
+}
+
+const STAGES_KEY = 'siksamitra.stages';
+
+/** The rule stages this document runs — all of them unless Settings says otherwise. */
+export function recordedStages(): ReadonlySet<Stage> {
+  try {
+    const v: unknown = Office.context.document.settings.get(STAGES_KEY);
+    if (Array.isArray(v)) return new Set(STAGES.filter((s) => v.includes(s)));
+  } catch { /* Not readable: every stage. */ }
+  return new Set(STAGES);
+}
+
+export async function recordStages(stages: ReadonlySet<Stage>): Promise<void> {
+  try {
+    const s = Office.context.document.settings;
+    s.set(STAGES_KEY, STAGES.filter((x) => stages.has(x)));
+    await new Promise<void>((done) => { s.saveAsync(() => done()); });
+  } catch {
+    /* Not recorded; the next run uses every stage. */
   }
 }

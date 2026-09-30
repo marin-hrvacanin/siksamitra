@@ -60,7 +60,8 @@ export interface TextAndMarks {
  *
  * Every marking it produces is `by: 'hand'`. That is not a default, it is the
  * meaning: these are the markings the document arrived carrying, and nothing
- * may regenerate them without being asked.
+ * may regenerate them without being asked. The one exception is a pause the
+ * document itself says the rules placed (`rule` on the token) — his blue bar.
  */
 export function toTextAndMarks(verse: ChantVerse): TextAndMarks {
   let text = '';
@@ -133,7 +134,9 @@ export function toTextAndMarks(verse: ChantVerse): TextAndMarks {
         continue;
       }
       if (t.t === 'pause') {
-        marks.push(mark({ k: 'pause', from: text.length, to: text.length, v: t.len }));
+        /* The one marking a document can say the RULES placed: see the pause
+           token. Every other one is the document's own, and `hand`. */
+        marks.push(mark({ k: 'pause', from: text.length, to: text.length, v: t.len, ...(t.rule === true ? { by: 'rule' as const } : {}) }));
         continue;
       }
       const s = structuralText(t);
@@ -306,7 +309,7 @@ export function toTokens(
     for (const m of points.get(i) ?? []) {
       if (m.k !== 'pause') continue;
       flush();
-      emit({ t: 'pause', len: m.v === 'long' ? 'long' : 'short' }, i);
+      emit({ t: 'pause', len: m.v === 'long' ? 'long' : 'short', ...(m.by === 'rule' ? { rule: true as const } : {}) }, i);
     }
 
     const cell = at[i] ?? {};
@@ -364,7 +367,7 @@ export function toTokens(
   /* Anything at the very end: the last syllable, and a pause after it. */
   flush();
   for (const m of points.get(text.length) ?? []) {
-    if (m.k === 'pause') emit({ t: 'pause', len: m.v === 'long' ? 'long' : 'short' }, text.length);
+    if (m.k === 'pause') emit({ t: 'pause', len: m.v === 'long' ? 'long' : 'short', ...(m.by === 'rule' ? { rule: true as const } : {}) }, text.length);
   }
 
   /*

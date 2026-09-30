@@ -33,10 +33,16 @@ import { xmlText } from '../xml.js';
 import type { ExportManifest } from '../embed.js';
 import { HIDDEN_MARKER, WORD_PARTS } from './parts.js';
 import { WORD_FORMAT, WordError, type WordManifest } from './manifest.js';
+import { withBodyEdits } from './body-edits.js';
+import { wordScript } from './script-reader.js';
 
 export interface WordImport {
   manifest: WordManifest;
+  /** The document inside the file, with what was done to its page in Word
+   *  since (`body-edits.ts`). */
   doc: ChantDoc;
+  /** What was done to the page in Word: verses edited, added and removed. */
+  inWord: { edited: number; added: number; removed: number };
   assets: Record<string, Uint8Array>;
   /** Whether the document still hashes to the manifest's `docHash`. */
   intact: boolean;
@@ -92,7 +98,7 @@ function hiddenPart(documentXml: string): string | null {
  */
 export async function documentFromCustomXml(
   xml: string,
-): Promise<Omit<WordImport, 'from'>> {
+): Promise<Omit<WordImport, 'from' | 'inWord'>> {
   const rawManifest = element(xml, 'manifest');
   const rawBody = element(xml, 'body');
   if (rawManifest === null || rawBody === null) {
@@ -115,6 +121,7 @@ export async function importWord(bytes: Uint8Array): Promise<WordImport> {
   const zip = unzipSync(bytes, {
     filter: (f) => f.name === WORD_PARTS.item
       || f.name === WORD_PARTS.document
+      || f.name === WORD_PARTS.styles
       || f.name === WORD_PARTS.custom,
   });
 
@@ -149,5 +156,11 @@ export async function importWord(bytes: Uint8Array): Promise<WordImport> {
       `unexpected format "${String(read.manifest.format)}" — expected ${WORD_FORMAT}`,
     );
   }
-  return { ...read, from };
+  const styles = zip[WORD_PARTS.styles];
+  const edits = body === undefined
+    ? { doc: read.doc, edited: 0, added: 0, removed: 0 }
+    : withBodyEdits(read.doc, strFromU8(body), styles === undefined ? undefined : strFromU8(styles),
+      wordScript(read.manifest.script));
+  const { doc, ...inWord } = edits;
+  return { ...read, doc, inWord, from };
 }

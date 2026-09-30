@@ -25,6 +25,12 @@ export interface WordRun {
   text: string;
   rStyle: string | null;
   superscript: boolean;
+  /**
+   * Hidden text (`w:vanish`): in the file, and neither drawn nor printed.
+   * What a line in an Indic script cannot show is said in a run of it
+   * (`word/script-runs.ts`).
+   */
+  hidden?: true;
 }
 
 /** One run, as the reader and every test of it build one. */
@@ -41,6 +47,13 @@ export interface WordParagraph {
    *  the regex the reference counts were first taken with could not see it,
    *  which is the whole of the 845-vs-846 difference. */
   empty?: boolean;
+  /**
+   * The tag of the innermost BLOCK-level content control the paragraph sits
+   * in (`<w:sdt>` around whole paragraphs), when there is one with a tag.
+   * Absent otherwise. A content control is Word's own way of marking off a
+   * region of a document, and the Word add-in keeps a part's rules on one.
+   */
+  sdt?: string;
 }
 
 /**
@@ -65,11 +78,12 @@ export interface WordParagraph {
  */
 const RE_PARA = /<w:p\b[^>]*\/>|<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g;
 const RE_RUN = /<w:r\b[^>]*>([\s\S]*?)<\/w:r>/g;
-const RE_TEXT = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
 const RE_PSTYLE = /<w:pStyle\s+w:val="([^"]*)"/;
+/** Where a block content control opens, where it closes, and its tag. */
+const RE_SDT = /<w:sdt(?:\s[^>]*)?>|<\/w:sdt>|<w:tag\s+w:val="([^"]*)"\s*\/>/g;
 const RE_RSTYLE = /<w:rStyle\s+w:val="([^"]*)"/;
-const RE_TAB = /<w:tab\b[^>]*\/?>/;
-const RE_BR = /<w:br\b[^>]*\/?>/;
+/** A run's content, in order: its text, a tab (a space here), a break or a carriage return (a line). */
+const RE_CONTENT = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:tab\b[^>]*\/?>|<w:(?:br|cr)\b[^>]*\/?>/g;
 
 /**
  * Each paragraph's own XML, in the same order `readParagraphs` reads them —
@@ -92,7 +106,22 @@ export function readParagraphs(documentXml: string, stylesXml?: string): WordPar
   const out: WordParagraph[] = [];
   RE_PARA.lastIndex = 0;
   let m: RegExpExecArray | null;
+  /* The content controls open around the paragraph about to be read: what
+     lies BETWEEN paragraphs, where a block-level `<w:sdt>` starts and ends.
+     One inside a paragraph is inline and inside `m[1]`, never seen here. */
+  const open: (string | null)[] = [];
+  let seen = 0;
   while ((m = RE_PARA.exec(documentXml)) !== null) {
+    RE_SDT.lastIndex = 0;
+    const between = documentXml.slice(seen, m.index);
+    let e: RegExpExecArray | null;
+    while ((e = RE_SDT.exec(between)) !== null) {
+      if (e[0].startsWith('</')) open.pop();
+      else if (e[0].startsWith('<w:tag')) { if (open.length > 0) open[open.length - 1] = xmlText(e[1] ?? ''); }
+      else open.push(null);
+    }
+    seen = m.index + m[0].length;
+    const sdt = [...open].reverse().find((t) => t !== null) ?? undefined;
     const body = m[1] ?? '';
     const selfClosing = m[1] === undefined;
     const pStyle = canonicalStyleId(RE_PSTYLE.exec(body)?.[1] ?? null, table);
@@ -102,15 +131,21 @@ export function readParagraphs(documentXml: string, stylesXml?: string): WordPar
     while ((r = RE_RUN.exec(body)) !== null) {
       const rb = r[1] ?? '';
       let text = '';
-      RE_TEXT.lastIndex = 0;
+      /* IN THE ORDER THEY STAND. A run may hold text, a break and more text —
+         Word writes `vidmahe |`, the line break and `sa` of the next line into
+         one run — and appending the break after all of the run's text moved
+         it two letters on: his gāyatrī came back as `vidmahe | sa` / `tya`. */
+      RE_CONTENT.lastIndex = 0;
       let t: RegExpExecArray | null;
-      while ((t = RE_TEXT.exec(rb)) !== null) text += xmlText(t[1] ?? '');
-      if (RE_TAB.test(rb)) text += ' ';
-      if (RE_BR.test(rb)) text += '\n';
+      while ((t = RE_CONTENT.exec(rb)) !== null) {
+        if (t[1] !== undefined) text += xmlText(t[1]);
+        else text += t[0].startsWith('<w:tab') ? ' ' : '\n';
+      }
       runs.push({
         text,
         rStyle: canonicalStyleId(RE_RSTYLE.exec(rb)?.[1] ?? null, table),
         superscript: /vertAlign\s+w:val="superscript"/.test(rb),
+        ...(/<w:vanish\s*\/>|<w:vanish\s+w:val="(?:true|1|on)"\s*\/>/.test(rb) ? { hidden: true as const } : {}),
       });
     }
     const drawings = readDrawings(body);
@@ -119,6 +154,7 @@ export function readParagraphs(documentXml: string, stylesXml?: string): WordPar
       runs,
       ...(drawings.length === 0 ? {} : { drawings }),
       ...(selfClosing ? { empty: true } : {}),
+      ...(sdt === undefined ? {} : { sdt }),
     });
   }
   return out;
@@ -136,7 +172,8 @@ export function mergeRuns(runs: WordRun[]): WordRun[] {
   for (const r of runs) {
     if (r.text === '') continue; // an empty run carries nothing to merge
     const last = out[out.length - 1];
-    if (last !== undefined && last.rStyle === r.rStyle && last.superscript === r.superscript) {
+    if (last !== undefined && last.rStyle === r.rStyle && last.superscript === r.superscript
+      && last.hidden === r.hidden) {
       last.text += r.text;
     } else {
       out.push({ ...r });

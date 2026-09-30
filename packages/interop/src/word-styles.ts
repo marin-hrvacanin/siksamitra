@@ -78,8 +78,8 @@ export const WORD_CHAR_STYLES: readonly WordCharStyle[] = [
     note: 'a thin box — 0.25pt',
   },
   {
-    id: '2Holding', role: 'hold-long', border: { sz: 12, color: '538135' }, seen: 997,
-    note: 'a thicker box — 1.5pt. Weight is the ONLY difference from Holding.',
+    id: '2Holding', role: 'hold-long', border: { sz: 8, color: '538135' }, seen: 997,
+    note: 'a thicker box — 1pt in his current files (the old template said 1.5pt). Weight is the ONLY difference from Holding.',
   },
   {
     id: 'Svara', role: 'svara', color: '943634', sz: 36, seen: 4677,
@@ -121,7 +121,7 @@ export const WORD_CHAR_STYLES: readonly WordCharStyle[] = [
     note: 'a thin box round a letter that is also a substitution',
   },
   {
-    id: '2HoldingChange', role: 'hold-long-change', border: { sz: 12, color: '538135' },
+    id: '2HoldingChange', role: 'hold-long-change', border: { sz: 8, color: '538135' },
     color: '0070C0', italic: true, seen: 0,
     note: 'a thick box round a letter that is also a substitution',
   },
@@ -259,6 +259,20 @@ export const HOLD_CHANGE_ROLES: ReadonlySet<WordMarkRole> = new Set<WordMarkRole
  *  engine's one table (`PLAN_MARK`), under the names this contract uses. */
 export const SVARA_BY_CHAR: ReadonlyMap<string, ChantSvara> = PLAN_MARK;
 export const SVARA_CHAR: ReadonlyMap<ChantSvara, string> = MARK_CHAR;
+
+/**
+ * The svara as a character in an INDIC script: the Vedic accent signs Unicode
+ * defines for exactly this — U+0951 the stroke above (the svarita), U+0952
+ * the line below (the anudātta), U+1CDA the double stroke above (the dīrgha
+ * svarita). Vedic texts in Devanāgarī, Telugu and Tamil all write them, and
+ * each sits on the akṣara before it — where the app draws its mark.
+ */
+export const SCRIPT_SVARA_CHAR: ReadonlyMap<ChantSvara, string> = new Map<ChantSvara, string>([
+  ['svarita', '॑'], ['anudatta', '॒'], ['dirgha-svarita', '᳚'],
+]);
+export const SCRIPT_SVARA_BY_CHAR: ReadonlyMap<string, ChantSvara> = new Map(
+  [...SCRIPT_SVARA_CHAR.entries()].map(([m, c]) => [c, m]),
+);
 
 /** The counts the reference file carries — an import must reproduce them
  *  exactly (gate W2, specs/chant-editor/03-INTEROP.md §2.6). */

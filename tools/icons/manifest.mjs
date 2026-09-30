@@ -120,33 +120,53 @@ export const SYMBOL = {
   menu: 'menu',
   chevron: 'chevron_right',
   history: 'history',
+  /* the Word add-in: importing the vocabulary, and parts with rules of their own */
+  'style-import': 'library_add',
+  'part-new': 'border_outer',
+  'part-dissolve': 'border_clear',
+  keyboard: 'keyboard',
+  warning: 'warning',
+  info: 'info',
 };
 
 /**
  * Ours, on a 24-unit grid.
+ *
+ * `data-mark` is on the part of a glyph that IS the mark — the box of a
+ * holding, the stroke of a svara, the svarabhakti's dot — so the Word add-in
+ * can draw that part in the mark's own colour and the letter in ink, as the
+ * page does (`scripts/word-commands.ts`). The app draws every part in
+ * `currentColor` and never reads it.
  *
  * `hold-short` and `hold-long` differ ONLY in stroke weight — 1.2 against 2.6 —
  * because that is the only difference between the two marks on the page
  * (MARKING-RULES §2.3; measured in his file at 0.25 pt against 1.5 pt). An
  * icon that differed in SIZE would teach a rule that is not the rule.
  */
+/**
+ * The letter the marking icons are drawn on: a LOWER-CASE a, the way the text
+ * is written. It was a capital A, and no letter in a recitation text is one.
+ * Single-storey, because at 16 px a double-storey bowl closes up.
+ */
+const letterA = (cy, r = 2.9) =>
+  `<circle cx="12" cy="${cy}" r="${r}" fill="none" stroke="currentColor" stroke-width="1.6"/>`
+  + `<path d="M${12 + r} ${(cy - r).toFixed(1)}v${(2 * r).toFixed(1)}" fill="none"`
+  + ' stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>';
+
 export const MARK = {
   'hold-short':
-    '<path d="M3.8 6h16.4v12H3.8z" fill="none" stroke="currentColor" stroke-width="1.2"'
+    '<path data-mark="1" d="M3.8 6h16.4v12H3.8z" fill="none" stroke="currentColor" stroke-width="1.2"'
     + ' stroke-linejoin="round"/>'
-    + '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
-    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    + letterA(12),
   'hold-long':
-    '<path d="M3.8 6h16.4v12H3.8z" fill="none" stroke="currentColor" stroke-width="2.6"'
+    '<path data-mark="1" d="M3.8 6h16.4v12H3.8z" fill="none" stroke="currentColor" stroke-width="2.6"'
     + ' stroke-linejoin="round"/>'
-    + '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
-    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    + letterA(12),
   /* No holding: the box, opened. */
   'hold-none':
     '<path d="M8.6 6H3.8v12h4.8M15.4 6h4.8v12h-4.8" fill="none" stroke="currentColor"'
     + ' stroke-width="1.2" stroke-linejoin="round"/>'
-    + '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
-    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    + letterA(12),
 
   /*
    * The svaras, as they are written on the page — the same letter as the
@@ -154,32 +174,43 @@ export const MARK = {
    * anudātta, one stroke OVER for the svarita, two for the dīrgha svarita.
    */
   'svara-anudatta':
-    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
-    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
-    + '<path d="M8.6 19.4h6.8" fill="none" stroke="currentColor" stroke-width="1.6"'
+    letterA(11.4)
+    + '<path data-mark="1" d="M8.6 18.2h6.8" fill="none" stroke="currentColor" stroke-width="1.6"'
     + ' stroke-linecap="round" stroke-linejoin="round"/>',
   'svara-svarita':
-    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
-    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
-    + '<path d="M12 2.2v3.4" fill="none" stroke="currentColor" stroke-width="1.6"'
+    letterA(14.2)
+    + '<path data-mark="1" d="M12 4.4v4" fill="none" stroke="currentColor" stroke-width="1.6"'
     + ' stroke-linecap="round" stroke-linejoin="round"/>',
   'svara-dirgha':
-    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
-    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
-    + '<path d="M10.7 2.2v3.4M13.3 2.2v3.4" fill="none" stroke="currentColor" stroke-width="1.6"'
+    letterA(14.2)
+    + '<path data-mark="1" d="M10.6 4.4v4M13.4 4.4v4" fill="none" stroke="currentColor" stroke-width="1.6"'
     + ' stroke-linecap="round" stroke-linejoin="round"/>',
-  /* Candrabindu: the crescent and its dot, over the letter. */
+  /*
+   * Candrabindu: the crescent and its dot over an m — m̐, the letter it is
+   * written on in this program's IAST and the one the insert palette shows.
+   * It was drawn over the holding icons' A, which is a letter no candrabindu
+   * in the corpus sits on.
+   */
   candrabindu:
-    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
-    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
-    + '<path d="M9.4 4.6a2.6 2.2 0 0 0 5.2 0" fill="none" stroke="currentColor" stroke-width="1.3"'
+    '<path d="M7.5 18.4v-6.2M7.5 13.6c0-1.5 1-2.2 2.3-2.2s2.2.7 2.2 2.2v4.8M12 13.6c0-1.5 1-2.2 2.3-2.2s2.2.7 2.2 2.2v4.8" fill="none" stroke="currentColor" stroke-width="1.5"'
     + ' stroke-linecap="round" stroke-linejoin="round"/>'
-    + '<circle cx="12" cy="2.6" r="0.9" fill="currentColor"/>',
-  /* Svarabhakti: the dot, written BEFORE the letter it belongs to. */
+    + '<path d="M9.4 6.4a2.6 2.2 0 0 0 5.2 0" fill="none" stroke="currentColor" stroke-width="1.4"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="12" cy="4" r="1" fill="currentColor"/>',
+  /*
+   * Svarabhakti: r · ṣ — the dot BETWEEN the r and the sibilant after it,
+   * which is where every one of the corpus's dots is (var·ṣa, dar·śa, bar·hi)
+   * and where `.sbhakti` draws it. A dot beside one letter could be read as
+   * belonging on either side of it; with both letters there is no side.
+   */
   svarabhakti:
-    '<path d="M8.6 15.4 12 8.2l3.4 7.2M9.9 13.4h4.2" fill="none" stroke="currentColor"'
+    '<path d="M4.4 17v-6.6M4.4 13c0-1.7 1.2-2.6 3-2.6" fill="none" stroke="currentColor"'
     + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
-    + '<circle cx="5.4" cy="12.2" r="1.1" fill="currentColor"/>',
+    + '<circle data-mark="1" cx="11" cy="13.6" r="1.3" fill="currentColor"/>'
+    + '<path d="M19.4 11.4c-.4-.8-1.3-1.2-2.3-1.2-1.3 0-2.2.7-2.2 1.7 0 2.2 4.7 1.3 4.7 3.5'
+    + ' 0 1.1-1 1.7-2.4 1.7-1.2 0-2.1-.5-2.5-1.3" fill="none" stroke="currentColor"'
+    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="17.1" cy="20.2" r="1" fill="currentColor"/>',
   /* The two pauses — one bar and two, as they are written in the line. */
   'bar-short':
     '<path d="M12 5.5v13" fill="none" stroke="currentColor" stroke-width="1.8"'
@@ -198,11 +229,10 @@ export const MARK = {
     + '<circle cx="11.6" cy="19.6" r="1" fill="currentColor"/>',
   /* Marks on or off: the svara stroke above a letter, the holding under it. */
   marks:
-    '<path d="M9 4.4h6" fill="none" stroke="currentColor" stroke-width="1.6"'
+    '<path d="M9 5.4h6" fill="none" stroke="currentColor" stroke-width="1.6"'
     + ' stroke-linecap="round"/>'
-    + '<path d="M7.9 17 12 7.4 16.1 17M9.5 14.4h5" fill="none" stroke="currentColor"'
-    + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
-    + '<path d="M6.4 20.2h11.2" fill="none" stroke="currentColor" stroke-width="1.6"'
+    + letterA(12.4, 3.3)
+    + '<path d="M6.4 19.4h11.2" fill="none" stroke="currentColor" stroke-width="1.6"'
     + ' stroke-linecap="round"/>',
 };
 

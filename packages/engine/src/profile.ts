@@ -213,7 +213,10 @@ export const PROFILES: Readonly<Record<ProfileKey, Profile>> = Object.freeze({
   }),
 } as Record<ProfileKey, Profile>);
 
-export const DEFAULT_PROFILE: Profile = PROFILES.taittiriya;
+/** The register a text is marked in when nothing says otherwise — by name,
+ *  for what stores a name (a Word part, a document's settings). */
+export const DEFAULT_PROFILE_KEY: ProfileKey = 'taittiriya';
+export const DEFAULT_PROFILE: Profile = PROFILES[DEFAULT_PROFILE_KEY];
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);

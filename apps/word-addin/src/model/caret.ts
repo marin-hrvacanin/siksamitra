@@ -14,10 +14,15 @@
  * `offsetMap` the selection is located with, so the two cannot disagree.
  */
 import { mergeRuns, readParagraphs } from '@siksamitra/interop';
+import type { ScriptKey } from '@siksamitra/engine';
 import { offsetMap, toWord } from './offsets.js';
 
 export const CARET_BOOKMARK = '_smCaret';
-const MARK = `<w:bookmarkStart w:id="90210" w:name="${CARET_BOOKMARK}"/><w:bookmarkEnd w:id="90210"/>`;
+/** The far end of a selection to put back, when there is one. */
+export const SELECTION_END_BOOKMARK = '_smCaretEnd';
+const ids: Readonly<Record<string, number>> = { [CARET_BOOKMARK]: 90210, [SELECTION_END_BOOKMARK]: 90211 };
+const markOf = (name: string): string =>
+  `<w:bookmarkStart w:id="${ids[name] ?? 90212}" w:name="${name}"/><w:bookmarkEnd w:id="${ids[name] ?? 90212}"/>`;
 
 const RE_RUN = /<w:r\b[^>]*>[\s\S]*?<\/w:r>/g;
 const RE_ONLY_TEXT = /^(<w:r\b[^>]*>)(<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t><\/w:r>$/;
@@ -42,7 +47,8 @@ function lengthOf(run: string): number {
  * draws nothing new. A run that is not plain text is never split: the mark
  * goes after it.
  */
-export function withCaretAt(paragraph: string, wordOffset: number): string {
+export function withCaretAt(paragraph: string, wordOffset: number, name: string = CARET_BOOKMARK): string {
+  const MARK = markOf(name);
   let seen = 0;
   let done = false;
   const out = paragraph.replace(RE_RUN, (run) => {
@@ -69,8 +75,8 @@ export function withCaretAt(paragraph: string, wordOffset: number): string {
 }
 
 /** The Word offset of a model offset, in the paragraph as written. */
-export function wordOffsetIn(paragraph: string, modelAt: number): number {
+export function wordOffsetIn(paragraph: string, modelAt: number, script: ScriptKey = 'iast'): number {
   const [read] = readParagraphs(paragraph);
   if (read === undefined) return 0;
-  return toWord(offsetMap(mergeRuns(read.runs)), modelAt);
+  return toWord(offsetMap(mergeRuns(read.runs), script), modelAt);
 }

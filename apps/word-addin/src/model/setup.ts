@@ -91,6 +91,7 @@ export function missingStyles(pkg: string, sheet: string): string[] {
  */
 export const STYLE_MEANS: Readonly<Record<string, string>> = {
   Translit: 'a mantra line',
+  Title: 'the document’s title, centred — his title page',
   Heading1: 'the document’s title',
   Heading2: 'a part — a run of steps',
   Heading3: 'a section',

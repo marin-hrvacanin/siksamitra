@@ -107,6 +107,6 @@ export type { MarkPatchText, MarkTextResult } from './mark-text.js';
 /* The marking commands over one text-and-marks — the buttons of every program,
    the desktop app's and the Word add-in's alike. See `text-commands.ts`. */
 export {
-  applyAcross, applyCommand, selectionAcross, selectionState, typeAt,
+  applyAcross, applyCommand, selectionAcross, selectionState, typeAt, letterBefore,
 } from './text-commands.js';
 export type { CommandResult, MarkCommand, Span, Typed } from './text-commands.js';

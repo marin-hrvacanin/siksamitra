@@ -41,6 +41,9 @@
       ],
       "@siksamitra/tokens/word": [
         "../../packages/tokens/src/word.ts"
+      ],
+      "@siksamitra/ui": [
+        "../../packages/ui/src/index.ts"
       ]
     },
     "types": [

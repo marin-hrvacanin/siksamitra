@@ -110,6 +110,15 @@ describe('the other markings', () => {
     const cleared = applyCommand({ text: TEXT, marks: both.marks }, 0, 4, { k: 'clear' });
     expect(shape(cleared.marks)).toBe(`-:${TEXT}`);
   });
+
+  it('withdraw only the holding when Clear is the holding group’s, and keep the svara', () => {
+    const held = after(start, 0, 4, 'short');
+    const both = applyCommand(held, 0, 1, { k: 'svara', v: 'svarita' });
+    const cleared = applyCommand({ text: TEXT, marks: both.marks }, 0, 4, { k: 'clear', only: ['hold'] });
+    expect(cleared.marks.some((m) => m.k === 'hold')).toBe(false);
+    expect(cleared.marks.filter((m) => m.k === 'svara')).toEqual(both.marks.filter((m) => m.k === 'svara'));
+    expect(cleared.marks.some((m) => m.k === 'svara')).toBe(true);
+  });
 });
 
 describe('a box that crosses a space', () => {

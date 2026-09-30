@@ -37,6 +37,7 @@ export { mergeRuns, paragraphXml, readParagraphs } from './docx-read.js';
 export { tokensFromRuns } from './docx-runs.js';
 export type { ImportReport } from './docx-report.js';
 import { reportFor, type ImportReport } from './docx-report.js';
+import { recordedRegisterIn } from './word/rule-parts.js';
 export type { WordParagraph, WordRun } from './docx-read.js';
 
 /* ==========================================================================
@@ -74,7 +75,9 @@ export function importDocx(bytes: Uint8Array, title?: string, fallbackTitle = 'I
     filter: (f) => f.name === 'word/document.xml'
       || f.name === 'word/styles.xml'
       || f.name === 'word/_rels/document.xml.rels'
-      || f.name.startsWith('word/media/'),
+      || f.name.startsWith('word/media/')
+      /* The add-in's settings: the register the document is marked in. */
+      || /^word\/webextensions\/webextension\d*\.xml$/.test(f.name),
   });
   const xml = zip['word/document.xml'];
   if (xml === undefined) throw new Error('not a .docx — word/document.xml is missing');
@@ -89,9 +92,14 @@ export function importDocx(bytes: Uint8Array, title?: string, fallbackTitle = 'I
   let figureN = 0;
 
   const report = reportFor('docx', bytes.length, paragraphs);
+  const register = Object.entries(zip)
+    .filter(([name]) => name.startsWith('word/webextensions/'))
+    .map(([, part]) => recordedRegisterIn(strFromU8(part)))
+    .find((r) => r !== null) ?? null;
 
   const doc = buildDocument(paragraphs, {
     ...(title === undefined ? {} : { title }),
+    ...(register === null ? {} : { register }),
     fallbackTitle,
     report,
     figure: (drawing, at) => {

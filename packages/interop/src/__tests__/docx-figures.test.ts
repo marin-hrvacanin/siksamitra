@@ -246,9 +246,9 @@ describe('the relationships and the column', () => {
     expect(columnEmuOf(xml)).toBe(Math.round((9070 / 20 / 72) * 914400));
   });
 
-  it('falls back to that same sheet when the file says nothing', () => {
+  it('falls back to his own sheet when the file says nothing — A4, 25 mm left, 9 mm right', () => {
     expect(columnEmuOf('<w:body/>')).toBe(columnEmuOf(
-      '<w:sectPr><w:pgSz w:w="11906"/><w:pgMar w:right="1418" w:left="1418"/></w:sectPr>',
+      '<w:sectPr><w:pgSz w:w="11906"/><w:pgMar w:right="510" w:left="1418"/></w:sectPr>',
     ));
   });
 });

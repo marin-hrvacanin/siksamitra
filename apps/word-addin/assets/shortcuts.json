@@ -1,0 +1,270 @@
+{
+  "actions": [
+    {
+      "id": "smHoldShort",
+      "type": "ExecuteFunction",
+      "name": "Short"
+    },
+    {
+      "id": "smHoldLong",
+      "type": "ExecuteFunction",
+      "name": "Long"
+    },
+    {
+      "id": "smHoldClear",
+      "type": "ExecuteFunction",
+      "name": "Clear"
+    },
+    {
+      "id": "smTypingHelp",
+      "type": "ExecuteFunction",
+      "name": "Typing help"
+    },
+    {
+      "id": "smReapply",
+      "type": "ExecuteFunction",
+      "name": "Re-apply rules"
+    },
+    {
+      "id": "smAlt_a",
+      "type": "ExecuteFunction",
+      "name": "Type ā"
+    },
+    {
+      "id": "smAlt_i",
+      "type": "ExecuteFunction",
+      "name": "Type ī"
+    },
+    {
+      "id": "smAlt_u",
+      "type": "ExecuteFunction",
+      "name": "Type ū"
+    },
+    {
+      "id": "smAlt_r",
+      "type": "ExecuteFunction",
+      "name": "Type ṛ"
+    },
+    {
+      "id": "smAlt_r_up",
+      "type": "ExecuteFunction",
+      "name": "Type ṝ"
+    },
+    {
+      "id": "smAlt_l",
+      "type": "ExecuteFunction",
+      "name": "Type ḷ"
+    },
+    {
+      "id": "smAlt_l_up",
+      "type": "ExecuteFunction",
+      "name": "Type ḹ"
+    },
+    {
+      "id": "smAlt_m",
+      "type": "ExecuteFunction",
+      "name": "Type ṁ"
+    },
+    {
+      "id": "smAlt_h",
+      "type": "ExecuteFunction",
+      "name": "Type ḥ"
+    },
+    {
+      "id": "smAlt_t",
+      "type": "ExecuteFunction",
+      "name": "Type ṭ"
+    },
+    {
+      "id": "smAlt_t_up",
+      "type": "ExecuteFunction",
+      "name": "Type ṭh"
+    },
+    {
+      "id": "smAlt_d",
+      "type": "ExecuteFunction",
+      "name": "Type ḍ"
+    },
+    {
+      "id": "smAlt_d_up",
+      "type": "ExecuteFunction",
+      "name": "Type ḍh"
+    },
+    {
+      "id": "smAlt_n",
+      "type": "ExecuteFunction",
+      "name": "Type ṇ"
+    },
+    {
+      "id": "smAlt_s",
+      "type": "ExecuteFunction",
+      "name": "Type ś"
+    },
+    {
+      "id": "smAlt_s_up",
+      "type": "ExecuteFunction",
+      "name": "Type ṣ"
+    },
+    {
+      "id": "smAlt_g_up",
+      "type": "ExecuteFunction",
+      "name": "Type ñ"
+    },
+    {
+      "id": "smAlt_j_up",
+      "type": "ExecuteFunction",
+      "name": "Type ñ"
+    },
+    {
+      "id": "smAlt_n_up",
+      "type": "ExecuteFunction",
+      "name": "Type ṅ"
+    }
+  ],
+  "shortcuts": [
+    {
+      "action": "smHoldShort",
+      "key": {
+        "default": "Ctrl+H"
+      }
+    },
+    {
+      "action": "smHoldLong",
+      "key": {
+        "default": "Ctrl+Shift+H"
+      }
+    },
+    {
+      "action": "smHoldClear",
+      "key": {
+        "default": "Ctrl+K"
+      }
+    },
+    {
+      "action": "smTypingHelp",
+      "key": {
+        "default": "Ctrl+Shift+I"
+      }
+    },
+    {
+      "action": "smReapply",
+      "key": {
+        "default": "Ctrl+Shift+R"
+      }
+    },
+    {
+      "action": "smAlt_a",
+      "key": {
+        "default": "Alt+A"
+      }
+    },
+    {
+      "action": "smAlt_i",
+      "key": {
+        "default": "Alt+I"
+      }
+    },
+    {
+      "action": "smAlt_u",
+      "key": {
+        "default": "Alt+U"
+      }
+    },
+    {
+      "action": "smAlt_r",
+      "key": {
+        "default": "Alt+R"
+      }
+    },
+    {
+      "action": "smAlt_r_up",
+      "key": {
+        "default": "Alt+Shift+R"
+      }
+    },
+    {
+      "action": "smAlt_l",
+      "key": {
+        "default": "Alt+L"
+      }
+    },
+    {
+      "action": "smAlt_l_up",
+      "key": {
+        "default": "Alt+Shift+L"
+      }
+    },
+    {
+      "action": "smAlt_m",
+      "key": {
+        "default": "Alt+M"
+      }
+    },
+    {
+      "action": "smAlt_h",
+      "key": {
+        "default": "Alt+H"
+      }
+    },
+    {
+      "action": "smAlt_t",
+      "key": {
+        "default": "Alt+T"
+      }
+    },
+    {
+      "action": "smAlt_t_up",
+      "key": {
+        "default": "Alt+Shift+T"
+      }
+    },
+    {
+      "action": "smAlt_d",
+      "key": {
+        "default": "Alt+D"
+      }
+    },
+    {
+      "action": "smAlt_d_up",
+      "key": {
+        "default": "Alt+Shift+D"
+      }
+    },
+    {
+      "action": "smAlt_n",
+      "key": {
+        "default": "Alt+N"
+      }
+    },
+    {
+      "action": "smAlt_s",
+      "key": {
+        "default": "Alt+S"
+      }
+    },
+    {
+      "action": "smAlt_s_up",
+      "key": {
+        "default": "Alt+Shift+S"
+      }
+    },
+    {
+      "action": "smAlt_g_up",
+      "key": {
+        "default": "Alt+Shift+G"
+      }
+    },
+    {
+      "action": "smAlt_j_up",
+      "key": {
+        "default": "Alt+Shift+J"
+      }
+    },
+    {
+      "action": "smAlt_n_up",
+      "key": {
+        "default": "Alt+Shift+N"
+      }
+    }
+  ]
+}

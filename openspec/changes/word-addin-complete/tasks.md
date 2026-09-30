@@ -58,18 +58,19 @@
 
 ## 6. The pane's look
 
-- [ ] 6.1 Theme from `officeTheme`, then `prefers-color-scheme`; live on change;
-      `forced-colors`
-- [ ] 6.0 `packages/ui` (D11): Icon + icon table, RibbonButton, RibbonStack, group
+- [x] 6.1 Theme from `officeTheme`, then `prefers-color-scheme`; live on change;
+      `forced-colors` (`ui/useMode.ts`, for Settings and both dialogs)
+- [x] 6.0 `packages/ui` (D11): Icon + icon table, RibbonButton, RibbonStack, group
       frame, Popover, Tooltip, and their stylesheets, moved out of `apps/web`; the
       app imports them from there, every browser gate still green
 - [ ] 6.2 Layout per D8, built from `packages/ui`: status line, grouped icon tools, rules
       collapsible, "This document" only when needed
 - [x] 6.3 Register stored in document settings
-- [ ] 6.4 Tests: component (theme chosen from each input; sections shown only
-      when needed; every control labelled), browser `check:word:pane` (light,
-      dark, high contrast × 300/320/400/600 px: no clip, no sideways scroll,
-      contrast ≥ 4.5:1 for every text pair), live (Word dark and light)
+- [x] 6.4 Tests: component (Settings, dialogs), browser `check:word:pane` — the
+      published Settings panel and both dialogs, light, dark and high contrast,
+      at Word's sizes: no clip, no sideways scroll, no scrollbar in a dialog,
+      contrast ≥ 4.5:1 for every text, every face loaded, every icon in its
+      colour (300 checks)
 
 ## 7. The right-click menu and the ribbon menu
 
@@ -96,8 +97,9 @@
 - [x] 9.2 Pages redeploys when a bundled package changes
 - [x] 9.3 Support URL and Get Started text
 - [ ] 9.4 The vedaunion.org host: remove, or deploy — the owner decides
-- [ ] 9.5 Windows install: the site and `word-install.mjs` register a network
-      share (or the Developer key), verified on a desktop Word
+- [x] 9.5 Windows install: `word-install.mjs` and the published
+      `install-windows.cmd` register the Developer key (a local-folder catalog
+      was accepted and never shown)
 
 ## 10. Symbols, and insertions that are not sticky
 
@@ -117,9 +119,9 @@
 
 ## 11. Sharing
 
-- [ ] 11.1 The site's install section: per person on the web, per
-      organisation by an admin, what updates by itself and what needs a
-      re-upload
+- [x] 11.1 The site's install section: one file to double-click per platform,
+      per organisation by an admin; the code updates by itself, the manifest
+      daily (Windows) or by running the installer again (Mac)
 
 ## 12. The owner's documents, whole (measured on the sādhanā v9.1.4, kanakadhārā, agnimīḻe)
 
@@ -151,3 +153,43 @@
       section's (the anukramaṇī: lengthening off)
 - [x] 13.7 A gate over the owner's Ṛgveda references that ratchets, run when
       `Library/reference` is present and skipping loudly when not
+
+## 14. Everything on the tab, every script, every register (2026-09-30)
+
+Supersedes sections 5, 6.2 and 8.1 where they speak of a task pane: there is
+none. Everything is on the śikṣāmitra tab; Settings is the one side panel.
+
+- [x] 14.1 The tab, the right-click menu and every keyboard shortcut from ONE
+      table (`commands-table.ts`) — the manifest, its icons and
+      `shortcuts.json` generated from it; a test fails if the manifest on disk
+      is not the table's. Every command completes and says why when it cannot.
+- [x] 14.2 A marking with nothing selected goes on the letter before the caret,
+      and the caret comes back; a selection stays selected; nothing is sticky
+- [x] 14.3 Alt and a letter from the app's F9 table; the typing help dialog; in
+      a script line the script's letter, a vowel after a consonant its sign
+- [x] 14.4 Every line read in the script it is in; Script → IAST / Devanāgarī /
+      Telugu / Tamil over the selection or the document, every mark kept —
+      the corpus 573 of 573 exact in each script, the same bytes on a second
+      write, IAST → Devanāgarī → Telugu → Tamil → IAST home again; seeded
+      random lines with random marks never refused and never changed
+- [x] 14.5 What a cluster cannot show is Word's hidden text after it; an accent
+      is in its cluster's run. Measured in Word's own PDF: a second variation
+      selector in a row, every TAG character, and an accent in a run of its
+      own are drawn (boxes, a dotted circle)
+- [x] 14.6 Parts: a content control with a register of its own; the document's
+      register in its settings. The app reads both (`importDocx`) and writes a
+      section of another register as a part (`exportWord`)
+- [x] 14.7 The app takes back what was done in Word to a .docx it exported:
+      verses edited, marked, added, removed (`word/body-edits.ts`)
+- [x] 14.8 His look, compared page by page in Word's PDF against his Śivopāsana
+      and sādhanā: his running head, his sheet (A4 25/9/15/10 mm), the pauses
+      the rules placed in his blue, the name in Heading 2 and the chants in 3
+      and 4, source lines above what they name, a translation's own lines; no
+      invented step numbers
+- [x] 14.9 Installing for anybody: `install-windows.cmd`, `uninstall-windows.cmd`,
+      `install-mac.command`, published with the add-in
+- [ ] 14.10 Blank lines between verse groups, and his footer text, are not in
+      the model and are not written
+- [ ] 14.11 A verse typed as one paragraph per pāda (his Lalitā) and one broken
+      by line breaks (his Kanakadhārā) are one model; the app writes the second
+

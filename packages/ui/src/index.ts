@@ -16,3 +16,5 @@ export { TooltipLayer, tipProps } from './Tooltip.js';
 export { IAST_LEADER, IAST_LEADER_KEY, IAST_PALETTE, leaderFor, leaderStep } from './iast.js';
 export type { IastGroup, IastKey } from './iast.js';
 export { IastKeys } from './IastKeys.js';
+export { MARK_KEYS, officeChord } from './keys.js';
+export type { Chord, MarkKey } from './keys.js';

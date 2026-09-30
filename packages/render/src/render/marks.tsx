@@ -22,32 +22,15 @@
 import { Fragment, type ReactNode } from 'react';
 import type { ChantScriptKey, ChantSyllable, ChantToken } from '@siksamitra/format';
 import { holdBoxVars } from '../holdBox';
+import { CANDRA_SIGN as DEVA_CANDRA, SCRIPT_DIGITS as DIGITS } from '@siksamitra/engine';
 
 export type ScriptKey = ChantScriptKey;
 export type Unit = ChantSyllable['units'][number];
 export type Syl = ChantSyllable;
 
-/** Digits per script — a verse number is rendered in the active script. */
-export const DIGITS: Record<ScriptKey, string> = {
-  iast: '0123456789',
-  deva: '०१२३४५६७८९',
-  tel: '౦౧౨౩౪౫౬౭౮౯',
-  tam: '௦௧௨௩௪௫௬௭௮௯',
-};
-
-/**
- * The candrabindu, per script.
- *
- * TAMIL BORROWS THE GRANTHA SIGN, U+11300, because Tamil has none of its own —
- * exactly as this text already borrows the Grantha letters `ஜ ஷ ஸ ஹ ஶ`, which
- * is what Tamil Sanskrit has always done. It used to fall back to the IAST
- * combining mark U+0310, which Noto Serif Tamil has no glyph for, so the gum in
- * `தே³வீ` drew as an empty box on the page. Measured against a control, of the
- * four candidates only U+0310 fails in the shipped face.
- */
-export const DEVA_CANDRA: Record<ScriptKey, string> = {
-  iast: '̐', deva: 'ँ', tel: 'ఀ', tam: '\u{11300}',
-};
+/* The candrabindu and the digits per script are the engine's — the Word
+   writer needs the same answers (`script/signs.ts`). */
+export { CANDRA_SIGN as DEVA_CANDRA, SCRIPT_DIGITS as DIGITS } from '@siksamitra/engine';
 
 /**
  * The virāma tick — the clipped final stop at the end of a pāda

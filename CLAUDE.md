@@ -380,10 +380,10 @@ headless Word, and `office-addin-mock` does not mock collections — so
 because it needs Word installed, and it SKIPS LOUDLY when there is none.
 
 ```bash
-npm run check:word:live         # 17 checks, including his own document
+npm run check:word:live         # 29 checks: his own document, and a line in every script
 WORD_WRITE_MODE=whole npm run check:word:live   # reproduces a fault it found
 npm run word-addin:validate     # Microsoft's own validator, all three hosts
-CHROME=<path> npm run check:word:pane   # the PUBLISHED pane, actually rendered
+CHROME=<path> npm run check:word:pane   # the PUBLISHED Settings panel and dialogs, rendered
 ```
 
 It found four faults on its first honest run, three of them silent and two

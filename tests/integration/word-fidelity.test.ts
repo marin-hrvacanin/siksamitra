@@ -200,7 +200,10 @@ describe('the template really contains these values', () => {
   it('the mantra line hangs out to the margin and into the right one', () => {
     const xml = styleXml('Translit');
     expect(fromTwips(Number(attr(xml, 'ind', 'hanging')))).toBe(14.2);
-    expect(fromTwips(Number(attr(xml, 'ind', 'right')))).toBe(-13.8);
+    /* −284 twips, as in his current files (the Lalitā v9.3.1 and the
+       Śivopāsana v2; −282 in the Kanakadhārā v1.3). The template said −276,
+       older than all three, and was brought up to them. */
+    expect(fromTwips(Number(attr(xml, 'ind', 'right')))).toBe(-14.2);
     const line = WORD_PARAGRAPHS.find((p) => p.role === 'verse-line')!;
     // First line at the margin, continuations 14.2pt in.
     expect(line.indent - line.hanging).toBe(0);
@@ -213,11 +216,15 @@ describe('the template really contains these values', () => {
     expect(WORD_PAGE.marginPt).toBeCloseTo(70.85, 2);
   });
 
-  it('the holding weights are 0.25pt and 1.5pt', () => {
+  it('the holding weights are 0.25pt and 1pt', () => {
     // The ONLY difference between a short and a long box in his file.
+    // `2Holding` is `w:sz="8"` in all three of his current files; the
+    // template's `12` (1.5pt) was older than them, and was brought up to them.
     expect(fromEighths(2)).toBe(0.25);
-    expect(fromEighths(12)).toBe(1.5);
+    expect(fromEighths(8)).toBe(1);
     expect(WORD_MARKS.holdShort.weight).toBe(0.25);
-    expect(WORD_MARKS.holdLong.weight).toBe(1.5);
+    expect(WORD_MARKS.holdLong.weight).toBe(1);
+    expect(fromEighths(Number(attr(styleXml('2Holding'), 'bdr', 'sz')))).toBe(WORD_MARKS.holdLong.weight);
+    expect(fromEighths(Number(attr(styleXml('Holding'), 'bdr', 'sz')))).toBe(WORD_MARKS.holdShort.weight);
   });
 });

@@ -1,0 +1,151 @@
+/*
+ * The Settings panel and the dialogs — their ARRANGEMENT, and nothing else.
+ *
+ * The palette keys are the app's own (`@siksamitra/ui/popover.css`), the
+ * tokens are the app's own, under the same `data-chrome` / `data-mode`
+ * attributes. Not one design value is written here: every size, colour and
+ * gap is a token.
+ */
+
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--chrome-bg); }
+
+.set,
+.dlg {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  min-height: 100vh;
+  background: var(--chrome-bg);
+  color: var(--chrome-ink);
+  font: var(--text-ui) / 1.4 var(--font-ui);
+  overflow-wrap: anywhere;
+}
+
+/* ── Settings ──────────────────────────────────────────────────────────── */
+
+.set__box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-hair) solid var(--chrome-line-soft);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+}
+.set__h { margin: 0; font-size: var(--text-ui); font-weight: 600; }
+.set__note { margin: 0; font-size: var(--text-ui-sm); color: var(--chrome-ink-soft); }
+/* Read by a screen reader, not drawn: the standard visually-hidden rule. */
+.set__sr {
+  position: absolute; width: 1px; height: 1px; /* token-exempt: a 1 px box is what hides it; not a design size */
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+.set__regs { display: flex; flex-direction: column; gap: var(--space-1); }
+.set__reg {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-2);
+  border: var(--border-hair) solid transparent;
+  border-radius: var(--chrome-radius);
+  cursor: pointer;
+}
+.set__reg:hover { background: var(--chrome-sunk); }
+.set__reg[data-on] { border-color: var(--chrome-accent); background: var(--chrome-sunk); }
+.set__reg > span { display: flex; flex-direction: column; gap: var(--space-1); }
+.set__where, .set__what { font-size: var(--text-ui-sm); color: var(--chrome-ink-soft); }
+.set input { accent-color: var(--chrome-accent); margin: 0; }
+
+.set__stages { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.set__stages label { display: inline-flex; align-items: center; gap: var(--space-2); }
+
+.set__keys { border-collapse: collapse; font-size: var(--text-ui-sm); }
+.set__keys td { padding: var(--space-1) var(--space-2) var(--space-1) 0; vertical-align: top; }
+kbd {
+  font: var(--text-ui-sm) var(--font-ui);
+  padding: 0 var(--space-1);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  white-space: nowrap;
+}
+
+.set__btn {
+  align-self: flex-start;
+  font: inherit;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  cursor: pointer;
+}
+.set__btn:hover { background: var(--chrome-sunk); }
+.set__btn:disabled { color: var(--chrome-ink-mute); cursor: default; }
+.set__btn--main { border-color: var(--chrome-accent); }
+
+.set__foot {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-ui-sm);
+  color: var(--chrome-ink-soft);
+}
+/* The ink, underlined — the accent measured 3.04:1 as text on the light ground. */
+.set__foot a { color: var(--chrome-ink); text-decoration-color: var(--chrome-accent); }
+
+/* ── the dialogs ───────────────────────────────────────────────────────── */
+
+/* A message: the icon beside the sentence, the detail under it, the buttons
+   at the foot on the right — where Word keeps its own. */
+.dlg { justify-content: space-between; padding: var(--space-5) var(--space-5) var(--space-4); }
+.dlg__body { display: flex; gap: var(--space-4); align-items: flex-start; }
+.dlg__icon { flex: none; color: var(--chrome-accent); }
+.dlg__icon svg { width: calc(var(--control-h) * 0.9); height: calc(var(--control-h) * 0.9); }
+.dlg[data-kind="warn"] .dlg__icon { color: var(--chrome-danger); }
+.dlg__words { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.dlg__text { margin: 0; font-size: var(--text-ui-lg); font-weight: 600; line-height: 1.35; }
+.dlg__line { margin: 0; color: var(--chrome-ink-soft); }
+.dlg__do { display: flex; justify-content: flex-end; gap: var(--space-2); }
+.dlg__btn {
+  min-width: calc(var(--control-h) * 3);
+  min-height: var(--control-h);
+  font: inherit;
+  padding: 0 var(--space-4);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  cursor: pointer;
+}
+.dlg__btn:hover { background: var(--chrome-sunk); }
+.dlg__btn--main { background: var(--chrome-accent); border-color: var(--chrome-accent); color: var(--chrome-accent-on); }
+.dlg__btn--main:hover { background: var(--chrome-accent-hover); }
+.dlg__btn:focus-visible { outline: var(--border-hair) solid var(--chrome-ink); outline-offset: var(--border-hair); }
+
+/* The typing help: the app's palette, two groups to a row, keys big enough
+   to hit, and the letter that types each in the key's lower corner — clear of
+   the character, which is what the corner badge landed on at compact size. */
+.dlg--type { justify-content: flex-start; gap: var(--space-4); padding: var(--space-4) var(--space-5); }
+.dlg__lead { margin: 0; color: var(--chrome-ink-soft); }
+.dlg__lead kbd { color: var(--chrome-ink); }
+.dlg--type .iast__pad { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-5); padding: 0; }
+.dlg--type .iast__key {
+  min-width: calc(var(--control-h) * 1.5);
+  min-height: calc(var(--control-h) * 1.5);
+  padding: var(--space-1) var(--space-3) var(--space-3);
+}
+.dlg--type .iast__ch { font-size: calc(var(--text-ui-lg) * 1.3); }
+.dlg--type .iast__f9 { top: auto; bottom: var(--border-hair); right: var(--space-1); font-size: var(--text-ui-sm); }
+
+@media (forced-colors: active) {
+  .set__box, .set__reg[data-on], kbd, .set__btn { border-color: CanvasText; }
+}
+
+.set__h3 { margin: var(--space-2) 0 0; font-size: var(--text-ui-sm); font-weight: 600; }
+.set__keys--grid tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.set__keys--grid tr { display: flex; gap: var(--space-2); align-items: baseline; }
+.set__ch { font-family: var(--doc-verse-face); font-size: var(--text-ui-lg); }
