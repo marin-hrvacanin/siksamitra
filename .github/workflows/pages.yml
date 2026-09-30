@@ -28,6 +28,8 @@ on:
       - 'scripts/word-addin.mjs'
       - 'scripts/word-publish.mjs'
       - 'scripts/word-friend-installers.mjs'
+      # what the installers are written from — the catalog, its path, its keys
+      - 'scripts/word-catalog.mjs'
       # And everything the pane BUNDLES. The engine, the format, the codec and
       # the tokens are compiled into the task pane, so a rule changed in
       # packages/engine is a changed add-in — without these lines the live pane
