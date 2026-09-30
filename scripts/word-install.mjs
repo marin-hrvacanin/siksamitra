@@ -8,26 +8,24 @@
  *   node scripts/word-install.mjs --uninstall
  *
  * This is the SIDELOAD — the developer's and the early user's route, and the
- * only route that does not go through a marketplace. See
- * `scripts/word-catalog.mjs` for what each platform actually looks at, and
- * `docs/WORD-ADDIN.md` for the marketplace route, which is a submission rather
- * than a script.
+ * only route that does not go through a marketplace. It does what the friends'
+ * `install-windows.cmd` does, from the same constants (`word-catalog.mjs`, which
+ * also says why a shared-folder catalog and not the developer key), with one
+ * manifest per host in the one folder. See `docs/WORD-ADDIN.md` for the
+ * marketplace route, which is a submission rather than a script.
  *
  * IT COPIES THE MANIFEST rather than pointing at the repository, because a
- * registration outlives a checkout. A trusted catalog aimed at a folder that
- * has been moved or renamed is an add-in that disappears from Word's menu with
- * no explanation anywhere.
+ * registration outlives a checkout.
  *
  * IT DOES NOT NEED THE ADD-IN TO BE BUILT unless the host is `local`: a
  * published manifest names URLs on somebody else's server, and Word fetches
  * them itself.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ADDIN_HOSTS, manifestFaults, manifestFor, manifestVersion } from './word-addin.mjs';
-import { CATALOG_ROOT, catalogFolder, catalogId } from './word-catalog.mjs';
-import { WINDOWS_KEY } from './word-friend-installers.mjs';
+import { CATALOG_ROOT, CATALOG_ID, DEVELOPER_KEY, catalogEntries, catalogFolder, manifestFile, shareOf } from './word-catalog.mjs';
 
 const ADDIN = 'apps/word-addin';
 const argv = process.argv.slice(2);
@@ -37,31 +35,27 @@ const flag = (name) => {
 };
 
 const folder = catalogFolder();
-const id = catalogId(folder);
-const reg = (args) => execFileSync('reg', args, { encoding: 'utf8' });
+/* `reg` says "unable to find" on stderr for a value that is not there, which
+   is the ordinary case in an uninstall; only its answer is wanted. */
+const reg = (args) => execFileSync('reg', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+const tryReg = (args) => { try { return reg(args); } catch { return null; } };
 
 function list() {
   if (process.platform === 'darwin') {
     console.log(`\n  ${folder}\n`);
     return;
   }
-  try {
-    console.log(reg(['query', WINDOWS_KEY]));
-  } catch {
-    console.log('\n  no add-in is sideloaded\n');
-  }
+  const catalog = tryReg(['query', `${CATALOG_ROOT}\\{${CATALOG_ID}}`]);
+  const developer = tryReg(['query', DEVELOPER_KEY]);
+  console.log(catalog ?? '\n  no shared-folder catalog\n');
+  console.log(developer ?? '  nothing sideloaded as a developer add-in\n');
 }
 
 function uninstall() {
   rmSync(folder, { recursive: true, force: true });
   if (process.platform !== 'darwin') {
-    for (const h of Object.values(ADDIN_HOSTS)) {
-      try { reg(['delete', WINDOWS_KEY, '/v', h.id, '/f']); } catch { /* not this one */ }
-    }
-    /* The shared-folder catalog an earlier version registered, if it is there. */
-    try {
-      reg(['delete', `${CATALOG_ROOT}\\{${id}}`, '/f']);
-    } catch { /* it was not registered; the folder is gone either way */ }
+    tryReg(['delete', `${CATALOG_ROOT}\\{${CATALOG_ID}}`, '/f']);
+    for (const h of Object.values(ADDIN_HOSTS)) tryReg(['delete', DEVELOPER_KEY, '/v', h.id, '/f']);
   }
   console.log('\n  gone. Restart Word.\n');
 }
@@ -83,33 +77,33 @@ function install(key) {
   mkdirSync(folder, { recursive: true });
   /* One file per host, so installing the local build does not overwrite the
      published one — the two have different `<Id>`s and Word can hold both. */
-  const file = join(folder, `siksamitra-${key}.xml`);
+  const file = join(folder, manifestFile(key));
   writeFileSync(file, xml, 'utf8');
 
   if (process.platform === 'darwin') {
     console.log(`\n  ${host.name} -> ${file}`);
-    console.log('\n  Restart Word. It appears under Insert -> My Add-ins.\n');
+    console.log('\n  Restart Word, open a document, then Home -> Add-ins -> the add-in.');
+    console.log('  Word forgets it when it quits (OfficeDev/office-js#6973): choose it again each time.\n');
     return;
   }
 
-  /* WORD'S DOCUMENTED SIDELOAD: a value named with the add-in's id, holding
-     the manifest's path. Word loads it at start, so the tab is simply there.
-     The shared-folder catalog this used to register — a local folder — was
-     accepted and never shown. The friends' installer
-     (`word-friend-installers.mjs`) writes the same key. */
-  reg(['add', WINDOWS_KEY, '/v', host.id, '/t', 'REG_SZ', '/d', file, '/f']);
-  console.log(`\n  ${host.name}  ->  ${file}`);
-  console.log(`  sideloaded     ${WINDOWS_KEY} ${host.id}`);
-  console.log(`  serving from   ${host.base}`);
-  if (key === 'local') {
-    console.log('\n  It needs `npm run word-addin:serve` running.');
+  const share = shareOf(folder);
+  const shared = share !== null && existsSync(join(share, manifestFile(key)));
+  if (shared) {
+    tryReg(['delete', DEVELOPER_KEY, '/v', host.id, '/f']);
+    for (const e of catalogEntries(share)) reg(['add', e.key, '/v', e.name, '/t', e.type, '/d', e.value, '/f']);
+  } else {
+    reg(['add', DEVELOPER_KEY, '/v', host.id, '/t', 'REG_SZ', '/d', file, '/f']);
   }
-  console.log('\n  Restart Word: the tab is on the ribbon.\n');
+  console.log(`\n  ${host.name}  ->  ${file}`);
+  console.log(shared ? `  catalog        ${share}` : `  sideloaded     ${DEVELOPER_KEY} ${host.id}  (the share could not be read)`);
+  console.log(`  serving from   ${host.base}`);
+  if (key === 'local') console.log('\n  It needs `npm run word-addin:serve` running.');
+  console.log(shared
+    ? `\n  Restart Word, then once: Home -> Add-ins -> More Add-ins -> SHARED FOLDER -> ${host.name} -> Add.\n  Word keeps it after that.\n`
+    : `\n  Restart Word, then Home -> Add-ins -> More Add-ins -> MY ADD-INS -> Developer Add-ins -> ${host.name}.\n  Word forgets a developer add-in when it closes (OfficeDev/office-js#6973): add it again each time.\n`);
 }
 
-/* The macOS drop folder wants the manifest named for the add-in and nothing
-   else; on Windows the folder is a catalog and holds as many as it likes. */
 if (argv.includes('--list')) list();
 else if (argv.includes('--uninstall')) uninstall();
 else install(flag('host') ?? 'pages');
-

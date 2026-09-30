@@ -98,8 +98,14 @@
 - [x] 9.3 Support URL and Get Started text
 - [ ] 9.4 The vedaunion.org host: remove, or deploy — the owner decides
 - [x] 9.5 Windows install: `word-install.mjs` and the published
-      `install-windows.cmd` register the Developer key (a local-folder catalog
-      was accepted and never shown)
+      `install-windows.cmd` trust `%LOCALAPPDATA%\siksamitra\word` as a
+      shared-folder catalog through `\\localhost\C$\...`, and the person adds
+      it once from SHARED FOLDER. The Developer key they wrote before is kept
+      only as the fallback: since Office's update of 24–25 September 2026 Word
+      forgets it on close (OfficeDev/office-js#6973), measured on 16.0.20326;
+      the catalog's add-in survived every restart
+- [ ] 9.6 A Mac keeps the add-in across restarts — not until Microsoft fixes
+      #6973; there is no catalog on a Mac to fall back on
 
 ## 10. Symbols, and insertions that are not sticky
 
@@ -187,7 +193,10 @@ none. Everything is on the śikṣāmitra tab; Settings is the one side panel.
       and 4, source lines above what they name, a translation's own lines; no
       invented step numbers
 - [x] 14.9 Installing for anybody: `install-windows.cmd`, `uninstall-windows.cmd`,
-      `install-mac.command`, published with the add-in
+      `install-mac.command`, published with the add-in — the Windows pair run
+      against a real Word: installed, added from SHARED FOLDER, on the ribbon
+      after two restarts, Settings loaded from the published folder; removed,
+      and the tab gone on the next start
 - [ ] 14.10 Blank lines between verse groups, and his footer text, are not in
       the model and are not written
 - [ ] 14.11 A verse typed as one paragraph per pāda (his Lalitā) and one broken

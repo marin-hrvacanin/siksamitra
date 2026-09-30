@@ -13,7 +13,7 @@ down.
 
 It is not in Microsoft's store yet (that is a submission with an identity check
 behind it — see the end of this page). Until it is, it installs from one small
-file, and **keeps itself up to date**.
+file and one choice in Word, and **keeps itself up to date**.
 
 **Windows** (Word 2019, 2021, 2024 or Microsoft 365):
 
@@ -22,26 +22,57 @@ file, and **keeps itself up to date**.
 2. Double-click it. If Windows says it "protected your PC", choose
    *More info → Run anyway* — it is a short text file anyone can open and read.
    It needs no administrator: it installs for you alone.
-3. Close Word if it is open, and start it again. The **śikṣāmitra** tab is on
-   the ribbon.
+3. Close Word if it is open, and start it again.
+4. Once: **Home → Add-ins → More Add-ins → SHARED FOLDER**, choose
+   **śikṣāmitra**, then **Add**. The śikṣāmitra tab is on the ribbon from then
+   on, every time Word starts.
 
 To remove it,
 [`uninstall-windows.cmd`](https://marin-hrvacanin.github.io/siksamitra/word-extension/uninstall-windows.cmd)
-does the same three things backwards.
+undoes all of it; the tab is gone when Word next starts.
 
 **Mac**: download
 [`install-mac.command`](https://marin-hrvacanin.github.io/siksamitra/word-extension/install-mac.command),
-double-click it (the first time, right-click → *Open*), then quit Word and open
-it again.
+double-click it (the first time, right-click → *Open*), quit Word and open it
+again, open a document, then **Home → Add-ins → śikṣāmitra**. For now that last
+step is needed each time Word starts — see *Why a shared folder* below.
 
 **Word on the web**: Home → Add-ins → *Upload My Add-in*, and give it
 [`manifest.xml`](https://marin-hrvacanin.github.io/siksamitra/word-extension/manifest.xml).
 
 **Updates are automatic.** Word loads the add-in's pages from the web every time
-it starts, so a new version is simply there. The Windows installer also fetches
-the manifest again once a day, so when a release adds a button, it appears at
-the next start of Word. On a Mac, running `install-mac.command` again does the
-same.
+it starts, so a new version of what the buttons do is simply there. The Windows
+installer also fetches the manifest again once a day. A release that changes the
+ribbon itself — a new button — Microsoft says a shared-folder add-in has to be
+added again to show: *More Add-ins → MY ADD-INS*, remove it, then add it from
+*SHARED FOLDER* as above. On a Mac, running `install-mac.command` again fetches
+the new manifest.
+
+### Why a shared folder, and the one step in Word
+
+Until the end of September 2026 the installer wrote Microsoft's developer
+sideload — the manifest's path under
+`HKCU\Software\Microsoft\Office\16.0\WEF\Developer` — and the tab was simply
+there. **Office's update of 24–25 September broke that**: Word now forgets an
+add-in registered that way when it closes, on Windows and on a Mac
+([OfficeDev/office-js#6973](https://github.com/OfficeDev/office-js/issues/6973),
+*under investigation*). Measured here on Word 16.0.20326: the tab on the ribbon
+in the session it was added, gone on the next start.
+
+What Word still keeps is an add-in added from a **trusted shared-folder
+catalog**. That must be a network path — Word accepts a catalog at `C:\...` and
+never lists it — and the installer's own folder is one through the drive's
+administrative share, `\\localhost\C$\Users\<you>\AppData\Local\siksamitra\word`,
+which needs nothing created and no administrator to read. Word lists the add-in
+under *SHARED FOLDER*; added once, it was still on the ribbon after every
+restart. Adding it is a choice Word insists a person makes: a program cannot
+make it for them.
+
+Where that share cannot be read — a standard (non-administrator) account, or a
+machine with the administrative shares turned off — the installer falls back to
+the developer sideload and says so: the add-in is then under *MY ADD-INS →
+Developer Add-ins*, to be added each time Word starts until Microsoft fixes
+#6973. A Mac has no catalog, so the same is true there.
 
 ---
 
@@ -167,11 +198,19 @@ answers `cache-control: no-cache`, so Word revalidates rather than keeps a stale
 page; `no-store` stopped Word caching the ribbon icons at all and drew them
 blank.
 
-**The sideload** (`word-addin:install` and the friends' installer alike) is
-Microsoft's documented one: the manifest's path under
-`HKCU\Software\Microsoft\Office\16.0\WEF\Developer`, named with the add-in's id.
-Word loads it at start. A shared-folder catalog pointing at a local folder was
-the first route; Word accepted it and never listed it.
+**The sideload** (`word-addin:install` and the friends' installer alike, from
+the same constants in `scripts/word-catalog.mjs`) is the shared-folder catalog
+described above: one manifest per host in
+`%LOCALAPPDATA%\siksamitra\word` (the published one is `manifest.xml`, the
+local build `siksamitra-local.xml`), that folder trusted through
+`\\localhost\C$\...`, and each add-in added once from *SHARED FOLDER*. The
+developer key is the fallback where the share cannot be read.
+
+**Driving Word's add-in dialog from a script** — to check the whole route
+without a person — needs to know that the dialog is the legacy MSHTML control:
+UI Automation sees an empty pane, its page is reachable through
+`WM_HTML_GETOBJECT`, and its gallery ignores synthetic DOM events, so choosing
+the add-in takes one real click. That is how the route above was verified.
 
 ---
 
