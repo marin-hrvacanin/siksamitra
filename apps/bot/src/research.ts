@@ -1,11 +1,15 @@
 /**
  * THE WEB, FROM A SERVER — search and fetch, no key needed.
  *
- * SEARCH IS SEARXNG WHERE THE SERVER RUNS IT — a maintained metasearch
+ * SEARCH IS SEARXNG AND EXA TOGETHER, their answers merged. SearXNG where
+ * the server runs it — a maintained metasearch
  * engine, its own container beside the bot and reachable only from it, whose
  * project keeps the engines' parsers working (rule 16: scraping search pages
- * is not ours to keep alive). Without it — a run on a laptop — DuckDuckGo's
- * HTML page, then Bing's. A page that is an engine REFUSING (DuckDuckGo
+ * is not ours to keep alive). Exa — a search built for finding a particular
+ * document, which is what finding a text is — through its public MCP
+ * endpoint, as opencode searches (`tool/mcp-websearch.ts` there): one
+ * JSON-RPC `tools/call`, no key needed, `EXA_API_KEY` for higher limits.
+ * When both have nothing, DuckDuckGo's HTML page, then Bing's. A page that is an engine REFUSING (DuckDuckGo
  * answers a server it has seen too often with a page of no results) is a
  * refusal, said as one: it was read as "no results" twenty times in a row,
  * and the agent searched on until its steps ran out.
@@ -89,6 +93,48 @@ export function parseBing(html: string): SearchHit[] {
   return hits;
 }
 
+/**
+ * Exa's answer: blocks of "Title: … / URL: … / Highlights: …", one per result,
+ * between `---` lines — inside an MCP result, as JSON or as server-sent events.
+ */
+export function parseExa(body: string): SearchHit[] {
+  const payloads = [body.trim(), ...body.split('\n').filter((l) => l.startsWith('data: ')).map((l) => l.slice(6))];
+  let text: string | undefined;
+  for (const p of payloads) {
+    if (!p.startsWith('{')) continue;
+    try {
+      const j = JSON.parse(p) as { result?: { content?: { text?: string }[] } };
+      text = j.result?.content?.find((c) => typeof c.text === 'string')?.text;
+      if (text !== undefined) break;
+    } catch { /* not this line */ }
+  }
+  if (text === undefined) return [];
+  return text.split(/\n---\n/).flatMap((block) => {
+    const url = /^URL:\s*(\S+)/m.exec(block)?.[1];
+    if (url === undefined || !/^https?:\/\//.test(url)) return [];
+    const title = /^Title:\s*(.+)$/m.exec(block)?.[1]?.trim();
+    const highlights = block.split(/^Highlights:\s*$/m)[1] ?? '';
+    return [{ title: title === undefined || title === 'N/A' ? url : title, url, snippet: decode(highlights).slice(0, 220) }];
+  });
+}
+
+/** Two engines' results as one list: alternated, each address once. */
+export function merged(lists: readonly (readonly SearchHit[])[]): SearchHit[] {
+  const out: SearchHit[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; lists.some((l) => i < l.length); i += 1) {
+    for (const l of lists) {
+      const h = l[i];
+      if (h === undefined) continue;
+      const key = h.url.replace(/[#?].*$/, '').replace(/\/$/, '');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(h);
+    }
+  }
+  return out;
+}
+
 /** SearXNG's JSON answer. */
 export function parseSearxng(json: unknown): SearchHit[] {
   const results = (json as { results?: { title?: string; url?: string; content?: string }[] }).results ?? [];
@@ -114,14 +160,36 @@ export function parseResults(html: string): SearchHit[] {
 /** One engine: its results, or `null` for a refusal (an error, or a page that is not results). */
 type Engine = { readonly name: string; readonly run: (q: string) => Promise<SearchHit[] | null> };
 
-export function webResearch(fetchImpl: typeof fetch = fetch, searxng: string | undefined = process.env.SEARXNG_URL): Research {
+export function webResearch(
+  fetchImpl: typeof fetch = fetch,
+  searxng: string | undefined = process.env.SEARXNG_URL,
+  exa: string | undefined = process.env.EXA_URL ?? (process.env.EXA_API_KEY === undefined
+    ? 'https://mcp.exa.ai/mcp' : `https://mcp.exa.ai/mcp?exaApiKey=${encodeURIComponent(process.env.EXA_API_KEY)}`),
+): Research {
   const page = async (url: string): Promise<string | null> => {
     try {
       const res = await fetchImpl(url, { headers: { 'user-agent': UA, 'accept-language': 'en' } });
       return res.ok ? await res.text() : null;
     } catch { return null; }
   };
-  const engines: Engine[] = [
+  /* The first rank: asked together, their answers merged. */
+  const first: Engine[] = [
+    ...(exa === undefined || exa === '' ? [] : [{
+      name: 'exa',
+      run: async (q: string) => {
+        try {
+          const res = await fetchImpl(exa, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+            body: JSON.stringify({
+              jsonrpc: '2.0', id: 1, method: 'tools/call',
+              params: { name: 'web_search_exa', arguments: { query: q, type: 'auto', numResults: 8, livecrawl: 'fallback', contextMaxCharacters: 2000 } },
+            }),
+          });
+          return res.ok ? parseExa(await res.text()) : null;
+        } catch { return null; }
+      },
+    }]),
     ...(searxng === undefined || searxng === '' ? [] : [{
       name: 'searxng',
       run: async (q: string) => {
@@ -130,6 +198,9 @@ export function webResearch(fetchImpl: typeof fetch = fetch, searxng: string | u
         try { return parseSearxng(JSON.parse(body)); } catch { return null; }
       },
     }]),
+  ];
+  /* The fallbacks, one after another. */
+  const then: Engine[] = [
     {
       name: 'duckduckgo',
       run: async (q: string) => {
@@ -149,12 +220,16 @@ export function webResearch(fetchImpl: typeof fetch = fetch, searxng: string | u
   return {
     async search(query) {
       let refused = 0;
-      for (const e of engines) {
+      const answers = await Promise.all(first.map((e) => e.run(query)));
+      refused += answers.filter((a) => a === null).length;
+      const together = merged(answers.filter((a): a is SearchHit[] => a !== null));
+      if (together.length > 0) return together.slice(0, 10);
+      for (const e of then) {
         const hits = await e.run(query);
         if (hits === null) { refused += 1; continue; }
         if (hits.length > 0) return hits;
       }
-      if (refused === engines.length) {
+      if (refused === first.length + then.length) {
         throw new Error('the search engines are refusing just now — go straight to a known source with fetch_page: '
           + 'sanskritdocuments.org/doc_veda/, sanskritdocuments.org/doc_z_misc_major_works/, wisdomlib.org');
       }

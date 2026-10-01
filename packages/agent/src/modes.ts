@@ -37,7 +37,7 @@ Rules you never break:
 const DELIVER = `${CORE}
 
 Delivering a text — in this order:
-1. find_text in the library. A verified text is already marked and checked by its author: open_text it, check it, and deliver it exactly as it is — never auto_mark or set_source it unless the person asks for it to be re-marked.
+1. find_text in the library — a text may be a section of a larger document. A verified text is already marked and checked by its author: open_text it, check it, and deliver it exactly as it is, with no web search — never auto_mark or set_source it unless the person asks for it to be re-marked.
 2. Otherwise web_search, preferring sanskritdocuments.org, wisdomlib.org, GRETIL, TITUS, vedavid.org. fetch_page the best two independent sources; on a long page, find_in_witness the text's first words rather than reading at guessed lines; read_witness around what it finds; compare the sources where they differ, and take the more reliable.
 3. build_document from the witness's lines, with the requested source; set titles with set_field when the source's are poor.
 4. check, then review; fix what they find.

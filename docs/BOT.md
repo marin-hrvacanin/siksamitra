@@ -28,11 +28,18 @@ bot, move the branch: `git push origin HEAD:bot`.
 
 ## Search
 
-`/srv/apps/searxng` runs SearXNG, a maintained metasearch engine, on the
-`search` network that only the bot joins (`SEARXNG_URL=http://searxng:8080`
-in the bot's `.env`). The engines' parsers are its project's to keep working;
-a refusal by one engine is routed around. Without it (a run on a laptop) the
-bot tries DuckDuckGo, then Bing, and says so when every engine refuses.
+Two engines, asked together and their answers merged:
+
+- **SearXNG** — `/srv/apps/searxng`, a maintained metasearch engine, on the
+  `search` network that only the bot joins (`SEARXNG_URL=http://searxng:8080`
+  in the bot's `.env`). The engines' parsers are its project's to keep
+  working, and a refusal by one engine is routed around.
+- **Exa** — a search built for finding a particular document, through its
+  public MCP endpoint, as opencode searches: no key needed, `EXA_API_KEY` in
+  the `.env` for higher limits.
+
+When both have nothing, DuckDuckGo, then Bing; a refusal by every engine is
+said as one, with where to go instead.
 
 ## Its settings — `/srv/apps/siksamitra-bot/.env`
 

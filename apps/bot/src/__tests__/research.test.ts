@@ -6,7 +6,7 @@
  * ports — directly, by a name that resolves there, or by a redirect.
  */
 import { describe, expect, it } from 'vitest';
-import { isPublicAddress, parseBing, parseResults, parseSearxng, publicUrl, webResearch } from '../research.js';
+import { isPublicAddress, merged, parseBing, parseExa, parseResults, parseSearxng, publicUrl, webResearch } from '../research.js';
 
 describe('only the public internet', () => {
   it('private, loopback, link-local and metadata addresses are not public', () => {
@@ -39,7 +39,7 @@ describe('the search engines, one after another', () => {
       seen.push(String(u));
       return page(JSON.stringify({ results: [{ title: 'Purusha Suktam', url: 'https://sanskritdocuments.org/p', content: 'accented' }] }));
     }) as unknown as typeof fetch;
-    expect(await webResearch(f, 'http://searxng:8080').search('purusha')).toEqual([{ title: 'Purusha Suktam', url: 'https://sanskritdocuments.org/p', snippet: 'accented' }]);
+    expect(await webResearch(f, 'http://searxng:8080', '').search('purusha')).toEqual([{ title: 'Purusha Suktam', url: 'https://sanskritdocuments.org/p', snippet: 'accented' }]);
     expect(seen[0]).toMatch(/^http:\/\/searxng:8080\/search\?q=purusha&format=json/);
   });
 
@@ -47,12 +47,31 @@ describe('the search engines, one after another', () => {
     const f = (async (u: string) => (String(u).includes('duckduckgo')
       ? page('<html><title>DuckDuckGo</title><body>nothing</body></html>')
       : page('<ol id="b_results"><li class="b_algo"><h2><a href="https://www.bing.com/ck/a?!&&p=x&u=a1aHR0cHM6Ly93d3cud2lzZG9tbGliLm9yZy94&ntb=1">Wisdom Library</a></h2><p>Gāyatrī</p></li></ol>'))) as unknown as typeof fetch;
-    expect(await webResearch(f, '').search('gayatri')).toEqual([{ title: 'Wisdom Library', url: 'https://www.wisdomlib.org/x', snippet: 'Gāyatrī' }]);
+    expect(await webResearch(f, '', '').search('gayatri')).toEqual([{ title: 'Wisdom Library', url: 'https://www.wisdomlib.org/x', snippet: 'Gāyatrī' }]);
   });
 
   it('every engine refusing is said as a refusal, with where to go instead — never "no results"', async () => {
     const f = (async () => page('', 503)) as unknown as typeof fetch;
-    await expect(webResearch(f, '').search('anything')).rejects.toThrow(/refusing just now — go straight to a known source/);
+    await expect(webResearch(f, '', '').search('anything')).rejects.toThrow(/refusing just now — go straight to a known source/);
+  });
+
+  it('Exa and SearXNG are asked together, their answers merged, each address once', async () => {
+    const exaBody = 'event: message\ndata: ' + JSON.stringify({ result: { content: [{ type: 'text', text:
+      'Title: Gayatri Mantra-s\nURL: https://sanskritdocuments.org/g.itx\nHighlights:\n% Text title : Gayatri\n\n---\n\nTitle: N/A\nURL: https://sanskritdocuments.org/ta.html\nHighlights:\nTaittiriya' }] } });
+    const f = (async (u: string) => (String(u).includes('mcp.exa.ai')
+      ? new Response(exaBody)
+      : new Response(JSON.stringify({ results: [{ url: 'https://sanskritdocuments.org/ta.html', title: 'TA' }, { url: 'https://wisdomlib.org/w', title: 'W' }] })))) as unknown as typeof fetch;
+    const hits = await webResearch(f, 'http://searxng:8080', 'https://mcp.exa.ai/mcp').search('gayatri');
+    expect(hits.map((h) => h.url)).toEqual(['https://sanskritdocuments.org/g.itx', 'https://sanskritdocuments.org/ta.html', 'https://wisdomlib.org/w']);
+    expect(hits[0]!.title).toBe('Gayatri Mantra-s');
+    expect(merged([[{ title: 'a', url: 'https://x.org/a/', snippet: '' }], [{ title: 'b', url: 'https://x.org/a', snippet: '' }]])).toHaveLength(1);
+  });
+
+  it('Exa\'s answer is read as JSON or as server-sent events', () => {
+    const json = JSON.stringify({ result: { content: [{ type: 'text', text: 'Title: A\nURL: https://a.org\nHighlights:\nhello' }] } });
+    expect(parseExa(json)).toEqual([{ title: 'A', url: 'https://a.org', snippet: 'hello' }]);
+    expect(parseExa(`event: message\ndata: ${json}`)).toEqual([{ title: 'A', url: 'https://a.org', snippet: 'hello' }]);
+    expect(parseExa('not json')).toEqual([]);
   });
 
   it('SearXNG\'s and Bing\'s answers are read', () => {
