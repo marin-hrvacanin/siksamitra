@@ -109,3 +109,13 @@ describe('the wire', () => {
     await expect(model.complete({ messages: [], tools: [] })).rejects.toThrow(/401.*invalid key/);
   });
 });
+
+describe('a provider that does not answer', () => {
+  it('is given up after its time, tried again, and then said — never waited on for ever', async () => {
+    let calls = 0;
+    const fetch: FetchLike = () => { calls += 1; return new Promise(() => undefined); };
+    const model = openAiCompatible({ baseUrl: 'https://x', apiKey: 'k', model: 'm', fetch, timeoutMs: 20, retries: 1 });
+    await expect(model.complete({ messages: [], tools: [] })).rejects.toThrow(/did not answer within/);
+    expect(calls).toBe(2);
+  });
+});

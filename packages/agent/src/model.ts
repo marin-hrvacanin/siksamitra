@@ -78,6 +78,8 @@ export type FetchLike = (url: string, init: {
   method: string;
   headers: Record<string, string>;
   body?: string;
+  /** An `AbortSignal` where the host has one: how a request that never answers is given up. */
+  signal?: unknown;
 }) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
 
 export interface OpenAiCompatibleOptions {
@@ -92,6 +94,13 @@ export interface OpenAiCompatibleOptions {
   readonly wait?: (ms: number) => Promise<void>;
   /** Fields of the provider's own, added to every request body — DeepSeek's `thinking`. */
   readonly extra?: Readonly<Record<string, unknown>>;
+  /**
+   * How long one request may take before it is given up and tried again.
+   * A provider under load can answer the headers and then hold the body open
+   * for minutes — DeepSeek did, on the evening this was written — and a bot
+   * waiting on it forever answers nobody.
+   */
+  readonly timeoutMs?: number;
 }
 
 /** How hard a thinking model thinks; `off` turns thinking off, and only then is temperature honoured. */
@@ -170,6 +179,23 @@ export function usageOf(raw: unknown): Usage {
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => { setTimeout(r, ms); });
 
+class TimedOut extends Error {}
+
+/** `work`, given up after `ms` — aborted where the host can abort a request. */
+async function withTimeout<T>(ms: number, work: (signal: unknown) => Promise<T>): Promise<T> {
+  const Abort = (globalThis as { AbortController?: new () => { signal: unknown; abort(): void } }).AbortController;
+  const control = Abort === undefined ? undefined : new Abort();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => { control?.abort(); reject(new TimedOut()); }, ms);
+  });
+  try {
+    return await Promise.race([work(control?.signal), late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function openAiCompatible(opts: OpenAiCompatibleOptions): Model {
   const doFetch = opts.fetch ?? (globalThis as unknown as { fetch: FetchLike }).fetch;
   const wait = opts.wait ?? sleep;
@@ -189,13 +215,22 @@ export function openAiCompatible(opts: OpenAiCompatibleOptions): Model {
         ...opts.extra,
       });
       const tries = (opts.retries ?? 2) + 1;
+      const limit = opts.timeoutMs ?? 180_000;
       for (let attempt = 1; ; attempt += 1) {
-        const res = await doFetch(url, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', authorization: `Bearer ${opts.apiKey}` },
-          body,
-        });
-        const text = await res.text();
+        let text: string;
+        let res: { ok: boolean; status: number };
+        try {
+          ({ res, text } = await withTimeout(limit, (signal) => doFetch(url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', authorization: `Bearer ${opts.apiKey}` },
+            body,
+            ...(signal === undefined ? {} : { signal }),
+          }).then(async (r) => ({ res: r, text: await r.text() }))));
+        } catch (e) {
+          if (e instanceof TimedOut && attempt < tries) continue;
+          if (e instanceof TimedOut) throw new ModelError(408, `the model did not answer within ${Math.round(limit / 1000)} s, ${tries} times`);
+          throw e;
+        }
         if (!res.ok) {
           const again = res.status === 429 || res.status >= 500;
           if (again && attempt < tries) { await wait(1000 * 2 ** (attempt - 1)); continue; }

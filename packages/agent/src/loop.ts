@@ -54,6 +54,17 @@ export interface TurnResult {
 
 const add = (a: Usage, b: Usage): Usage => ({ input: a.input + b.input, cached: a.cached + b.cached, output: a.output + b.output });
 
+/**
+ * An error as the model may see it: without a path of the machine. A tool's
+ * failure is shown to the model, and what the model sees it may repeat to the
+ * person — on a server that would be its folders.
+ */
+export function withoutPaths(message: string): string {
+  return message
+    .replace(/[A-Za-z]:[\\/][^\s'"`)]+/g, '(a file)')
+    .replace(/(?<![\w.])\/(?:home|root|usr|var|etc|opt|srv|tmp|mnt|Users)\/[^\s'"`)]+/g, '(a file)');
+}
+
 /** A tool's answer, capped — and saying that it was, and how to see the rest. */
 export function capped(text: string, max: number): string {
   if (text.length <= max) return text;
@@ -99,7 +110,7 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
         text = await tool.run(args, opts.ctx);
       } catch (e) {
         failed = true;
-        text = `error: ${e instanceof Error ? e.message : String(e)}`;
+        text = `error: ${withoutPaths(e instanceof Error ? e.message : String(e))}`;
       }
       opts.onEvent?.({ kind: 'result', name: call.name, text, failed });
       opts.messages.push({ role: 'tool', toolCallId: call.id, content: capped(text, maxResult) });

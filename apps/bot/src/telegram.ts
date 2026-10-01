@@ -27,18 +27,21 @@ const core = botCore({
   sessions: fileSessions(join(config.dataDir, 'sessions')),
   host: (deliver) => nodeHost(ROOT, deliver),
   allowed: config.allowed,
+  owners: config.owners,
+  secrets: config.secrets,
 });
 
 bot.on('message:text', async (ctx) => {
   const chat = String(ctx.chat.id);
-  const user = String(ctx.from.id);
+  const who = { id: String(ctx.from.id), ...(ctx.from.username === undefined ? {} : { username: ctx.from.username }) };
   const typing = setInterval(() => { void ctx.replyWithChatAction('typing').catch(() => undefined); }, 4500);
   void ctx.replyWithChatAction('typing').catch(() => undefined);
   try {
-    const reply = await core.handle(chat, user, ctx.message.text);
+    const reply = await core.handle(chat, who, ctx.message.text);
     for (const f of reply.files) await ctx.replyWithDocument(new InputFile(f.bytes, f.name));
     await ctx.reply(reply.text.slice(0, 4000));
   } catch (e) {
+    /* The fault is the server's log's; the person is told only that it failed. */
     console.error(e);
     await ctx.reply('Something went wrong on my side — please try again, or send /new.');
   } finally {

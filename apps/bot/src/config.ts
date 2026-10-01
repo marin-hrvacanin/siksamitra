@@ -16,8 +16,12 @@ export interface BotConfig {
   readonly price: Price;
   readonly limits: Limits;
   readonly telegramToken?: string;
-  /** Telegram user ids allowed to use the bot. Empty: nobody. */
+  /** Who may use the bot: `@usernames` or numeric Telegram ids. Empty: nobody. */
   readonly allowed: ReadonlySet<string>;
+  /** Who may ask what has been spent. */
+  readonly owners: ReadonlySet<string>;
+  /** What must never appear in a reply. */
+  readonly secrets: readonly string[];
   /** Where the ledger, the sessions and the files go. */
   readonly dataDir: string;
 }
@@ -56,6 +60,8 @@ export function loadConfig(): BotConfig {
     },
     ...(token === undefined || token === '' ? {} : { telegramToken: token }),
     allowed: new Set((e.BOT_ALLOWED_USERS ?? '').split(',').map((s) => s.trim()).filter((s) => s !== '')),
+    owners: new Set((e.BOT_OWNERS ?? '').split(',').map((s) => s.trim()).filter((s) => s !== '')),
+    secrets: [key, token ?? ''].filter((s) => s !== ''),
     dataDir: resolve(ROOT, e.BOT_DATA_DIR?.trim() || 'out/bot'),
   };
 }

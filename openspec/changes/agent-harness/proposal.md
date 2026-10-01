@@ -61,6 +61,22 @@ Kept here so it is not lost between sessions. Every line is a requirement.
   add **dictionary metadata** to words; "pretty much everything apart from the
   audio"; and "completely 100% confident, proper, semi-deterministic — as
   repeatable and accurate as possible".
+- **Rigorous research** (2026-10-01): "on the internet, primarily on the good
+  and authentic sources, such as sanskritdocuments.org, wisdomlib and so on.
+  Every single word properly checked, also variances decided based on
+  authentic sandhi and grammar, applicable to the particular tradition in
+  question."
+- **Every word with its dictionary reference, for the web**: "each word must
+  also contain reference to the dictionary as seen in the vedaunion.org
+  website" — the `words[].entries[]` grammar of `docs/authoring/
+  AUTHORING-CHANTS.md` §4 (lemma or root, so the reader links Monier-Williams
+  on ambuda.org), "and mentioned in agentic skills in the repo".
+- **On his VPS, safely**: "without ever being able to, in any way, expose the
+  API key or any internal information", "only allowed list of usernames". The
+  key is in a root-owned file outside the code's folder, the model never has
+  it, every reply is scrubbed of secrets and paths, web text is data and never
+  instructions, the service runs as its own user with the machine locked away
+  from it, and nothing listens on a port.
 - **Done means verified end to end** — "let me know once the AI harness is
   complete and verified working perfectly, end to end."
 
