@@ -7,7 +7,7 @@
  * romanisations folded — "purusha" finds "puruṣa", "sukta" "sūktam" — and a
  * verified document comes before one of the owner's own files.
  */
-import { readChantFile } from '@siksamitra/format';
+import { readChantFile, withVerses, type ChantDoc } from '@siksamitra/format';
 import { openChantDoc } from '@siksamitra/engine';
 import type { Library, LibraryEntry } from './tools/types.js';
 
@@ -18,6 +18,48 @@ export const fold = (s: string): string => s
   .replace(/sh/g, 's').replace(/aa/g, 'a').replace(/ee/g, 'i').replace(/oo/g, 'u')
   .replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 
+/** A document file as it is read for an index — before it is opened. */
+interface RawDoc {
+  readonly title?: string;
+  readonly profile?: { readonly preset?: string };
+  readonly sections?: readonly { readonly id: string; readonly title?: string; readonly items?: readonly { readonly t: string }[]; readonly verses?: readonly unknown[] }[];
+}
+
+/**
+ * WHAT A LIBRARY DOCUMENT OFFERS: itself, and every section with a title.
+ *
+ * A text is often a section of a larger one — the Gāyatrī is a section of
+ * the pūjā manual, verified and marked — and an index of titles alone could
+ * not find it: asked for the Gāyatrī, the agent searched the web for sixteen
+ * minutes for a text the library had. A section is `<doc>#<section>`.
+ */
+export function indexEntries(id: string, raw: RawDoc): LibraryEntry[] {
+  const count = (s: NonNullable<RawDoc['sections']>[number]): number => (s.items !== undefined
+    ? s.items.filter((i) => i.t === 'verse').length : (s.verses ?? []).length);
+  const sections = raw.sections ?? [];
+  const title = raw.title ?? id;
+  const source = raw.profile?.preset;
+  const of = { kind: 'verified' as const, ...(source === undefined ? {} : { source }) };
+  return [
+    { id, title, ...of, note: `${sections.reduce((n, s) => n + count(s), 0)} verses` },
+    ...sections.filter((s) => (s.title ?? '').trim() !== '' && sections.length > 1)
+      .map((s) => ({ id: `${id}#${s.id}`, title: `${s.title} — in ${title}`, ...of, note: `${count(s)} verse(s)` })),
+  ];
+}
+
+/** A document with one of its sections only — what opening `<doc>#<section>` gives. */
+export function sectionDoc(doc: ChantDoc, sectionId: string): ChantDoc {
+  const section = doc.sections.find((s) => s.id === sectionId);
+  if (section === undefined) throw new Error(`no section "${sectionId}" in "${doc.title}"`);
+  const { part: _part, ...alone } = section;
+  return {
+    ...doc,
+    title: section.title ?? doc.title,
+    ...(section.source === undefined ? {} : { source: section.source }),
+    sections: [withVerses(alone, section.verses)],
+  };
+}
+
 /** The entries a query names, the best first. */
 export function findIn(entries: readonly LibraryEntry[], query: string): LibraryEntry[] {
   const words = fold(query).split(' ').filter((w) => w.length > 2);
@@ -25,7 +67,9 @@ export function findIn(entries: readonly LibraryEntry[], query: string): Library
     const t = fold(`${e.title} ${e.id}`);
     return { e, score: words.filter((w) => t.includes(w)).length };
   }).filter((x) => x.score > 0);
-  scored.sort((a, b) => b.score - a.score || (a.e.kind === b.e.kind ? 0 : a.e.kind === 'verified' ? -1 : 1));
+  /* More of the query matched first; then a verified text; then the shorter title — the nearer match. */
+  scored.sort((a, b) => b.score - a.score || (a.e.kind === b.e.kind ? 0 : a.e.kind === 'verified' ? -1 : 1)
+    || a.e.title.length - b.e.title.length);
   return scored.map(({ e }) => e);
 }
 
@@ -46,11 +90,13 @@ export function publishedLibrary(base: string, fetchImpl: typeof fetch = (u, i) 
   return {
     async find(query) { return findIn(await entries(), query); },
     async load(id) {
-      const r = await fetchImpl(new URL(`chants/${encodeURIComponent(id)}.json`, base));
+      const [file, section] = id.split('#') as [string, string | undefined];
+      const r = await fetchImpl(new URL(`chants/${encodeURIComponent(file)}.json`, base));
       if (!r.ok) throw new Error(`no library text "${id}"`);
       const read = readChantFile(await r.text());
       if (!read.ok) throw new Error(read.error);
-      return { doc: openChantDoc(read.doc), kind: 'verified' as const };
+      const doc = openChantDoc(read.doc);
+      return { doc: section === undefined ? doc : sectionDoc(doc, section), kind: 'verified' as const };
     },
   };
 }

@@ -26,6 +26,14 @@ The owner's VPS, in the layout its `/srv/README.md` describes:
 branch moves; a failed build leaves the running bot as it was. To update the
 bot, move the branch: `git push origin HEAD:bot`.
 
+## Search
+
+`/srv/apps/searxng` runs SearXNG, a maintained metasearch engine, on the
+`search` network that only the bot joins (`SEARXNG_URL=http://searxng:8080`
+in the bot's `.env`). The engines' parsers are its project's to keep working;
+a refusal by one engine is routed around. Without it (a run on a laptop) the
+bot tries DuckDuckGo, then Bing, and says so when every engine refuses.
+
 ## Its settings — `/srv/apps/siksamitra-bot/.env`
 
 See `.env.example`. The ones that matter:

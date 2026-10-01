@@ -82,7 +82,13 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
 
   for (let step = 1; step <= max; step += 1) {
     await checkBudget(opts.ledger, opts.limits, opts.session, cost);
-    const reply = await opts.model.complete({ messages: [{ role: 'system', content: opts.system }, ...opts.messages], tools: specs });
+    /* Told before the steps run out, and the last one answers in words: a
+       turn that used every step on searching gave the person nothing at all. */
+    if (max >= 6 && step === max - 2) {
+      opts.messages.push({ role: 'user', content: '(from the program: three steps are left in this turn — finish now: deliver what you have, or tell the person what you found and what you need from them)' });
+    }
+    const last = step === max;
+    const reply = await opts.model.complete({ messages: [{ role: 'system', content: opts.system }, ...opts.messages], tools: last ? [] : specs });
     const c = costOf(reply.usage, opts.price);
     cost += c;
     usage = add(usage, reply.usage);

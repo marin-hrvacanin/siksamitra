@@ -18,6 +18,8 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { Plugin } from 'vite';
+/* The library's index entries — the agent's own function, from its source. */
+import { indexEntries } from '../../packages/agent/src/library.js';
 
 /** Where each served prefix comes from, and what may be served under it. */
 const TREES = [
@@ -132,23 +134,9 @@ function sendRanged(
  * would fall behind it. So the index is read off the files: each one's id, its
  * title, its register, and how many verses it has.
  */
-export function chantIndex(dir = TREES[0].from): { id: string; title: string; kind: 'verified'; source?: string; note: string }[] {
-  return readdirSync(dir).filter((f) => /^[a-z0-9-]+\.json$/i.test(f)).sort().map((f) => {
-    const doc = JSON.parse(readFileSync(join(dir, f), 'utf8')) as {
-      title?: string; profile?: { preset?: string };
-      sections?: { items?: { t: string }[]; verses?: unknown[] }[];
-    };
-    const verses = (doc.sections ?? []).reduce((n, s) => n + (s.items !== undefined
-      ? s.items.filter((i) => i.t === 'verse').length
-      : (s.verses ?? []).length), 0);
-    return {
-      id: f.replace(/\.json$/, ''),
-      title: doc.title ?? f,
-      kind: 'verified' as const,
-      ...(doc.profile?.preset === undefined ? {} : { source: doc.profile.preset }),
-      note: `${verses} verses`,
-    };
-  });
+export function chantIndex(dir = TREES[0].from): ReturnType<typeof indexEntries> {
+  return readdirSync(dir).filter((f) => /^[a-z0-9-]+\.json$/i.test(f)).sort()
+    .flatMap((f) => indexEntries(f.replace(/\.json$/, ''), JSON.parse(readFileSync(join(dir, f), 'utf8'))));
 }
 
 /** `<chant>/audio/<file>` under a root, as the paths a document names. */

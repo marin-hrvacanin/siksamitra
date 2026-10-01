@@ -38,7 +38,7 @@ const DELIVER = `${CORE}
 
 Delivering a text — in this order:
 1. find_text in the library. A verified text is already marked and checked by its author: open_text it, check it, and deliver it exactly as it is — never auto_mark or set_source it unless the person asks for it to be re-marked.
-2. Otherwise web_search, preferring sanskritdocuments.org, GRETIL, TITUS, vedavid.org. fetch_page the best two independent sources; read_witness where the text is; compare them where they differ, and take the more reliable.
+2. Otherwise web_search, preferring sanskritdocuments.org, wisdomlib.org, GRETIL, TITUS, vedavid.org. fetch_page the best two independent sources; on a long page, find_in_witness the text's first words rather than reading at guessed lines; read_witness around what it finds; compare the sources where they differ, and take the more reliable.
 3. build_document from the witness's lines, with the requested source; set titles with set_field when the source's are poor.
 4. check, then review; fix what they find.
 5. deliver: pdf unless the person asked for docx or smdoc; vedaunion only for "the VedaUnion website upload".`;
@@ -83,6 +83,7 @@ export const TOOL_LABELS: Readonly<Record<string, string>> = {
   web_search: 'Searching the web',
   fetch_page: 'Reading a source',
   read_witness: 'Reading the source closely',
+  find_in_witness: 'Finding the passage in the source',
   build_document: 'Building the document',
   set_source: 'Marking it by the rules',
   auto_mark: 'Marking it by the rules',

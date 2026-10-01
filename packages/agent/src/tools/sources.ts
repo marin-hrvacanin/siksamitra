@@ -12,7 +12,9 @@
  * a few hundred lines of menus and notes around fifty of mantra, and paying
  * for the menus on every later call of the turn is what this avoids.
  */
-import { outlineOf, versesOf } from '../workspace.js';
+import { toIast } from '@siksamitra/engine';
+import { fold } from '../library.js';
+import { outlineOf, versesOf, type Witness } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
 
 const DEVA = /[ऀ-ॿ]/u;
@@ -45,6 +47,30 @@ export function blocksOf(lines: readonly string[], min = 2): Block[] {
 }
 
 const MAX_LINES = 150;
+
+/**
+ * A line as letters only, for finding: Devanāgarī read into IAST, then the
+ * diacritics, accents, punctuation, numbers and spaces taken away — so
+ * "tat savitur", "तत्स॑वि॒तुर्" and "tatsavitur" all find the same line.
+ */
+export const lettersKey = (line: string): string => {
+  const iast = DEVA.test(line) ? toIast(line, 'deva').iast : line;
+  return fold(iast).replace(/[^a-z]/g, '');
+};
+
+/** Where a phrase is in a witness: each line it starts on, a line and the next searched together. */
+export function findLines(w: Witness, query: string, max = 12): number[] {
+  const want = lettersKey(query);
+  if (want.length < 3) return [];
+  const keys = w.lines.map(lettersKey);
+  const out: number[] = [];
+  for (let i = 0; i < keys.length && out.length < max; i += 1) {
+    /* The line a match STARTS on: one wholly inside the next line is that line's. */
+    const at = (keys[i]! + (keys[i + 1] ?? '')).indexOf(want);
+    if (at !== -1 && at < keys[i]!.length) out.push(i + 1);
+  }
+  return out;
+}
 
 export const SOURCE_TOOLS: readonly Tool[] = [
   {
@@ -125,6 +151,22 @@ export const SOURCE_TOOLS: readonly Tool[] = [
         ? 'no Devanāgarī or IAST text found on it'
         : blocks.slice(0, 20).map((b) => `lines ${b.from}-${b.to}: ${b.script} (${b.to - b.from + 1}) — ${b.start}`).join('\n');
       return `${w.id}: "${page.title}", ${lines.length} lines\n${where}`;
+    },
+  },
+  {
+    writes: false,
+    spec: {
+      name: 'find_in_witness',
+      description: 'Find where a phrase is in a witness, by its letters — the query in IAST or Devanāgarī, with or without '
+        + 'accents and spaces. Answers the line numbers; read_witness reads around them. Use it on a long page instead of guessing lines.',
+      parameters: params({ witness: str('Its id: w1…'), phrase: str('A few words of the text: "tat savitur vareṇyam".') }, ['witness', 'phrase']),
+    },
+    async run(args, { ws }) {
+      const w = ws.witnesses.get(arg<string>(args, 'witness', 'string'));
+      if (w === undefined) throw new Error('no such witness');
+      const found = findLines(w, arg<string>(args, 'phrase', 'string'));
+      if (found.length === 0) return `not found in ${w.id} (${w.lines.length} lines)`;
+      return found.map((n) => `${n}| ${w.lines[n - 1]!.trim().slice(0, 90)}`).join('\n');
     },
   },
   {

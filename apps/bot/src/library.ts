@@ -13,7 +13,7 @@ import type { ChantDoc } from '@siksamitra/format';
 import { readChantFile } from '@siksamitra/format';
 import { openChantDoc } from '@siksamitra/engine';
 import { openDocumentFile } from '@siksamitra/interop';
-import { findIn, type Library, type LibraryEntry } from '@siksamitra/agent';
+import { findIn, indexEntries, sectionDoc, type Library, type LibraryEntry } from '@siksamitra/agent';
 
 interface Entry extends LibraryEntry { readonly path: string }
 
@@ -23,13 +23,7 @@ export function diskLibrary(root: string): Library {
   if (existsSync(corpus)) {
     for (const f of readdirSync(corpus).filter((n) => n.endsWith('.json'))) {
       const path = join(corpus, f);
-      const read = readChantFile(readFileSync(path, 'utf8'));
-      if (!read.ok) continue;
-      entries.push({
-        id: basename(f, '.json'), title: read.doc.title, kind: 'verified', path,
-        ...(read.doc.profile?.preset === undefined ? {} : { source: read.doc.profile.preset }),
-        note: `${read.doc.sections.reduce((n, s) => n + s.verses.length, 0)} verses`,
-      });
+      for (const e of indexEntries(basename(f, '.json'), JSON.parse(readFileSync(path, 'utf8')))) entries.push({ ...e, path });
     }
   }
   const reference = join(root, 'Library/reference');
@@ -50,7 +44,9 @@ export function diskLibrary(root: string): Library {
       if (e.kind === 'verified') {
         const read = readChantFile(readFileSync(e.path, 'utf8'));
         if (!read.ok) throw new Error(read.error);
-        return { doc: openChantDoc(read.doc), kind: e.kind };
+        const doc = openChantDoc(read.doc);
+        const section = id.split('#')[1];
+        return { doc: section === undefined ? doc : sectionDoc(doc, section), kind: e.kind };
       }
       const opened = await openDocumentFile(new Uint8Array(readFileSync(e.path)), basename(e.path));
       return { doc: openChantDoc(opened.doc), kind: e.kind };

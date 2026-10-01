@@ -73,7 +73,7 @@ export function Panel(): ReactNode {
       </header>
       <nav className="pnl-tabs" role="tablist" aria-label="śikṣāmitra">
         {TABS.map((t) => (
-          <button type="button" role="tab" key={t.id} aria-selected={tab === t.id} className="pnl-tab" onClick={() => openTab(t.id)}>
+          <button type="button" role="tab" key={t.id} aria-selected={tab === t.id} aria-label={t.label} title={t.label} className="pnl-tab" onClick={() => openTab(t.id)}>
             <Icon name={t.icon as IconName} size="md" />
             <span>{t.label}</span>
           </button>

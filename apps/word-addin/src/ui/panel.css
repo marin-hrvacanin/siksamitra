@@ -36,7 +36,9 @@ body { background: var(--chrome-bg); }
   top: 0;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* One row, however many tabs: a fixed count of columns put a sixth on a row of its own. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   background: var(--chrome-bg);
   border-bottom: var(--border-hair) solid var(--chrome-line);
 }
@@ -53,6 +55,9 @@ body { background: var(--chrome-bg); }
   font: var(--text-ui-sm) var(--font-ui);
   cursor: pointer;
 }
+.pnl-tab > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Word's narrowest panel: the icons alone, each tab still named (title, aria-label). */
+@media (max-width: 340px) { .pnl-tab > span { display: none; } }
 .pnl-tab:hover { color: var(--chrome-ink); background: var(--chrome-sunk); }
 .pnl-tab[aria-selected="true"] { color: var(--chrome-ink); border-bottom-color: var(--chrome-accent); }
 
