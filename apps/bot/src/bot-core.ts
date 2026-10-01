@@ -2,8 +2,9 @@
  * WHAT THE BOT DOES WITH A MESSAGE — without Telegram, so it can be tested.
  *
  *   - only the people on the allowed list are answered — by Telegram
- *     username (`@name`, the owner's choice) or by id; anyone else is told
- *     only that the bot is private;
+ *     username (`@name`, the owner's choice) or by id; anyone else gets one
+ *     fixed message, never the model: who the bot is, and whom to write to
+ *     to be added;
  *   - NOTHING INTERNAL LEAVES: every reply is scrubbed of the server's
  *     secrets and paths before it is sent — the model never has the key, and
  *     this is the last line in case a page or a fault ever puts one in front
@@ -37,6 +38,8 @@ export interface BotDeps {
   readonly allowed: ReadonlySet<string>;
   /** Who may ask what has been spent. */
   readonly owners?: ReadonlySet<string>;
+  /** Whom someone not on the list writes to, to be added — `BOT_CONTACT`. */
+  readonly contact?: string;
   /** Strings that must never appear in a reply: the key, the token. */
   readonly secrets?: readonly string[];
   /** Progress while a request is worked on: a step starting, or its outcome. */
@@ -64,10 +67,25 @@ export interface BotReply {
   readonly steered?: true;
 }
 
-const HELP = 'Send me what you need, in your own words — for example: '
-  + '“the Puruṣa Sūktam, as the Taittirīya has it” or “Durgā Sūktam as a Word file”. '
-  + 'I find the text, mark it by the śikṣā rules, check it and send it back, as a PDF unless you ask for a Word '
-  + 'file (.docx), a śikṣāmitra file (.smdoc) or the VedaUnion website upload. /new starts over.';
+/** The greeting, on /start and /help. */
+export const WELCOME = 'Namaste 🙏 I am Śrutidhara, your śikṣāmitra companion.\n\n'
+  + 'Ask me for a text in your own words — for example “the Puruṣa Sūktam, as the Taittirīya has it” '
+  + 'or “Durgā Sūktam as a Word file”. I find it in authentic sources, mark it by the śikṣā rules, check it '
+  + 'and send it back: as a PDF, or as a Word file (.docx), a śikṣāmitra file (.smdoc) or the VedaUnion '
+  + 'website upload if you ask for one.\n\n'
+  + 'While I work, a message from you steers me and /stop stops me. /new starts over.';
+
+/** What someone not on the list is told — a fixed text, never the model's. */
+export function notListed(contact?: string): string {
+  const write = contact === undefined || contact === ''
+    ? 'ask the person who told you about me to add you'
+    : `write to ${contact} with your Telegram username`;
+  return 'Namaste 🙏 I am Śrutidhara, the śikṣāmitra assistant: I find Vedic texts in authentic sources, '
+    + 'mark them by the śikṣā rules and send them back as a PDF.\n\n'
+    + `For now I answer only the people who have been added. To be added, ${write} `
+    + '(if you have none yet, set one in Telegram’s Settings → Username). '
+    + 'You can begin as soon as you are on the list — just send me a message again.';
+}
 
 /** A Telegram user as the bot sees them. */
 export interface Who { readonly id: string; readonly username?: string }
@@ -114,9 +132,9 @@ export function botCore(deps: BotDeps) {
 
   async function answer(chat: string, who: Who, text: string): Promise<BotReply> {
       const user = who.id;
-      if (!listed(deps.allowed, who)) return { text: 'This bot is private.', files: [] };
+      if (!listed(deps.allowed, who)) return { text: notListed(deps.contact), files: [] };
       const said = text.trim();
-      if (said === '/start' || said === '/help') return { text: HELP, files: [] };
+      if (said === '/start' || said === '/help') return { text: WELCOME, files: [] };
       if (said === '/new') { deps.sessions.forget(chat); return { text: 'Started over — what do you need?', files: [] }; }
       /* While a request is being worked on, a message steers it, and /stop stops it. */
       const now = running.get(chat);
@@ -130,7 +148,7 @@ export function botCore(deps: BotDeps) {
         return { text: 'Noted — I am taking that into account as I go.', files: [], steered: true };
       }
       if (said === '/spent') {
-        if (deps.owners === undefined || !listed(deps.owners, who)) return { text: HELP, files: [] };
+        if (deps.owners === undefined || !listed(deps.owners, who)) return { text: WELCOME, files: [] };
         const all = await deps.ledger.spent();
         const mine = await deps.ledger.spent(chat);
         return { text: `Spent: $${mine.toFixed(4)} in this chat, $${all.toFixed(4)} in all${deps.limits.global === undefined ? '' : ` of $${deps.limits.global.toFixed(2)}`}.`, files: [] };

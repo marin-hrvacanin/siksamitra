@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { memoryLedger, type SessionState } from '@siksamitra/agent';
-import { botCore, listed, scrubbed } from '../bot-core.js';
+import { WELCOME, botCore, listed, notListed, scrubbed } from '../bot-core.js';
 import type { SessionStore } from '../store.js';
 import { scripted, testHost } from '../../../../packages/agent/src/__tests__/fixtures.js';
 
@@ -42,12 +42,30 @@ function bot(steps = deliverSteps(), limits = { global: 5 }) {
 describe('the bot', () => {
   it('answers only the people on its list — by username, any case, or by id — and tells anyone else nothing', async () => {
     const { core, model } = bot([{ say: 'one' }, { say: 'two' }]);
-    expect((await core.handle('c1', { id: '7', username: 'stranger' }, 'the Puruṣa Sūktam please')).text).toBe('This bot is private.');
+    expect((await core.handle('c1', { id: '7', username: 'stranger' }, 'the Puruṣa Sūktam please')).text).toBe(notListed());
     expect(model.requests).toHaveLength(0);
     expect((await core.handle('c2', { id: '99', username: 'marin_h' }, 'hello')).text).toBe('one');
     expect((await core.handle('c3', { id: '42' }, 'hello')).text).toBe('two');
     expect(listed(new Set(['@Marin_H']), { id: '1', username: 'MARIN_H' })).toBe(true);
     expect(listed(new Set(['@marin']), { id: '1' })).toBe(false);
+  });
+
+  it('tells someone not on the list, in one fixed message, whom to write to — and greets the ones on it', async () => {
+    const model = scripted([]);
+    const core = botCore({
+      model, price: PRICE, limits: {}, ledger: memoryLedger(), sessions: memorySessions(), allowed: new Set(['@Marin_H']),
+      contact: 'Marin (@marin_h)', host: (deliver) => ({ ...testHost(), deliver }),
+    });
+    for (const said of ['/start', 'the Gāyatrī please', '/spent']) {
+      const r = await core.handle('c9', { id: '7', username: 'newcomer' }, said);
+      expect(r.text).toBe(notListed('Marin (@marin_h)'));
+      expect(r.text).toContain('write to Marin (@marin_h) with your Telegram username');
+    }
+    /* Not the model, for any of them: nothing is spent on a stranger. */
+    expect(model.requests).toHaveLength(0);
+    expect(notListed()).toContain('ask the person who told you about me to add you');
+    expect((await core.handle('c2', { id: '1', username: 'marin_h' }, '/start')).text).toBe(WELCOME);
+    expect(WELCOME).toContain('Śrutidhara');
   });
 
   it('never says a secret, a key, a bot token or a path of the server — whatever the model writes', async () => {

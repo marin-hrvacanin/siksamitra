@@ -52,6 +52,7 @@ See `.env.example`. The ones that matter:
 | `TELEGRAM_BOT_TOKEN` | from BotFather |
 | `BOT_ALLOWED_USERS` | who may use it: `@usernames` or numeric ids, comma-separated |
 | `BOT_OWNERS` | who may send `/spent` |
+| `BOT_CONTACT` | whom someone not on the list is told to write to, to be added — they get one fixed message, never the model |
 | `BOT_GLOBAL_LIMIT_USD` | the whole allowance, every chat together (default 5) |
 | `BOT_SESSION_LIMIT_USD` / `BOT_TURN_LIMIT_USD` | per conversation / per request (1 / 0.5) |
 

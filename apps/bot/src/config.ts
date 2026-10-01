@@ -20,6 +20,8 @@ export interface BotConfig {
   readonly allowed: ReadonlySet<string>;
   /** Who may ask what has been spent. */
   readonly owners: ReadonlySet<string>;
+  /** Whom someone not on the list writes to, to be added. */
+  readonly contact?: string;
   /** What must never appear in a reply. */
   readonly secrets: readonly string[];
   /** Where the ledger, the sessions and the files go. */
@@ -54,6 +56,7 @@ export function loadConfig(): BotConfig {
     throw new Error(`no price for ${modelId}: set AGENT_PRICE_INPUT, AGENT_PRICE_CACHED and AGENT_PRICE_OUTPUT (USD per million tokens)`);
   }
   const token = e.TELEGRAM_BOT_TOKEN?.trim();
+  const contact = e.BOT_CONTACT?.trim();
   return {
     model,
     price,
@@ -65,6 +68,7 @@ export function loadConfig(): BotConfig {
     ...(token === undefined || token === '' ? {} : { telegramToken: token }),
     allowed: new Set((e.BOT_ALLOWED_USERS ?? '').split(',').map((s) => s.trim()).filter((s) => s !== '')),
     owners: new Set((e.BOT_OWNERS ?? '').split(',').map((s) => s.trim()).filter((s) => s !== '')),
+    ...(contact === undefined || contact === '' ? {} : { contact }),
     secrets: [key, token ?? ''].filter((s) => s !== ''),
     dataDir: resolve(ROOT, e.BOT_DATA_DIR?.trim() || 'out/bot'),
   };

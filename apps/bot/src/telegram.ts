@@ -41,6 +41,7 @@ const core = botCore({
   sessions: fileSessions(join(config.dataDir, 'sessions')),
   host: (deliver) => nodeHost(ROOT, deliver),
   allowed: config.allowed,
+  ...(config.contact === undefined ? {} : { contact: config.contact }),
   owners: config.owners,
   secrets: config.secrets,
   log: (line) => console.log(JSON.stringify({ at: new Date().toISOString(), ...line })),
