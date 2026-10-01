@@ -27,6 +27,7 @@
       "@siksamitra/engine": ["../../packages/engine/src/index.ts"],
       "@siksamitra/format": ["../../packages/format/src/index.ts"],
       "@siksamitra/interop": ["../../packages/interop/src/index.ts"],
+      "@siksamitra/agent": ["../../packages/agent/src/index.ts"],
       "@siksamitra/layout": ["../../packages/layout/src/index.ts"],
       "@siksamitra/render": ["../../packages/render/src/index.ts"],
       "@siksamitra/render/theme": ["../../packages/render/src/theme/marks.ts"],

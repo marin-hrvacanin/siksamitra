@@ -1,0 +1,19 @@
+{
+  "name": "@siksamitra/bot",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "description": "The śikṣāmitra agent on a server: a Telegram bot, and the same host for a terminal run.",
+  "scripts": {},
+  "dependencies": {
+    "@siksamitra/agent": "2.0.0-alpha.0",
+    "@siksamitra/engine": "2.0.0-alpha.0",
+    "@siksamitra/format": "2.0.0-alpha.0",
+    "@siksamitra/interop": "2.0.0-alpha.0",
+    "grammy": "^1.46.0",
+    "html-to-text": "^10.0.1"
+  },
+  "devDependencies": {
+    "@types/html-to-text": "^9.0.4"
+  }
+}

@@ -22,8 +22,9 @@
 import {
   CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES, type ChantDoc, type ChantProfileKey,
 } from '@siksamitra/format';
+import { setTextCommand } from '@siksamitra/edit';
 import {
-  extentOf, findVerse, lines, requireFlag, run, units, type EditContext,
+  findVerse, lines, orDie, requireFlag, run, units, type EditContext,
 } from './edit-shared.js';
 import { addVerse, removeVerse, setField } from './edit-structure.js';
 
@@ -103,41 +104,12 @@ function setRegister(ctx: EditContext, doc: ChantDoc): void {
   );
 }
 
+/** A verse's text replaced — the same verse, its id kept (`setTextCommand`). */
 function setText(ctx: EditContext, doc: ChantDoc): void {
   const verseId = requireFlag(ctx, 'verse');
   const text = lines(requireFlag(ctx, 'text'));
   if (text.length === 0) ctx.die(2, '--text is empty; use remove-verse to delete a verse');
-  const { section, verse } = findVerse(ctx, doc, verseId);
-  /*
-   * REPLACING A VERSE IS A RANGE REPLACE OVER THE SECTION'S FLAT SOURCE — the
-   * same edit a person makes by selecting the verse and typing over it.
-   * Writing `verse.src.lines` directly would skip the override rebasing, and
-   * every hand-placed mark after that point would end up a letter out.
-   */
-  const extent = extentOf(ctx, section, verse.id);
-  run(
-    ctx,
-    doc,
-    {
-      k: 'replace',
-      sectionId: section.id,
-      from: extent.start,
-      to: extent.end,
-      insert: text.join('\n'),
-      /*
-       * IT IS STILL THE SAME VERSE.
-       *
-       * Replacing a verse's text down to the last letter is, to a text
-       * comparison, indistinguishable from deleting it and typing another —
-       * and that is the right reading for a keystroke. Here the caller has
-       * NAMED the verse, so its id is offered back: its recording, its
-       * translation and its word grammar belong to these words, not to the
-       * ones being replaced.
-       */
-      newIds: [verse.id],
-    },
-    `${verseId}: text replaced`,
-  );
+  run(ctx, doc, orDie(ctx, setTextCommand(doc, verseId, text)), `${verseId}: text replaced`);
 }
 
 function hold(ctx: EditContext, doc: ChantDoc): void {

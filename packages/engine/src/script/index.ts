@@ -32,6 +32,7 @@ import {
   needsApproxMarker,
 } from './lossless.js';
 import { qualifiersIn } from './qualifiers.js';
+import { vedicSignsIn } from './vedic-signs.js';
 import { romanisationToIast } from './romanisation.js';
 
 export type { ScriptKey, AnyScriptKey } from './tables.js';
@@ -222,6 +223,8 @@ export function toIast(
      `கீ³` is printed with the digit after the vowel sign and the table holds
      `க³`. See `qualifiers.ts`. */
   if (source.qualifiers !== undefined) text = qualifiersIn(text, source.qualifiers);
+  /* A Vedic sign is the letter it is typed as — `ꣳ` is `ṁ`. See `vedic-signs.ts`. */
+  text = vedicSignsIn(text, from);
   // The praṇava ligatures are single glyphs standing for a whole syllable, so
   // they are matched before anything else. Telugu has no ligature and reverses
   // through the ordinary letter + sign path.

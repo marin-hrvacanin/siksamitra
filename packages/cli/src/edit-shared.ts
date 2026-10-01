@@ -10,8 +10,8 @@
  */
 import { writeFileSync } from 'node:fs';
 import {
-  apply, emptyHistory, newState, sourcesOf, verseExtents,
-  type EditCommand, type EditState,
+  apply, emptyHistory, findVerseIn, newState, splitLines,
+  type EditCommand, type EditState, type Outcome,
 } from '@siksamitra/edit';
 import {
   canonicalJson, writeChantFile, type ChantDoc, type ChantSection, type ChantVerse,
@@ -56,42 +56,20 @@ export function units(ctx: EditContext): number[] {
   return [...out].sort((a, b) => a - b);
 }
 
-/**
- * Line breaks as an agent will actually type them.
- *
- * A shell does not agree with itself about `\n`: PowerShell passes the two
- * characters through, bash in a double-quoted string does too, and only
- * `$'...'` turns it into a newline. So both a real newline and a literal
- * backslash-n mean the same thing here, and so does `/` between pādas — which
- * is how the marking documents themselves write a line break.
- */
-export const lines = (text: string): string[] => text
-  .replace(/\\n/g, '\n')
-  .split(/\n|\s\/\s/)
-  .map((l) => l.trim())
-  .filter((l) => l !== '');
+/** Line breaks as an agent will type them — `splitLines` in `@siksamitra/edit`. */
+export const lines = splitLines;
 
 export function findVerse(
   ctx: EditContext,
   doc: ChantDoc,
   verseId: string,
 ): { section: ChantSection; verse: ChantVerse } {
-  for (const section of doc.sections) {
-    const verse = section.verses.find((v) => v.id === verseId);
-    if (verse !== undefined) return { section, verse };
-  }
-  return ctx.die(2, `no verse "${verseId}" in this document`);
+  return findVerseIn(doc, verseId) ?? ctx.die(2, `no verse "${verseId}" in this document`);
 }
 
-/** Where a verse sits in its section's flat source. */
-export function extentOf(
-  ctx: EditContext,
-  section: ChantSection,
-  verseId: string,
-): { start: number; end: number } {
-  const found = verseExtents(sourcesOf(section)).find((e) => e.id === verseId);
-  if (found === undefined) ctx.die(2, `verse "${verseId}" has no text to replace`);
-  return { start: found.start, end: found.end };
+/** A shared operation's answer, or the CLI's exit 2 with its reason. */
+export function orDie<T>(ctx: EditContext, o: Outcome<T>): T {
+  return o.ok ? o.value : ctx.die(2, o.error);
 }
 
 /* ── how a change is reported and saved ────────────────────────────────── */

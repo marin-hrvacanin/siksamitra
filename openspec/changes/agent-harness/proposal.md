@@ -29,8 +29,16 @@ Kept here so it is not lost between sessions. Every line is a requirement.
     website** — that one named as such ("VedaUnion website upload"), because
     it is used only internally.
 - **A key the person brings.** Paste an API key; provider-agnostic (OpenAI,
-  DeepSeek, others). The first one tested is **DeepSeek v4.1 Flash**, with a
-  key he provides.
+  DeepSeek, others). The first one tested is **DeepSeek v4.1 Flash**
+  (`deepseek-flash`), with a key he provides.
+- **Whose key is whose.** "The key will be only for the telegram bot running
+  on my server. For the users of the Word add-in and the desktop app, they will
+  have their own. This key is never shared anywhere, only here for testing and
+  for my server." So the owner's key lives in `.env` (gitignored) and is read
+  only by the bot and the tests; nothing that is built for anyone else — the
+  web bundle, the add-in, the desktop app — may contain it, and a gate checks
+  the built bundles for it. A person using the add-in or the app pastes their
+  own key, kept on their own machine.
 - **Cheap and token-efficient, like opencode.** Server-side prompt caching
   actually hit (a stable prefix, tools and instructions first, the changing
   part last); no document pasted whole when a range will do.

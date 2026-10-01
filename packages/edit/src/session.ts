@@ -263,6 +263,13 @@ export function apply(state: EditState, history: History, command: EditCommand):
       command.stages,
       command.mode,
       (v) => resolveProfile(profileChain(v, section, state.doc.profile)),
+      command.previous === undefined ? undefined
+        /* The old register's base, with the same patches the chain carries:
+           a later preset in the chain would reset them. */
+        : (v) => resolveProfile([
+          { preset: command.previous },
+          ...profileChain(v, section, state.doc.profile).map((r) => (r?.patch === undefined ? undefined : { patch: r.patch })),
+        ]),
     );
     working = done.section;
     nextSources = sourcesOf(working);

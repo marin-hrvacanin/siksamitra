@@ -1,0 +1,81 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "types": [
+      "node"
+    ],
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "paths": {
+      "@siksamitra/account": [
+        "../../packages/account/src/index.ts"
+      ],
+      "@siksamitra/audio": [
+        "../../packages/audio/src/index.ts"
+      ],
+      "@siksamitra/edit": [
+        "../../packages/edit/src/index.ts"
+      ],
+      "@siksamitra/engine": [
+        "../../packages/engine/src/index.ts"
+      ],
+      "@siksamitra/format": [
+        "../../packages/format/src/index.ts"
+      ],
+      "@siksamitra/interop": [
+        "../../packages/interop/src/index.ts"
+      ],
+      "@siksamitra/agent": [
+        "../../packages/agent/src/index.ts"
+      ],
+      "@siksamitra/layout": [
+        "../../packages/layout/src/index.ts"
+      ],
+      "@siksamitra/render": [
+        "../../packages/render/src/index.ts"
+      ],
+      "@siksamitra/render/theme": [
+        "../../packages/render/src/theme/marks.ts"
+      ],
+      "@siksamitra/storage": [
+        "../../packages/storage/src/index.ts"
+      ],
+      "@siksamitra/tokens": [
+        "../../packages/tokens/generated/tokens.ts"
+      ],
+      "@siksamitra/tokens/document-themes": [
+        "../../packages/tokens/src/document-themes.ts"
+      ],
+      "@siksamitra/tokens/document-type": [
+        "../../packages/tokens/src/document-type.ts"
+      ],
+      "@siksamitra/tokens/export-styles": [
+        "../../packages/tokens/src/export-styles.ts"
+      ],
+      "@siksamitra/tokens/figure": [
+        "../../packages/tokens/src/figure.ts"
+      ],
+      "@siksamitra/tokens/fonts": [
+        "../../packages/tokens/src/fonts.ts"
+      ],
+      "@siksamitra/tokens/source": [
+        "../../packages/tokens/src/source.ts"
+      ],
+      "@siksamitra/tokens/word": [
+        "../../packages/tokens/src/word.ts"
+      ],
+      "@siksamitra/ui": [
+        "../../packages/ui/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

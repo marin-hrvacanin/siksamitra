@@ -20,7 +20,7 @@
  * reader wants first and it is the part that grows.
  */
 import type { OverrideField, ReRunMode } from '@siksamitra/engine';
-import type { Stage } from '@siksamitra/format';
+import type { ChantProfileKey, Stage } from '@siksamitra/format';
 import type { MarkPatch, MarkReason, UnitAddress } from './marks.js';
 import type { FigureCommand } from './figures.js';
 import type { ProfileChange } from './set-profile.js';
@@ -74,6 +74,14 @@ export type EditCommand =
     verseIds: readonly string[];
     stages: readonly Stage[];
     mode: ReRunMode;
+    /**
+     * The register the verses are marked in NOW, when the run is to move them
+     * to another — what that register made is undone first (`previous` in
+     * the engine's `rerun`). Absent: they are taken to be marked in their
+     * own register already. A register that PLACES svaras (Smārta's śloka)
+     * left as a re-run's input would have its svaras read as the text's.
+     */
+    previous?: ChantProfileKey;
   }
   /** A picture: put one in, change one, take one out — see `figures.ts`. */
   | FigureCommand

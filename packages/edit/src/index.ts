@@ -93,7 +93,7 @@ export {
 
 /* Running the rules over a document's verses — the `recompute` command's work.
    The rules themselves are `rerun` in `@siksamitra/engine`. */
-export { recompute } from './recompute.js';
+export { provenanced, recompute } from './recompute.js';
 export type { Recomputed, RecomputeReport } from './recompute.js';
 
 /* A text edit that runs no rule: the markings are carried across it and the
@@ -112,3 +112,10 @@ export {
   applyAcross, applyCommand, selectionAcross, selectionState, typeAt, letterBefore,
 } from './text-commands.js';
 export type { CommandResult, MarkCommand, Span, Typed } from './text-commands.js';
+
+/* What an author does to a document by name — the CLI's verbs and the agent's
+   tools, one implementation. See `doc-ops.ts`. */
+export {
+  FIELD_PATHS, addVerseCommand, findVerseIn, removeVerseCommand, setDocField, setTextCommand, splitLines,
+} from './doc-ops.js';
+export type { Outcome } from './doc-ops.js';

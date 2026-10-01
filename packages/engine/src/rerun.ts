@@ -110,6 +110,32 @@ function produced(tokens: ChantVerse['tokens'], stages: readonly Stage[]): TextA
   };
 }
 
+/**
+ * The markings, less the svaras a register's PLAN placed — they are its
+ * output, not the text's accents.
+ *
+ * Asked of the rules, not of `by`. An accent read from the text comes back
+ * out of a run labelled the rules' as well, so `by` cannot tell the two apart:
+ * it took a page's own accents, marked as Smārta, for the plan's, and moving
+ * the page to Taittirīya dropped every one. The plan is all or nothing and a
+ * line with accents is read rather than planned (`applySvaraPlan`), so the
+ * svaras are the plan's exactly when the rules, given the line WITHOUT them,
+ * place the same ones — at the same letters when the letters agree, in the
+ * same order when the rules spell the line otherwise.
+ */
+function withoutPlanSvaras(slice: string, inside: readonly Mark[], profile: Profile): Mark[] {
+  const svaras = inside.filter((m) => m.k === 'svara');
+  const bare = inside.filter((m) => m.k !== 'svara');
+  if (svaras.length === 0) return [...inside];
+  const typed = invertVerse(tokensOf({ text: slice, marks: bare }), { lengthened: lengthens(profile) });
+  const d = derive({ lines: typed.lines.length === 0 ? [''] : typed.lines }, profile, { trace: false });
+  const planned = produced(d.tokens, ['svara']);
+  const at = (ms: readonly Mark[]): string => ms.filter((m) => m.k === 'svara').map((m) => `${m.from}:${m.to}:${m.v ?? ''}`).join('|');
+  const order = (ms: readonly Mark[]): string => ms.filter((m) => m.k === 'svara').map((m) => m.v ?? '').join('|');
+  const same = planned.text === slice ? at(planned.marks) === at(svaras) : order(planned.marks) === order(svaras);
+  return same ? bare : [...inside];
+}
+
 /** Cut out of `m` every part a hand marking of the same kind already covers. */
 function yieldToHand(m: Mark, hand: readonly Mark[]): Mark[] {
   let pieces: Mark[] = [m];
@@ -184,9 +210,9 @@ export function rerunRange(tm: TextAndMarks, req: ReRunRequest): ReRun {
    * overlines come off before any register puts its own on.
    */
   const now = req.previous ?? req.profile;
-  /* A svara the register's own rules placed — the śloka's — is not an accent
-     of the text, so it is not the svara stage's input (`placesSvaras`). */
-  const input = placesSvaras(now) ? inside.filter((m) => !(m.k === 'svara' && m.by === 'rule')) : inside;
+  /* A svara the register's own plan placed — the śloka's — is not an accent
+     of the text, so it is not the svara stage's input (`planSvaras`). */
+  const input = placesSvaras(now) ? withoutPlanSvaras(slice, inside, now) : inside;
   const typed = invertVerse(tokensOf({ text: slice, marks: input }), {
     lengthened: lengthens(now),
   });

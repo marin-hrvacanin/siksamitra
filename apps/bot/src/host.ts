@@ -1,0 +1,24 @@
+/**
+ * THE SERVER AS A HOST — everything the agent can do on a machine of the
+ * owner's: the library on disk, the web, every exporter. The Telegram bot and
+ * a terminal run use this one host; only where a finished file goes differs.
+ */
+import type { Delivered, Host, Library, Research } from '@siksamitra/agent';
+import { diskLibrary } from './library.js';
+import { webResearch } from './research.js';
+import { nodeExporters, type NodeExporters } from './exporters.js';
+
+export interface NodeHost extends Host {
+  readonly library: Library;
+  readonly research: Research;
+  readonly exporters: NodeExporters;
+}
+
+export function nodeHost(root: string, deliver: (file: Delivered) => Promise<void>): NodeHost {
+  return {
+    library: diskLibrary(root),
+    research: webResearch(),
+    exporters: nodeExporters(),
+    deliver,
+  };
+}

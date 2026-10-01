@@ -189,8 +189,11 @@ function problemIn(value: unknown): string | null {
       if (typeof verse['id'] !== 'string' || verse['id'] === '') {
         return `verse ${j + 1} of "${String(section['id'])}" has no id`;
       }
-      if (!Array.isArray(verse['tokens'])) {
-        return `verse "${String(verse['id'])}" has no tokens`;
+      /* Tokens, or the text they are rebuilt from: `writeChantFile` writes a
+         verse as `text` + `marks` and never its tokens, so a section with no
+         `items` — written as `verses` — came back refused by its own reader. */
+      if (!Array.isArray(verse['tokens']) && typeof verse['text'] !== 'string') {
+        return `verse "${String(verse['id'])}" has no tokens and no text`;
       }
     }
   }

@@ -19,8 +19,8 @@
  * assignment when the editor works on text and markings directly.
  */
 import {
-  encodeMarks, toTextAndMarks,
-  type ChantSection, type ChantVerse, type Mark, type Stage,
+  decodeMarks, encodeMarks, normalise, toTextAndMarks,
+  type ChantSection, type ChantVerse, type Mark, type Stage, type TextAndMarks,
 } from '@siksamitra/format';
 import { hydrateVerse, rerun, type Profile, type ReRunMode } from '@siksamitra/engine';
 
@@ -38,6 +38,30 @@ const markKey = (marks: readonly Mark[]): string =>
     .map((m) => `${m.k}:${m.from}:${m.to}:${m.v ?? ''}`)
     .sort()
     .join('|');
+
+/**
+ * A verse's text and markings WITH who placed each — from its stored form,
+ * when that still describes the verse.
+ *
+ * The tokens carry no provenance: read through them every marking is a
+ * person's. So the second Re-apply kept the first one's holdings as placed by
+ * hand, and a register switched after that kept the old register's holdings
+ * for good — the agent's check found it, a second run of the rules changing
+ * nothing but who placed what. A run writes its answer back in the stored
+ * form (`text` and `marks`, with `by`); where that still says exactly what the
+ * tokens say, its provenance is the truth. Where it does not — an edit since
+ * changed the tokens and not it — every marking is taken as a person's, as
+ * before: keeping too much is the safe mistake.
+ */
+export function provenanced(verse: ChantVerse): TextAndMarks {
+  const tokens = toTextAndMarks(verse);
+  if (verse.text === undefined || verse.marks === undefined || verse.text !== tokens.text) return tokens;
+  const stored = decodeMarks(verse.marks).filter((m) => m.k !== 'syl');
+  const mine = tokens.marks.filter((m) => m.k !== 'syl');
+  if (markKey(stored) !== markKey(mine)) return tokens;
+  /* The division is the tokens' — `syl` is the renderer's, never a run's. */
+  return { text: tokens.text, marks: normalise([...tokens.marks.filter((m) => m.k === 'syl'), ...stored]) };
+}
 
 export interface RecomputeReport {
   verseId: string;
@@ -82,13 +106,15 @@ function recomputeVerse(
   stages: readonly Stage[],
   mode: ReRunMode,
   profile: Profile,
+  previous?: Profile,
 ): { verse: ChantVerse; report: RecomputeReport } | { refused: string } {
   if (verse.tokens.length === 0) {
     return { refused: `verse "${verse.id}" has no text to run the rules over` };
   }
-  const tm = toTextAndMarks(verse);
+  const tm = provenanced(verse);
   const out = rerun(tm, {
     stages, mode, from: 0, to: tm.text.length, profile, verseN: verse.n ?? null,
+    ...(previous === undefined ? {} : { previous }),
   });
 
   /*
@@ -130,13 +156,14 @@ export function recompute(
   stages: readonly Stage[],
   mode: ReRunMode,
   profileOf: (verse: ChantVerse) => Profile,
+  previousOf?: (verse: ChantVerse) => Profile,
 ): Recomputed {
   const wanted = new Set(verseIds);
   const reports: RecomputeReport[] = [];
   const refusals: string[] = [];
   const verses = section.verses.map((v) => {
     if (!wanted.has(v.id)) return v;
-    const done = recomputeVerse(v, stages, mode, profileOf(v));
+    const done = recomputeVerse(v, stages, mode, profileOf(v), previousOf?.(v));
     if ('refused' in done) { refusals.push(done.refused); return v; }
     reports.push(done.report);
     return done.verse;

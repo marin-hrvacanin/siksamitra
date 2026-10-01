@@ -113,7 +113,14 @@ export function derive(
 
   // Svara, by register. `attested` transcribes from a witness; `conventional`
   // applies the metre's preset; `prose` and `vedic-refuse` take none.
-  if (profile.svara.register === 'attested' && src.accented !== undefined) {
+  //
+  // A LINE WITH ACCENTS OF ITS OWN IS READ, NEVER PLANNED — in the
+  // conventional register too. Its accents are the text's, evidence the plan
+  // does not get to overrule (the same argument as the overrides below), and
+  // planning over them threw them away for good: an accented Taittirīya page
+  // marked as Smārta lost every svara, and choosing Taittirīya again had
+  // nothing to bring back. The plan is for the line that has none.
+  if ((profile.svara.register === 'attested' || profile.svara.register === 'conventional') && src.accented !== undefined) {
     applyAttestedSvara(ctx, src.accented);
   } else if (profile.svara.register === 'conventional') {
     const meter = profile.svara.meter;

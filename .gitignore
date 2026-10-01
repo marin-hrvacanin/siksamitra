@@ -117,3 +117,8 @@ dist-types/
 # just before it uploads, so the deployed site has the add-in beside it; there
 # is nothing to commit and a committed copy would go stale silently.
 /site/word-extension/
+
+# Secrets: API keys for the agent harness and the bot. Never committed.
+.env
+.env.*
+!.env.example

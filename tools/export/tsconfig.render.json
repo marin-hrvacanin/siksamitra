@@ -31,6 +31,7 @@
       "@siksamitra/account": ["../../packages/account/src/index.ts"],
       "@siksamitra/storage": ["../../packages/storage/src/index.ts"],
       "@siksamitra/interop": ["../../packages/interop/src/index.ts"],
+      "@siksamitra/agent": ["../../packages/agent/src/index.ts"],
       "@siksamitra/render": ["../../packages/render/src/index.ts"],
       "@siksamitra/render/theme": ["../../packages/render/src/theme/marks.ts"],
       "@siksamitra/tokens": ["../../packages/tokens/generated/tokens.ts"]

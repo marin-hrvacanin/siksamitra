@@ -58,4 +58,17 @@ describe('switching a line’s source', () => {
       expect(tm).toEqual(first);
     });
   }
+
+  it('an ACCENTED line keeps its own accents under Smārta, and gets them back in any Vedic source', () => {
+    /* sa̱hasra̍śīrṣā̱ puru̍ṣaḥ — the text's accents, as marks. */
+    const text = 'sahasraśīrṣā puruṣaḥ sahasrākṣaḥ sahasrapāt';
+    const accents = [[1, 2, 'anudatta'], [5, 6, 'svarita'], [11, 12, 'anudatta'], [16, 17, 'svarita']] as const;
+    const accented: TextAndMarks = { text, marks: accents.map(([from, to, v]) => ({ k: 'svara' as const, from, to, v, by: 'hand' as const })) };
+    const svaras = (tm: TextAndMarks) => tm.marks.filter((m) => m.k === 'svara').map((m) => `${m.from}:${m.v}`);
+    const asSmarta = mark(accented, 'smarta');
+    expect(svaras(asSmarta)).toEqual(svaras(accented));
+    for (const k of ['taittiriya', 'sukla-yajurveda'] as const) {
+      expect(svaras(mark(asSmarta, k, 'smarta')), k).toEqual(svaras(mark(accented, k)));
+    }
+  });
 });

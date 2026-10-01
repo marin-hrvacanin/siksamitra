@@ -96,6 +96,8 @@ export {
 export type { PdfEvent, PdfImport, PdfManifest, PdfRow } from './pdf/index.js';
 export { buildDocument } from './build-document.js';
 export type { BuildOptions } from './build-document.js';
+/* The report a build fills in — for a caller that builds from paragraphs it made (the agent's outline). */
+export { reportFor } from './docx-report.js';
 
 // ── what every embedding format says about itself ───────────────────────────
 export { embedded } from './embed.js';
