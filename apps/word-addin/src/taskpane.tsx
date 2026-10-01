@@ -2,21 +2,25 @@
  * THE ONE PAGE WORD KEEPS LOADED — the shared runtime, and Settings.
  *
  * Word loads this behind the tab (the manifest's `<Runtime lifetime="long">`)
- * and never shows it unless Settings is pressed. On load it registers every
- * command of the tab and every keyboard shortcut (`runtime.ts`); when Settings
- * is pressed Word shows this same page, and what it draws is the Settings
- * panel.
+ * and shows it when Panel is pressed — or when a command has something to
+ * say. On load it registers every command of the tab and every keyboard
+ * shortcut (`runtime.ts`); what it draws is the panel (`ui/Panel.tsx`).
  *
  * `Office.onReady` rather than a `load` listener — the host injects its own
  * bridge and `Word` is not defined until it resolves.
  */
 import '@siksamitra/tokens/tokens.css';
 import '@siksamitra/ui/controls.css';
+import '@siksamitra/ui/popover.css';
+import '@siksamitra/ui/ribbon.css';
+import '@siksamitra/render/chant.css';
+import '@siksamitra/render/mark-geometry.css';
 import './ui/fonts.generated.css';
 import './ui/settings.css';
+import './ui/panel.css';
 import { createRoot } from 'react-dom/client';
 import { registerAll } from './runtime.js';
-import { Settings } from './ui/Settings.js';
+import { Panel } from './ui/Panel.js';
 
 const root = document.getElementById('root');
 
@@ -37,5 +41,5 @@ if (typeof Office === 'undefined') {
     return;
   }
   registerAll();
-  createRoot(root).render(<Settings />);
+  createRoot(root).render(<Panel />);
 });

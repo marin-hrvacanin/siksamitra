@@ -34,6 +34,7 @@ import { unlengthen } from './rules/rigveda.js';
 import type { ChantSvara, ChantToken, ChantUnit } from '@siksamitra/format';
 import { typedAs } from './changes.js';
 import { norm } from './normalize.js';
+import { CANDRA } from './alphabet.js';
 import { witnessLine } from './rules/witness.js';
 
 
@@ -97,7 +98,14 @@ export function invertVerse(tokens: readonly ChantToken[], opts: InvertOptions =
   for (const t of tokens) {
     if (t.t === 'syl') {
       for (const u of t.units) {
-        const c = undoChange(u);
+        /*
+         * A CANDRABINDU NOBODY'S RULE MADE IS A LETTER. The gum is the rules'
+         * own (`ṁ` before a sibilant, carrying the change that says so), and
+         * goes back to its `ṁ`; one with no change behind it was TYPED — the
+         * Candrabindu button, or `sam̐` as written — and dropping it here made
+         * Auto-mark delete it: `sam̐` came back `sam`.
+         */
+        const c = undoChange(u) + (u.candra === true && u.change !== true ? CANDRA : '');
         plain += c;
         if (u.svara === undefined) witness.push({ c });
         else {

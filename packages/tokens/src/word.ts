@@ -277,7 +277,8 @@ export const WORD_MARKS = {
   change: { color: '0070C0', italic: true },
   /** `VedicAnusvara` — the same colour, set in Palladio. */
   vedicChange: { color: '0070C0', italic: true, face: MARK_FACES.palladio },
-  /** `Pause` — one style for both lengths; the glyph count decides. */
+  /** `Pause` — the LONG pause, one red bar. The short one is one bar in the
+   *  `Anusvara` blue: colour is length (the owner, 2026-10-01). */
   pause: { color: 'C00000', italic: true },
   /** A daṇḍa — no style, only a face. See `MARK_FACES.mangal`. */
   danda: { face: MARK_FACES.mangal },

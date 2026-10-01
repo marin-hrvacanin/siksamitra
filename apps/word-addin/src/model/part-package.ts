@@ -26,7 +26,7 @@ function split(body: string): { paras: string; tail: string } {
 
 /**
  * `pkg` with its document's paragraphs wrapped in one part, tagged `tag` and
- * titled `title`, drawn with a frame as every part is. `dropLast` takes off
+ * titled `title`, with no frame drawn, as every part is (`word/parts.ts`). `dropLast` takes off
  * the empty paragraph Word's `getOoxml` adds after a range's own, which put
  * back would be a paragraph the person never had.
  */
@@ -35,7 +35,7 @@ export function asPart(pkg: string, tag: string, title: string, dropLast = false
     let { paras, tail } = split(body);
     if (dropLast) paras = paras.replace(/<w:p\b(?:[^>]*\/>|[^>]*>(?:(?!<w:p\b)[\s\S])*?<\/w:p>)\s*$/, (p) => (/<w:t\b/.test(p) ? p : ''));
     const withW15 = root.includes('xmlns:w15=') ? root : root.replace(/>$/, ` xmlns:w15="${W15}">`);
-    const sdt = `<w:sdt><w:sdtPr><w:alias w:val="${esc(title)}"/><w:tag w:val="${esc(tag)}"/><w15:appearance w15:val="boundingBox"/></w:sdtPr>`
+    const sdt = `<w:sdt><w:sdtPr><w:alias w:val="${esc(title)}"/><w:tag w:val="${esc(tag)}"/><w15:appearance w15:val="hidden"/></w:sdtPr>`
       + `<w:sdtContent>${paras}</w:sdtContent></w:sdt>`;
     return `${withW15}${head}${sdt}${tail}${close}`;
   });

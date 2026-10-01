@@ -33,6 +33,8 @@ export interface Rules {
   register?: ChantProfileKey;
   /** What the lines are marked in NOW, when that is being changed. */
   was?: ChantProfileKey | null;
+  /** The same, line by line — a selection that reached over several sources. */
+  wasEach?: readonly (ChantProfileKey | null)[];
 }
 
 /** The rules a ribbon button runs: each line's own register, the stages the file records. */
@@ -54,8 +56,9 @@ export const targetOf = (rules: Rules, part: PartRules | null): ChantProfileKey 
  * speak: the Ṛgveda's marks mean the Ṛgveda, and otherwise the line is taken
  * as marked in the register it is about to be marked in.
  */
-function previousOf(tm: TextAndMarks, rules: Rules, part: PartRules | null) {
-  const marked = rules.was !== undefined ? rules.was : recordedFor(part);
+function previousOf(tm: TextAndMarks, rules: Rules, part: PartRules | null, line = -1) {
+  const each = rules.wasEach?.[line];
+  const marked = each !== undefined ? each : rules.was !== undefined ? rules.was : recordedFor(part);
   return resolveProfile([{ preset: marked ?? (showsLengthening(tm) ? 'rigveda' : targetOf(rules, part)), patch: markedWith() }]);
 }
 
@@ -74,8 +77,8 @@ async function markedNow(everyLine: boolean): Promise<void> {
 }
 
 /** One line re-run over `[from, to)`, by its own rules. */
-function rerunLine(tm: TextAndMarks, from: number, to: number, rules: Rules, part: PartRules | null) {
-  const previous = previousOf(tm, rules, part);
+function rerunLine(tm: TextAndMarks, from: number, to: number, rules: Rules, part: PartRules | null, line = -1) {
+  const previous = previousOf(tm, rules, part, line);
   /* Word forgets which marks were the rules': told again first (`provenance.ts`). */
   return rerun(asMarkedBy(tm, previous), {
     stages: STAGES.filter((s) => rules.stages.has(s)),
@@ -93,9 +96,9 @@ export async function runOverSelection(here: Located, rules: Rules): Promise<Sai
   if (refused !== null) return refused;
   const whole = here.lines.length === 1 && here.from === here.to;
   const range = (l: Line): [number, number] => (whole ? [0, l.tm.text.length] : [l.from, l.to]);
-  const outs = here.lines.map((l) => {
+  const outs = here.lines.map((l, i) => {
     const [from, to] = range(l);
-    return to > from ? rerunLine(l.tm, from, to, rules, l.part) : null;
+    return to > from ? rerunLine(l.tm, from, to, rules, l.part, i) : null;
   });
   const writes: LineWrite[] = [];
   outs.forEach((out, i) => {

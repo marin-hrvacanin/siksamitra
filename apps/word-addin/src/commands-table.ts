@@ -42,7 +42,7 @@ export type Does =
   | { script: ScriptKey }
   /** Make the selected lines a part with rules of its own, or undo one. */
   | 'part-new' | 'part-dissolve'
-  | 'typing-help' | 'import-styles' | 'specimen' | 'settings' | 'guide';
+  | 'typing-help' | 'import-styles' | 'specimen' | 'panel' | 'guide';
 
 export interface Command {
   /** Unique, ASCII, at most 20 characters: the manifest id is built from it. */
@@ -82,7 +82,10 @@ export interface TabGroup {
 const fnOf = (id: string): string =>
   `sm${id.split('-').map((w) => w[0]!.toUpperCase() + w.slice(1)).join('')}`;
 
-const WITH_CARET = ' With nothing selected, the letter before the caret.';
+/* Said the same way on every button that marks letters, so a person learns it once. */
+const ON = ' On the selected letters, or the letter before the caret.';
+const OFF = ' Press again to take it off.';
+const WHOLE = ' With nothing selected, the whole document — it asks first.';
 
 function button(c: Omit<Command, 'fn'>): Control {
   return { kind: 'button', fn: fnOf(c.id), ...c };
@@ -92,6 +95,11 @@ const mark = (
   id: string, label: string, tip: string, icon: IconName, command: MarkCommand,
   extra: Partial<Command> = {},
 ): Control => button({ id, label, tip, icon: { name: icon }, does: { mark: command }, ...extra });
+
+/** A menu item that marks: the same command as a button, in a list. */
+const markItem = (
+  id: string, label: string, tip: string, icon: IconName, command: MarkCommand, extra: Partial<Command> = {},
+): Command => ({ id, fn: fnOf(id), label, tip, icon: { name: icon }, does: { mark: command }, ...extra });
 
 /** One palette key as a menu item: the character is the label and the icon. */
 function insertItem(k: IastKey): Command {
@@ -113,93 +121,41 @@ const paletteMenu = (id: string, label: string, tip: string, groups: number[], c
 });
 
 /** The scripts a line can be written in, each drawn as its own `a`. */
-const SCRIPTS: readonly (readonly [ScriptKey, string])[] = [['iast', 'ā'], ['deva', 'अ'], ['tel', 'అ'], ['tam', 'அ']];
+export const SCRIPTS: readonly (readonly [ScriptKey, string])[] = [['iast', 'ā'], ['deva', 'अ'], ['tel', 'అ'], ['tam', 'அ']];
 
+/**
+ * THE TAB, LEFT TO RIGHT IN THE ORDER A PERSON WORKS: let the rules mark the
+ * text, correct what they did by hand — holdings, svaras, the other signs —
+ * write it in a script, and the panel and the typing help at the end.
+ *
+ * SIX GROUPS, because that is Microsoft's recommended most for a tab
+ * (learn.microsoft.com/office/dev/add-ins/design/add-in-commands, "Best
+ * practices"). It had eight, and what is set once rather than pressed — the
+ * document's styles, the specimen, the guide — went into the panel, where
+ * there is room to say what each does.
+ *
+ * EVERY TIP SAYS THE SAME THREE THINGS in the same words: what it does, what
+ * it does it to, and how it is taken back.
+ */
 export const TAB: readonly TabGroup[] = [
   {
-    id: 'holding',
-    label: 'Holding',
-    controls: [
-      mark('hold-short', 'Short', `A short holding: a thin box around the letters.${WITH_CARET} Press again to take it off.`,
-        'hold-short', { k: 'hold', v: 'short' }, { key: MARK_KEYS.holdShort, context: true }),
-      mark('hold-long', 'Long', `A long holding: a thick box around the letters.${WITH_CARET} Press again to take it off.`,
-        'hold-long', { k: 'hold', v: 'long' }, { key: MARK_KEYS.holdLong, context: true }),
-      mark('hold-clear', 'Clear', `Take the holding off the letters, and leave every other marking.${WITH_CARET}`,
-        'marks-clear', { k: 'clear', only: ['hold'] }, { key: MARK_KEYS.clearHold, context: true }),
-    ],
-  },
-  {
-    id: 'svara',
-    label: 'Svara',
-    controls: [
-      mark('svara-anudatta', 'Anudātta', `The low tone: a bar under the letter.${WITH_CARET} Press again to take it off.`,
-        'svara-anudatta', { k: 'svara', v: 'anudatta' }, { context: true }),
-      mark('svara-svarita', 'Svarita', `The raised tone: a stroke over the letter.${WITH_CARET} Press again to take it off.`,
-        'svara-svarita', { k: 'svara', v: 'svarita' }, { context: true }),
-      mark('svara-dirgha', 'Dīrgha svarita', `The long raised tone: two strokes over the letter.${WITH_CARET} Press again to take it off.`,
-        'svara-dirgha', { k: 'svara', v: 'dirgha-svarita' }, { context: true }),
-    ],
-  },
-  {
-    id: 'change',
-    label: 'Change',
-    controls: [
-      mark('change-anusvara', 'Anusvāra', `These letters are recited in place of an anusvāra (ṁ), and are drawn in the change colour.${WITH_CARET}`,
-        'change-anusvara', { k: 'was', v: ANU }, { context: true }),
-      mark('change-visarga', 'Visarga', `These letters are recited in place of a visarga (ḥ), and are drawn in the change colour.${WITH_CARET}`,
-        'change-visarga', { k: 'was', v: VIS }, { context: true }),
-    ],
-  },
-  {
-    id: 'aids',
-    label: 'Reading aids',
-    controls: [
-      mark('candrabindu', 'Candrabindu', `The nasal m̐: the candrabindu laid on the letter.${WITH_CARET} Press again to take it off.`,
-        'candrabindu', { k: 'combining', v: '̐' }),
-      mark('svarabhakti', 'Svarabhakti', 'The svarabhakti dot, at the caret: between an r and the sibilant or h after it (var·ṣa).',
-        'svarabhakti', { k: 'sbhakti' }),
-      mark('pause-short', 'Short pause', 'A short pause at the caret: one bar, in blue.', 'bar-short', { k: 'pause', v: 'short' }),
-      mark('pause-long', 'Long pause', 'A long pause at the caret: one bar, in red.', 'bar-long', { k: 'pause', v: 'long' }),
-      mark('clear-all', 'Clear all', 'Take every marking off the selected letters: holdings, svaras, changes, aids and pauses.',
-        'marks-clear', { k: 'clear' }),
-    ],
-  },
-  {
-    id: 'insert',
-    label: 'Insert',
+    id: 'rules',
+    label: 'Auto-mark',
     controls: [
       button({
-        id: 'typing-help', label: 'Typing help', icon: { name: 'keyboard' }, does: 'typing-help',
-        tip: 'Every IAST letter and Vedic sign on one keyboard. Press a letter for its long or dotted form (a → ā, t → ṭ), or click a key.',
-        key: { key: 'i', ctrl: true, shift: true },
+        id: 'reapply', label: 'Auto-mark', icon: { name: 'auto-keep' }, does: { rules: 'keep-hand' },
+        tip: 'Mark the selected lines by the śikṣā rules of their register: holdings, svaras, substitutions, aids and pauses.'
+          + `${WHOLE} What you marked by hand stays.`,
+        key: MARK_KEYS.reapply, context: true,
       }),
-      paletteMenu('ins-vowels', 'Vowels', 'Long vowels, vocalic ṛ and ḷ, the anusvāra and the visarga.', [0], 'ā'),
-      paletteMenu('ins-consonants', 'Consonants', 'The consonants, by where they are spoken: gutturals to sibilants.', [1, 2, 3, 4, 5, 6], 'ṭ'),
-      paletteMenu('ins-vedic', 'Vedic', 'Vedic signs, accents and punctuation: ḻ, ꣳ, the daṇḍas and the avagraha.', [7], '।'),
-    ],
-  },
-  {
-    id: 'script',
-    label: 'Script',
-    controls: [{
-      kind: 'menu', id: 'script', label: 'Script', icon: { name: 'script' },
-      tip: 'Write the mantra lines in IAST, Devanāgarī, Telugu or Tamil — the selected ones, or the whole document '
-        + 'when nothing is selected. Every mark is kept, and IAST again gives back exactly what was there.',
-      items: SCRIPTS.map(([script, ch]): Command => ({
-        id: `script-${script}`, fn: fnOf(`script-${script}`), label: getScript(script)?.name ?? script, icon: { ch },
-        tip: `Write the selected mantra lines in ${getScript(script)?.name ?? script}, or the whole document when nothing is selected.`,
-        does: { script },
-      })),
-    }],
-  },
-  {
-    id: 'rules',
-    label: 'Rules',
-    controls: [
+      button({
+        id: 'reapply-mine-out', label: 'Auto-mark afresh', icon: { name: 'auto-replace' }, does: { rules: 'replace-all' },
+        tip: `Like Auto-mark, but what you marked by hand goes too: the rules decide every mark in the selected lines.${WHOLE}`,
+      }),
       {
         kind: 'menu', id: 'register', label: 'Register', icon: { name: 'tree' },
-        tip: 'Which śākhā’s rules mark the text here — the part the caret is in, the lines selected (they become a part), '
-          + 'or the lines outside every part. One file may hold parts of different śākhās.',
+        tip: 'Which śākhā’s rules Auto-mark uses: for the part the caret is in, or for the selected lines — they become a part '
+          + 'of their own. One document can hold parts of different śākhās.',
         items: [
           ...CHANT_PROFILE_KEYS.map((k): Command => ({
             id: `reg-${k}`, fn: fnOf(`reg-${k}`), label: CHANT_PROFILE_NOTES[k].name,
@@ -208,45 +164,100 @@ export const TAB: readonly TabGroup[] = [
           {
             id: 'part-new', fn: fnOf('part-new'), label: 'New part from these lines', icon: { name: 'part-new' }, does: 'part-new',
             tip: 'Give the selected lines rules of their own — a sūkta of another śākhā among the others. '
-              + 'Word draws a frame around the part, titled with its register.',
+              + 'Word draws a thin frame around the part, titled with its register.',
           },
           {
             id: 'part-dissolve', fn: fnOf('part-dissolve'), label: 'Dissolve this part', icon: { name: 'part-dissolve' }, does: 'part-dissolve',
-            tip: 'Undo the part the caret is in: its lines stay, and the rules of the lines outside every part apply to them again.',
+            tip: 'Undo the part the caret is in. Its lines and their marks stay; they are outside every part again.',
           },
         ],
       },
-      button({
-        id: 'reapply', label: 'Re-apply rules', icon: { name: 'auto-keep' }, does: { rules: 'keep-hand' },
-        tip: 'Run the marking rules over the selection, or over the whole document when nothing is selected. What you placed by hand stays.',
-        key: MARK_KEYS.reapply, context: true,
-      }),
-      button({
-        id: 'reapply-mine-out', label: 'Re-apply, mine out', icon: { name: 'auto-replace' }, does: { rules: 'replace-all' },
-        tip: 'Run the marking rules and DROP what you placed by hand, over the selection or the whole document.',
-      }),
     ],
   },
   {
-    id: 'document',
-    label: 'Document',
+    id: 'holding',
+    label: 'Holding',
+    controls: [
+      mark('hold-short', 'Short', `A short holding: a thin box around the letter.${ON}${OFF}`,
+        'hold-short', { k: 'hold', v: 'short' }, { key: MARK_KEYS.holdShort, context: true }),
+      mark('hold-long', 'Long', `A long holding: a thick box around the letter.${ON}${OFF}`,
+        'hold-long', { k: 'hold', v: 'long' }, { key: MARK_KEYS.holdLong, context: true }),
+      {
+        kind: 'menu', id: 'clear', label: 'Clear', icon: { name: 'marks-clear' },
+        tip: `Take marks off — one kind, or all of them.${ON} The letters themselves stay.`,
+        items: [
+          markItem('hold-clear', 'Clear holdings', `Take the holdings off, and leave every other mark.${ON}`,
+            'hold-none', { k: 'clear', only: ['hold'] }, { key: MARK_KEYS.clearHold, context: true }),
+          markItem('clear-svara', 'Clear svaras', `Take the svaras off, and leave every other mark.${ON}`,
+            'marks-clear', { k: 'clear', only: ['svara'] }),
+          markItem('clear-change', 'Clear substitutions',
+            `Forget which letters stand for an anusvāra or a visarga: they lose the change colour and their reading aids.${ON}`,
+            'marks-clear', { k: 'clear', only: ['was', 'sup'] }),
+          markItem('clear-signs', 'Clear pauses and dots', `Take the pauses and the svarabhakti dots off.${ON}`,
+            'marks-clear', { k: 'clear', only: ['pause', 'sbhakti'] }),
+          markItem('clear-all', 'Clear all marks', `Take every mark off: holdings, svaras, substitutions, aids, pauses and dots.${ON}`,
+            'marks-clear', { k: 'clear' }),
+        ],
+      },
+    ],
+  },
+  {
+    id: 'svara',
+    label: 'Svara',
+    controls: [
+      mark('svara-anudatta', 'Anudātta', `The low tone: a bar under the letter.${ON}${OFF}`,
+        'svara-anudatta', { k: 'svara', v: 'anudatta' }, { context: true }),
+      mark('svara-svarita', 'Svarita', `The raised tone: a stroke over the letter.${ON}${OFF}`,
+        'svara-svarita', { k: 'svara', v: 'svarita' }, { context: true }),
+      mark('svara-dirgha', 'Dīrgha svarita', `The long raised tone: two strokes over the letter.${ON}${OFF}`,
+        'svara-dirgha', { k: 'svara', v: 'dirgha-svarita' }, { context: true }),
+    ],
+  },
+  {
+    id: 'signs',
+    label: 'Signs',
+    controls: [
+      mark('change-anusvara', 'Anusvāra change',
+        `These letters are recited in place of an anusvāra (ṁ), and are drawn in the change colour.${ON}${OFF}`,
+        'change-anusvara', { k: 'was', v: ANU }, { context: true }),
+      mark('change-visarga', 'Visarga change',
+        `These letters are recited in place of a visarga (ḥ), and are drawn in the change colour.${ON}${OFF}`,
+        'change-visarga', { k: 'was', v: VIS }, { context: true }),
+      mark('candrabindu', 'Candrabindu', `The nasal m̐: the candrabindu laid on the letter.${ON}${OFF}`,
+        'candrabindu', { k: 'combining', v: '̐' }),
+      mark('svarabhakti', 'Svarabhakti',
+        `The svarabhakti dot, at the caret — between an r and the sibilant or h after it (var·ṣa).${OFF}`,
+        'svarabhakti', { k: 'sbhakti' }),
+      mark('pause-short', 'Short pause', `A short pause at the caret: one bar, in blue.${OFF}`, 'bar-short', { k: 'pause', v: 'short' }),
+      mark('pause-long', 'Long pause', `A long pause at the caret: one bar, in red.${OFF}`, 'bar-long', { k: 'pause', v: 'long' }),
+    ],
+  },
+  {
+    id: 'script',
+    label: 'Script',
+    controls: SCRIPTS.map(([script, ch]) => button({
+      id: `script-${script}`, label: getScript(script)?.name ?? script, icon: { ch }, does: { script },
+      tip: `Write the selected mantra lines in ${getScript(script)?.name ?? script}, every mark kept.${WHOLE} `
+        + (script === 'iast' ? 'It gives back exactly what was there.' : 'IAST gives back exactly what was there.'),
+    })),
+  },
+  {
+    id: 'tools',
+    label: 'śikṣāmitra',
     controls: [
       button({
-        id: 'import-styles', label: 'Import styles', icon: { name: 'style-import' }, does: 'import-styles',
-        tip: 'Bring the śikṣāmitra styles into this document — the mantra line, the translation, the holdings, the svaras and the rest — so it looks like a Veda Union document.',
+        id: 'panel', label: 'Panel', icon: { name: 'panel-side' }, does: 'panel',
+        tip: 'The śikṣāmitra panel: what is marked where the caret is, every mark at one click, the register and the rules, '
+          + 'and the document’s styles.',
       }),
       button({
-        id: 'specimen', label: 'Specimen', icon: { name: 'document' }, does: 'specimen',
-        tip: 'Add the styles and a short marked passage at the end of the document, to see every mark as Word draws it.',
+        id: 'typing-help', label: 'Typing help', icon: { name: 'keyboard' }, does: 'typing-help',
+        tip: 'Every IAST letter and Vedic sign on one keyboard. Press a letter for its long or dotted form (a → ā, t → ṭ), or click a key.',
+        key: { key: 'i', ctrl: true, shift: true },
       }),
-      button({
-        id: 'settings', label: 'Settings', icon: { name: 'settings' }, does: 'settings',
-        tip: 'The register and which rules run, the styles in this document, and the keyboard shortcuts — in the side panel.',
-      }),
-      button({
-        id: 'guide', label: 'What the marks mean', icon: { name: 'help' }, does: 'guide',
-        tip: 'The notation, mark by mark, in the browser.',
-      }),
+      paletteMenu('ins-vowels', 'Vowels', 'Type a long vowel, vocalic ṛ or ḷ, the anusvāra or the visarga at the caret.', [0], 'ā'),
+      paletteMenu('ins-consonants', 'Consonants', 'Type a consonant at the caret, by where it is spoken: gutturals to sibilants.', [1, 2, 3, 4, 5, 6], 'ṭ'),
+      paletteMenu('ins-vedic', 'Vedic', 'Type a Vedic sign, accent or punctuation at the caret: ḻ, ꣳ, the daṇḍas and the avagraha.', [7], '।'),
     ],
   },
 ];
@@ -277,8 +288,29 @@ export const LEADER_COMMANDS: readonly Command[] = Object.entries(IAST_LEADER).m
   };
 });
 
-/** Everything the runtime registers: the tab's commands and the leader's. */
-export const ALL_COMMANDS: readonly Command[] = [...COMMANDS, ...LEADER_COMMANDS];
+/**
+ * WHAT THE PANEL DOES THAT THE TAB DOES NOT — set once rather than pressed,
+ * so it has the room to say what it does (`ui/Panel.tsx`). The same commands
+ * as the tab's, run by the same `run`; only where they are pressed differs.
+ */
+export const PANEL_COMMANDS: readonly Command[] = [
+  {
+    id: 'import-styles', fn: fnOf('import-styles'), label: 'Import styles', icon: { name: 'style-import' }, does: 'import-styles',
+    tip: 'Bring the śikṣāmitra styles into this document — the mantra line, the translation, the holdings, the svaras and '
+      + 'the rest — so it looks like a Veda Union document. A document in the older names is taken into the clean ones.',
+  },
+  {
+    id: 'specimen', fn: fnOf('specimen'), label: 'Add a specimen', icon: { name: 'document' }, does: 'specimen',
+    tip: 'Add the styles and a short marked passage at the end of the document, to see every mark as Word draws it.',
+  },
+  {
+    id: 'guide', fn: fnOf('guide'), label: 'What the marks mean', icon: { name: 'help' }, does: 'guide',
+    tip: 'The notation, mark by mark, in the browser.',
+  },
+];
+
+/** Everything the runtime registers: the tab's, the panel's and the leader's. */
+export const ALL_COMMANDS: readonly Command[] = [...COMMANDS, ...PANEL_COMMANDS, ...LEADER_COMMANDS];
 
 /** Every picture the tab needs, by the file name it is drawn to. */
 export const iconFile = (icon: Command['icon']): string => ('name' in icon

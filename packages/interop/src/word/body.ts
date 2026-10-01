@@ -34,7 +34,7 @@ import { BAR_GLYPH, OVERLINE, SVARA_CHAR, changeStyle, holdingStyle } from '../w
 import {
   bridging, dandaRun, pauseRun, signature, styleOf, styledParagraph, styledRun, type WordPictures,
 } from './body-parts.js';
-import { lettersOfIast, scriptWordRuns } from './script-runs.js';
+import { SAID, lettersOfIast, scriptWordRuns } from './script-runs.js';
 import { readParagraphs } from '../docx-read.js';
 import { registerOf } from '@siksamitra/edit';
 import { withParts, type Region } from './rule-parts.js';
@@ -181,8 +181,15 @@ export function documentXml(
         /* In a script line every word gap is two spaces, as his Devan\u0101gar\u012b sets
            it (`WORD_DEVANAGARI.wordGap`), and nothing is boxed \u2014 the reader
            reads two as one (`ScriptReader`). */
-        if (as !== 'iast') { runs += run(space.repeat(WORD_DEVANAGARI.wordGap), null); return; }
         const inside = bridging(tokens, at);
+        if (as !== 'iast') {
+          runs += run(space.repeat(WORD_DEVANAGARI.wordGap), null);
+          /* A holding that CROSSES the gap — `m ṅ` boxed as one in IAST — has
+             nothing to draw it in his Devanāgarī, so the record says the
+             space is held, and which holding (`Said.k`). */
+          if (inside !== null) runs += run(`${SAID}${JSON.stringify({ h: [0], k: inside.hold })}`, null, false, true);
+          return;
+        }
         runs += run(space, inside === null ? null : holdingStyle(inside.hold!, inside.change === true));
         return;
       }

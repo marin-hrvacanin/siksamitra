@@ -13,6 +13,7 @@
  * script output being checked.
  */
 import { describe, expect, it } from 'vitest';
+import { WORD_DEVANAGARI } from '@siksamitra/tokens/word';
 import type { ChantDoc, ChantToken, TextAndMarks } from '@siksamitra/format';
 import { toTextAndMarks } from '@siksamitra/format';
 import { documentXml } from '../../packages/interop/src/word/body.js';
@@ -72,13 +73,26 @@ describe('every script, through Word and back', () => {
 });
 
 describe('what is never written visibly', () => {
-  it('a Devanāgarī line SHOWS no IAST letter — what it cannot show is hidden text', () => {
+  /*
+   * HIS DEVANĀGARĪ SHOWS IAST IN ONE PLACE ONLY: the small raised reading
+   * aids, in his `Phonetic` style — `m`, `n`, `ś`, `f` over the letter they
+   * say how to recite (38 of them in his Kanakadhārā). Every other letter on
+   * the line is the script's, and what the script cannot show is hidden text.
+   */
+  it('a Devanāgarī line SHOWS IAST only as his reading aids — what it cannot show is hidden text', () => {
     const stray = new Set<string>();
+    let aids = 0;
     for (const t of verses) {
-      for (const p of readParagraphs(xmlOf(t, 'deva')).filter((q) => q.pStyle === 'Translit')) {
-        for (const r of p.runs.filter((x) => x.hidden !== true)) for (const ch of r.text) if (/[a-zA-Zāīūṛṝḷḹṁḥṅñṭḍṇśṣ]/u.test(ch)) stray.add(ch);
+      for (const p of readParagraphs(xmlOf(t, 'deva')).filter((q) => q.pStyle === 'Translit' || q.pStyle === 'Devanagari')) {
+        for (const r of p.runs.filter((x) => x.hidden !== true)) {
+          if (r.rStyle === WORD_DEVANAGARI.aid.style) { aids += 1; continue; }
+          for (const ch of r.text) if (/[a-zA-Zāīūṛṝḷḹṁḥṅñṭḍṇśṣ]/u.test(ch)) stray.add(ch);
+        }
       }
     }
     expect([...stray]).toEqual([]);
+    /* And the aids ARE drawn: a test that found none would pass on a writer
+       that had stopped writing them. */
+    expect(aids).toBeGreaterThan(0);
   });
 });

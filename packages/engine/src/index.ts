@@ -103,7 +103,8 @@ export { hydrateVerse, openChantDoc, splitLetters } from './open-doc.js';
 /* Running the rules, ON REQUEST — the one entry point through which a rule may
    run. Typing never calls this; a person pressing a button does. See
    `rerun.ts`, and `openspec/changes/text-and-marks` §4.2. */
-export { STAGES, rerun, typedText } from './rerun.js';
+export { STAGES, rerunRange, typedText } from './rerun.js';
+export { rerun } from './rerun-within.js';
 /* A line that certainly carries the Ṛgveda's lengthening. See `rules/rigveda.ts`. */
 export { showsLengthening } from './rules/rigveda.js';
 export type { ReRun, ReRunMode, ReRunRequest } from './rerun.js';

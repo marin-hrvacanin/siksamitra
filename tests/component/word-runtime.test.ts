@@ -38,7 +38,7 @@ const marksOf = (k: string) => calls.writes.at(-1)!.writes[0]!.tm.marks.filter((
 describe('every command is there to be pressed', () => {
   it('as the global the manifest names, and for its keyboard shortcut', () => {
     runtime.registerAll();
-    const expected = table.ALL_COMMANDS.filter((c) => c.does !== 'settings').map((c) => c.fn);
+    const expected = table.ALL_COMMANDS.filter((c) => c.does !== 'panel').map((c) => c.fn);
     for (const fn of expected) expect(typeof (globalThis as Record<string, unknown>)[fn], fn).toBe('function');
     expect(calls.associated).toEqual(expected);
   });
@@ -107,7 +107,7 @@ describe('the rules', () => {
     host.docLines = [{ index: 1, tm: { text: 'agnim īḻe', marks: [] }, style: 'Translit', blocked: [], part: null, script: 'iast' }];
     host.answer = false;
     await press('reapply');
-    expect(calls.asked).toEqual(['Re-apply the rules to the whole document?']);
+    expect(calls.asked).toEqual(['Auto-mark the whole document?']);
     expect(calls.documentWrites).toEqual([]);
   });
 
@@ -176,12 +176,13 @@ describe('typing', () => {
     expect(lastWritten()).toBe('kaṣ');
   });
 
-  it('the typing help types what its keys send, at the caret', async () => {
-    host.lines = [line('k', 1)];
-    dialogReplies.push({ ch: 'ṛ' });
+  it('the typing help opens the panel on its Type tab — the palette beside the document, not a dialog over it', async () => {
+    const nav = await import('../../apps/word-addin/src/ui/panel/nav.js');
+    nav.openTab('mark');
+    const before = calls.taskpane;
     await press('typing-help');
-    expect(calls.dialogs).toEqual(['type.html']);
-    expect(lastWritten()).toBe('kṛ');
+    expect(calls.taskpane).toBe(before + 1);
+    expect(calls.dialogs).toEqual([]);
   });
 });
 
@@ -214,7 +215,7 @@ describe('the document buttons', () => {
   });
 
   it('Settings opens the side panel, and the guide opens in the browser', async () => {
-    await press('settings');
+    await press('panel');
     await press('guide');
     expect(calls.taskpane).toBe(1);
     expect(calls.browser).toHaveLength(1);

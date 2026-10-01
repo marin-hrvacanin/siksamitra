@@ -28,10 +28,11 @@ import { parseLetters, ANU, CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
 import type { ScriptKey } from '@siksamitra/engine';
 import { iastRunsOf } from './word/script-runs.js';
 import {
-  BAR_GLYPH, HOLD_CHANGE_ROLES, SVARA_BY_CHAR, roleOf,
+  HOLD_CHANGE_ROLES, SVARA_BY_CHAR, roleOf,
   type WordMarkRole,
 } from './word-styles.js';
 import { mergeRuns, type WordRun } from './docx-read.js';
+import { isBluePause, readPause, splitPauseBars } from './docx-pauses.js';
 import { syllablesOf } from './docx-syllables.js';
 import type { ImportReport } from './docx-report.js';
 
@@ -43,7 +44,7 @@ export function tokensFromRuns(
    *  as IAST first (`word/script-runs.ts`), then exactly as any other. */
   script: ScriptKey = 'iast',
 ): ChantToken[] {
-  const merged = script === 'iast' ? mergeRuns(runs) : mergeRuns(iastRunsOf(mergeRuns(runs), script));
+  const merged = (script === 'iast' ? mergeRuns(runs) : mergeRuns(iastRunsOf(mergeRuns(runs), script))).flatMap(splitPauseBars);
   const tokens: ChantToken[] = [];
   /** Letters of the current word, with their marks. */
   let word: ChantUnit[] = [];
@@ -157,9 +158,7 @@ export function tokensFromRuns(
        rules did in `Anusvara` blue, and that includes the pauses the rules
        place — the bīja pause of `oṁ | …`: 245 of them in the sādhanā. Read as
        a letter it became a syllable `[|]`, and no such verse re-derived. */
-    const role = roleOf(run.rStyle) === 'change' && /^\s*\|{1,2}\s*$/.test(run.text)
-      ? 'pause' as const
-      : roleOf(run.rStyle);
+    const role = isBluePause(run) ? 'pause' as const : roleOf(run.rStyle);
     const bump = (k: string) => { report.marks[k] = (report.marks[k] ?? 0) + 1; };
 
     if (role === 'svara') {
@@ -200,38 +199,12 @@ export function tokensFromRuns(
 
     if (role === 'pause') {
       flush();
-      /* A BAR AND A SHORT PAUSE ARE DIFFERENT TOKENS and were written with the
-         same pipe in the same style, so every one of the corpus's 59 bars came
-         back from a round trip as a pause. `BAR_GLYPH` is what the exporter
-         writes now; his own files contain no bar, so nothing of his changes. */
-      const bars = (run.text.split(BAR_GLYPH).length - 1);
-      const pipes = (run.text.match(/\|/g) ?? []).length;
-      if (bars > 0 || pipes > 0) {
-        /* The run's own spaces, and no others: a space invented before the
-           pause put one into `…ˎ|`, which he wrote without. */
-        space(/^\s*/.exec(run.text)![0]);
-        if (bars > 0) {
-          for (let k = 0; k < bars; k += 1) tokens.push({ t: 'bar' });
-          bump('bar');
-        } else {
-          /* THE COLOUR IS THE LENGTH, as his files have it: a short pause is
-             ONE bar in the substitution blue (`Anusvara` — 815 of them in his
-             Devī Māhātmyam), a long pause ONE bar in his red `Pause` (119
-             there). It was read as who placed it — blue the rules, red a
-             person — and the length from the number of bars, so his every
-             long pause came in as a short one; the twelve `||` in his two
-             sādhanās are long pauses too. The owner, 2026-10-01: "short is
-             blue line and long is red. Both single." */
-          const short = roleOf(run.rStyle) === 'change' && pipes < 2;
-          tokens.push({ t: 'pause', len: short ? 'short' : 'long' });
-          bump('pause');
-        }
-      }
-      /* Letters typed after a pause take the pause's style in Word, and they
-         are the person's text: read them, never drop them. */
-      const tail = run.text.trimStart().replace(/^[|¦]+/, '');
-      space(/^\s*/.exec(tail)![0]);
-      if (tail.trim() !== '') addLetters(tail.trimStart(), () => {});
+      /* What a pause run holds — see `docx-pauses.ts`. */
+      const p = readPause(run);
+      space(p.lead);
+      for (const t of p.tokens) { tokens.push(t); bump(t.t); }
+      space(p.tailSpace);
+      if (p.tail.trim() !== '') addLetters(p.tail, () => {});
       continue;
     }
 

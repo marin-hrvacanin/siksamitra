@@ -71,7 +71,7 @@ export type { StoredMark } from './mark-codec.js';
 /* Tokens ⇄ text and markings, and the round trip that proves it loses nothing. */
 export { toTextAndMarks, toTokens } from './migrate.js';
 /* What a replaced letter was typed as — the one table. See `typed-letter.ts`. */
-export { NBSP, spaceToken, typedLetter } from './typed-letter.js';
+export { CANDRA, NBSP, spaceToken, typedLetter } from './typed-letter.js';
 /* `TokenHelp` is on the surface because `toTokens` cannot be called without
    it: a caller has to supply the letter division and the other scripts, and
    both belong to the engine, which sits above this package. It was internal,

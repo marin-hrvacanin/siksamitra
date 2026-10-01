@@ -109,6 +109,8 @@ export const SYMBOL = {
   dark: 'dark_mode',
   'panel-open': 'left_panel_open',
   'panel-close': 'left_panel_close',
+  /* The Word add-in's own panel, which Word opens on the RIGHT. */
+  'panel-side': 'right_panel_open',
   outline: 'segment',
   tree: 'account_tree',
   numbered: 'format_list_numbered',

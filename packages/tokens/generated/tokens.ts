@@ -600,7 +600,7 @@ export const DOCUMENT_TOKENS = {
       "color-hold-long": "#538135",
       "color-svara": "#943634",
       "color-change": "#0070c0",
-      "color-pause-short": "#c00000",
+      "color-pause-short": "#0070c0",
       "color-pause-long": "#c00000"
     },
     "dark": {
@@ -619,7 +619,7 @@ export const DOCUMENT_TOKENS = {
       "color-hold-long": "#538135",
       "color-svara": "#943634",
       "color-change": "#0070c0",
-      "color-pause-short": "#c00000",
+      "color-pause-short": "#0070c0",
       "color-pause-long": "#c00000"
     }
   },

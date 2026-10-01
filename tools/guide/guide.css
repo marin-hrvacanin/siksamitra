@@ -1,0 +1,167 @@
+/*
+ * The guide's arrangement. Every value is a token of the app's — the chrome
+ * for the page, his Word theme (`data-doc="word"`) for the examples — so the
+ * guide looks like the program it explains.
+ */
+.g {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(13rem, 17rem) 1fr;
+  min-height: 100vh;
+  background: var(--chrome-desk);
+  color: var(--chrome-ink);
+  font: var(--text-ui) / 1.55 var(--font-ui);
+}
+.g-nav {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: var(--space-5) var(--space-4);
+  background: var(--chrome-bg);
+  border-right: var(--border-hair) solid var(--chrome-line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.g-brand {
+  font: var(--text-brand) var(--font-display);
+  color: var(--chrome-ink);
+  display: flex;
+  flex-direction: column;
+}
+.g-brand span { font: var(--text-ui-sm) var(--font-ui); color: var(--chrome-ink-mute); }
+.g-nav ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.g-nav ol ol { padding-left: var(--space-3); margin-top: var(--space-1); }
+.g-nav a {
+  display: block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--chrome-radius);
+  color: var(--chrome-ink-soft);
+  text-decoration: none;
+}
+.g-nav a:hover { background: var(--chrome-sunk); color: var(--chrome-ink); }
+.g-mode {
+  margin-top: auto;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-hair) solid var(--chrome-line);
+  border-radius: var(--chrome-radius);
+  background: var(--chrome-raise);
+  color: var(--chrome-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.g-main {
+  box-sizing: border-box;
+  max-width: 62rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-6) var(--space-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+.g-hero h1 { margin: 0 0 var(--space-2); font: var(--text-headline) / 1.1 var(--font-display); }
+.g-hero p { margin: 0; color: var(--chrome-ink-soft); max-width: 46rem; }
+.g-section { display: flex; flex-direction: column; gap: var(--space-4); scroll-margin-top: var(--space-5); }
+.g-h2 {
+  margin: 0;
+  font: calc(var(--text-headline) * 0.62) / 1.2 var(--font-display);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-hair) solid var(--chrome-line);
+}
+.g-h3 { margin: var(--space-3) 0 var(--space-1); font: var(--text-ui-lg) var(--font-ui); font-weight: 600; }
+.g-stage { display: flex; flex-direction: column; gap: var(--space-3); scroll-margin-top: var(--space-5); }
+.g-section > p, .g-card > p { margin: 0; max-width: 48rem; }
+.g-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: var(--border-hair) solid var(--chrome-line-soft);
+  border-radius: var(--radius-card);
+  background: var(--chrome-bg);
+  box-shadow: var(--chrome-shadow);
+  scroll-margin-top: var(--space-5);
+}
+.g-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.g-card__head h3, .g-card__head h4 { margin: 0; font-size: var(--text-ui-lg); font-weight: 600; }
+.g-id { font: var(--text-ui-sm) var(--font-mono); color: var(--chrome-ink-mute); }
+.g-meta { color: var(--chrome-ink-soft); font-size: var(--text-ui-sm); display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.g-spec { color: var(--chrome-ink-mute); font-style: italic; }
+.g-note { margin: 0; color: var(--chrome-ink-soft); font-size: var(--text-ui-sm); }
+.g-chip {
+  font-size: var(--text-ui-sm);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  border: var(--border-hair) solid var(--chip);
+  color: var(--chip);
+}
+.g-eyebrow { font: var(--text-eyebrow) var(--font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--chrome-ink-mute); }
+.g-pair { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-3); align-items: center; }
+.g-pair--two { grid-template-columns: 1fr 1fr; }
+.g-pair__side { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.g-pair__arrow { color: var(--chrome-ink-mute); font-size: var(--text-ui-lg); }
+.g-script { display: flex; flex-direction: column; gap: var(--space-1); }
+.g-doc {
+  box-sizing: border-box;
+  min-height: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--chrome-radius);
+  border: var(--border-hair) solid var(--chrome-line-soft);
+  overflow-x: auto;
+}
+.g-doc .pada { margin: 0; }
+.g-plan { border-collapse: collapse; font-size: var(--text-ui-sm); }
+.g-plan caption { text-align: left; color: var(--chrome-ink-soft); padding-bottom: var(--space-1); }
+.g-plan th, .g-plan td { border: var(--border-hair) solid var(--chrome-line); padding: var(--space-1) var(--space-2); text-align: center; }
+.g-pos--svarita, .g-pos--anudatta, .g-pos--dirgha-svarita { color: var(--color-svara); font-weight: 600; }
+
+/* Word's runs, in his styles' roles. */
+.g-word .w-hold-mark { color: var(--color-hold); font-family: var(--g-mark-face), sans-serif; font-size: 0.7em; vertical-align: 0.55em; }
+.g-word .w-svara, .g-word .w-virama { color: var(--color-svara); font-family: var(--g-mark-face), sans-serif; }
+.g-word .w-aid { color: var(--color-change); font-size: 0.55em; vertical-align: 0.6em; }
+.g-word .w-change { color: var(--color-change); }
+.g-word .w-pause { color: var(--color-pause-long); }
+.g-word .w-dirgha { color: var(--color-change); }
+
+@media (max-width: 52rem) {
+  .g { grid-template-columns: 1fr; }
+  .g-nav { position: static; height: auto; border-right: 0; border-bottom: var(--border-hair) solid var(--chrome-line); }
+  .g-main { padding: var(--space-5) var(--space-4); }
+  .g-pair { grid-template-columns: 1fr; }
+  .g-pair__arrow { display: none; }
+}
+
+/* ── a line as Word sets it (`word-line.ts`), in his styles' values ─────── */
+.w-doc {
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--chrome-radius);
+  border: var(--border-hair) solid var(--chrome-line-soft);
+  background: var(--color-vellum);
+  color: var(--color-ink);
+  overflow-x: auto;
+}
+.w-line {
+  margin: 0;
+  font-family: var(--doc-verse-face);
+  font-family: Arial, var(--doc-verse-face);
+  font-size: var(--w-verse-size);
+  line-height: var(--w-verse-lead);
+  white-space: pre-wrap;
+}
+.w-line--deva { font-family: var(--w-deva-face), var(--doc-verse-face); font-size: var(--w-deva-size); }
+.w-hold-short, .w-hold-short-change { border: var(--w-hold-short) solid var(--w-hold); }
+.w-hold-long, .w-hold-long-change { border: var(--w-hold-long) solid var(--w-hold); }
+.w-hold-short-change, .w-hold-long-change, .w-change, .w-gum { color: var(--w-change); font-style: italic; }
+.w-svara, .w-virama { color: var(--w-svara); font-weight: 700; }
+.w-dirgha { color: var(--w-dirgha); }
+.w-pause-short { color: var(--w-change); font-weight: 700; }
+.w-pause-long, .w-pause { color: var(--w-pause); font-weight: 700; }
+.w-reference, .w-sup { font-size: 0.6em; vertical-align: super; line-height: 0; }
+.w-comment { color: var(--w-comment); font-style: italic; }
+.w-hold-mark { color: var(--w-mark); font-family: var(--w-mark-face); font-size: var(--w-mark-size); position: relative; top: calc(-1 * var(--w-mark-raise)); }
+.w-aid { color: var(--w-aid); font-size: var(--w-aid-size); position: relative; top: calc(-1 * var(--w-aid-raise)); }

@@ -124,7 +124,10 @@ const wordTheme = (): DocumentTheme => {
     holdLong: wordColor(WORD_MARKS.holdLong.color),
     svara: wordColor(WORD_MARKS.svara.color),
     change: wordColor(WORD_MARKS.change.color),
-    pauseShort: wordColor(WORD_MARKS.pause.color),
+    /* ONE BAR EACH, its colour its length, as his files have them: a short
+       pause in his blue (`Anusvara`, 815 in his Devī), a long one in his red
+       (`Pause`, 119). The owner, 2026-10-01. Both were red. */
+    pauseShort: wordColor(WORD_MARKS.change.color),
     pauseLong: wordColor(WORD_MARKS.pause.color),
     fill: wordColor(WORD_MARKS.comment.color),
   };

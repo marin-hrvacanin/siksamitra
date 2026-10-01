@@ -92,11 +92,19 @@ describe('the other markings', () => {
     expect(shape(marks)).toBe('-:a Svara:̱ -:gne tvam');
   });
 
-  it('write a pause as a pipe, and a second press takes it away', () => {
+  /* ONE BAR EACH, its colour its length — his files: a long pause one bar in
+     his red `Pause`, a short one one bar in his blue. Owner, 2026-10-01. */
+  it('write a long pause as one bar in his red Pause, and a second press takes it away', () => {
     const on = applyCommand(start, 5, 5, { k: 'pause', v: 'long' });
-    expect(shape(on.marks)).toBe('-:agne  Pause:|| -:tvam');
+    expect(shape(on.marks)).toBe('-:agne  Pause:| -:tvam');
     const off = applyCommand({ text: TEXT, marks: on.marks }, 5, 5, { k: 'pause', v: 'long' });
     expect(shape(off.marks)).toBe(`-:${TEXT}`);
+  });
+
+  it('write a short pause as one bar in his blue', () => {
+    const on = applyCommand(start, 5, 5, { k: 'pause', v: 'short' });
+    expect(shape(on.marks)).toMatch(/^-:agne {2}[A-Za-z]+:\| -:tvam$/);
+    expect(shape(on.marks)).not.toContain('Pause:');
   });
 
   it('write a svarabhakti dot before its letter, in the Svara style', () => {

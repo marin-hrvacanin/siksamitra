@@ -86,7 +86,18 @@ export interface RangeResult {
  * it is what put the caret on the wrong side of the break.
  */
 function splitKeepingEnds(text: string): string[][] {
-  return text.split(/\n[^\S\n]*\n/).map((block) => block.split('\n').map((l) => normLoose(l)));
+  return text.split(/\n[^\S\n]*\n/).map((block) => {
+    const lines = block.split('\n').map((l) => normLoose(l));
+    /*
+     * The LEADING empty lines are residue here too, exactly as in `split`: the
+     * text drops them, so a prefix that kept them measured the caret one
+     * line-break past the text. Enter at the START of a line put the caret
+     * after its first letter — `p|rātar` — and the next letter typed went in
+     * there. Only the empty line at the END is the newline just typed.
+     */
+    while (lines.length > 1 && lines[0]?.trim() === '') lines.shift();
+    return lines;
+  });
 }
 
 function split(text: string): string[][] {

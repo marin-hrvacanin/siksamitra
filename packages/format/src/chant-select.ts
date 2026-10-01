@@ -166,15 +166,32 @@ export function withVerses(section: ChantSection, verses: ChantVerse[]): ChantSe
   }
 
   /*
-   * Verses the items did not account for — a paste added them. They go after
-   * the last verse item rather than at the end of the section, so a closing
-   * instruction stays closing.
+   * Verses the items did not account for — an edit made them: Enter split a
+   * verse, a paste brought several. Each goes RIGHT AFTER the verse before it
+   * in `verses`, which is where the edit put it.
+   *
+   * They all went after the section's last verse item, which is right for a
+   * paste at the very end and wrong everywhere else: Enter at the end of the
+   * first line of Durgā Sūktam made the rest of verse 1 a new verse, and it
+   * was drawn after verse 9 — three lines vanished from where they had been
+   * and the caret went with them (the owner: "it moves other stuff and the
+   * pointer moves"). A verse with none before it goes before the first verse
+   * item, so an opening instruction stays opening.
    */
-  const added = verses.filter((v) => !used.has(v.id));
-  if (added.length > 0) {
-    let at = items.length;
-    for (const [i, item] of items.entries()) if (item.t === 'verse') at = i + 1;
-    items.splice(at, 0, ...added.map((v): ChantItem => ({ t: 'verse', ...v })));
+  for (const [k, v] of verses.entries()) {
+    if (used.has(v.id)) continue;
+    let at = -1;
+    for (let j = k - 1; j >= 0 && at === -1; j -= 1) {
+      const before = verses[j]!.id;
+      const i = items.findIndex((item) => item.t === 'verse' && item.id === before);
+      if (i !== -1) at = i + 1;
+    }
+    if (at === -1) {
+      const first = items.findIndex((item) => item.t === 'verse');
+      at = first === -1 ? items.length : first;
+    }
+    items.splice(at, 0, { t: 'verse', ...v });
+    used.add(v.id);
   }
 
   return { ...section, items, verses };

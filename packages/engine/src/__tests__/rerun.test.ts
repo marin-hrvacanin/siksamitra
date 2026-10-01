@@ -17,7 +17,7 @@ import { mark, toTextAndMarks } from '@siksamitra/format';
 import { openChantDoc, resolveProfile } from '@siksamitra/engine';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { STAGES, rerun, typedText } from '../rerun.js';
+import { STAGES, rerun, typedText } from '../index.js';
 import { corpusVerses } from '../../../../tests/helpers/corpus.js';
 
 const DIR = fileURLToPath(new URL('../../../../corpus/chants/', import.meta.url));

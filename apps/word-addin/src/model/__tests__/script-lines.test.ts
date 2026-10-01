@@ -14,16 +14,23 @@ import { mark } from '@siksamitra/format';
 import { paragraphRuns, paragraphsXml, decodeRuns } from '../paragraph.js';
 import { offsetMap, toModel, toWord } from '../offsets.js';
 import { wordOffsetIn } from '../caret.js';
+import { WORD_DEVANAGARI } from '@siksamitra/tokens/word';
 
-/* `agnim īḻe`, the `g` boxed: अ | ग्नि | म् | ␣ | ई | ळे */
+/*
+ * `agnim īḻe`, the `g` held — written as his Devanāgarī is
+ * (`WORD_DEVANAGARI`): अ | ͂ | ग्नि | म् | ␣␣ | ई | ळे — the holding his small
+ * raised mark BEFORE the akṣara its letter is in, and the word gap two spaces.
+ */
 const tm = { text: 'agnim īḻe', marks: [mark({ k: 'hold', from: 1, to: 2, v: 'short' })] };
 
 describe('a Devanāgarī line', () => {
   const runs = paragraphRuns(tm, 'deva')[0]!;
   const map = offsetMap(runs, 'deva');
 
-  it('is written cluster by cluster, the box round the cluster its letter is in', () => {
-    expect(runs.map((r) => [r.rStyle, r.text])).toEqual([[null, 'अ'], ['Holding', 'ग्नि'], [null, 'म् ईळे']]);
+  it('is written as his Devanāgarī is: the holding a raised mark before its akṣara, the gap two spaces', () => {
+    expect(runs.map((r) => [r.rStyle, r.text])).toEqual([
+      [null, 'अ'], [WORD_DEVANAGARI.hold.style, WORD_DEVANAGARI.hold.short], [null, 'ग्निम्  ईळे'],
+    ]);
   });
 
   it('reads back as the very line', () => {
@@ -33,23 +40,29 @@ describe('a Devanāgarī line', () => {
   });
 
   it('maps every cluster boundary to the letter it begins', () => {
-    expect(map.wordText).toBe('अग्निम् ईळे');
-    /* अ=0 ग्नि=1..5 म्=5..7 ␣=7 ई=8 ळे=9..11 */
-    expect([0, 1, 5, 7, 8, 9, 11].map((w) => toModel(map, w))).toEqual([0, 1, 4, 5, 6, 7, 9]);
+    expect(map.wordText).toBe('अ͂ग्निम्  ईळे');
+    /* अ=0 ͂=1 ग्नि=2..6 म्=6..8 ␣␣=8..10 ई=10 ळे=11..13. The mark belongs to
+       the akṣara after it; the second space of a gap is the same space. */
+    expect([0, 1, 2, 6, 8, 9, 10, 11, 13].map((w) => toModel(map, w))).toEqual([0, 1, 1, 4, 5, 6, 6, 7, 9]);
   });
 
   it('maps an offset inside a conjunct to its end', () => {
-    expect([2, 3, 4].map((w) => toModel(map, w))).toEqual([4, 4, 4]);
+    expect([3, 4, 5].map((w) => toModel(map, w))).toEqual([4, 4, 4]);
   });
 
   it('and back: a letter is found at its cluster', () => {
-    expect([0, 1, 4, 5, 9].map((m) => toWord(map, m))).toEqual([0, 1, 5, 7, 11]);
+    expect([0, 1, 4, 5, 6, 7, 9].map((m) => toWord(map, m))).toEqual([0, 2, 6, 8, 10, 11, 13]);
+  });
+
+  it('and a letter INSIDE a conjunct at its end — never at the start of the line', () => {
+    /* The `n` and `i` of ग्नि, and the `e` of ळे. */
+    expect([2, 3, 8].map((m) => toWord(map, m))).toEqual([6, 6, 13]);
   });
 
   it('puts the caret back where it was, in Word characters of the script', () => {
     const xml = paragraphsXml(tm, 'deva');
-    expect(wordOffsetIn(xml, 4, 'deva')).toBe(5);
-    expect(wordOffsetIn(xml, 9, 'deva')).toBe(11);
+    expect(wordOffsetIn(xml, 4, 'deva')).toBe(6);
+    expect(wordOffsetIn(xml, 9, 'deva')).toBe(13);
   });
 });
 

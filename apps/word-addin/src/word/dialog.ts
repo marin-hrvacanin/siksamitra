@@ -13,6 +13,7 @@
  * failing silently.
  */
 import type { Said } from './actions.js';
+import { confirmInPanel, notify, panelAttached } from '../ui/notices.js';
 
 /**
  * How big each window is, in PERCENT of the screen — Word's unit. Sized to fit
@@ -72,19 +73,34 @@ export function dialog(
   });
 }
 
-/** Say something: one line, any detail under it, and OK. */
+/** Open the panel, where what the add-in says is shown. A host too old for
+ *  it is told in a dialog instead. */
+async function showPanel(): Promise<boolean> {
+  try { await Office.addin.showAsTaskpane(); return true; } catch { return false; }
+}
+
+/**
+ * Say something: one line, any detail under it.
+ *
+ * IN THE PANEL when it is there (`ui/notices.ts`) — opened if it was closed —
+ * and in a dialog only on a host that cannot show it.
+ */
 export async function tell(m: Said): Promise<void> {
   if (m.text === '') return;
+  if (panelAttached() && await showPanel()) { notify({ kind: m.kind, text: m.text, lines: m.lines }); return; }
   await dialog('said.html', { text: m.text, kind: m.kind, lines: JSON.stringify(m.lines) },
     DIALOG_SIZE.said, (_reply, close) => close());
 }
 
-/** Ask before doing something big. `true` for yes. */
-export function ask(question: string, yes: string, detail = ''): Promise<boolean> {
+/** Ask before doing something big. `true` for yes. In the panel, like `tell`. */
+export async function ask(question: string, yes: string, detail = ''): Promise<boolean> {
+  const lines = detail === '' ? [] : [detail];
+  if (panelAttached() && await showPanel()) return confirmInPanel(question, yes, lines);
   let answer = false;
-  return dialog('said.html', { text: question, kind: 'ask', yes, lines: JSON.stringify(detail === '' ? [] : [detail]) },
+  await dialog('said.html', { text: question, kind: 'ask', yes, lines: JSON.stringify(lines) },
     DIALOG_SIZE.said, (reply, close) => {
       answer = 'answer' in reply && reply.answer === 'yes';
       close();
-    }).then(() => answer);
+    });
+  return answer;
 }

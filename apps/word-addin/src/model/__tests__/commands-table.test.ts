@@ -130,7 +130,7 @@ describe('the table', () => {
     expect(inserted).toEqual(expect.arrayContaining(['ā', 'ṭh', 'ś', 'ṣ', '।', 'ꣳ']));
   });
   it('there is no pane button: Settings is the only thing that opens the side panel', () => {
-    expect(COMMANDS.filter((c) => c.does === 'settings').map((c) => c.id)).toEqual(['settings']);
+    expect(COMMANDS.filter((c) => c.does === 'panel').map((c) => c.id)).toEqual(['panel']);
     expect(COMMANDS.map((c) => c.label)).not.toContain('Pane');
   });
 });

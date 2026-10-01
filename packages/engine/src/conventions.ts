@@ -20,7 +20,7 @@
  */
 import type { Profile } from './profile.js';
 
-export type ConventionId = 'nasal-before-nasal' | 'visarga-before-velar' | 'vy-aid' | 'geminate-box';
+export type ConventionId = 'nasal-before-nasal' | 'visarga-before-velar' | 'puranic-svara' | 'vy-aid' | 'geminate-box';
 
 /** A profile patch — the shape `resolveProfile` merges. */
 type Patch = Record<string, Record<string, unknown>>;
@@ -57,6 +57,16 @@ export const CONVENTIONS: readonly Convention[] = [
     on: { sandhi: { visargaBeforeVelar: true } },
     off: { sandhi: { visargaBeforeVelar: false } },
     isOn: (p) => p.sandhi.visargaBeforeVelar,
+  },
+  {
+    id: 'puranic-svara',
+    label: 'Svaras on a purāṇic śloka, by its metre',
+    example: { typed: 'yā devī sarvabhūteṣu śaktirūpeṇa saṁsthitā', marked: 'the same half-verse with the śloka’s seven svaras' },
+    note: 'Smārta and purāṇic verse: a line that scans as an anuṣṭubh half-verse takes the śloka pattern, as in his Lalitā Sahasranāma (35 of 35). Off leaves such lines without svaras.',
+    on: { svara: { meter: 'anustubh' } },
+    /* `null`, not `undefined`: a patch's undefined is no change at all. */
+    off: { svara: { meter: null } },
+    isOn: (p) => p.svara.meter != null,
   },
   {
     id: 'vy-aid',

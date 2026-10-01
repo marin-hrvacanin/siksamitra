@@ -117,7 +117,8 @@ export function derive(
     applyAttestedSvara(ctx, src.accented);
   } else if (profile.svara.register === 'conventional') {
     const meter = profile.svara.meter;
-    if (meter === undefined) {
+    /* `null` is the purāṇic-svara convention switched off (`conventions.ts`). */
+    if (meter === undefined || meter === null) {
       ctx.warn(
         'svara.no-meter',
         'the conventional register needs a declared metre — the verse is left unmarked',

@@ -165,7 +165,7 @@ function withoutRerunStages(
   });
 }
 
-export function rerun(tm: TextAndMarks, req: ReRunRequest): ReRun {
+export function rerunRange(tm: TextAndMarks, req: ReRunRequest): ReRun {
   const { from, to } = req;
   const slice = tm.text.slice(from, to);
   const inside = tm.marks

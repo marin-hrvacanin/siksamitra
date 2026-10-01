@@ -280,8 +280,8 @@
 
 /* ── the marks that are punctuation ─────────────────────────────────────── */
 /*
- * A PAUSE IS ITS GLYPH — `|` short, `||` long — and a BAR is the `|` that ends
- * a pāda. Both were drawn as empty spans: "a gap whose width comes from a
+ * A PAUSE IS ITS GLYPH — ONE bar, blue short and red long, as his files set it
+ * (owner, 2026-10-01) — and a BAR is the `|` that ends a pāda. Both were drawn as empty spans: "a gap whose width comes from a
  * token", so all 976 pauses in the corpus and 59 bars in Puruṣa Sūktam alone
  * rendered as nothing at all, while the Word export wrote them as pipes and
  * the PDF showed them in red. The glyph IS the mark.

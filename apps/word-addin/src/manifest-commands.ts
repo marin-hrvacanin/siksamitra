@@ -43,7 +43,7 @@ const icon = (file: string, pad: string): string => [
   `${pad}</Icon>`,
 ].join('\n');
 
-const action = (c: Command, pad: string): string => (c.does === 'settings'
+const action = (c: Command, pad: string): string => (c.does === 'panel'
   ? `${pad}<Action xsi:type="ShowTaskpane">\n${pad}  <SourceLocation resid="sm.Taskpane.Url"/>\n${pad}</Action>`
   : `${pad}<Action xsi:type="ExecuteFunction">\n${pad}  <FunctionName>${c.fn}</FunctionName>\n${pad}</Action>`);
 

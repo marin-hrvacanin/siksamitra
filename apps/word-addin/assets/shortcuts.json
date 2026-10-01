@@ -1,6 +1,11 @@
 {
   "actions": [
     {
+      "id": "smReapply",
+      "type": "ExecuteFunction",
+      "name": "Auto-mark"
+    },
+    {
       "id": "smHoldShort",
       "type": "ExecuteFunction",
       "name": "Short"
@@ -13,17 +18,12 @@
     {
       "id": "smHoldClear",
       "type": "ExecuteFunction",
-      "name": "Clear"
+      "name": "Clear holdings"
     },
     {
       "id": "smTypingHelp",
       "type": "ExecuteFunction",
       "name": "Typing help"
-    },
-    {
-      "id": "smReapply",
-      "type": "ExecuteFunction",
-      "name": "Re-apply rules"
     },
     {
       "id": "smAlt_a",
@@ -123,6 +123,12 @@
   ],
   "shortcuts": [
     {
+      "action": "smReapply",
+      "key": {
+        "default": "Ctrl+Shift+R"
+      }
+    },
+    {
       "action": "smHoldShort",
       "key": {
         "default": "Ctrl+H"
@@ -144,12 +150,6 @@
       "action": "smTypingHelp",
       "key": {
         "default": "Ctrl+Shift+I"
-      }
-    },
-    {
-      "action": "smReapply",
-      "key": {
-        "default": "Ctrl+Shift+R"
       }
     },
     {

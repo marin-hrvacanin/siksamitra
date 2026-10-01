@@ -232,7 +232,14 @@ export const PROFILES: Readonly<Record<ProfileKey, Profile>> = Object.freeze({
     ...BASE,
     recension: 'smriti',
     gum: false,
-    svara: { register: 'conventional' },
+    /*
+     * ANUṢṬUBH UNLESS SAID OTHERWISE — the śloka is what purāṇic verse is, and
+     * its plan is verified against his marked Lalitā Sahasranāma, 35/35
+     * half-verses. A line that does not scan as a 16-syllable half-verse is
+     * left unmarked, all or nothing (`applySvaraPlan`), so prose and other
+     * metres are never marked by it; a verse that declares its metre uses that.
+     */
+    svara: { register: 'conventional', meter: 'anustubh' },
     aids: { ...BASE.aids, semivowel: false },
   }),
   /** Offerings, saṅkalpa, nāmāvalīs — no svara, and only the bīja's pause. */

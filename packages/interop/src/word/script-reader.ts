@@ -20,6 +20,7 @@ import {
 } from '@siksamitra/engine';
 import { WORD_DEVANAGARI } from '@siksamitra/tokens/word';
 import { mergeRuns, type WordRun } from '../docx-read.js';
+import { isBluePause, splitPauseBars } from '../docx-pauses.js';
 import { SCRIPT_SVARA_BY_CHAR, roleOf } from '../word-styles.js';
 import { bareLetter, changedOf, holdOf, iastRunsOfLetters, type Letter } from './script-letters.js';
 
@@ -36,6 +37,13 @@ export const SAID = '⁣śm';
 export interface Said {
   /** The letters the box is on. */
   h?: number[];
+  /**
+   * Which holding `h` means, when nothing drawn says it — a SPACE inside a
+   * holding. His Devanāgarī marks a held akṣara with a sign before it and a
+   * word gap with nothing at all, so a holding that crosses one (`m ṅ`) came
+   * back as two, the space between them no longer held.
+   */
+  k?: 'short' | 'long';
   /** The letters the substitution is on. */
   c?: number[];
   /** Which letter each accent is on. */
@@ -95,13 +103,11 @@ export class ScriptReader {
   }
 
   feed(r: WordRun): void {
-    /* A pause and the changed letter after it share the blue style, so Word
+    /* A pause and the changed letter beside it share the blue style, so Word
        merges them into ONE run — `|फ्म्ँश्` — and the bar is no longer lone.
        Its bars are split off first, each read as the pause it is. */
-    if (roleOf(r.rStyle) === 'change' && /\|/.test(r.text) && !/^\s*\|{1,2}\s*$/.test(r.text)) {
-      for (const piece of r.text.split(/(\s*\|{1,2}\s*)/)) if (piece !== '') this.feed({ ...r, text: piece });
-      return;
-    }
+    const pieces = splitPauseBars(r);
+    if (pieces.length > 1) { for (const piece of pieces) this.feed(piece); return; }
     const start = this.at;
     if (r.hidden !== true || this.countHidden) this.at += r.text.length;
     if (r.hidden === true && r.text.startsWith(SAID)) { this.said(r.text.slice(SAID.length), start); return; }
@@ -126,7 +132,7 @@ export class ScriptReader {
       if (on !== undefined && r.text.trim() !== '') on.aid.push(r.text.trim());
       return;
     }
-    const pause = role === 'change' && /^\s*\|{1,2}\s*$/.test(r.text);
+    const pause = isBluePause(r);
     if (pause || (role !== null && role !== 'svara' && role !== 'change' && !role.startsWith('hold'))) {
       this.out.push(r);
       this.from.push(start);
@@ -164,7 +170,8 @@ export class ScriptReader {
     if (s.w !== undefined) { this.wholeWord(s.w, at); return; }
     const mine = this.lettersOf(this.cluster);
     const style = this.style[this.cluster] ?? { hold: null, changed: false };
-    if (s.h !== undefined) mine.forEach((l, k) => { l.hold = s.h!.includes(k) ? style.hold : null; });
+    const held = s.k ?? style.hold;
+    if (s.h !== undefined) mine.forEach((l, k) => { l.hold = s.h!.includes(k) ? held : null; });
     /* The record says which letters are changed, coloured or not: his
        Devanāgarī does not colour a changed letter (`scriptWordRuns`). */
     if (s.c !== undefined) mine.forEach((l, k) => { l.changed = s.c!.includes(k); });

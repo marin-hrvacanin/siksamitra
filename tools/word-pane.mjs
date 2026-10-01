@@ -64,7 +64,7 @@ const CONTRAST = 4.5;
 const q = (o) => new URLSearchParams(o).toString();
 const sized = (pct, sw, sh) => ({ width: Math.round((sw * pct.width) / 100), height: Math.round((sh * pct.height) / 100) });
 const PAGES = [
-  ...[300, 360, 600].map((w) => ({ name: `settings-${w}`, path: 'taskpane.html', width: w, height: 900, root: '.set' })),
+  ...[300, 360, 600].map((w) => ({ name: `panel-${w}`, path: 'taskpane.html', width: w, height: 900, root: '.pnl' })),
   ...[[1366, 768], [1920, 1080]].flatMap(([sw, sh]) => [
     {
       name: `said-warn-${sw}`, ...sized(DIALOG_SIZE.said, sw, sh), root: '.dlg',

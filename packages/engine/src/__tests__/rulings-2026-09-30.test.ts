@@ -87,8 +87,13 @@ describe('the switches a person is offered', () => {
   it('are on and off as ruled, in every register', async () => {
     const { CONVENTIONS, PROFILES } = await import('../index.js');
     const want = { 'nasal-before-nasal': true, 'visarga-before-velar': true, 'vy-aid': false, 'geminate-box': false };
-    for (const p of Object.values(PROFILES)) {
-      for (const c of CONVENTIONS) expect([c.id, c.isOn(p)]).toEqual([c.id, want[c.id]]);
+    for (const [key, p] of Object.entries(PROFILES)) {
+      for (const c of CONVENTIONS) {
+        /* The metre's svaras are purāṇic: on where the register is Smārta, and
+           nowhere else — a Vedic svara is read, never derived (2026-10-01). */
+        const ruled = c.id === 'puranic-svara' ? key === 'smarta' : want[c.id as keyof typeof want];
+        expect([key, c.id, c.isOn(p)]).toEqual([key, c.id, ruled]);
+      }
     }
   });
   it('each one\'s patch turns it on and off', async () => {

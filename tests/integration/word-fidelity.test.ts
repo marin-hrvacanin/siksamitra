@@ -66,7 +66,8 @@ describe('the theme uses the measured values', () => {
     expect(word!.light.holdLong).toBe(wordColor(WORD_MARKS.holdLong.color));
     expect(word!.light.svara).toBe(wordColor(WORD_MARKS.svara.color));
     expect(word!.light.change).toBe(wordColor(WORD_MARKS.change.color));
-    expect(word!.light.pauseShort).toBe(wordColor(WORD_MARKS.pause.color));
+    /* ONE BAR EACH, colour is length: a short pause in his Anusvara blue, a long one in his Pause red (2026-10-01). */
+    expect(word!.light.pauseShort).toBe(wordColor(WORD_MARKS.change.color));
     expect(word!.light.pauseLong).toBe(wordColor(WORD_MARKS.pause.color));
   });
 

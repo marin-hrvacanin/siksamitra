@@ -14,7 +14,7 @@ import { act } from 'react';
 
 const registered = vi.fn();
 vi.mock('../../apps/word-addin/src/runtime.js', () => ({ registerAll: () => registered() }));
-vi.mock('../../apps/word-addin/src/ui/Settings.js', () => ({ Settings: () => 'the settings were drawn' }));
+vi.mock('../../apps/word-addin/src/ui/Panel.js', () => ({ Panel: () => 'the panel was drawn' }));
 
 const ENTRY = '../../apps/word-addin/src/taskpane.tsx';
 
@@ -44,11 +44,11 @@ describe('with office.js', () => {
     };
   };
 
-  it('in Word, registers every command and draws Settings', async () => {
+  it('in Word, registers every command and draws the panel', async () => {
     office('Word');
     await act(async () => { await import(ENTRY); });
     expect(registered).toHaveBeenCalledOnce();
-    expect(root().textContent).toBe('the settings were drawn');
+    expect(root().textContent).toBe('the panel was drawn');
   });
 
   it('outside Word, says it marks Word documents, and registers nothing', async () => {

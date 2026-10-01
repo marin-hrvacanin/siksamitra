@@ -116,7 +116,7 @@ describe('the headless editor', () => {
 
   it('writes nothing at all without --write', () => {
     const before = readFileSync(path, 'utf8');
-    const ran = sm('set-register', ['--preset', 'prose']);
+    const ran = sm('set-register', ['--preset', 'smarta']);
     expect(readFileSync(path, 'utf8')).toBe(before);
     expect(ran.said).toContain('--write');
     expect((ran.emitted as { changed: boolean }).changed).toBe(true);

@@ -33,10 +33,11 @@ import { Fragment, memo, type MouseEvent, type ReactNode } from 'react';
 import type {
   ChantDoc, ChantScriptKey, ChantToken, ChantVerse,
 } from '@siksamitra/format';
-import { Figure, MissingFigure, holdJoins } from '@siksamitra/render';
+import {
+  Figure, MissingFigure, holdJoins, renderToken, unitsBefore, type TokenContext,
+} from '@siksamitra/render';
 import { blockId, figureOf, headingOf, itemsOf, sourceOf } from './blocks.js';
 import type { GrabPoint } from '../editor/figure-drag.js';
-import { renderToken, unitsBefore, type TokenContext } from './token-renderers.js';
 
 const FONT_STACK = 'var(--doc-verse-face)';
 

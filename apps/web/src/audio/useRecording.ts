@@ -32,6 +32,7 @@ import type { ChantDoc } from '@siksamitra/format';
 import { clipOf, clipsOfDoc, padasOfDoc, sourceFor, versesWithAudio, type PadaAt } from './clips.js';
 import { applyRate, SEG_LEAD, startAt } from '@siksamitra/render';
 import { resolveMedia } from '../shell/media.js';
+import { useHeard } from './useHeard.js';
 
 export interface Recording {
   /** What is loaded, if anything — a name to show, not a path. */
@@ -357,6 +358,8 @@ export function useRecording(doc: ChantDoc | null): Recording {
    * asked for that much and no more — and not for a take opened off a disk,
    * which is one file for the whole chant and has nothing after it.
    */
+  const firstClip = sourceFor(doc, clipsOfDoc(doc)[0]?.verseId ?? '');
+  const heard = useHeard(firstClip === null ? null : resolveMedia(firstClip));
   advance.current = (): boolean => {
     if (until.current !== null || object.current !== null) return false;
     /* The document's order. Taken from the mapping it was the order the CLIP
@@ -373,9 +376,9 @@ export function useRecording(doc: ChantDoc | null): Recording {
 
   return {
     name,
-    /* The DOCUMENT has a recitation — clips, not pādas. Asking the mapping
-       made the dock invisible for every document but the one that is mapped. */
-    mapped: clipsOfDoc(doc).length > 0,
+    /* The DOCUMENT has a recitation — clips, not pādas — and it can be heard
+       (`useHeard`): one that names clips nobody shipped is not one. */
+    mapped: heard,
     file,
     ready,
     playing,

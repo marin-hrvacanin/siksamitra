@@ -69,15 +69,18 @@ export function runClassName(run: Run, showMarks: boolean): string {
   return out.join(' ');
 }
 
+/**
+ * A pause is ONE bar, its colour its length — blue short, red long — as his
+ * own documents set it. The owner, 2026-10-01: "short is blue line and long is
+ * red. Both single." One constant, so the page and the editor cannot differ.
+ */
+export const PAUSE_GLYPH = '|';
+
 /** A pause or a svarabhakti dot, drawn between runs. */
 function pointMark(kind: string, value: string | undefined, key: string): ReactNode {
   if (kind === 'sbhakti') return <span className="sbhakti" aria-hidden key={key} />;
   if (kind !== 'pause') return null;
-  return (
-    <span className={`pause pause--${value ?? 'short'}`} key={key}>
-      {value === 'long' ? '||' : '|'}
-    </span>
-  );
+  return <span className={`pause pause--${value ?? 'short'}`} key={key}>{PAUSE_GLYPH}</span>;
 }
 
 /**

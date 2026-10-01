@@ -63,7 +63,12 @@ export async function makePart(rules: PartRules): Promise<'made' | 'inside'> {
     const cc = range.insertContentControl();
     cc.tag = partTag(rules);
     cc.title = partTitle(rules);
-    cc.appearance = Word.ContentControlAppearance.boundingBox;
+    /* NO FRAME. A part is a stretch of lines with a register of its own, and
+       Word draws a content control's frame and title whenever the caret is in
+       it — the owner: "what is that outline? It looks confusing." The part is
+       still there and still travels with its lines; the panel says which
+       register marks the text at the caret. */
+    cc.appearance = Word.ContentControlAppearance.hidden;
     try {
       await context.sync();
       return 'made';

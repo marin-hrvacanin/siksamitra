@@ -245,6 +245,27 @@ describe('writing verses back into a section', () => {
     const edited = withVerses(section, [verse('v1', [syl('b')])]);
     expect(edited.items![0]!.t).toBe('instruction');
   });
+
+  /*
+   * Enter at the end of the first line of Durgā Sūktam split verse 1, and the
+   * new verse — the rest of its lines — went after verse 9: three lines gone
+   * from where they were, and the caret with them. A new verse goes after the
+   * verse before it in `verses`, which is where the edit put it.
+   */
+  it('puts a verse an edit made right after the verse it came from, not at the end', () => {
+    const items = (ids: string[]): ChantSection['items'] => [
+      { t: 'instruction', instruction: { text: { en: 'opening' } } },
+      ...ids.flatMap((id) => [{ t: 'verse' as const, ...verse(id, [syl(id)]) },
+        { t: 'instruction' as const, instruction: { text: { en: `after ${id}` } } }]),
+    ];
+    const section: ChantSection = { id: 's1', verses: ['v1', 'v2', 'v3'].map((id) => verse(id, [syl(id)])), items: items(['v1', 'v2', 'v3']) };
+    const split = withVerses(section, ['v1', 'v10', 'v2', 'v3'].map((id) => verse(id, [syl(id)])));
+    const order = split.items!.map((i) => (i.t === 'verse' ? (i as unknown as ChantVerse).id : `(${(i as { instruction: { text: { en: string } } }).instruction.text.en})`));
+    expect(order).toEqual(['(opening)', 'v1', 'v10', '(after v1)', 'v2', '(after v2)', 'v3', '(after v3)']);
+    /* At the very start it goes before the first verse, after the opening. */
+    const first = withVerses(section, ['v0', 'v1', 'v2', 'v3'].map((id) => verse(id, [syl(id)])));
+    expect(first.items!.findIndex((i) => i.t === 'verse' && (i as unknown as ChantVerse).id === 'v0')).toBe(1);
+  });
 });
 
 describe('counting syllables', () => {

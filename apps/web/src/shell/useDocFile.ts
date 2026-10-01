@@ -26,6 +26,7 @@ import { openChantDoc } from '@siksamitra/engine';
 import { emptyHistory } from '@siksamitra/edit';
 import { useSession, type Session } from '../editor/useSession.js';
 import { host, windowControls } from './host.js';
+import { useLaunchFiles } from './launch-files.js';
 import { fileAccess } from './file-host.js';
 import { START_DOC, libraryTitle, libraryUrl } from './library.js';
 import {
@@ -367,6 +368,9 @@ export function useDocFile(onNote: (message: string) => void): DocFile {
     })();
     return () => { alive = false; stop?.(); };
   }, []);
+
+  /* A document the desktop app was opened WITH — see `launch-files.ts`. */
+  useLaunchFiles((imported, importedName) => guarded({ k: 'import', doc: imported, name: importedName }), onNote);
 
   return {
     session,

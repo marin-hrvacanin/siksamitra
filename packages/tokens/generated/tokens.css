@@ -2341,7 +2341,7 @@
   --color-hold-long: #538135;
   --color-svara: #943634;
   --color-change: #0070c0;
-  --color-pause-short: #c00000;
+  --color-pause-short: #0070c0;
   --color-pause-long: #c00000;
   --color-vellum: var(--chrome-raise);
   --color-vellum-dim: var(--chrome-bg);
@@ -2400,7 +2400,7 @@
   --color-hold-long: #538135;
   --color-svara: #943634;
   --color-change: #0070c0;
-  --color-pause-short: #c00000;
+  --color-pause-short: #0070c0;
   --color-pause-long: #c00000;
   --color-vellum: var(--chrome-raise);
   --color-vellum-dim: var(--chrome-bg);

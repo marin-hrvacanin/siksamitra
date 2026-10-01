@@ -115,13 +115,26 @@ export function toModel(map: OffsetMap, wordAt: number): number {
  * a Ṛgvedic pāda is most of them.
  */
 export function toWord(map: OffsetMap, modelAt: number): number {
-  let last = 0;
-  for (let i = 0; i < map.model.length; i += 1) {
+  let last = -1;
+  let i = 0;
+  for (; i < map.model.length; i += 1) {
     const at = map.model[i] ?? 0;
     if (at > modelAt) break;
     if (at === modelAt) last = i;
   }
-  return last;
+  if (last >= 0) return last;
+  /*
+   * A LETTER INSIDE A CONJUNCT has no Word offset of its own — `ग्नि` is four
+   * characters for three letters, and none of them is where the `n` begins.
+   * It goes to the END of its cluster, which is how `toModel` reads an offset
+   * inside one. This returned 0: marking the `n` of a conjunct put the caret
+   * back at the start of the line.
+   */
+  if (i >= map.model.length) return map.wordText.length;
+  const end = map.model[i]!;
+  let j = i;
+  while (j + 1 < map.model.length && map.model[j + 1] === end) j += 1;
+  return j;
 }
 
 /**

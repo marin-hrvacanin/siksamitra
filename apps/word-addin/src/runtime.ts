@@ -29,6 +29,7 @@ import { convertDocument } from './word/convert.js';
 import { scriptDocument, scriptName, scriptSelection } from './word/script.js';
 import { DEFAULT_PROFILE_KEY, type ScriptKey } from '@siksamitra/engine';
 import { DIALOG_SIZE, ask, dialog, tell } from './word/dialog.js';
+import { openTab } from './ui/panel/nav.js';
 
 /** Nothing selected: the caret alone, in one line. */
 const isCaret = (here: Located): boolean => here.lines.length === 1 && here.from === here.to;
@@ -38,7 +39,7 @@ const unlessFine = (m: Said): Promise<void> => (m.kind === 'warn' ? tell(m) : Pr
 
 /** The rules over the whole document, each part by its own register — asked first. */
 async function wholeDocument(mode: 'keep-hand' | 'replace-all'): Promise<void> {
-  const sure = await ask('Re-apply the rules to the whole document?', 'Re-apply',
+  const sure = await ask(mode === 'keep-hand' ? 'Auto-mark the whole document?' : 'Auto-mark the whole document afresh?', 'Auto-mark',
     `${mode === 'keep-hand' ? 'What you placed by hand stays.' : 'What you placed by hand is DROPPED.'} `
       + 'Every mantra line is marked by its own part’s rules. Word’s Undo takes it back.');
   if (sure) await tell(await runOverDocument(defaultRules(mode)));
@@ -96,7 +97,7 @@ async function chooseRegister(register: ChantProfileKey): Promise<void> {
   const before = await setRegisterHere(register);
   if (before.register === register) {
     await tell({ text: `${before.inPart ? 'This part is' : 'The lines outside every part are'} marked as ${name} already.`, kind: 'plain',
-      lines: ['Re-apply rules re-marks it, if the text has changed.'] });
+      lines: ['Auto-mark re-marks it, if the text has changed.'] });
     return;
   }
   const rules = { ...defaultRules('keep-hand'), register, was: before.register };
@@ -130,7 +131,7 @@ async function dissolvePart(): Promise<void> {
   }
   const doc = (await registerHere()).register;
   await tell({ text: 'The part is gone; its lines are outside every part again.', kind: 'plain',
-    lines: doc === was.register ? [] : ['They are still marked as the part was. Re-apply rules re-marks them by the register of the lines outside every part.'] });
+    lines: doc === was.register ? [] : ['They are still marked as the part was. Auto-mark re-marks them by the register of the lines outside every part.'] });
 }
 
 async function styles(keep: boolean): Promise<void> {
@@ -165,11 +166,16 @@ function typingHelp(): Promise<void> {
 /** What one command does. Exported for the tests. */
 export async function run(c: Command): Promise<void> {
   const d = c.does;
-  if (d === 'typing-help') return typingHelp();
+  /* The keyboard opens the panel on its Type tab — the palette beside the
+     document rather than a dialog over it; the dialog only where there is no panel. */
+  if (d === 'typing-help') {
+    openTab('type');
+    try { await Office.addin.showAsTaskpane(); return undefined; } catch { return typingHelp(); }
+  }
   if (d === 'import-styles') return styles(false);
   if (d === 'specimen') return styles(true);
   if (d === 'guide') { Office.context.ui.openBrowserWindow(GUIDE_URL); return undefined; }
-  if (d === 'settings') { await Office.addin.showAsTaskpane(); return undefined; }
+  if (d === 'panel') { await Office.addin.showAsTaskpane(); return undefined; }
   if (d === 'part-new') return newPart();
   if (d === 'part-dissolve') return dissolvePart();
   if ('register' in d) return chooseRegister(d.register);
@@ -200,5 +206,5 @@ function register(c: Command): void {
 
 /** Register every command. Called once Office is ready. */
 export function registerAll(): void {
-  for (const c of ALL_COMMANDS) if (c.does !== 'settings') register(c);
+  for (const c of ALL_COMMANDS) if (c.does !== 'panel') register(c);
 }

@@ -13,8 +13,10 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { PAUSE_GLYPH } from './run-marks.js';
 import type { ChantScriptKey, ChantToken } from '@siksamitra/format';
-import { holdJoins, renderSyl, type HoldJoin } from '@siksamitra/render';
+import { holdJoins, type HoldJoin } from './hold-joins.js';
+import { renderSyl } from './marks.js';
 
 export interface TokenContext {
   readonly script: ChantScriptKey;
@@ -68,18 +70,17 @@ export const TOKEN_RENDERERS: { readonly [T in ChantToken['t']]: Renderer<T> } =
   bar: (_t, key) => <span className="bar" key={key}>|</span>,
 
   /**
-   * A PAUSE, drawn as the pipes his own documents carry: `|` short, `||` long.
+   * A PAUSE, drawn as his own documents carry it: ONE bar, its colour its
+   * length — blue short, red long (`.pause--short`, `.pause--long`). The owner,
+   * 2026-10-01: "short is blue line and long is red. Both single."
    *
-   * This drew an empty span too — "a gap whose width comes from a token" — so
-   * all 976 pauses in the corpus rendered as nothing at all. The Word exporter
-   * writes `|` and `||` in the `Pause` character style, the v1 importer counts
-   * those same pipes, and the PDF shows them in red: the glyph IS the mark, and
-   * a gap is not a notation anyone can read.
+   * This drew an empty span once — "a gap whose width comes from a token" — so
+   * all 976 pauses in the corpus rendered as nothing at all; and then `||` for
+   * a long one, which his files write only twelve times against 119 single red
+   * bars. The glyph IS the mark, and a gap is not a notation anyone can read.
    */
   pause: (t, key) => (
-    <span className={`pause pause--${t.len}`} key={key}>
-      {t.len === 'long' ? '||' : '|'}
-    </span>
+    <span className={`pause pause--${t.len}`} key={key}>{PAUSE_GLYPH}</span>
   ),
 
   /**
@@ -137,9 +138,6 @@ export function renderToken(
 ): ReactNode {
   const render = TOKEN_RENDERERS[token.t] as Renderer<ChantToken['t']> | undefined;
   if (render === undefined) {
-    if (import.meta.env.DEV) {
-      console.error(`no renderer for token type "${String(token.t)}"`, token);
-    }
     return (
       <span className="token--unknown" key={key} title={`unrenderable token: ${String(token.t)}`}>
         ⟨?⟩
