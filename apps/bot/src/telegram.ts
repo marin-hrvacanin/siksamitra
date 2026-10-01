@@ -32,6 +32,9 @@ const core = botCore({
 });
 
 bot.on('message:text', async (ctx) => {
+  /* Private chats only: in a group every member would see what one asked
+     for, and the allowed list is of people, not of rooms. */
+  if (ctx.chat.type !== 'private') return;
   const chat = String(ctx.chat.id);
   const who = { id: String(ctx.from.id), ...(ctx.from.username === undefined ? {} : { username: ctx.from.username }) };
   const typing = setInterval(() => { void ctx.replyWithChatAction('typing').catch(() => undefined); }, 4500);

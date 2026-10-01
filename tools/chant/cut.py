@@ -5,7 +5,7 @@ durga-1..8.mp3 (mono/44100/64k) from the full recording."""
 import os, json, wave, subprocess
 import numpy as np
 
-SCRATCH = r"C:\Users\marin\AppData\Local\Temp\claude\D--Projects-vedaunion\e84b47d8-cfb9-41b6-b655-5f9b4fa03ab9\scratchpad"
+SCRATCH = os.environ.get("CHANT_SCRATCH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch"))
 FULL = os.path.join(SCRATCH, "durga-full.mp3")
 WAVPATH = os.path.join(SCRATCH, "dw", "_window16k.wav")
 OUTDIR = r"D:\Projects\vedaunion\app\client\public\tests\durga-suktam\audio"

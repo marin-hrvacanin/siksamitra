@@ -7,7 +7,7 @@ from indic_transliteration import sanscript
 from indic_transliteration.sanscript import transliterate
 
 JSON = r"D:\Projects\vedaunion\app\client\public\chants\durga-suktam.json"
-EXTRACT = r"C:\Users\marin\AppData\Local\Temp\claude\D--Projects-vedaunion\e84b47d8-cfb9-41b6-b655-5f9b4fa03ab9\scratchpad\extract.json"
+EXTRACT = os.environ.get("CHANT_EXTRACT", os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch", "extract.json"))
 
 def _forms(head):
     if head == "oṁ":

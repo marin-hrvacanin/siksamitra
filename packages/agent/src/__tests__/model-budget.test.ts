@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  OverBudget, UnknownPrice, checkBudget, costOf, deepseek, memoryLedger, openAiCompatible, priceOf, toWire, usageOf, type FetchLike,
+  OverBudget, UnknownPrice, checkBudget, costOf, deepseek, memoryLedger, chatCompletions, priceOf, toWire, usageOf, type FetchLike,
 } from '../index.js';
 
 describe('usage, as each provider reports it', () => {
@@ -12,7 +12,7 @@ describe('usage, as each provider reports it', () => {
     expect(usageOf({ prompt_tokens: 1200, completion_tokens: 80, prompt_cache_hit_tokens: 1024, prompt_cache_miss_tokens: 176 }))
       .toEqual({ input: 1200, cached: 1024, output: 80 });
   });
-  it('OpenAI names them prompt_tokens_details.cached_tokens', () => {
+  it('the other common name is prompt_tokens_details.cached_tokens', () => {
     expect(usageOf({ prompt_tokens: 900, completion_tokens: 10, prompt_tokens_details: { cached_tokens: 512 } }))
       .toEqual({ input: 900, cached: 512, output: 10 });
   });
@@ -93,7 +93,7 @@ describe('the wire', () => {
         }),
       };
     };
-    const model = openAiCompatible({ baseUrl: 'https://api.deepseek.com/', apiKey: 'sk-test', model: 'deepseek-chat', fetch, wait: async () => undefined });
+    const model = chatCompletions({ baseUrl: 'https://api.deepseek.com/', apiKey: 'sk-test', model: 'deepseek-chat', fetch, wait: async () => undefined });
     const reply = await model.complete({ messages: [{ role: 'user', content: 'hi' }], tools: [{ name: 'outline', description: 'd', parameters: { type: 'object' } }] });
     expect(sent).toHaveLength(2);
     expect(sent[1]!.url).toBe('https://api.deepseek.com/chat/completions');
@@ -105,7 +105,7 @@ describe('the wire', () => {
 
   it('a refusal that is not worth retrying is said, with the provider’s words', async () => {
     const fetch: FetchLike = async () => ({ ok: false, status: 401, text: async () => '{"error":"invalid key"}' });
-    const model = openAiCompatible({ baseUrl: 'https://x', apiKey: 'k', model: 'm', fetch });
+    const model = chatCompletions({ baseUrl: 'https://x', apiKey: 'k', model: 'm', fetch });
     await expect(model.complete({ messages: [], tools: [] })).rejects.toThrow(/401.*invalid key/);
   });
 });
@@ -114,7 +114,7 @@ describe('a provider that does not answer', () => {
   it('is given up after its time, tried again, and then said — never waited on for ever', async () => {
     let calls = 0;
     const fetch: FetchLike = () => { calls += 1; return new Promise(() => undefined); };
-    const model = openAiCompatible({ baseUrl: 'https://x', apiKey: 'k', model: 'm', fetch, timeoutMs: 20, retries: 1 });
+    const model = chatCompletions({ baseUrl: 'https://x', apiKey: 'k', model: 'm', fetch, timeoutMs: 20, retries: 1 });
     await expect(model.complete({ messages: [], tools: [] })).rejects.toThrow(/did not answer within/);
     expect(calls).toBe(2);
   });

@@ -7,7 +7,7 @@
   Office on Windows (2019 / 2021 / 2024 / LTSC) and Office on mobile entirely,
   and needs Word 2501 on Windows or 16.103 on Mac. Microsoft's own tooling docs
   still label the Word path preview. The XML manifest runs everywhere Word does,
-  including Word 2016, and nothing here needs Teams or Copilot bundling.
+  including Word 2016, and nothing here needs Microsoft 365 app bundling.
 
   THE ELEMENT ORDER IS ENFORCED BY THE SCHEMA. An element out of order is not a
   warning, it is a sideload that silently fails. See

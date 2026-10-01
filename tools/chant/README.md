@@ -335,7 +335,7 @@ PY="D:/Projects/siksamitra/.venv/Scripts/python.exe"
 
 Automatic alignment is only ever a *starting point*; continuous chant with
 holdings needs a human to place the final line boundary. This is a **dev-only,
-local** tool (never shipped) that any developer can run with their Claude:
+local** tool (never shipped) that any developer can run on their own machine:
 
 ```bash
 python align_studio.py --chant ../../client/public/chants/<slug>.json \

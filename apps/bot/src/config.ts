@@ -7,7 +7,7 @@
  */
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { PRICES, deepseek, openAiCompatible, type Limits, type Model, type Price, type Thinking } from '@siksamitra/agent';
+import { PRICES, deepseek, chatCompletions, type Limits, type Model, type Price, type Thinking } from '@siksamitra/agent';
 
 export const ROOT = resolve(import.meta.dirname, '../../..');
 
@@ -42,7 +42,7 @@ export function loadConfig(): BotConfig {
   const thinking = (e.AGENT_THINKING?.trim() || 'high') as Thinking;
   const model = base.includes('deepseek.com')
     ? deepseek({ apiKey: key, model: modelId, thinking, baseUrl: base })
-    : openAiCompatible({ baseUrl: base, apiKey: key, model: modelId });
+    : chatCompletions({ baseUrl: base, apiKey: key, model: modelId });
   const price = PRICES[modelId] ?? {
     input: num(e.AGENT_PRICE_INPUT, NaN), cached: num(e.AGENT_PRICE_CACHED, NaN), output: num(e.AGENT_PRICE_OUTPUT, NaN),
   };

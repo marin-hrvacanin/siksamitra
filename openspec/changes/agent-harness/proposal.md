@@ -28,8 +28,8 @@ Kept here so it is not lost between sessions. Every line is a requirement.
     explicitly asked for; or a web document **for upload to the VedaUnion
     website** — that one named as such ("VedaUnion website upload"), because
     it is used only internally.
-- **A key the person brings.** Paste an API key; provider-agnostic (OpenAI,
-  DeepSeek, others). The first one tested is **DeepSeek v4.1 Flash**
+- **A key the person brings.** Paste an API key; any provider
+  that speaks the chat-completions protocol. The first one tested is **DeepSeek v4.1 Flash**
   (`deepseek-flash`), with a key he provides.
 - **Whose key is whose.** "The key will be only for the telegram bot running
   on my server. For the users of the Word add-in and the desktop app, they will

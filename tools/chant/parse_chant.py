@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """Convert the Durga Suktam importer HTML -> vedaunion.chant v2 JSON (mirrors purusha)."""
+import os
 import json, re, unicodedata
 from html.parser import HTMLParser
 from indic_transliteration import sanscript
 from indic_transliteration.sanscript import transliterate
 
-SCRATCH = r"C:\Users\marin\AppData\Local\Temp\claude\D--Projects-vedaunion\e84b47d8-cfb9-41b6-b655-5f9b4fa03ab9\scratchpad"
+SCRATCH = os.environ.get("CHANT_SCRATCH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch"))
 HTML_IN = SCRATCH + r"\durga.html"
 JSON_OUT = r"D:\Projects\vedaunion\app\client\public\chants\durga-suktam.json"
 

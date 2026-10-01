@@ -1,7 +1,7 @@
 /**
- * THE MODEL, BEHIND ONE INTERFACE — any provider that speaks OpenAI's chat
- * completions, which DeepSeek, OpenAI, OpenRouter, Groq, Mistral and a local
- * Ollama all do.
+ * THE MODEL, BEHIND ONE INTERFACE — any provider that speaks the chat
+ * completions protocol, as DeepSeek and most others do, and a model run
+ * locally can too.
  *
  * WHAT THE HARNESS NEEDS FROM A MODEL is four things: a reply, the tool calls
  * in it, how many tokens it cost, and how many of those were read from the
@@ -82,8 +82,8 @@ export type FetchLike = (url: string, init: {
   signal?: unknown;
 }) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
 
-export interface OpenAiCompatibleOptions {
-  /** e.g. `https://api.deepseek.com` or `https://api.openai.com/v1`. */
+export interface ChatCompletionsOptions {
+  /** e.g. `https://api.deepseek.com`. */
   readonly baseUrl: string;
   readonly apiKey: string;
   readonly model: string;
@@ -112,7 +112,7 @@ export type Thinking = 'off' | 'low' | 'high' | 'max';
  */
 export function deepseek(o: { apiKey: string; model?: string; thinking?: Thinking; fetch?: FetchLike; baseUrl?: string }): Model {
   const thinking = o.thinking ?? 'high';
-  return openAiCompatible({
+  return chatCompletions({
     baseUrl: o.baseUrl ?? 'https://api.deepseek.com',
     apiKey: o.apiKey,
     model: o.model ?? 'deepseek-flash',
@@ -171,7 +171,7 @@ export function usageOf(raw: unknown): Usage {
   const details = (u.prompt_tokens_details ?? {}) as Record<string, unknown>;
   return {
     input: n(u.prompt_tokens),
-    /* DeepSeek's name, then OpenAI's. */
+    /* DeepSeek's name, then the other common one. */
     cached: n(u.prompt_cache_hit_tokens) || n(details.cached_tokens),
     output: n(u.completion_tokens),
   };
@@ -196,7 +196,7 @@ async function withTimeout<T>(ms: number, work: (signal: unknown) => Promise<T>)
   }
 }
 
-export function openAiCompatible(opts: OpenAiCompatibleOptions): Model {
+export function chatCompletions(opts: ChatCompletionsOptions): Model {
   const doFetch = opts.fetch ?? (globalThis as unknown as { fetch: FetchLike }).fetch;
   const wait = opts.wait ?? sleep;
   const url = `${opts.baseUrl.replace(/\/+$/, '')}/chat/completions`;

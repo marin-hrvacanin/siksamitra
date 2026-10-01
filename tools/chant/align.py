@@ -10,7 +10,7 @@ import torch, torchaudio
 from torchaudio.pipelines import MMS_FA
 from align_roman import to_phones
 
-SCRATCH = r"C:\Users\marin\AppData\Local\Temp\claude\D--Projects-vedaunion\e84b47d8-cfb9-41b6-b655-5f9b4fa03ab9\scratchpad"
+SCRATCH = os.environ.get("CHANT_SCRATCH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch"))
 FULL = os.path.join(SCRATCH, "durga-full.mp3")
 EXTRACT = os.path.join(SCRATCH, "extract.json")
 W0, W1 = 3.0, 156.0          # window (s) of full recording to align within

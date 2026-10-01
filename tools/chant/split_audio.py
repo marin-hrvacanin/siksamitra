@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import wave, struct, math, subprocess, os, json
 
-SCRATCH = r"C:\Users\marin\AppData\Local\Temp\claude\D--Projects-vedaunion\e84b47d8-cfb9-41b6-b655-5f9b4fa03ab9\scratchpad"
+SCRATCH = os.environ.get("CHANT_SCRATCH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch"))
 FULL = SCRATCH + r"\durga-full.mp3"
 WIN = SCRATCH + r"\dw\win.wav"
 OUTDIR = r"D:\Projects\vedaunion\app\client\public\tests\durga-suktam\audio"

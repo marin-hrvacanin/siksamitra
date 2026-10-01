@@ -183,7 +183,7 @@ Given an IAST PDF of a chant:
 
 7. **Verify build**: `cd app && npm run typecheck`.
 
-8. **Ship**: commit in the **owner's name** (no Claude/Anthropic attribution), push to **dev AND
+8. **Ship**: commit in the **owner's name**, and in no one else's, push to **dev AND
    main** (`git push origin dev && git push origin dev:main`). On the deploy boot, `seedDocuments()`
    creates the row and `reconcileDocuments()` wires the cover. Give it a few minutes, hard-refresh.
 

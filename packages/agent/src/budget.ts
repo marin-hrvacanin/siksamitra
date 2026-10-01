@@ -34,8 +34,6 @@ export const PRICES: Readonly<Record<string, Price>> = {
   'deepseek-v4-pro': { input: 1.32, cached: 0.044, output: 3.96 },
   'deepseek-chat': { input: 0.28, cached: 0.028, output: 0.42 },
   'deepseek-reasoner': { input: 0.28, cached: 0.028, output: 0.42 },
-  'gpt-4.1-mini': { input: 0.4, cached: 0.1, output: 1.6 },
-  'gpt-4.1': { input: 2, cached: 0.5, output: 8 },
 };
 
 export class UnknownPrice extends Error {

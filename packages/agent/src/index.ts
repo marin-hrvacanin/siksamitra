@@ -10,9 +10,9 @@
  * No DOM, no Office, no Node built-ins: a browser and a server run it alike.
  * See `openspec/changes/agent-harness/`.
  */
-export { deepseek, openAiCompatible, toWire, usageOf, ModelError } from './model.js';
+export { deepseek, chatCompletions, toWire, usageOf, ModelError } from './model.js';
 export type {
-  CompleteRequest, FetchLike, JsonSchema, Message, Model, OpenAiCompatibleOptions, Reply, Thinking, ToolCall, ToolSpec, Usage,
+  CompleteRequest, FetchLike, JsonSchema, Message, Model, ChatCompletionsOptions, Reply, Thinking, ToolCall, ToolSpec, Usage,
 } from './model.js';
 export { PRICES, OverBudget, UnknownPrice, checkBudget, costOf, memoryLedger, priceOf } from './budget.js';
 export type { Ledger, LedgerEntry, Limits, Price } from './budget.js';
