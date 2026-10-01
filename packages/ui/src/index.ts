@@ -18,3 +18,11 @@ export type { IastGroup, IastKey } from './iast.js';
 export { IastKeys } from './IastKeys.js';
 export { MARK_KEYS, officeChord } from './keys.js';
 export type { Chord, MarkKey } from './keys.js';
+
+/* The agent's panel — the same in the Word add-in and in the app. */
+export { AgentPanel } from './agent/AgentPanel.js';
+export type { AgentPanelProps } from './agent/AgentPanel.js';
+export { DEFAULT_SETTINGS, localSettings, modelOf, priceOf } from './agent/settings.js';
+export type { AgentSettings, SettingsStore } from './agent/settings.js';
+export { failureText, useAgent } from './agent/useAgent.js';
+export type { ChatLine } from './agent/useAgent.js';

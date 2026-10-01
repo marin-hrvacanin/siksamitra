@@ -157,6 +157,25 @@ const MIME: Readonly<Record<DeliveryFormat, string>> = {
 export const CHECK_TOOLS: readonly Tool[] = [
   {
     writes: false,
+    needs: 'choose',
+    spec: {
+      name: 'offer_choices',
+      description: 'Ask the person to decide between a few options — which recension, which of the texts found, which '
+        + 'format — shown to them as buttons. Then end your turn with one short line; their choice is their next message.',
+      parameters: params({
+        question: str('The question, short.'),
+        options: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 8, description: 'Each a few words.' },
+      }, ['question', 'options']),
+    },
+    async run(args, { host }) {
+      const options = arg<unknown[]>(args, 'options', 'array').map(String).map((o) => o.trim()).filter((o) => o !== '');
+      if (options.length < 2) throw new Error('give at least two options');
+      host.choose!(arg<string>(args, 'question', 'string'), options.slice(0, 8));
+      return 'shown as buttons — end your turn now with one short line; the choice comes as the person\'s next message';
+    },
+  },
+  {
+    writes: false,
     spec: {
       name: 'check',
       description: 'Check the open document: its letters against the witnesses it was built from, its marks against the rules, and a Vedic text for its accents.',
@@ -185,13 +204,13 @@ export const CHECK_TOOLS: readonly Tool[] = [
   },
   {
     writes: false,
-    needs: 'exporters',
     spec: {
       name: 'deliver',
-      description: 'Make the file and hand it to the person. pdf unless they asked for another: docx (Word), smdoc (śikṣāmitra), '
-        + 'or vedaunion — ONLY when they ask for the VedaUnion website upload. Refused while check finds an error.',
+      description: 'Hand the document to the person. here: into the document they are working in (Word: at the caret). '
+        + 'Otherwise a file: pdf unless they asked for another — docx (Word), smdoc (śikṣāmitra), or vedaunion ONLY when '
+        + 'they ask for the VedaUnion website upload. Refused while check finds an error.',
       parameters: params({
-        format: { type: 'string', enum: ['pdf', 'docx', 'smdoc', 'vedaunion'] },
+        format: { type: 'string', enum: ['here', 'pdf', 'docx', 'smdoc', 'vedaunion'] },
         name: str('The file name without extension; the title when left out.'),
       }),
     },
@@ -199,7 +218,12 @@ export const CHECK_TOOLS: readonly Tool[] = [
       const doc = ws.need();
       const errors = checkDocument(ws).filter((f) => f.severity === 'error');
       if (errors.length > 0) return `not delivered — the check finds:\n${said(ws, doc, errors)}`;
-      const format = (opt<string>(args, 'format', 'string') ?? 'pdf') as DeliveryFormat;
+      const asked = opt<string>(args, 'format', 'string') ?? (host.place !== undefined && host.exporters?.pdf === undefined ? 'here' : 'pdf');
+      if (asked === 'here') {
+        if (host.place === undefined) return 'this host has no open document to put it in — deliver a file';
+        return host.place(doc);
+      }
+      const format = asked as DeliveryFormat;
       const make = host.exporters?.[format];
       if (make === undefined) return `this host cannot make a ${format}`;
       const stem = (opt<string>(args, 'name', 'string') ?? doc.title).replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'document';

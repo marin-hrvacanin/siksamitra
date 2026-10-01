@@ -110,3 +110,21 @@ describe('the log', () => {
     expect(said).not.toMatch(/Puruṣa|Here it is|chat-777|42/);
   });
 });
+
+describe('choices', () => {
+  it('the agent’s choices come back with the answer, to be shown as buttons', async () => {
+    const model = scripted([
+      { calls: [{ name: 'offer_choices', args: { question: 'Which recension?', options: ['Taittirīya', 'Ṛgveda', 'Śukla Yajurveda'] } }] },
+      { say: 'Which recension would you like?' },
+    ]);
+    const core = botCore({
+      model, price: PRICE, limits: {}, ledger: memoryLedger(), sessions: memorySessions(), allowed: new Set(['42']),
+      host: (deliver) => ({ ...testHost(), deliver }),
+    });
+    const r = await core.handle('c1', { id: '42' }, 'the Puruṣa Sūktam');
+    expect(r.text).toBe('Which recension would you like?');
+    expect(r.choices).toEqual({ question: 'Which recension?', options: ['Taittirīya', 'Ṛgveda', 'Śukla Yajurveda'] });
+    /* The tool was offered because the bot can show buttons. */
+    expect(model.requests[0]!.tools).toContain('offer_choices');
+  });
+});

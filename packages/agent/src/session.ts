@@ -22,8 +22,9 @@ import type { Ledger, Limits, Price } from './budget.js';
 import { runTurn, type AgentEvent, type TurnResult } from './loop.js';
 import type { Message, Model } from './model.js';
 import { systemFor, toolsFor, type Mode } from './modes.js';
-import type { Host, ToolContext } from './tools/types.js';
+import type { Host, Tool, ToolContext } from './tools/types.js';
 import { Workspace, type BuiltFrom, type Origin, type Witness } from './workspace.js';
+import { blocksOf } from './tools/sources.js';
 
 export interface SessionOptions {
   readonly id: string;
@@ -37,6 +38,8 @@ export interface SessionOptions {
   readonly maxSteps?: number;
   /** Characters of conversation kept before older tool answers are compacted. */
   readonly keep?: number;
+  /** Tools of this host's own, after the harness's — the Word panel's, which act on Word. */
+  readonly tools?: readonly Tool[];
   readonly onEvent?: (e: AgentEvent) => void;
 }
 
@@ -85,19 +88,34 @@ export class Session {
     this.messages = compact(this.messages, o.keep ?? 160_000);
     const ctx: ToolContext = { ws: this.ws, host: o.host, review: (task) => this.review(task) };
     return runTurn({
-      model: o.model, price: o.price, tools: toolsFor(o.mode, o.host), system: systemFor(o.mode),
+      model: o.model, price: o.price, tools: [...toolsFor(o.mode, o.host), ...(o.tools ?? [])], system: systemFor(o.mode, o.host),
       messages: this.messages, ctx, ledger: o.ledger, limits: o.limits, session: o.id,
       ...(o.user === undefined ? {} : { user: o.user }),
       ...(o.maxSteps === undefined ? {} : { maxSteps: o.maxSteps }),
       ...(o.onEvent === undefined ? {} : { onEvent: o.onEvent }),
-    }, text);
+    }, this.withPasted(text));
+  }
+
+  /**
+   * A TEXT THE PERSON SENT IS A WITNESS. Pasted lines of Devanāgarī or IAST
+   * are kept as one, and the model is told its id, so a document is built
+   * from the person's own letters by line number — never retyped by the model
+   * out of the message, which is where a letter would go missing.
+   */
+  private withPasted(text: string): string {
+    const lines = text.split(/\r?\n/);
+    const blocks = blocksOf(lines, 2);
+    if (blocks.length === 0) return text;
+    const w = this.ws.keep('the person’s message', 'pasted text', lines);
+    const where = blocks.map((b) => `lines ${b.from}-${b.to} (${b.script})`).join(', ');
+    return `${text}\n\n[kept as witness ${w.id}: ${where} — build from it by line number]`;
   }
 
   private async review(task: string): Promise<string> {
     const o = this.opts;
     const ctx: ToolContext = { ws: this.ws, host: o.host, review: async () => 'a reviewer does not ask for a review' };
     const done = await runTurn({
-      model: o.model, price: o.price, tools: toolsFor('review', o.host), system: systemFor('review'),
+      model: o.model, price: o.price, tools: toolsFor('review', o.host), system: systemFor('review', o.host),
       messages: [], ctx, ledger: o.ledger, limits: o.limits, session: o.id, maxSteps: 14,
       ...(o.user === undefined ? {} : { user: o.user }),
     }, task);

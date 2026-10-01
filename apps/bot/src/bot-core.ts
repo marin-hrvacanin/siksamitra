@@ -30,7 +30,7 @@ export interface BotDeps {
   readonly limits: Limits;
   readonly ledger: Ledger;
   readonly sessions: SessionStore;
-  /** The host for a chat; `deliver` is the bot's, so files come back with the answer. */
+  /** The host for a chat; `deliver` and `choose` are the bot's, so files and buttons come back with the answer. */
   readonly host: (deliver: (f: Delivered) => Promise<void>) => Host;
   /** Who may use it: `@username` (any case) or a numeric Telegram id. */
   readonly allowed: ReadonlySet<string>;
@@ -57,6 +57,8 @@ export interface TurnLog {
 export interface BotReply {
   readonly text: string;
   readonly files: readonly Delivered[];
+  /** Buttons to show under the answer; the one tapped is the next message. */
+  readonly choices?: { readonly question: string; readonly options: readonly string[] };
 }
 
 const HELP = 'Send me what you need, in your own words — for example: '
@@ -118,9 +120,10 @@ export function botCore(deps: BotDeps) {
       }
       return serially(chat, async () => {
         const files: Delivered[] = [];
+        let choices: BotReply['choices'];
         const session = new Session({
           id: chat, user, mode: 'deliver', model: deps.model, price: deps.price, limits: deps.limits, ledger: deps.ledger,
-          host: deps.host(async (f) => { files.push(f); }),
+          host: { ...deps.host(async (f) => { files.push(f); }), choose: (question, options) => { choices = { question, options }; } },
           ...(deps.progress === undefined ? {} : { onEvent: (e) => { if (e.kind === 'tool') deps.progress!(chat, e.name); } }),
         }, deps.sessions.load(chat));
         const started = Date.now();
@@ -130,7 +133,7 @@ export function botCore(deps: BotDeps) {
         try {
           const done = await session.ask(said);
           note('answered', done.steps, done.cost);
-          return { text: done.text || 'Done.', files };
+          return { text: done.text || 'Done.', files, ...(choices === undefined ? {} : { choices }) };
         } catch (e) {
           note(e instanceof OverBudget ? 'over-budget' : 'failed');
           if (e instanceof OverBudget) {

@@ -23,6 +23,9 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { workspaceAliases } from '../../tools/workspace-alias.mjs';
+/* The verified documents, for the agent's library — the app's own plugin, the
+   documents only. */
+import { corpus } from '../web/vite-corpus.js';
 // @ts-expect-error -- plain JS, and the one place these values live.
 import { addinDefines } from '../../scripts/word-addin.mjs';
 
@@ -61,6 +64,7 @@ export default defineConfig({
    */
   define: addinDefines(readFileSync, join(here, 'package.json')) as Record<string, string>,
   publicDir: join(here, 'assets'),
+  plugins: [corpus(['chants'])],
   /*
    * The workspace packages resolve to SOURCE, as they do for `apps/web` and
    * for the tests. A build against `dist` would need every package built first

@@ -6,6 +6,7 @@
  * the add-in's package, so it arrives in the clean styles and — in one of
  * his documents — in his look (`packageOf`).
  */
+import type { ChantDoc } from '@siksamitra/format';
 import { documentBody } from '../model/document-body.js';
 import { styleSheetFor } from '../model/sheet.js';
 import { learn, packageOf } from './client.js';
@@ -22,6 +23,11 @@ export async function insertDocument(bytes: Uint8Array, name: string): Promise<I
      carry the compression code. */
   const { openDocumentFile } = await import('@siksamitra/interop');
   const { doc, note } = await openDocumentFile(bytes, name);
+  return { ...(await insertChantDoc(doc)), note };
+}
+
+/** A document already open — the agent's — at the caret, by the same writer. */
+export async function insertChantDoc(doc: ChantDoc): Promise<Inserted> {
   const { body, verses, pictures } = documentBody(doc);
   await Word.run(async (context) => {
     /* His look first, as every write does: the target's own styles. */
@@ -41,5 +47,5 @@ export async function insertDocument(bytes: Uint8Array, name: string): Promise<I
     room.getRange(Word.RangeLocation.whole).insertOoxml(packageOf(body, styleSheetFor(body)), Word.InsertLocation.replace);
     await context.sync();
   });
-  return { title: doc.title, verses, pictures, note };
+  return { title: doc.title, verses, pictures, note: null };
 }

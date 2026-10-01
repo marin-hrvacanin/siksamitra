@@ -12,6 +12,7 @@ services:
     pull_policy: never          # local image; keeps update-apps from trying a registry
     container_name: siksamitra-bot
     restart: unless-stopped
+    stop_grace_period: 5m       # an update lets a request in flight finish and answer first
     env_file: [.env]            # DEEPSEEK_API_KEY, TELEGRAM_BOT_TOKEN, BOT_ALLOWED_USERS, BOT_OWNERS, limits
     volumes:
       - ./data:/data            # the spending ledger and each chat's session

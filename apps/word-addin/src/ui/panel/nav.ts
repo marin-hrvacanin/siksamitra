@@ -7,7 +7,7 @@
  */
 import { useSyncExternalStore } from 'react';
 
-export type Tab = 'mark' | 'rules' | 'script' | 'type' | 'document';
+export type Tab = 'mark' | 'rules' | 'script' | 'type' | 'document' | 'ask';
 
 export const TABS: readonly { id: Tab; label: string; icon: string }[] = [
   { id: 'mark', label: 'Mark', icon: 'hold-short' },
@@ -15,6 +15,7 @@ export const TABS: readonly { id: Tab; label: string; icon: string }[] = [
   { id: 'script', label: 'Script', icon: 'script' },
   { id: 'type', label: 'Type', icon: 'keyboard' },
   { id: 'document', label: 'Document', icon: 'document' },
+  { id: 'ask', label: 'Ask', icon: 'conversation' },
 ];
 
 let tab: Tab = 'mark';

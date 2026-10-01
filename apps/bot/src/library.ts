@@ -13,14 +13,7 @@ import type { ChantDoc } from '@siksamitra/format';
 import { readChantFile } from '@siksamitra/format';
 import { openChantDoc } from '@siksamitra/engine';
 import { openDocumentFile } from '@siksamitra/interop';
-import type { Library, LibraryEntry } from '@siksamitra/agent';
-
-/** A title as a search key: no diacritics, the common romanisations folded. */
-export const fold = (s: string): string => s
-  .normalize('NFD').replace(/\p{M}/gu, '')
-  .toLowerCase()
-  .replace(/sh/g, 's').replace(/aa/g, 'a').replace(/ee/g, 'i').replace(/oo/g, 'u')
-  .replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+import { findIn, type Library, type LibraryEntry } from '@siksamitra/agent';
 
 interface Entry extends LibraryEntry { readonly path: string }
 
@@ -47,13 +40,9 @@ export function diskLibrary(root: string): Library {
   }
   return {
     async find(query) {
-      const words = fold(query).split(' ').filter((w) => w.length > 2);
-      const scored = entries.map((e) => {
-        const t = fold(`${e.title} ${e.id}`);
-        return { e, score: words.filter((w) => t.includes(w)).length };
-      }).filter((x) => x.score > 0);
-      scored.sort((a, b) => b.score - a.score || (a.e.kind === 'verified' ? -1 : 1));
-      return scored.map(({ e }) => ({ id: e.id, title: e.title, kind: e.kind, ...(e.source === undefined ? {} : { source: e.source }), ...(e.note === undefined ? {} : { note: e.note }) }));
+      return findIn(entries, query).map(({ id, title, kind, source, note }) => ({
+        id, title, kind, ...(source === undefined ? {} : { source }), ...(note === undefined ? {} : { note }),
+      }));
     },
     async load(id): Promise<{ doc: ChantDoc; kind: LibraryEntry['kind'] }> {
       const e = entries.find((x) => x.id === id);

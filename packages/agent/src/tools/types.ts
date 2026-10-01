@@ -55,8 +55,18 @@ export interface Host {
   readonly library?: Library;
   readonly research?: Research;
   readonly exporters?: Exporters;
-  /** Hand a file to the person — a chat message, a download, a new Word document. */
+  /** Hand a file to the person — a chat message, a download. */
   readonly deliver?: (file: Delivered) => Promise<void>;
+  /**
+   * Put the document where the person is working — in Word, at the caret;
+   * in the app, open. Answers what was done, in a few words.
+   */
+  readonly place?: (doc: ChantDoc) => Promise<string>;
+  /**
+   * Show the person a few choices — buttons in Telegram and in the panel. The
+   * one they pick comes back as their next message.
+   */
+  readonly choose?: (question: string, options: readonly string[]) => void;
 }
 
 export interface ToolContext {

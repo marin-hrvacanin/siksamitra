@@ -13,7 +13,8 @@
     "./controls.css": "./src/controls.css",
     "./ribbon.css": "./src/ribbon.css",
     "./popover.css": "./src/popover.css",
-    "./tooltip.css": "./src/tooltip.css"
+    "./tooltip.css": "./src/tooltip.css",
+    "./agent.css": "./src/agent.css"
   },
   "files": [
     "dist",
@@ -31,5 +32,9 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@siksamitra/agent": "2.0.0-alpha.0",
+    "@siksamitra/format": "2.0.0-alpha.0"
   }
 }

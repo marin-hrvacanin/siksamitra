@@ -111,6 +111,8 @@ export const SYMBOL = {
   'panel-close': 'left_panel_close',
   /* The Word add-in's own panel, which Word opens on the RIGHT. */
   'panel-side': 'right_panel_open',
+  /* Śrutidhara, the assistant: a conversation. */
+  conversation: 'forum',
   outline: 'segment',
   tree: 'account_tree',
   numbered: 'format_list_numbered',

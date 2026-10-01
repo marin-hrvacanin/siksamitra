@@ -13,6 +13,7 @@ import '@siksamitra/tokens/tokens.css';
 import '@siksamitra/ui/controls.css';
 import '@siksamitra/ui/popover.css';
 import '@siksamitra/ui/ribbon.css';
+import '@siksamitra/ui/agent.css';
 import '@siksamitra/render/chant.css';
 import '@siksamitra/render/mark-geometry.css';
 import './ui/fonts.generated.css';

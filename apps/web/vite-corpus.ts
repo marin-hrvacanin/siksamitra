@@ -124,6 +124,33 @@ function sendRanged(
   res.end(body.subarray(start, end + 1));
 }
 
+/**
+ * WHAT THE LIBRARY HOLDS — `chants/index.json`, made from the corpus itself.
+ *
+ * The agent's library (in the app and in the Word panel) needs to know what
+ * there is before it fetches any one document; a list typed beside the corpus
+ * would fall behind it. So the index is read off the files: each one's id, its
+ * title, its register, and how many verses it has.
+ */
+export function chantIndex(dir = TREES[0].from): { id: string; title: string; kind: 'verified'; source?: string; note: string }[] {
+  return readdirSync(dir).filter((f) => /^[a-z0-9-]+\.json$/i.test(f)).sort().map((f) => {
+    const doc = JSON.parse(readFileSync(join(dir, f), 'utf8')) as {
+      title?: string; profile?: { preset?: string };
+      sections?: { items?: { t: string }[]; verses?: unknown[] }[];
+    };
+    const verses = (doc.sections ?? []).reduce((n, s) => n + (s.items !== undefined
+      ? s.items.filter((i) => i.t === 'verse').length
+      : (s.verses ?? []).length), 0);
+    return {
+      id: f.replace(/\.json$/, ''),
+      title: doc.title ?? f,
+      kind: 'verified' as const,
+      ...(doc.profile?.preset === undefined ? {} : { source: doc.profile.preset }),
+      note: `${verses} verses`,
+    };
+  });
+}
+
 /** `<chant>/audio/<file>` under a root, as the paths a document names. */
 function nestedNames(root: string): string[] {
   const out: string[] = [];
@@ -136,14 +163,25 @@ function nestedNames(root: string): string[] {
   return out;
 }
 
-export function corpus(): Plugin {
+/**
+ * The plugin. `only` names the trees a build takes — the Word panel takes the
+ * documents and not the 9 MB of fonts, which Word has of its own.
+ */
+export function corpus(only?: readonly string[]): Plugin {
+  const trees = TREES.filter((t) => only === undefined || only.includes(t.prefix.slice(1, -1)));
   return {
     name: 'siksamitra-corpus',
 
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url ?? '';
-        const tree = TREES.find((t) => url.startsWith(t.prefix));
+        if (url.split('?')[0] === '/chants/index.json' && trees.includes(TREES[0])) {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-store');
+          res.end(JSON.stringify(chantIndex()));
+          return undefined;
+        }
+        const tree = trees.find((t) => url.startsWith(t.prefix));
         if (tree === undefined) return next();
         /*
          * Only what the tree's own pattern allows, and no traversal out of the
@@ -169,7 +207,10 @@ export function corpus(): Plugin {
     },
 
     generateBundle() {
-      for (const tree of TREES) {
+      if (trees.includes(TREES[0])) {
+        this.emitFile({ type: 'asset', fileName: 'chants/index.json', source: JSON.stringify(chantIndex()) });
+      }
+      for (const tree of trees) {
         const dir = tree.prefix.slice(1, -1);
         /*
          * THE RECITATIONS ARE NOT IN THE BUNDLE BY DEFAULT.
@@ -181,10 +222,10 @@ export function corpus(): Plugin {
          * server for them and a deployment decides what answers. Either way
          * the path in the document never changes.
          */
-        if (tree.nested === true && process.env['SM_BUNDLE_MEDIA'] !== '1') continue;
+        if ('nested' in tree && tree.nested && process.env['SM_BUNDLE_MEDIA'] !== '1') continue;
         let names: string[] = [];
         try {
-          names = tree.nested === true ? nestedNames(tree.from) : readdirSync(tree.from);
+          names = 'nested' in tree && tree.nested ? nestedNames(tree.from) : readdirSync(tree.from);
         } catch {
           /* A tree that is not on this machine emits nothing rather than
              failing the build — see `SM_MEDIA_DIR`. */

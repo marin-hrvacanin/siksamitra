@@ -1,0 +1,49 @@
+/*
+ * The agent's panel — the same in the Word add-in and in the app. Every value
+ * is a token: the chrome's colours, spacing and type.
+ */
+.agent { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; }
+.agent-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.agent-row { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.agent-quiet { margin: 0; color: var(--chrome-ink-soft); font-size: var(--text-ui-sm); }
+.agent-log {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  min-height: 0; overflow-y: auto; padding: var(--space-1) 0;
+}
+.agent-line {
+  margin: 0; padding: var(--space-2) var(--space-3);
+  border-radius: var(--chrome-radius);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+  color: var(--chrome-ink);
+}
+.agent-line[data-who="person"] { align-self: flex-end; max-width: 90%; background: var(--chrome-sunk); }
+.agent-line[data-who="agent"] { align-self: flex-start; max-width: 100%; background: var(--chrome-raise); border: var(--border-hair) solid var(--chrome-line); }
+.agent-line[data-who="note"] { align-self: stretch; color: var(--chrome-ink-soft); font-size: var(--text-ui-sm); padding: 0 var(--space-1); }
+.agent-busy { font-style: italic; }
+.agent-md pre, .agent-md code { font-family: var(--font-mono); font-size: var(--text-ui-sm); }
+.agent-md pre { white-space: pre-wrap; margin: var(--space-1) 0; }
+.agent-md blockquote { margin: 0; padding-left: var(--space-2); border-left: var(--border-thick) solid var(--chrome-line); }
+.agent-md a { color: var(--chrome-accent); }
+.agent-choices { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.agent-ask { display: flex; flex-direction: column; gap: var(--space-1); }
+.agent-ask textarea, .agent-field input, .agent-field select {
+  font: inherit; color: var(--chrome-ink); background: var(--chrome-raise);
+  border: var(--border-hair) solid var(--chrome-line); border-radius: var(--chrome-radius);
+  padding: var(--space-1) var(--space-2); min-width: 0; width: 100%; box-sizing: border-box;
+}
+.agent-ask textarea { resize: vertical; }
+.agent-setup { display: flex; flex-direction: column; gap: var(--space-2); }
+.agent-field { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-ui-sm); color: var(--chrome-ink-soft); }
+.agent-btn {
+  font: inherit; min-height: var(--control-h); padding: var(--space-1) var(--space-3);
+  border: var(--border-hair) solid var(--chrome-line); border-radius: var(--chrome-radius);
+  background: var(--chrome-raise); color: var(--chrome-ink); cursor: pointer;
+}
+.agent-btn:hover:not(:disabled) { background: var(--chrome-sunk); }
+.agent-btn:disabled { color: var(--chrome-ink-mute); cursor: default; }
+.agent-btn--main { background: var(--chrome-accent); border-color: var(--chrome-accent); color: var(--chrome-accent-on); }
+.agent-btn--main:hover:not(:disabled) { background: var(--chrome-accent-hover); }
+.agent-btn--small { min-height: 0; padding: var(--space-1) var(--space-2); font-size: var(--text-ui-sm); }
+@media (forced-colors: active) {
+  .agent-line, .agent-btn, .agent-ask textarea, .agent-field input { border-color: CanvasText; }
+}

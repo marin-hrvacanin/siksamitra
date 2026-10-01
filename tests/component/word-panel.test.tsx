@@ -55,9 +55,9 @@ const tab = async (label: string): Promise<void> => {
 const press = async (b: HTMLButtonElement): Promise<void> => { await act(async () => { b.click(); }); await settle(); };
 
 describe('the tabs', () => {
-  it('are Mark, Rules, Script, Type and Document, and each draws its own', async () => {
+  it('are Mark, Rules, Script, Type, Document and Ask, and each draws its own', async () => {
     await draw();
-    expect([...el.querySelectorAll('.pnl-tab')].map((t) => t.textContent)).toEqual(['Mark', 'Rules', 'Script', 'Type', 'Document']);
+    expect([...el.querySelectorAll('.pnl-tab')].map((t) => t.textContent)).toEqual(['Mark', 'Rules', 'Script', 'Type', 'Document', 'Ask']);
     await tab('Rules');
     expect(el.textContent).toContain('What Auto-mark marks');
     await tab('Script');

@@ -22,13 +22,15 @@ export { Workspace, marksSummary, outlineOf, verseLetters, versesOf } from './wo
 export type { BuiltFrom, Origin, Witness } from './workspace.js';
 export { runTurn, capped, withoutPaths } from './loop.js';
 export type { AgentEvent, TurnOptions, TurnResult } from './loop.js';
-export { systemFor, toolsFor } from './modes.js';
+export { TOOL_LABELS, systemFor, toolsFor } from './modes.js';
 export type { Mode } from './modes.js';
 export { Session, compact } from './session.js';
 export type { SessionOptions, SessionState } from './session.js';
 export { checkDocument } from './tools/check.js';
 export type { Finding } from './tools/check.js';
 export { blocksOf } from './tools/sources.js';
+export { findIn, fold } from './library.js';
+export { panelHtml, plainOf, telegramHtml, telegramPieces } from './markdown.js';
 export { lineRange } from './tools/document.js';
 export type {
   Delivered, DeliveryFormat, Exporters, Host, Library, LibraryEntry, Research, SearchHit, Tool, ToolContext,

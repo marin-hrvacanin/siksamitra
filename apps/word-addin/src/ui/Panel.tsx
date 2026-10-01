@@ -26,6 +26,7 @@ import { RulesTab, sourcesName } from './panel/RulesTab.js';
 import { ScriptTab } from './panel/ScriptTab.js';
 import { TypeTab } from './panel/TypeTab.js';
 import { DocumentTab } from './panel/DocumentTab.js';
+import { AgentTab } from './panel/AgentTab.js';
 import { useMode } from './useMode.js';
 
 /** How long a plain note stays before it goes by itself. A warning and a question stay. */
@@ -89,6 +90,7 @@ export function Panel(): ReactNode {
         {tab === 'script' && <ScriptTab here={here} busy={busy} press={press} />}
         {tab === 'type' && <TypeTab here={here} />}
         {tab === 'document' && <DocumentTab busy={busy} press={press} />}
+        {tab === 'ask' && <AgentTab />}
       </main>
     </div>
   );
