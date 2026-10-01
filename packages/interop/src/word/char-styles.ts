@@ -165,7 +165,10 @@ export function charStyles(
     ink('Virama', mode.svara, { sz: svaraSz, face: WORD_MARKS.virama.face }),
     ink('Anusvara', mode.change, { italic: true }),
     ink('VedicAnusvara', mode.change, { italic: true, face: WORD_MARKS.vedicChange.face }),
-    ink('Pause', mode.pauseShort, { italic: true }),
+    /* `Pause` is the LONG pause and the bar (`body.ts`); the short one is
+       written in the change style. Defined with the short pause's colour, every
+       long pause in an exported file came out blue where his are red. */
+    ink('Pause', mode.pauseLong, { italic: true }),
     /* His `Comment` is a character style with a face of its own — the source
        line under a heading is set in it, inside an ordinary paragraph. */
     `<w:style w:type="character" w:customStyle="1" w:styleId="Comment">`

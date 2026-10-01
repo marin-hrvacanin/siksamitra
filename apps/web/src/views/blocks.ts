@@ -18,7 +18,7 @@ import type {
 
 export interface BlockRef {
   readonly id: string;
-  readonly kind: 'heading' | 'verse' | 'part' | 'instruction' | 'figure';
+  readonly kind: 'name' | 'heading' | 'verse' | 'part' | 'instruction' | 'figure';
   readonly sectionId: string;
   readonly verseId?: string;
 }
@@ -30,6 +30,8 @@ export interface BlockRef {
  * `PagedView`), so the prefixes are part of the contract and not decoration.
  */
 export const blockId = {
+  /** The document's own name, once, at the top. */
+  name: (): string => 'n:doc',
   part: (sectionId: string): string => `p:${sectionId}`,
   heading: (sectionId: string): string => `h:${sectionId}`,
   instruction: (sectionId: string, at: number): string => `i:${sectionId}:${at}`,
@@ -42,7 +44,8 @@ export const blockId = {
 } as const;
 
 /** Prefixes of blocks that must not be left alone at the foot of a page. */
-export const KEEP_WITH_NEXT = ['p:', 'h:', 'i:'];
+/* A heading and the source line under it stay with what follows them. */
+export const KEEP_WITH_NEXT = ['n:', 'p:', 'h:', 'i:', 'c:'];
 
 /** The section's contents, in canonical order, whichever field holds them. */
 export function itemsOf(section: ChantSection): readonly ChantItem[] {
@@ -82,10 +85,19 @@ export function sourceOf(section: ChantSection): string | undefined {
   return section.source == null || section.source === '' ? undefined : section.source;
 }
 
-/** The block list, in document order. Shared by the views and the exporter. */
+/**
+ * The block list, in document order. Shared by the views and the exporter.
+ *
+ * AS HIS FILES ARE LAID OUT — and as the Word export writes them: the
+ * document's own name first (his Heading 2), then each section's heading with
+ * its source line UNDER IT, then the verses. The page drew no name at all and
+ * put a section's source after its last verse, so a PDF and the Word file of
+ * one document differed at the top of every section.
+ */
 export function blockRefs(doc: ChantDoc): BlockRef[] {
   const out: BlockRef[] = [];
   let part: string | undefined;
+  if (doc.title.trim() !== '') out.push({ id: blockId.name(), kind: 'name', sectionId: doc.sections[0]?.id ?? '' });
   for (const section of doc.sections) {
     /* A section with no part ends the run — see `outlineOf`, which draws the
        same tree and must agree with this list. */
@@ -96,6 +108,9 @@ export function blockRefs(doc: ChantDoc): BlockRef[] {
     }
     if (headingOf(section) !== undefined) {
       out.push({ id: blockId.heading(section.id), kind: 'heading', sectionId: section.id });
+    }
+    if (sourceOf(section) !== undefined) {
+      out.push({ id: blockId.source(section.id), kind: 'instruction', sectionId: section.id });
     }
     itemsOf(section).forEach((item, at) => {
       if (item.t === 'verse') {
@@ -119,13 +134,6 @@ export function blockRefs(doc: ChantDoc): BlockRef[] {
         });
       }
     });
-    if (sourceOf(section) !== undefined) {
-      out.push({
-        id: blockId.source(section.id),
-        kind: 'instruction',
-        sectionId: section.id,
-      });
-    }
   }
   return out;
 }

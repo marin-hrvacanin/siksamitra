@@ -28,9 +28,12 @@ export const MARKS = [
 export function bodyShape(doc) {
   const out = { letters: [], lines: 0, pauses: 0, bars: 0, dandas: [] };
   const counts = Object.fromEntries(MARKS.map((m) => [m, 0]));
-  for (const s of doc.sections) {
-    for (const v of s.verses) {
-      for (const t of v.tokens) {
+  /* A slot's wording is IN the body — the Word writer puts its default words
+     where the slot is, as his documents show them — so its letters and marks
+     are counted where they stand. */
+  const walk = (tokens) => {
+      for (const t of tokens) {
+        if (t.t === 'slot') { walk(t.tokens ?? []); continue; }
         if (t.t === 'br') { out.lines += 1; out.letters.push('\n'); continue; }
         if (t.t === 'sp') { out.letters.push(' '); continue; }
         if (t.t === 'pause') { out.pauses += 1; continue; }
@@ -48,8 +51,8 @@ export function bodyShape(doc) {
           if (u.sbhakti === true) counts.sbhakti += 1;
         }
       }
-    }
-  }
+  };
+  for (const s of doc.sections) for (const v of s.verses) walk(v.tokens);
   /* Runs of spaces collapse: a space is a separator in both directions and two
      encodings of "one gap" are not a difference worth reporting. */
   out.text = out.letters.join('').replace(/ +/g, ' ').replace(/ ?\n ?/g, '\n').trim();

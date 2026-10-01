@@ -214,6 +214,10 @@ function DocumentBlocksInner(
 
   return (
     <>
+      {/* The document's own name, as his Heading 2 and the Word export put it. */}
+      {doc.title.trim() !== '' && wanted(blockId.name()) && (
+        <h2 className="doc__name" data-block-id={blockId.name()}>{doc.title}</h2>
+      )}
       {doc.sections.map((section) => {
         const partHere = section.part !== undefined && section.part !== part
           ? section.part
@@ -233,6 +237,12 @@ function DocumentBlocksInner(
               <h3 className="section__title" data-block-id={blockId.heading(section.id)}>
                 {heading}
               </h3>
+            )}
+            {/* Under its heading, where his files and the Word export keep it. */}
+            {sourceOf(section) !== undefined && wanted(blockId.source(section.id)) && (
+              <p className="doc__source" data-block-id={blockId.source(section.id)}>
+                {sourceOf(section)}
+              </p>
             )}
             {itemsOf(section).map((item, at) => {
               if (item.t === 'instruction') {
@@ -353,14 +363,6 @@ function DocumentBlocksInner(
                 </div>
               );
             })}
-            {/* A block of its own, with an id: an element the page map has
-                never heard of would be drawn again on every page of the
-                section rather than once, under it. */}
-            {sourceOf(section) !== undefined && wanted(blockId.source(section.id)) && (
-              <p className="doc__source" data-block-id={blockId.source(section.id)}>
-                {sourceOf(section)}
-              </p>
-            )}
           </Fragment>
         );
       })}

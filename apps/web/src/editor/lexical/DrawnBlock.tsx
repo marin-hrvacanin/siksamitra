@@ -38,7 +38,7 @@ import type { ChantFigure } from '@siksamitra/format';
 
 /** Which of the document's drawn blocks this is. */
 export type DrawnKind =
-  | 'part' | 'heading' | 'instruction' | 'source'
+  | 'name' | 'part' | 'heading' | 'instruction' | 'source'
   | 'translation' | 'figure';
 
 /** What a drawn block needs in order to be drawn. */
@@ -58,6 +58,7 @@ export type SerializedDrawn = Spread<{ block: Drawn }, SerializedLexicalNode>;
 
 /** The element each kind IS, and the class the stylesheet knows it by. */
 const ELEMENT: Readonly<Record<DrawnKind, readonly [string, string]>> = {
+  name: ['h2', 'doc__name'],
   part: ['h2', 'doc__part'],
   heading: ['h3', 'section__title'],
   instruction: ['p', 'doc__instruction'],

@@ -96,6 +96,11 @@ export function docBlocksOf(doc: ChantDoc): DocBlock[] {
   const library = figureLibrary(doc);
   const out: DocBlock[] = [];
   let part: string | undefined;
+  /* The document's name first, and a section's source under its heading —
+     the order `blockRefs` and `DocumentBlocks` draw. */
+  if (doc.title.trim() !== '') {
+    out.push({ t: 'drawn', drawn: { kind: 'name', blockId: blockId.name(), text: doc.title } });
+  }
 
   for (const section of doc.sections) {
     if (section.part === undefined) part = undefined;
@@ -111,6 +116,13 @@ export function docBlocksOf(doc: ChantDoc): DocBlock[] {
       out.push({
         t: 'drawn',
         drawn: { kind: 'heading', blockId: blockId.heading(section.id), text: heading },
+      });
+    }
+    const source = sourceOf(section);
+    if (source !== undefined) {
+      out.push({
+        t: 'drawn',
+        drawn: { kind: 'source', blockId: blockId.source(section.id), text: source },
       });
     }
 
@@ -154,13 +166,6 @@ export function docBlocksOf(doc: ChantDoc): DocBlock[] {
          `DocumentBlocks`. */
     });
 
-    const source = sourceOf(section);
-    if (source !== undefined) {
-      out.push({
-        t: 'drawn',
-        drawn: { kind: 'source', blockId: blockId.source(section.id), text: source },
-      });
-    }
   }
   return out;
 }
