@@ -69,6 +69,16 @@ export function compact(messages: readonly Message[], keep: number, turns = 2): 
 export class Session {
   readonly ws = new Workspace();
   private messages: Message[] = [];
+  private notes: string[] = [];
+  private halted = false;
+
+  /** A note from the person while a turn runs: given to the agent at its next step. */
+  steer(text: string): void { this.notes.push(text); }
+
+  /** End the running turn at its next step. */
+  stop(): void { this.halted = true; }
+
+  private takeNotes = (): string[] => this.notes.splice(0);
 
   constructor(private readonly opts: SessionOptions, state?: SessionState) {
     if (state === undefined) return;
@@ -85,6 +95,7 @@ export class Session {
 
   async ask(text: string): Promise<TurnResult> {
     const o = this.opts;
+    this.halted = false;
     this.messages = compact(this.messages, o.keep ?? 160_000);
     const ctx: ToolContext = { ws: this.ws, host: o.host, review: (task) => this.review(task) };
     return runTurn({
@@ -93,6 +104,8 @@ export class Session {
       ...(o.user === undefined ? {} : { user: o.user }),
       ...(o.maxSteps === undefined ? {} : { maxSteps: o.maxSteps }),
       ...(o.onEvent === undefined ? {} : { onEvent: o.onEvent }),
+      steers: this.takeNotes,
+      stopped: () => this.halted,
     }, this.withPasted(text));
   }
 
@@ -118,6 +131,11 @@ export class Session {
       model: o.model, price: o.price, tools: toolsFor('review', o.host), system: systemFor('review', o.host),
       messages: [], ctx, ledger: o.ledger, limits: o.limits, session: o.id, maxSteps: 14,
       ...(o.user === undefined ? {} : { user: o.user }),
+      /* Its steps are shown too, as the reviewer's. */
+      ...(o.onEvent === undefined ? {} : {
+        onEvent: (e: AgentEvent) => { if (e.kind === 'tool' || e.kind === 'result') o.onEvent!({ ...e, sub: true }); else if (e.kind === 'usage') o.onEvent!(e); },
+      }),
+      stopped: () => this.halted,
     }, task);
     return `the reviewer reports:\n${done.text}`;
   }

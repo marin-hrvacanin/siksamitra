@@ -40,7 +40,7 @@ export interface BotDeps {
   /** Strings that must never appear in a reply: the key, the token. */
   readonly secrets?: readonly string[];
   /** Progress while a request is worked on: a step starting, or its outcome. */
-  readonly progress?: (chat: string, step: { readonly started: string } | { readonly outcome: string; readonly failed: boolean }) => void;
+  readonly progress?: (chat: string, step: ({ readonly started: string } | { readonly outcome: string; readonly failed: boolean }) & { readonly by: 'agent' | 'reviewer' }) => void;
   /** One line per request for the server's log: never what was asked or answered. */
   readonly log?: (line: TurnLog) => void;
 }
@@ -60,6 +60,8 @@ export interface BotReply {
   readonly files: readonly Delivered[];
   /** Buttons to show under the answer; the one tapped is the next message. */
   readonly choices?: { readonly question: string; readonly options: readonly string[] };
+  /** A note to a request already running — answered at once, not after it. */
+  readonly steered?: true;
 }
 
 const HELP = 'Send me what you need, in your own words — for example: '
@@ -90,6 +92,9 @@ export function scrubbed(text: string, secrets: readonly string[] = []): string 
 /** A chat as the log names it: a short tag, not its id. */
 export const chatTag = (chat: string): string => createHash('sha256').update(`siksamitra:${chat}`).digest('hex').slice(0, 10);
 
+/** The session each chat is working in right now — what a steer and /stop reach. */
+const running = new Map<string, Session>();
+
 /** Messages from one chat run one after another. */
 const queues = new Map<string, Promise<unknown>>();
 function serially<T>(chat: string, work: () => Promise<T>): Promise<T> {
@@ -113,6 +118,17 @@ export function botCore(deps: BotDeps) {
       const said = text.trim();
       if (said === '/start' || said === '/help') return { text: HELP, files: [] };
       if (said === '/new') { deps.sessions.forget(chat); return { text: 'Started over — what do you need?', files: [] }; }
+      /* While a request is being worked on, a message steers it, and /stop stops it. */
+      const now = running.get(chat);
+      if (said === '/stop') {
+        if (now === undefined) return { text: 'Nothing is being worked on.', files: [] };
+        now.stop();
+        return { text: 'Stopping at the next step.', files: [], steered: true };
+      }
+      if (now !== undefined) {
+        now.steer(said);
+        return { text: 'Noted — I am taking that into account as I go.', files: [], steered: true };
+      }
       if (said === '/spent') {
         if (deps.owners === undefined || !listed(deps.owners, who)) return { text: HELP, files: [] };
         const all = await deps.ledger.spent();
@@ -127,11 +143,13 @@ export function botCore(deps: BotDeps) {
           host: { ...deps.host(async (f) => { files.push(f); }), choose: (question, options) => { choices = { question, options }; } },
           ...(deps.progress === undefined ? {} : {
             onEvent: (e) => {
-              if (e.kind === 'tool') deps.progress!(chat, { started: stepStarted(e.name, e.args) });
-              if (e.kind === 'result') deps.progress!(chat, { outcome: stepResult(e.name, e.text, e.failed), failed: e.failed });
+              const by = (e.kind === 'tool' || e.kind === 'result') && e.sub === true ? 'reviewer' : 'agent';
+              if (e.kind === 'tool') deps.progress!(chat, { started: stepStarted(e.name, e.args), by });
+              if (e.kind === 'result') deps.progress!(chat, { outcome: stepResult(e.name, e.text, e.failed), failed: e.failed, by });
             },
           }),
         }, deps.sessions.load(chat));
+        running.set(chat, session);
         const started = Date.now();
         const note = (outcome: TurnLog['outcome'], steps = 0, cost = 0): void => deps.log?.({
           chat: chatTag(chat), steps, cost, files: files.map((f) => f.format), ms: Date.now() - started, outcome,
@@ -161,6 +179,7 @@ export function botCore(deps: BotDeps) {
           }
           throw e;
         } finally {
+          running.delete(chat);
           deps.sessions.save(session.save());
         }
       });

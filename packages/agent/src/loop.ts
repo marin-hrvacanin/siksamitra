@@ -22,8 +22,8 @@ import type { Message, Model, Usage } from './model.js';
 import type { Tool, ToolContext } from './tools/types.js';
 
 export type AgentEvent =
-  | { readonly kind: 'tool'; readonly name: string; readonly args: string }
-  | { readonly kind: 'result'; readonly name: string; readonly text: string; readonly failed: boolean }
+  | { readonly kind: 'tool'; readonly name: string; readonly args: string; readonly sub?: true }
+  | { readonly kind: 'result'; readonly name: string; readonly text: string; readonly failed: boolean; readonly sub?: true }
   | { readonly kind: 'reply'; readonly text: string }
   | { readonly kind: 'usage'; readonly usage: Usage; readonly cost: number };
 
@@ -43,6 +43,13 @@ export interface TurnOptions {
   /** A tool's answer longer than this is cut, and says so. */
   readonly maxResult?: number;
   readonly onEvent?: (e: AgentEvent) => void;
+  /**
+   * What the person said while the turn ran — a steer. Read before each call
+   * of the model and given to it as theirs; the turn goes on with it.
+   */
+  readonly steers?: () => readonly string[];
+  /** The person asked it to stop: the turn ends at the next step. */
+  readonly stopped?: () => boolean;
 }
 
 export interface TurnResult {
@@ -84,6 +91,15 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
     await checkBudget(opts.ledger, opts.limits, opts.session, cost);
     /* Told before the steps run out, and the last one answers in words: a
        turn that used every step on searching gave the person nothing at all. */
+    if (opts.stopped?.() === true) {
+      const text = 'Stopped, as you asked. Tell me how to go on.';
+      opts.messages.push({ role: 'assistant', content: text });
+      opts.onEvent?.({ kind: 'reply', text });
+      return { text, cost, steps: step - 1, usage };
+    }
+    for (const said of opts.steers?.() ?? []) {
+      opts.messages.push({ role: 'user', content: `(the person, while you work: ${said})` });
+    }
     if (max >= 6 && step === max - 2) {
       opts.messages.push({ role: 'user', content: '(from the program: three steps are left in this turn — finish now: deliver what you have, or tell the person what you found and what you need from them)' });
     }

@@ -47,7 +47,7 @@ const core = botCore({
   progress: (chat, step) => {
     const status = statuses.get(chat);
     if (status === undefined) return;
-    if ('started' in step) status.started(step.started); else status.finished(step.outcome, step.failed);
+    if ('started' in step) status.started(step.started, step.by); else status.finished(step.outcome, step.failed, step.by);
   },
 });
 
@@ -63,6 +63,8 @@ class Status {
   private message: Promise<number | null> | null = null;
   private readonly lines: string[] = [];
   private current = 'Thinking';
+  /* The reviewer's step under "a second look", while it works. */
+  private sub: string | null = null;
   private last = 0;
   private slow = false;
   private pending: ReturnType<typeof setTimeout> | undefined;
@@ -74,17 +76,29 @@ class Status {
     this.listen();
   }
 
-  started(what: string): void {
-    this.current = what;
+  started(what: string, by: 'agent' | 'reviewer' = 'agent'): void {
+    if (by === 'reviewer') this.sub = what; else this.current = what;
     this.slow = false;
     this.listen();
     this.render();
   }
 
-  finished(outcome: string, failed: boolean): void {
-    this.lines.push(`${failed ? '✗' : '✓'} ${this.current}${outcome === '' ? '' : ` — ${outcome}`}`);
-    this.current = 'Thinking';
+  finished(outcome: string, failed: boolean, by: 'agent' | 'reviewer' = 'agent'): void {
+    const mark = failed ? '✗' : '✓';
+    if (by === 'reviewer') {
+      this.lines.push(`   ↳ ${mark} ${this.sub ?? 'Looking'}${outcome === '' ? '' : ` — ${outcome}`}`);
+      this.sub = null;
+    } else {
+      this.lines.push(`${mark} ${this.current}${outcome === '' ? '' : ` — ${outcome}`}`);
+      this.current = 'Thinking';
+    }
     this.listen();
+    this.render();
+  }
+
+  /** The person said something while this request runs. */
+  noted(what: string): void {
+    this.lines.push(`↪ your note: ${what.length > 80 ? `${what.slice(0, 80)}…` : what}`);
     this.render();
   }
 
@@ -98,8 +112,11 @@ class Status {
 
   private text(): string {
     const shown = this.lines.slice(-8);
-    const now = `⏳ ${this.current}…${this.slow ? ' (the model is slow just now; still working)' : ''}`;
-    return [...(this.lines.length > 8 ? ['…'] : []), ...shown, now].join('\n');
+    const slow = this.slow ? ' (the model is slow just now; still working)' : '';
+    const now = this.sub === null
+      ? [`⏳ ${this.current}…${slow}`]
+      : [`⏳ ${this.current}…`, `   ↳ ⏳ ${this.sub}…${slow}`];
+    return [...(this.lines.length > 8 ? ['…'] : []), ...shown, ...now, '', 'Send a message to steer me, or /stop.'].join('\n');
   }
 
   private show(): void {
@@ -168,6 +185,16 @@ async function answer(ctx: Context, reply: BotReply): Promise<void> {
 /** A request worked on by itself, tracked so a stop can wait for it. */
 function work(ctx: Context, who: Who, text: string): void {
   const chat = String(ctx.chat!.id);
+  /* A request is running here: this message is a note to it, answered at
+     once and shown in its checklist — not a second request. */
+  const running = statuses.get(chat);
+  if (running !== undefined) {
+    void core.handle(chat, who, text).then(async (reply) => {
+      if (reply.steered === true && text.trim() !== '/stop') running.noted(text.trim());
+      await ctx.reply(reply.text);
+    }).catch((e: unknown) => { console.error(e); });
+    return;
+  }
   const typing = setInterval(() => { void ctx.replyWithChatAction('typing').catch(() => undefined); }, 4500);
   void ctx.replyWithChatAction('typing').catch(() => undefined);
   const status = new Status(ctx);

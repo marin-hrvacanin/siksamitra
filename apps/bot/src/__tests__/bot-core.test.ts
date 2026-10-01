@@ -111,6 +111,37 @@ describe('the log', () => {
   });
 });
 
+describe('steering a request that is running', () => {
+  it('a message while it works reaches the agent at its next step; /stop ends it', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const requests: unknown[][] = [];
+    let n = 0;
+    const model = {
+      id: 'deepseek-flash',
+      complete: async (req: { messages: readonly { role: string; content: unknown }[] }) => {
+        requests.push([...req.messages]);
+        n += 1;
+        if (n === 1) { await gate; return { message: { role: 'assistant' as const, content: null, toolCalls: [{ id: 'a', name: 'outline', arguments: '{}' }] }, usage: { input: 1, cached: 0, output: 1 }, finish: 'tool_calls' }; }
+        return { message: { role: 'assistant' as const, content: 'done with your note' }, usage: { input: 1, cached: 0, output: 1 }, finish: 'stop' };
+      },
+    };
+    const core = botCore({
+      model: model as never, price: PRICE, limits: {}, ledger: memoryLedger(), sessions: memorySessions(), allowed: new Set(['42']),
+      host: (deliver) => ({ ...testHost(), deliver }),
+    });
+    const first = core.handle('c1', { id: '42' }, 'the Gāyatrī');
+    await new Promise((r) => setTimeout(r, 20));
+    const steer = await core.handle('c1', { id: '42' }, 'the one with oṁ bhūr bhuvaḥ suvaḥ, please');
+    expect(steer).toMatchObject({ steered: true });
+    release();
+    expect((await first).text).toBe('done with your note');
+    const seen = JSON.stringify(requests[1]);
+    expect(seen).toContain('(the person, while you work: the one with oṁ bhūr bhuvaḥ suvaḥ, please)');
+    expect((await core.handle('c1', { id: '42' }, '/stop')).text).toBe('Nothing is being worked on.');
+  });
+});
+
 describe('when the provider fails', () => {
   it('a model that does not answer is said to be overloaded, not "something went wrong"', async () => {
     const { ModelError } = await import('@siksamitra/agent');
