@@ -15,7 +15,8 @@
  */
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import type { ChantProfileKey } from '@siksamitra/format';
-import { setProfile, type EditState, type History } from '@siksamitra/edit';
+import { setConventions, setProfile, type EditState, type History, type ProfileResult } from '@siksamitra/edit';
+import type { ConventionId } from '@siksamitra/engine';
 
 interface Live {
   state: EditState;
@@ -27,20 +28,21 @@ export type SetRegister = (
   preset: ChantProfileKey | null,
 ) => string;
 
-export function useRegister(
+export type SetConventions = (
+  scope: 'document' | 'section',
+  chosen: Partial<Record<ConventionId, boolean>>,
+) => string;
+
+/** One profile change as one undoable step, its sentence handed back. */
+function useProfileStep<A extends unknown[]>(
   setLive: Dispatch<SetStateAction<Live>>,
   setRevision: Dispatch<SetStateAction<number>>,
-  sectionId: string,
-): SetRegister {
-  return useCallback((scope, preset) => {
+  step: (doc: Live['state']['doc'], history: History, ...a: A) => ProfileResult | null,
+): (...a: A) => string {
+  return useCallback((...a: A) => {
     let said = '';
     setLive((current) => {
-      const done = setProfile(current.state.doc, current.history, {
-        k: 'profile',
-        scope,
-        ...(scope === 'section' ? { sectionId } : {}),
-        preset,
-      });
+      const done = step(current.state.doc, current.history, ...a);
       if (done === null) return current;
       said = done.note;
       return {
@@ -55,5 +57,26 @@ export function useRegister(
     });
     setRevision((n) => n + 1);
     return said;
-  }, [setLive, setRevision, sectionId]);
+  }, [setLive, setRevision, step]);
+}
+
+export function useRegister(
+  setLive: Dispatch<SetStateAction<Live>>,
+  setRevision: Dispatch<SetStateAction<number>>,
+  sectionId: string,
+): SetRegister {
+  const step = useCallback((doc: Live['state']['doc'], history: History, scope: 'document' | 'section', preset: Parameters<SetRegister>[1]) =>
+    setProfile(doc, history, { k: 'profile', scope, ...(scope === 'section' ? { sectionId } : {}), preset }), [sectionId]);
+  return useProfileStep(setLive, setRevision, step);
+}
+
+/** The conventions switched, for the same two scopes as the register. */
+export function useConventions(
+  setLive: Dispatch<SetStateAction<Live>>,
+  setRevision: Dispatch<SetStateAction<number>>,
+  sectionId: string,
+): SetConventions {
+  const step = useCallback((doc: Live['state']['doc'], history: History, scope: 'document' | 'section', chosen: Parameters<SetConventions>[1]) =>
+    setConventions(doc, history, { k: 'conventions', scope, ...(scope === 'section' ? { sectionId } : {}), chosen }), [sectionId]);
+  return useProfileStep(setLive, setRevision, step);
 }

@@ -66,7 +66,7 @@ export const SYMBOL = {
   replace: 'find_replace',
 
   /* marking */
-  'marks-clear': 'format_clear',
+  'marks-clear': 'ink_eraser',
   'auto-keep': 'wand_stars',
   'auto-replace': 'published_with_changes',
   locked: 'lock',
@@ -211,12 +211,14 @@ export const MARK = {
     + ' 0 1.1-1 1.7-2.4 1.7-1.2 0-2.1-.5-2.5-1.3" fill="none" stroke="currentColor"'
     + ' stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
     + '<circle cx="17.1" cy="20.2" r="1" fill="currentColor"/>',
-  /* The two pauses — one bar and two, as they are written in the line. */
+  /* The two pauses — ONE straight line each, told apart by colour (the owner,
+     2026-09-30): the short pause blue, the long one red. Two bars for the long
+     one read as a second mark rather than a longer pause. */
   'bar-short':
     '<path d="M12 5.5v13" fill="none" stroke="currentColor" stroke-width="1.8"'
     + ' stroke-linecap="round" stroke-linejoin="round"/>',
   'bar-long':
-    '<path d="M9.6 5.5v13M14.4 5.5v13" fill="none" stroke="currentColor" stroke-width="1.8"'
+    '<path d="M12 5.5v13" fill="none" stroke="currentColor" stroke-width="1.8"'
     + ' stroke-linecap="round" stroke-linejoin="round"/>',
   /* A letter the rules replaced: ṁ for an anusvāra change, ḥ for a visarga one. */
   'change-anusvara':

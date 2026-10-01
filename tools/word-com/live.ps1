@@ -80,7 +80,13 @@ function Probe($doc) {
   return $out
 }
 
+# The Word this starts, by process id: `Quit` was measured not to end it
+# every time, and each run left an invisible Word of ~230 MB behind - five of
+# them ran the machine out of memory. Only THIS process is stopped, never a
+# Word the person has open.
+$wordsBefore = @(Get-Process WINWORD -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
 $word = New-Object -ComObject Word.Application
+$ours = @(Get-Process WINWORD -ErrorAction SilentlyContinue | Where-Object { $wordsBefore -notcontains $_.Id } | ForEach-Object { $_.Id })
 $word.Visible = $false
 $word.DisplayAlerts = 0
 
@@ -197,6 +203,8 @@ try {
   try { $fresh.Close(0) } catch { }
 } finally {
   try { $word.Quit(0) } catch { }
+  Start-Sleep -Milliseconds 1500
+  foreach ($id in $ours) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue }
   [System.Runtime.InteropServices.Marshal]::ReleaseComObject($word) | Out-Null
   [GC]::Collect()
   [GC]::WaitForPendingFinalizers()

@@ -59,7 +59,7 @@ A verse's text is a flat token list. Every token has a discriminator `t`.
 | `t` | meaning | fields | in the corpus |
 | --- | --- | --- | --- |
 | `syl` | one syllable | `iast`, `deva`, `tel`, `tam`, `units[]` — see §1.3 | 15 875 |
-| `sp` | a word space | — | 7 148 |
+| `sp` | a word space | `nb` — a no-break space (U+00A0); `tab` — a tab. Both kept as typed | 7 148 |
 | `danda` | `।` or `॥` as structure | `s` | 1 081 |
 | `br` | a line break within the verse | — | 800 |
 | `pause` | a recitation pause | `len: 'short' \| 'long'` | 488 |

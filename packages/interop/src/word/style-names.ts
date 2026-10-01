@@ -21,7 +21,24 @@
  * through unchanged.
  */
 
-import { fromClean } from './vocabulary.js';
+import { VOCABULARY, fromClean } from './vocabulary.js';
+
+/*
+ * AND OUR OWN STYLES ARE KNOWN BY NAME TOO — measured in real Word.
+ *
+ * Word matches a style an insertion brings by its NAME. His documents name
+ * theirs `Anusvara`, `Virama`, `VedicAnusvara`; ours are `Anusvāra`,
+ * `Virāma`, `Vedic Anusvāra`, under the SAME ids. So a write into one of his
+ * files found no style named `Anusvāra`, made one, and — the id `Anusvara`
+ * being his — gave it one derived from the name: `Anusvra`. Read by id, every
+ * short pause in it came back as a plain `|` and every replaced anusvāra lost
+ * what it replaced; a register changed over it then turned `saṁ` into `sam`.
+ * A style of the vocabulary is therefore known by its name as well as its id,
+ * whatever id Word chose for it.
+ */
+const OURS: ReadonlyMap<string, string> = new Map(VOCABULARY.flatMap((e) => [
+  [e.name.toLowerCase(), e.clean] as const, [e.clean.toLowerCase(), e.clean] as const, [e.legacy.toLowerCase(), e.clean] as const,
+]));
 
 /** The built-in names this program uses, and the English id each one has. */
 const BUILT_IN: ReadonlyMap<string, string> = new Map([
@@ -52,7 +69,7 @@ export function builtInStyleIds(stylesXml: string): Map<string, string> {
     const id = RE_ID.exec(m[1] ?? '')?.[1];
     const name = RE_NAME.exec(m[2] ?? '')?.[1];
     if (id === undefined || name === undefined) continue;
-    const english = BUILT_IN.get(name.toLowerCase());
+    const english = BUILT_IN.get(name.toLowerCase()) ?? (/w:customStyle="1"/.test(m[1] ?? '') ? OURS.get(name.toLowerCase()) : undefined);
     if (english !== undefined) out.set(id, english);
   }
   return out;

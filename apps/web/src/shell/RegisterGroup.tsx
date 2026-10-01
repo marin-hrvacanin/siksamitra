@@ -13,13 +13,19 @@
  * because a person who has just opened a chant from somewhere else needs to
  * see, without asking, whether the program thinks it is Ṛgvedic.
  *
- * TWO SCOPES. A document usually has one register; a collection — a manual, a
- * pūjā — genuinely does not, and its saṅkalpa is prose inside a book of
- * Taittirīya. So the menu can set the section under the caret on its own, and
- * says which section that is rather than making the reader guess.
+ * TWO SCOPES. A register belongs to the text it marks, never to "the
+ * document" (the owner, 2026-09-30): a collection — a manual, a pūjā — has
+ * its saṅkalpa in prose inside a book of Taittirīya. So the menu sets either
+ * the sections that name no register of their own, or the section under the
+ * caret, and says which section that is rather than making the reader guess.
+ *
+ * AND THE CONVENTIONS, the same four switches the Word add-in has, each with
+ * what it does to a typed example (`CONVENTIONS` in the engine).
  */
 import { useRef, useState, type ReactNode } from 'react';
 import { CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES, type ChantProfileKey } from '@siksamitra/format';
+import { CONVENTIONS } from '@siksamitra/engine';
+import { conventionsOf } from '@siksamitra/edit';
 import { Popover } from '@siksamitra/ui';
 import { RibbonButton } from '@siksamitra/ui';
 import type { Session } from '../editor/useSession.js';
@@ -65,7 +71,7 @@ export function RegisterGroup(
                 disabled={s === 'section' && section === undefined}
               >
                 {s === 'document'
-                  ? 'The whole document'
+                  ? 'Sections without their own'
                   : `Only “${section?.title ?? 'this section'}”`}
               </button>
             ))}
@@ -77,7 +83,7 @@ export function RegisterGroup(
           */}
           {scope === 'section' && here === null && (
             <p className="menu__hint">
-              This section names none of its own, so it follows the document.
+              This section names none of its own, so it follows the sections without their own.
             </p>
           )}
 
@@ -108,9 +114,28 @@ export function RegisterGroup(
             <span className="menu__note">
               {scope === 'document'
                 ? 'Fall back to the program’s default, Taittirīya.'
-                : 'Follow whatever the document says.'}
+                : 'Follow the sections without their own.'}
             </span>
           </button>
+
+          <p className="menu__lbl menu__lbl--second">Conventions</p>
+          {CONVENTIONS.map((c) => {
+            const on = conventionsOf(session.doc, scope === 'section' ? section : undefined)[c.id];
+            return (
+              <button
+                type="button"
+                key={c.id}
+                role="menuitemcheckbox"
+                className={on ? 'menu__opt menu__opt--tall is-on' : 'menu__opt menu__opt--tall'}
+                aria-checked={on}
+                title={c.note}
+                onClick={() => onNote(session.setConventions(scope, { [c.id]: !on }))}
+              >
+                <span className="menu__name">{on ? '✓ ' : ''}{c.label}</span>
+                <span className="menu__note">{c.example.typed} → {c.example.marked}</span>
+              </button>
+            );
+          })}
 
           {/*
             WHAT IT WILL NOT DO, before it is pressed rather than after. A

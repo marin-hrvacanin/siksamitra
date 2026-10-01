@@ -139,7 +139,10 @@ export function readParagraphs(documentXml: string, stylesXml?: string): WordPar
       let t: RegExpExecArray | null;
       while ((t = RE_CONTENT.exec(rb)) !== null) {
         if (t[1] !== undefined) text += xmlText(t[1]);
-        else text += t[0].startsWith('<w:tab') ? ' ' : '\n';
+        /* A tab is a tab: read as a space, the indent he puts before a pāda
+           was written back as one. It is one character either way, as Word
+           counts it. */
+        else text += t[0].startsWith('<w:tab') ? '\t' : '\n';
       }
       runs.push({
         text,

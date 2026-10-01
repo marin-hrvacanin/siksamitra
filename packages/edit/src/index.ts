@@ -84,6 +84,8 @@ export type { Applied, EditCommand, EditState } from './session.js';
 
 // ── which register's rules govern a document ────────────────────────────────
 export { registerOf, setProfile } from './set-profile.js';
+export { conventionsOf, setConventions } from './set-conventions.js';
+export type { ConventionsChange } from './set-conventions.js';
 export type { ProfileChange, ProfileResult } from './set-profile.js';
 export {
   attestedInRange, named, refusalForEdit, refusalForMark, refusalForOutside,

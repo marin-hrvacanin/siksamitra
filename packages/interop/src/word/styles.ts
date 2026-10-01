@@ -24,6 +24,7 @@
  * The type scale is in rem at 1 rem = 12 pt, so every conversion below is that
  * identity times one of these four factors.
  */
+import { devanagariStyles } from './devanagari-styles.js';
 import type { DocumentMode, DocumentTheme } from '@siksamitra/tokens/document-themes';
 import { typeScaleOf } from '@siksamitra/tokens/document-themes';
 import type { DocRole, DocTypeScale, RoleMetric } from '@siksamitra/tokens/document-type';
@@ -312,7 +313,7 @@ export function stylesXml(input: StyleSheetInput): string {
     + `<w:styles ${W_NS}>${defaults}${paras}`
     + `${charStyles(scale, mode, families, used, input.theme.id === 'word'
       ? { short: WORD_MARKS.holdShort.weight * 8, long: WORD_MARKS.holdLong.weight * 8 }
-      : undefined)}</w:styles>`;
+      : undefined)}${devanagariStyles(used)}</w:styles>`;
 }
 
 /**

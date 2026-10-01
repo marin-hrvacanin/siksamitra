@@ -66,7 +66,9 @@ export function applyAnusvara(ctx: RuleCtx): void {
     const nx = nextLetter(elems, i);
     if (nx === null) return;
     for (const [nasal, group] of STOP_GROUP) {
-      if (group.has(nx.ch)) {
+      /* Before a nasal, that nasal: the row's own nasal is the anunāsika of
+         the row (`profile.sandhi.nasalBeforeNasal`). */
+      if (group.has(nx.ch) || (nx.ch === nasal && ctx.profile.sandhi.nasalBeforeNasal)) {
         e.wasCh = e.ch;
         e.ch = nasal;
         e.change = true;
@@ -213,9 +215,12 @@ export function applyVisarga(ctx: RuleCtx): void {
       ctx.trace(i, 'upadhmānīya — visarga keeps, aid f', 'visarga.before-p');
     } else if ((VOICED.has(n) || isVowel(n)) && pvc !== 'a' && pvc !== 'ā') {
       set('r', `visarga → r before the voiced ${n}`);
+    } else if ((n === 'k' || n === 'kh') && ctx.profile.sandhi.visargaBeforeVelar) {
+      /* The letter stays; it is marked as recited otherwise — his blue. */
+      e.change = true;
+      ctx.trace(i, `visarga before ${n} — marked`, 'visarga.before-k');
     }
-    // else retain ḥ, unmarked — including k/kh, and aḥ/āḥ before a voiced
-    // consonant or a vowel.
+    // else retain ḥ, unmarked — and aḥ/āḥ before a voiced consonant or a vowel.
   });
 }
 

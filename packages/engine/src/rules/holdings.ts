@@ -271,8 +271,14 @@ function lineFirstLetters(elems: Elem[]): Set<number> {
   return out;
 }
 
+/** Two letters that make a geminate: the same consonant, or a stop and its
+ *  own aspirate (`cch`, `ddh`, `tth`). */
+const geminates = (a: string, b: string): boolean =>
+  a === b || (VARGA.get(a) !== undefined && VARGA.get(a) === VARGA.get(b) && b === `${a}h`);
+
 /**
- * One holding per saṁyukta, on one letter.
+ * One holding per saṁyukta, on one letter — or, with `geminate: 'whole'`,
+ * over the geminate it begins.
  *
  * `hg` is numbered per fragment (== per rendered line) and renumbered
  * canonically on emit, so identical input always produces identical bytes.
@@ -319,6 +325,14 @@ export function applyHoldings(ctx: RuleCtx): void {
       elem.hold = LONG_VOWELS.has(holdingVowel(elems, index)) ? 'long' : 'short';
       elem.hg = hg;
       ctx.trace(index, `holding ${elem.hold} on ${elem.ch}`, 'holdings.host');
+      /* The newer convention boxes the WHOLE geminate: the letter after the
+         host, when it completes the pair, goes in the same box. */
+      const partner = comps[k + 1]?.elem;
+      if (profile.holdings.geminate === 'whole' && partner !== undefined && geminates(elem.ch, partner.ch)) {
+        partner.hold = elem.hold;
+        partner.hg = hg;
+        ctx.trace(comps[k + 1]!.index, `the geminate's second letter, in the same box`, 'holdings.geminate');
+      }
     }
     i = step;
   }

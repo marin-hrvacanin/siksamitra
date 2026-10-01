@@ -36,6 +36,10 @@ const LEGACY: Profile = {
      exceptions — the default for NEW documents; these cases are facts about
      the old ones, which record the older convention as their own. */
   holdings: { ...PROFILES.taittiriya.holdings, firstHost: false, lineContinues: false },
+  /* And the aids and substitutions before the rulings of 2026-09-30: the `u`
+     of `vy` on, `ṁ` kept before a nasal, `ḥ` before `k` left plain. */
+  aids: { ...PROFILES.taittiriya.aids, vy: true },
+  sandhi: { nasalBeforeNasal: false, visargaBeforeVelar: false },
 };
 
 /** `(letter, short|long)` for every holding, in order. */

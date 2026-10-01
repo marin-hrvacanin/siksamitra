@@ -50,7 +50,7 @@ export interface BuildOptions {
   /** What to call a document that names itself nowhere — its file name. */
   fallbackTitle: string;
   report: ImportReport;
-  /** The register the document is marked in outside every part, when the file
+  /** The register the lines outside every part are marked in, when the file
    *  records one (the add-in's settings — `recordedRegisterIn`). */
   register?: ChantProfileKey;
   /** A paragraph's picture, or null when it cannot be carried — the caller

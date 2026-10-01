@@ -14,7 +14,7 @@
 
 // ── the profile reference a document carries ────────────────────────────────
 export type { ChantProfileKey, ChantProfileRef, ChantProfileNote } from './profile-ref.js';
-export { CHANT_PROFILE_NOTES, CHANT_PROFILE_KEYS } from './profile-ref.js';
+export { CHANT_PROFILE_NOTES, CHANT_PROFILE_KEYS, READABLE_PROFILE_KEYS } from './profile-ref.js';
 
 // ── what a document SAYS: the conformance surface ───────────────────────────
 export {
@@ -71,7 +71,7 @@ export type { StoredMark } from './mark-codec.js';
 /* Tokens ⇄ text and markings, and the round trip that proves it loses nothing. */
 export { toTextAndMarks, toTokens } from './migrate.js';
 /* What a replaced letter was typed as — the one table. See `typed-letter.ts`. */
-export { typedLetter } from './typed-letter.js';
+export { NBSP, spaceToken, typedLetter } from './typed-letter.js';
 /* `TokenHelp` is on the surface because `toTokens` cannot be called without
    it: a caller has to supply the letter division and the other scripts, and
    both belong to the engine, which sits above this package. It was internal,
@@ -81,8 +81,8 @@ export type { TextAndMarks, TokenHelp } from './migrate.js';
 
 /* The edits between two texts, so markings can be moved across a change that
    is not one contiguous replacement. See `text-diff.ts`. */
-export { textEdits } from './text-diff.js';
-export type { TextEdit3 } from './text-diff.js';
+export { carrySpacing, textEdits } from './text-diff.js';
+export type { Spacing, TextEdit3 } from './text-diff.js';
 export { splitsCharacter } from './mark.js';
 export { figureBlockers, figureNudges } from './figure.js';
 export { FIGURE_MAX_PCT, FIGURE_MIN_PCT } from './figure.js';

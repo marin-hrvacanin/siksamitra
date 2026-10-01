@@ -1,3 +1,8 @@
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 /**
  * WHERE THE WORD ADD-IN IS SERVED FROM, and the manifest that says so.
  *
@@ -147,6 +152,14 @@ export function manifestFor(xml, host, version) {
     out, /<DisplayName DefaultValue="[^"]*"\/>/,
     `<DisplayName DefaultValue="${xmlAttr(host.name)}"/>`, 'DisplayName',
   );
+  /* The TAB is labelled with the host's name too. Both the published add-in
+     and the local one can be installed at once — that is why each has its own
+     id — and with one label for both a person saw two identical tabs and could
+     not tell which was the one being developed. */
+  out = replaceOnce(
+    out, /<bt:String id="sm\.Tab\.Label" DefaultValue="[^"]*"\/>/,
+    `<bt:String id="sm.Tab.Label" DefaultValue="${xmlAttr(host.name)}"/>`, 'the tab label',
+  );
   if (version !== undefined) {
     out = replaceOnce(out, /<Version>[^<]*<\/Version>/, `<Version>${version}</Version>`, 'Version');
     out = withIconVersion(out, version);
@@ -167,8 +180,23 @@ export function manifestFor(xml, host, version) {
  * code under stale pictures. So each `<bt:Image>` and the two icon URLs carry
  * `?v=<version>`: a new version is a new URL, and a new URL is fetched.
  */
-export function withIconVersion(xml, version) {
-  return xml.replace(/(\.png)(")/g, (_m, png, quote) => `${png}?v=${version}${quote}`);
+export function withIconVersion(xml, version, fingerprint = iconFingerprint) {
+  return xml.replace(/(https?:\/\/[^"]*?\/)([^"/]+(?:\/[^"/]+)*?\.png)(")/g, (_m, base, path, quote) =>
+    `${base}${path}?v=${fingerprint(path) ?? version}${quote}`);
+}
+
+/*
+ * A PICTURE'S OWN FINGERPRINT, where its file is at hand. Stamped with the
+ * version alone, a picture redrawn without a release — the pauses made one
+ * line each, the holding boxes filled — kept the version's URL, and Word kept
+ * drawing what it had cached under it: the owner saw the old two bars after
+ * the new single line had shipped. A hash of the bytes is a new URL exactly
+ * when the picture is new.
+ */
+const ASSETS = join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'word-addin', 'assets');
+export function iconFingerprint(path) {
+  const file = join(ASSETS, ...path.split('/'));
+  return existsSync(file) ? createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 12) : undefined;
 }
 
 /** Every absolute URL the manifest names, in document order. */

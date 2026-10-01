@@ -21,7 +21,11 @@ file and one choice in Word, and **keeps itself up to date**.
    [`install-windows.cmd`](https://marin-hrvacanin.github.io/siksamitra/word-extension/install-windows.cmd).
 2. Double-click it. If Windows says it "protected your PC", choose
    *More info → Run anyway* — it is a short text file anyone can open and read.
-   It needs no administrator: it installs for you alone.
+   It needs no administrator: it installs for you alone. It also installs
+   **URW Palladio ITU**, the face the svaras and the candrabindu are set in —
+   fetched from where it is published (Ulrich Stiehl's sanskritweb.net) and
+   checked against its hash before anything is installed. Without it Word
+   draws every svara in a fallback face.
 3. Close Word if it is open, and start it again.
 4. Once: **Home → Add-ins → More Add-ins → SHARED FOLDER**, choose
    **śikṣāmitra**, then **Add**. The śikṣāmitra tab is on the ribbon from then
@@ -150,6 +154,89 @@ A `.docx` in the *Veda Union* style is his document: his sheet (A4, 25 mm left,
 over a rule, the page number at the right), his styles and colours, the pauses
 the rules placed in his blue and those placed by hand in his red.
 
+## In the add-in: one vocabulary, his look
+
+**Every document the add-in writes is in the clean style names** — `Mantra`,
+`Translation`, `Holding · Short`, `Holding · Long`, `Overline`, `Anusvara` and
+`Visarga` apart. The owner's ruling of 2026-09-30: his older names (`Translit`,
+`Prijevod`, `Holding`, `2Holding`, `Long`) "have no place" in the Styles list.
+
+- **Import styles converts one of his documents** (`word/convert.ts`): every
+  paragraph in his names is written again in the clean ones, with its letters,
+  marks and line-end notes as they were; a paragraph a rewrite would lose
+  something of (a picture, a field, hidden text) is left and named; then each
+  style of his that nothing uses any more is deleted.
+- **Visually nothing changes**, because a clean style takes HIS definition
+  (`packages/interop/src/word/clean-styles.ts`, `model/package.ts`): his
+  `Translit`'s face, size and leading become `Mantra`'s, his `Long`'s face
+  becomes `Overline`'s, and `Visarga` is cloned from his `Anusvara`, so a
+  replaced visarga keeps his blue italic while now saying what it is.
+  `check:word:reference` measures it over his six documents, and
+  `tests/integration/word-his-lines.test.ts` over his shapes without them.
+- Word's own styles (`Normal`, `Heading 1`…) are never listed as missing and
+  never touched.
+
+**A register belongs to a part, never to "the document".** Choosing one with
+the caret in a part marks that part; with lines selected outside every part,
+they become a part of their own in it; with a bare caret outside every part,
+it is the register of the lines outside every part — and the wording says
+exactly that.
+
+**The conventions** (Settings → Conventions, `packages/engine/src/conventions.ts`)
+are the rulings where marked texts differ, each with an example typed and
+marked: ṁ before a nasal takes that nasal, ḥ before k/kh marked as a change
+(both on), the raised u between v and y (off), and the geminate's box on one
+letter or both (one). They are kept in the file and Re-apply rules uses them.
+
+**A register belongs to what it is chosen for — and a selection in two
+places is refused.** A selection partly in a part and partly not, or over two
+parts of different registers, has no one place to choose for; it is said, and
+nothing changes. A new part is refused if ANY selected line is in a part
+already: parts never nest.
+
+**Word forgets who placed a mark; the add-in asks again.** A marking carries
+whether a person or the rules placed it, and Re-apply keeps a person's. Word
+keeps no such record — every mark read back is a person's — so before a
+re-run the rules the line is marked in (its register, and the conventions the
+text was last marked with, recorded in the file) are asked what they make of
+it, and a mark exactly theirs is theirs again (`model/provenance.ts`). That is
+what makes switching a register or a convention and back give back exactly
+what was there.
+
+**A part can be made with another document open.** Word refuses an add-in a
+new content control whenever another document is open in it — a blank one is
+enough (measured on 16.0.20430: `GeneralException` on every kind of range) —
+while one arriving inside an `insertOoxml` package goes in. So when Word
+refuses, the selected paragraphs' own package is wrapped in the part and put
+back (`model/part-package.ts`); retitling and dissolving a part were never
+affected.
+
+**A box pressed on an akṣara is on its consonant.** In a script line the
+smallest thing a person can select is the akṣara (`स` is `s` and `a`), so a
+box pressed on one goes on the consonant the holding rule chooses for it —
+where the add-in's script reader reads a boxed cluster's box too — and the
+line is exactly its IAST twin marked the same way (`model/akshara-host.ts`).
+
+**Our styles are known by name.** Word gives a style it inserts an id made
+from its name with what is not ASCII dropped — `Virāma` is `Virma` in every
+document — and matches an inserted style to the document's by NAME. So the
+reader and the pane's style count go by name as well as id, and in one of his
+documents a style whose id is also ours keeps HIS name, so Word writes onto his
+style rather than beside it.
+
+**Bring in a document from the app** (Settings): a `.smdoc`, a chant package,
+a Word file the app exported, or its HTML page, read by the app's own reader
+(`openDocumentFile` in interop, which the app's Import now calls too) and
+written by the app's own Word body writer — so it comes in marked exactly as
+the app has it, a section of another register as a part. It goes in after the
+line the caret is in. Pictures are marked where they go; Word inserts a picture
+better than a package can.
+
+**Typing after a mark is plain** (`word/typing-guard.ts`): Word carries a
+character style on to the next letter typed and Office.js cannot reset a bare
+caret's style, so the line just written is watched (`onParagraphChanged`,
+WordApi 1.6) and written once more with the typed letters plain.
+
 ---
 
 ## The three hosts
@@ -220,11 +307,13 @@ Rule 13: every tier that can see it.
 
 | tier | what it holds |
 | --- | --- |
-| unit | the manifest every host gets (`scripts/__tests__/word-addin.test.mjs`); the installers (`word-friend-installers.test.mjs`); the command table against the manifest on disk; the style vocabulary; parts and registers (`packages/interop/src/__tests__/rule-parts.test.ts`, `docx-registers-scripts.test.ts`); script lines, offsets and the caret (`apps/word-addin/src/model/__tests__/script-lines.test.ts`); Word edits merged back (`body-edits.test.ts`); the vowel-sign rule (`packages/edit/src/__tests__/text-commands.test.ts`) |
-| integration | the whole corpus through Word in every script — 573 of 573 verses exact, the same bytes on a second write, and IAST → Devanāgarī → Telugu → Tamil → IAST arriving where it began (`tests/integration/script-round-trip.test.ts`); seeded random lines with random marks in every script, none refused and none changed (`script-fuzz.test.ts`) |
-| component | every ribbon command pressed against a Word faked at its edges (`tests/component/word-runtime.test.ts`); Settings; the dialogs; the page with and without office.js |
+| unit | a line read and written back in each of his shapes — no-break spaces, tabs, double spaces, the pause's spaces, the daṇḍa's face, the overline, the candrabindu glyph, a box over a space (`packages/interop/src/__tests__/word-his-shapes.test.ts`); notes at a line's end (`line-notes.test.ts`); spacing carried through a re-run (`packages/format/src/__tests__/spacing-carry.test.ts`, `packages/engine/src/__tests__/rerun-spacing.test.ts`); one line as written, and what refuses it (`apps/word-addin/src/model/__tests__/line-xml.test.ts`); our paragraph index against Word's past hidden paragraphs (`paragraph-index.test.ts`); the look resolver (`packages/cli/src/__tests__/word-look.test.ts`); the rulings of 2026-09-30 and their switches (`packages/engine/src/__tests__/rulings-2026-09-30.test.ts`); the manifest every host gets (`scripts/__tests__/word-addin.test.mjs`); the installers (`word-friend-installers.test.mjs`); the command table against the manifest on disk; the style vocabulary; parts and registers (`packages/interop/src/__tests__/rule-parts.test.ts`, `docx-registers-scripts.test.ts`); script lines, offsets and the caret (`apps/word-addin/src/model/__tests__/script-lines.test.ts`); Word edits merged back (`body-edits.test.ts`); the vowel-sign rule (`packages/edit/src/__tests__/text-commands.test.ts`) |
+| integration | his lines, typed in his files' own OOXML over his template's style table, written back by the add-in and drawn character by character — the same (`tests/integration/word-his-lines.test.ts`); the whole corpus through Word in every script — 573 of 573 verses exact, the same bytes on a second write, and IAST → Devanāgarī → Telugu → Tamil → IAST arriving where it began (`tests/integration/script-round-trip.test.ts`); seeded random lines with random marks in every script, none refused and none changed (`script-fuzz.test.ts`) |
+| component | every ribbon command pressed against a Word faked at its edges (`tests/component/word-runtime.test.ts`); a line with a note, a hidden line, and the conventions reaching the rules (`word-notes.test.ts`); Settings, the conventions switches included; the dialogs; the page with and without office.js |
 | security | OOXML injection through document text, and what the inserted package may not contain (`tests/security/word-addin.test.ts`) |
-| live | `npm run check:word:live` — a real Word, over COM |
+| live | `npm run check:word:live` — a real Word, over COM; `npm run check:word:live:reference` — every mantra line of his reference documents written back in a real Word and drawn as Word now has it |
+| reference | `npm run check:word:reference` — the same over his documents without Word, as a ratchet (`corpus/word-reference-baseline.json`, counts only) |
+| ui | `npm run check:word:ui` — the commands run in Word's own add-in runtime over its debugging port (`tools/word-ui.ts`, `tools/word-ui/`): a mark on a selected letter, a svara at the caret, a pause, Clear all, Re-apply over a line and over the whole document through its dialog, a line of his with its note, typing after a mark; and used DIRTILY (`dirty.ts`, `dirty-more.ts`): two registers and a part, hand marks in both, the outside register changed under them, the part's changed and changed back, a selection across the part's edge refused, a part that would nest refused, “mine out” over the edge, Clear all over it, the part dissolved, Word's Undo, every convention switched and back, every script and back over parts and hand marks, a heading and a translation between the mantra lines untouched, and a document of the app brought in through the pane's own file picker |
 | browser | `check:word:pane` — the published pages in a real browser, at Word's sizes, in light, dark and high contrast |
 
 **The live gate is where the real faults were.** It establishes what nothing
@@ -236,6 +325,39 @@ the add-in writes them and read out of Word again, letter for letter; Word and
 the reader agree how many paragraphs there are; and **a Devanāgarī, Telugu and
 Tamil line comes back exactly**, hidden runs and all. It is not in
 `npm run check` because it needs Word, and it skips loudly when there is none.
+
+**The UI gate** (`check:word:ui`) runs the add-in itself, in Word, and its
+first honest runs found five faults no other tier could see, all fixed and all
+held by it now:
+
+- **every whole-document run was refused** — `body.getOoxml()` ends with an
+  empty paragraph of its own that `body.paragraphs` does not count, so the two
+  counts never agreed (`model/paragraph-index.ts`);
+- **Import styles changed his look** — it put our `Mantra` in before the
+  conversion, and Word keeps a style a document already has;
+- **and so did his own definitions** — Word folds a package's `docDefaults`
+  into each style it brings, so his `Translit` arrived black instead of
+  automatic; a package carrying his styles now carries his defaults, and
+  `word-look.ts` models the folding, so `check:word:reference` sees it too;
+- **a converted line stayed `Translit`** — replacing a paragraph's content
+  keeps its paragraph mark, where the style is;
+- **a one-line part vanished when it was re-marked** — replacing the only
+  paragraph of a content control deletes the control (`word/line-target.ts`).
+
+And the live reference gate found a sixth, made by the third fix: his
+Kanakadhārā's defaults use `w14:`, which our styles part did not declare, and
+Word refused every one of its 45 writes. Only a document of his with that
+defaults block could show it; the declarations his definitions need now travel
+with them. The gate had counted those 45 as "drawn the same", because a line
+never written looks exactly like his, so a refused write no longer counts.
+
+The commands are run by calling each button's own function in the add-in's
+runtime (`tools/word-ui/press.mjs`), over the WebView2 debugging port. UI
+Automation's clicks on the ribbon were measured not to reach the add-in every
+time. Start Word with
+`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9229`, open the
+sideloaded add-in's own document, and point `WORD_UI_DOC` at it — never one of
+your own documents, since it deletes the content and the custom styles.
 
 **The pages gate** (`tools/word-pane.mjs`) found the typing help's labels at
 2.6:1 contrast, a face the pages asked for and never loaded, an icon drawn

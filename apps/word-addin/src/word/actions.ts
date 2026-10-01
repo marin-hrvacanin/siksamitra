@@ -12,8 +12,10 @@
  */
 import type { TextAndMarks } from '@siksamitra/format';
 import { applyAcross, letterBefore, typeAt, type MarkCommand } from '@siksamitra/edit';
+import { onTheHost } from '../model/akshara-host.js';
 import { notCarried } from '../model/carry.js';
 import { writeLines, type LineWrite, type Located } from './selection.js';
+import { writeOf } from './line-write.js';
 
 /** What to tell the person, in one line and any detail under it. */
 export interface Said {
@@ -75,17 +77,22 @@ export async function markSelection(here: Located, command: MarkCommand): Promis
     const r = applyAcross([{ ...caret, from: letter[0], to: letter[1] }], command)[0]!;
     const tm = { text: r.text ?? caret.tm.text, marks: r.marks };
     if (!sameText(tm, caret.tm)) {
-      await writeLines([{ line: 0, tm, style: caret.style, wordText: caret.wordText }],
+      await writeLines([writeOf(caret, 0, tm)],
         { line: 0, at: caret.from + (tm.text.length - caret.tm.text.length) });
     }
     return said(r.note, notCarried(r.marks).length === 0 ? 'plain' : 'warn', notCarried(r.marks).map((l) => l.why));
   }
-  const results = applyAcross(here.lines, command);
+  /* One akṣara of a script line boxed: the box on its consonant (`akshara-host.ts`). */
+  const lines = here.lines.map((l) => {
+    const [from, to] = onTheHost(l.tm.text, l.from, l.to, l.script, command);
+    return { ...l, from, to };
+  });
+  const results = applyAcross(lines, command);
   const writes: LineWrite[] = [];
   results.forEach((r, i) => {
     const l = here.lines[i]!;
     const tm = { text: r.text ?? l.tm.text, marks: r.marks };
-    if (!sameText(tm, l.tm)) writes.push({ line: i, tm, style: l.style, wordText: l.wordText });
+    if (!sameText(tm, l.tm)) writes.push(writeOf(l, i, tm));
   });
   /* A caret stays where it was; letters selected in one line stay selected,
      grown by whatever the command typed onto them (a candrabindu). */
@@ -118,6 +125,6 @@ export async function typeInSelection(here: Located, ch: string): Promise<Said> 
   const t = typeAt(l.tm, l.from, l.to, inScript ? ch.toLowerCase() : ch, { abugida: inScript });
   const tm = { text: t.text, marks: t.marks };
   if (sameText(tm, l.tm)) return said(t.note, 'warn');
-  await writeLines([{ line: 0, tm, style: l.style, wordText: l.wordText }], { line: 0, at: t.caret });
+  await writeLines([writeOf(l, 0, tm)], { line: 0, at: t.caret });
   return said('');
 }

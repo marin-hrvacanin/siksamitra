@@ -29,7 +29,7 @@
  */
 import type { Mark, Stage, TextAndMarks } from '@siksamitra/format';
 import {
-  STAGE_OF, assertMarks, markFaults, normalise, removeMark, shiftForEdit, textEdits,
+  STAGE_OF, assertMarks, carrySpacing, markFaults, normalise, removeMark, shiftForEdit, textEdits,
   toTextAndMarks,
 } from '@siksamitra/format';
 import type { ChantVerse } from '@siksamitra/format';
@@ -190,7 +190,14 @@ export function rerun(tm: TextAndMarks, req: ReRunRequest): ReRun {
     lines: typed.lines.length === 0 ? [''] : typed.lines,
     ...(typed.accents > 0 ? { accented: typed.accented } : {}),
   }, req.profile, { trace: false });
-  const made = produced(d.tokens, req.stages);
+  /* The rules normalise whitespace; where the same space is still there, it
+     is his again — and every marking moves with it. See `carrySpacing`. */
+  const derived = produced(d.tokens, req.stages);
+  const spaced = carrySpacing(slice, derived.text);
+  const made: TextAndMarks = {
+    text: spaced.text,
+    marks: derived.marks.map((m) => ({ ...m, from: spaced.at(m.from), to: spaced.at(m.to) })),
+  };
 
   const changed = made.text !== slice;
   const lost: Mark[] = [];

@@ -38,6 +38,7 @@ import {
   changesNothing, record, restore, snapshot, type History, type Snapshot,
 } from './history.js';
 import { setProfile } from './set-profile.js';
+import { setConventions } from './set-conventions.js';
 import { applyFigureCommand, figureSectionsTouched } from './figures.js';
 
 import type { EditCommand } from './command.js';
@@ -89,8 +90,8 @@ export function apply(state: EditState, history: History, command: EditCommand):
    * section is looked up: `document` scope has no section to name, and the
    * command re-derives across all of them.
    */
-  if (command.k === 'profile') {
-    const done = setProfile(state.doc, history, command);
+  if (command.k === 'profile' || command.k === 'conventions') {
+    const done = command.k === 'profile' ? setProfile(state.doc, history, command) : setConventions(state.doc, history, command);
     if (done === null) {
       return refuse(state, history, `no section "${command.sectionId ?? ''}"`);
     }

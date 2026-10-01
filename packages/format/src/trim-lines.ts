@@ -27,8 +27,16 @@ export function trimLineEnds({ text, marks, units }: TextAndMarks): TextAndMarks
   const cuts: { from: number; to: number }[] = [];
   let at = 0;
   for (const line of text.split('\n')) {
-    const kept = line.replace(/[ 	]+$/u, '');
-    if (kept.length !== line.length) cuts.push({ from: at + kept.length, to: at + line.length });
+    /* A no-break space too: `derive` trims it like any other, and one left
+       here would read as the rules having changed the line. */
+    const kept = line.replace(/[ \t\u00a0]+$/u, '');
+    /* NOT when a pause ends the line. A pause is drawn — `…vare̎ṇya̱m |` — so
+       the space before it is not trailing, and trimming it wrote `…ṇya̱m|` in
+       365 of his lines. The rules put the same space there, so a re-run still
+       agrees with the text. */
+    const end = at + line.length;
+    const paused = marks.some((m) => m.k === 'pause' && m.from === end && m.to === end);
+    if (kept.length !== line.length && !paused) cuts.push({ from: at + kept.length, to: end });
     at += line.length + 1;
   }
   if (cuts.length === 0) return { text, marks, units };

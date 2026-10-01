@@ -10,6 +10,8 @@ import type { ChantToken, ChantUnit } from './chant-tokens.js';
 
 /** U+0310, the combining candrabindu — a character in the text, not a mark. */
 export const CANDRA = '̐';
+/** A no-break space — a `sp` token with `nb`. */
+export const NBSP = '\u00a0';
 
 /**
  * WHAT A LETTER THE RULES REPLACED WAS TYPED AS — told by what it became.
@@ -46,10 +48,24 @@ export const typedAs = (u: ChantUnit): string => {
   return u.was ?? typedLetter(u.c) ?? u.c;
 };
 
-/** The characters a non-syllable token contributes to the text. */
+/**
+ * The space token one whitespace character is, or `null` for any other
+ * character. The ONE answer, read by `toTokens` and by the `.docx` reader: a
+ * no-break space keeps two words on one line and a tab indents a pāda, and a
+ * line written back with ordinary spaces breaks somewhere else.
+ */
+export function spaceToken(ch: string): ChantToken | null {
+  if (ch === ' ') return { t: 'sp' };
+  if (ch === NBSP) return { t: 'sp', nb: true };
+  if (ch === '\t') return { t: 'sp', tab: true };
+  return null;
+}
+
+/** The characters a non-syllable token contributes to the text — the inverse
+ *  of `spaceToken` for a space. */
 export function structuralText(t: ChantToken): string | null {
   switch (t.t) {
-    case 'sp': return ' ';
+    case 'sp': return t.nb === true ? NBSP : t.tab === true ? '\t' : ' ';
     case 'br': return '\n';
     case 'danda': return t.s;
     case 'num': return t.s;

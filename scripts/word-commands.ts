@@ -15,8 +15,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { DEFAULT_CHROME, chromeTheme } from '../packages/tokens/src/chrome-themes.js';
-import { WORD_MARKS } from '../packages/tokens/src/word.js';
+
+import { WORD_MARKS, WORD_RIBBON_FILL, WORD_RIBBON_INK, WORD_RIBBON_INK_ON_FILL } from '../packages/tokens/src/word.js';
 import { ICONS } from '../packages/ui/src/icons.generated.js';
 import { ICONS_NEEDED, iconFile } from '../apps/word-addin/src/commands-table.js';
 import {
@@ -39,15 +39,18 @@ const ASSETS = join(ADDIN, 'assets');
  * shows what it will draw. Inside a glyph only the part tagged `data-mark`
  * (the box, the stroke, the dot) takes the colour and the letter stays ink,
  * as on the page; a change or a pause is coloured whole, because on the page
- * the whole letter is. The ink is the app's light chrome ink (`palladio`),
- * which is what the app's own ribbon draws these glyphs in.
+ * the whole letter is.
  *
- * A PNG cannot follow Word's theme. This is drawn for the light ribbon, which
- * is Word's default; on the dark one the ink is faint, and that was accepted
- * for the icons matching the app.
+ * A PNG CANNOT FOLLOW WORD'S THEME, and Word has no dark-theme picture for an
+ * add-in. The ink was the app's light chrome ink and was faint on the dark
+ * ribbon — the owner's report — so it is `WORD_RIBBON_INK`, the grey equally
+ * readable on both ribbons (see there for the measurement).
  */
-const INK = chromeTheme(DEFAULT_CHROME).light.ink;
 const hex = (c: string): string => (c.startsWith('#') ? c : `#${c}`);
+const INK = hex(WORD_RIBBON_INK);
+/* The holding boxes: a shape with an inside, filled light, the letter dark in it. */
+const FILLED = new Set<string>(['hold-short', 'hold-long']);
+
 const MARK_INK: Partial<Record<keyof typeof ICONS, { mark: string; whole?: true }>> = {
   'hold-short': { mark: hex(WORD_MARKS.holdShort.color) },
   'hold-long': { mark: hex(WORD_MARKS.holdLong.color) },
@@ -57,7 +60,8 @@ const MARK_INK: Partial<Record<keyof typeof ICONS, { mark: string; whole?: true 
   svarabhakti: { mark: hex(WORD_MARKS.svara.color) },
   'change-anusvara': { mark: hex(WORD_MARKS.change.color), whole: true },
   'change-visarga': { mark: hex(WORD_MARKS.change.color), whole: true },
-  'bar-short': { mark: hex(WORD_MARKS.pause.color), whole: true },
+  /* Short blue, long red — the owner's ruling (2026-09-30); one line each. */
+  'bar-short': { mark: hex(WORD_MARKS.change.color), whole: true },
   'bar-long': { mark: hex(WORD_MARKS.pause.color), whole: true },
 };
 
@@ -67,9 +71,13 @@ function coloured(name: keyof typeof ICONS): { body: string; ink: string } {
   const c = MARK_INK[name];
   if (c === undefined) return { body, ink: INK };
   if (c.whole === true) return { body, ink: c.mark };
+  const filled = FILLED.has(name);
   return {
-    body: body.replace(/<(path|circle)[^>]*data-mark="1"[^>]*\/>/g, (el) => el.replaceAll('currentColor', c.mark)),
-    ink: INK,
+    body: body.replace(/<(path|circle)[^>]*data-mark="1"[^>]*\/>/g, (el) => {
+      const marked = el.replaceAll('currentColor', c.mark);
+      return filled ? marked.replace('fill="none"', `fill="${hex(WORD_RIBBON_FILL)}"`) : marked;
+    }),
+    ink: filled ? hex(WORD_RIBBON_INK_ON_FILL) : INK,
   };
 }
 

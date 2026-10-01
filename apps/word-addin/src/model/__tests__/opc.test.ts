@@ -127,10 +127,29 @@ describe('what the reader could not place', () => {
     expect(found[0]?.lossy).toBe(false);
   });
 
-  it('calls an inline comment a loss, because its letters leave the text', () => {
+  it('does not call a note at the END of a line a loss: it is put back', () => {
+    /* His `…ṛṣiḥ । svarabhakti` — 665 of them in the six reference documents,
+       every one at a line end, and every such line was once refused. */
     const found = unresolvedIn([{
       pStyle: 'Translit',
       runs: [run('agne ', null), run('(Taittirīya 1.1)', 'Comment')],
+    }]);
+    expect(found.filter((u) => u.lossy)).toEqual([]);
+    expect(found.filter((u) => !u.advisory)).toEqual([]);
+  });
+
+  it('nor one that ends a pāda, before a line break', () => {
+    const found = unresolvedIn([{
+      pStyle: 'Translit',
+      runs: [run('agne ', null), run('svarabhakti', 'Comment'), run('\nīḷe', null)],
+    }]);
+    expect(found.filter((u) => u.lossy)).toEqual([]);
+  });
+
+  it('but calls a comment INSIDE a line a loss, because it cannot be put back', () => {
+    const found = unresolvedIn([{
+      pStyle: 'Translit',
+      runs: [run('agne ', null), run('(Taittirīya 1.1)', 'Comment'), run(' īḷe', null)],
     }]);
     expect(found.filter((u) => u.lossy).map((u) => u.raw)).toEqual(['(Taittirīya 1.1)']);
   });

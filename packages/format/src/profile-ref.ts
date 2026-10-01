@@ -58,13 +58,13 @@ export const CHANT_PROFILE_NOTES: Readonly<Record<ChantProfileKey, ChantProfileN
   Object.freeze({
     taittiriya: {
       name: 'Taittirīya',
-      where: 'Kṛṣṇa Yajurveda — Puruṣa Sūktam, Śrī Rudram, Mantra Puṣpam, Viṣṇu Sūktam',
+      where: 'Kṛṣṇa Yajurveda, the Taittirīya śākhā — Śrī Rudram, Puruṣa Sūktam, Durgā Sūktam, Mantra Puṣpam',
       what: 'Accents are taken from the source as written, and an anusvāra before '
         + 'a sibilant or h is shown as gṁ / gm.',
     },
     rigveda: {
       name: 'Ṛgveda',
-      where: 'Ṛgvedic sūktas — Durgā Sūktam, Śrī Sūktam, Bhāgya Sūktam',
+      where: 'Texts recited in a Ṛgvedic śākhā, in its own accentuation',
       what: 'Accents are taken from the source as written, and the anusvāra keeps '
         + 'its own form rather than becoming a g-form.',
     },
@@ -76,12 +76,15 @@ export const CHANT_PROFILE_NOTES: Readonly<Record<ChantProfileKey, ChantProfileN
     },
     smarta: {
       name: 'Smārta / purāṇic',
-      where: 'Stotras, aṣṭakas, āgamic and purāṇic verse — Lalitā, Viṣṇu Sahasranāma',
+      where: 'Stotras, aṣṭakas, nāmāvalīs, āgamic and purāṇic verse — Lalitā and Viṣṇu Sahasranāma',
       what: 'No accents are read from the source; the metre supplies them, the '
         + 'anusvāra is left as it is, and no semivowel aids are added.',
     },
+    /* NOT OFFERED (the owner, 2026-10-01: "remove the prose"). Kept so a file
+       or a Word part that names it still opens and marks exactly as it did;
+       `READABLE_PROFILE_KEYS` reads it, `CHANT_PROFILE_KEYS` offers it nowhere. */
     prose: {
-      name: 'Prose',
+      name: 'Prose (older files)',
       where: 'Saṅkalpa, nāmāvalīs, offerings and instructions',
       what: 'No accents at all, and the only pause is the one after a bīja.',
     },
@@ -89,5 +92,8 @@ export const CHANT_PROFILE_NOTES: Readonly<Record<ChantProfileKey, ChantProfileN
 
 /** The registers, in the order they are offered. Taittirīya first: it is the default. */
 export const CHANT_PROFILE_KEYS: readonly ChantProfileKey[] = Object.freeze([
-  'taittiriya', 'rigveda', 'sukla-yajurveda', 'smarta', 'prose',
+  'taittiriya', 'rigveda', 'sukla-yajurveda', 'smarta',
 ]);
+
+/** Every register a file may NAME — the offered ones, and one no longer offered. */
+export const READABLE_PROFILE_KEYS: readonly ChantProfileKey[] = Object.freeze([...CHANT_PROFILE_KEYS, 'prose']);

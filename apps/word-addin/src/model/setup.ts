@@ -32,6 +32,8 @@ import { builtInStyleIds, canonicalStyleId, styledParagraph, styledRun } from '@
 export interface SheetStyle {
   readonly id: string;
   readonly kind: 'paragraph' | 'character';
+  /** Ours, rather than one of Word's own built-ins (Normal, the headings). */
+  readonly custom: boolean;
 }
 
 /**
@@ -52,7 +54,7 @@ export function styleIds(sheet: string): SheetStyle[] {
     const type = /w:type="([^"]+)"/.exec(attrs)?.[1];
     if (id === undefined) continue;
     if (type !== 'paragraph' && type !== 'character') continue;
-    out.push({ id, kind: type });
+    out.push({ id, kind: type, custom: /w:customStyle="1"/.test(attrs) });
   }
   return out;
 }

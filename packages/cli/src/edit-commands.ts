@@ -99,7 +99,7 @@ function setRegister(ctx: EditContext, doc: ChantDoc): void {
     sectionId === undefined
       ? { k: 'profile', scope: 'document', preset }
       : { k: 'profile', scope: 'section', sectionId, preset },
-    `${sectionId ?? 'the document'} now follows ${named}`,
+    `${sectionId ?? 'the sections without a register of their own'} now follow${sectionId === undefined ? '' : 's'} ${named}`,
   );
 }
 

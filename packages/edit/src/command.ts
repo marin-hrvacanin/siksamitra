@@ -24,6 +24,7 @@ import type { Stage } from '@siksamitra/format';
 import type { MarkPatch, MarkReason, UnitAddress } from './marks.js';
 import type { FigureCommand } from './figures.js';
 import type { ProfileChange } from './set-profile.js';
+import type { ConventionsChange } from './set-conventions.js';
 
 export type EditCommand =
   /** Replace a flat range of one section's source. Every text change is this. */
@@ -77,4 +78,6 @@ export type EditCommand =
   /** A picture: put one in, change one, take one out — see `figures.ts`. */
   | FigureCommand
   /** Change which register's rules govern the document, or one section. */
-  | ProfileChange;
+  | ProfileChange
+  /** Switch the conventions, for the same two scopes (`set-conventions.ts`). */
+  | ConventionsChange;

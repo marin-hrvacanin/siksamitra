@@ -50,5 +50,22 @@ const IN_THE_WAY: readonly (readonly [RegExp, string])[] = [
  * person's words. Empty means the paragraph may be written.
  */
 export function inTheWay(paragraphXml: string): string[] {
-  return IN_THE_WAY.filter(([re]) => re.test(paragraphXml)).map(([, what]) => what);
+  const xml = withoutOurUprightPauses(paragraphXml);
+  return IN_THE_WAY.filter(([re]) => re.test(xml)).map(([, what]) => what);
 }
+
+/*
+ * THE UPRIGHT PAUSE IS OURS. The writer takes the slant off a pause bar by
+ * direct formatting — `i`/`iCs` off (`pauseRun`) — and the rule above took
+ * that for the person's own: every line with a pause in it was then refused
+ * ("formatting of its own"), found when the owner chose a register over his
+ * lines in Word. A run that is a pause bar and nothing else, in a style, with
+ * italic turned OFF and no other direct formatting, is the add-in's; any
+ * other formatting on it, or on any other run, is still the person's.
+ */
+const OFF = String.raw`<w:i(?:Cs)? w:val="(?:0|false)"\s*/>`;
+const UPRIGHT_PAUSE = new RegExp(
+  String.raw`(<w:r\b[^>]*>\s*<w:rPr>\s*<w:rStyle w:val="[^"]+"\s*/>)\s*(?:${OFF}\s*){1,2}(</w:rPr>\s*<w:t\b[^>]*>\s*[|¦]{1,2}\s*</w:t>\s*</w:r>)`,
+  'g',
+);
+const withoutOurUprightPauses = (xml: string): string => xml.replace(UPRIGHT_PAUSE, '$1$2');

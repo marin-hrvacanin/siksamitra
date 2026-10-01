@@ -75,66 +75,17 @@ export function FileGroup(
     setBusy(true);
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
-      const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
       /*
        * Imported lazily, and the reason is the browser build: the Word reader
        * and the zip container pull in the compression code, which is a third
-       * of the bundle and is needed by nobody who only reads.
+       * of the bundle and is needed by nobody who only reads. Which reader a
+       * file takes is `openDocumentFile`'s — the Word add-in opens files with
+       * the same one.
        */
-      if (ext === 'smdoc' || ext === 'vuchant') {
-        /*
-         * BOTH GENERATIONS OF `.smdoc`, decided by the file's own bytes.
-         *
-         * v2 is a zip; v1 is `SMDI` (xz), `SMDC` (zlib) or bare JSON. Back
-         * compatibility is a promise, and it was one nothing could keep: the
-         * v1 reader existed, was tested by hand, and was reachable from no
-         * application code — so opening a years-old document threw.
-         */
-        const interop = await import('@siksamitra/interop');
-        if (interop.documentFlavour(bytes) === 'v2') {
-          onImport(interop.unpackDocument(bytes).doc, file.name);
-        } else {
-          const result = await interop.importSmdoc(bytes);
-          onImport(result.doc, file.name);
-          const marks = result.doc.overrides?.length ?? 0;
-          onNote(
-            `${file.name}: an older document, derived into this format`
-            + (marks > 0 ? ` — ${marks} mark(s) kept as the author's own` : ''),
-          );
-        }
-      } else if (ext === 'docx') {
-        const interop = await import('@siksamitra/interop');
-        /* One of OURS carries the document itself, so it comes back exactly —
-           marks, overrides, register and all — rather than being re-derived
-           from what the page happens to show. */
-        if (interop.isSiksamitraDocx(bytes)) {
-          const read = await interop.importWord(bytes);
-          onImport(read.doc, file.name);
-          /* What was done to the page in Word since is IN the document: the
-             verses edited, added or removed there (`body-edits.ts`). */
-          const { edited, added, removed } = read.inWord;
-          const inWord = [
-            edited > 0 ? `${edited} verse(s) edited` : '', added > 0 ? `${added} added` : '',
-            removed > 0 ? `${removed} removed` : '',
-          ].filter((x) => x !== '').join(', ');
-          onNote(inWord !== ''
-            ? `${file.name}: opened, with what was done in Word — ${inWord}`
-            : read.intact
-              ? `${file.name}: opened exactly — the document was inside the file`
-              : `${file.name}: the document inside the file no longer hashes to what it recorded`);
-        } else {
-          const result = interop.importDocx(bytes);
-          onImport(result.doc, file.name);
-          if (result.report.unresolved.length > 0) {
-            onNote(
-              `${file.name}: ${result.report.unresolved.length} run(s) whose styling this `
-              + 'version does not understand were kept as plain text',
-            );
-          }
-        }
-      } else {
-        onNote(`${file.name}: not a document this program imports (.smdoc, .vuchant, .docx)`);
-      }
+      const { openDocumentFile } = await import('@siksamitra/interop');
+      const opened = await openDocumentFile(bytes, file.name);
+      onImport(opened.doc, file.name);
+      if (opened.note !== null) onNote(opened.note);
     } catch (e) {
       /*
        * The message, not a generic failure. An `SMDI` file says exactly what
@@ -253,7 +204,7 @@ export function FileGroup(
         <input
           ref={picker}
           type="file"
-          accept=".smdoc,.vuchant,.docx"
+          accept=".smdoc,.vuchant,.docx,.html"
           className="u-hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -268,7 +219,7 @@ export function FileGroup(
           <RibbonButton
             icon="import"
             label="Import"
-            title="Read a .smdoc, a chant package or a Word document"
+            title="Read a .smdoc, a chant package, a Word document or an exported page"
             disabled={busy}
             onClick={() => picker.current?.click()}
           />

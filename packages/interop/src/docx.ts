@@ -76,7 +76,7 @@ export function importDocx(bytes: Uint8Array, title?: string, fallbackTitle = 'I
       || f.name === 'word/styles.xml'
       || f.name === 'word/_rels/document.xml.rels'
       || f.name.startsWith('word/media/')
-      /* The add-in's settings: the register the document is marked in. */
+      /* The add-in's settings: the register of the lines outside every part. */
       || /^word\/webextensions\/webextension\d*\.xml$/.test(f.name),
   });
   const xml = zip['word/document.xml'];

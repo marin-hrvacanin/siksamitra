@@ -17,16 +17,21 @@
  */
 import type { TextAndMarks } from '@siksamitra/format';
 import {
-  inTheWay, mergeRuns, paragraphXml, partOf, readParagraphs, scriptOfLine, type PartRules,
+  lineNotes, mergeRuns, paragraphXml, partOf, readParagraphs, scriptOfLine,
+  type LineNote, type PartRules,
 } from '@siksamitra/interop';
 import type { ScriptKey } from '@siksamitra/engine';
 import { styleSheetFor } from '../model/sheet.js';
-import { documentPartOf, restyle } from '../model/opc.js';
-import { decodeRuns, isVerseParagraph, paragraphsXml, unresolvedIn } from '../model/paragraph.js';
+import { documentPartOf } from '../model/opc.js';
+import { decodeRuns, isVerseParagraph, unresolvedIn } from '../model/paragraph.js';
+import { blockedIn, lineXml } from '../model/line-xml.js';
 import type { Unaccounted } from '../model/paragraph.js';
 import { offsetMap, modelRange, type OffsetMap } from '../model/offsets.js';
 import { learn, packageOf } from './client.js';
-import { CARET_BOOKMARK, SELECTION_END_BOOKMARK, withCaretAt, wordOffsetIn } from '../model/caret.js';
+import { CARET_BOOKMARK, SELECTION_END_BOOKMARK, atWordEnd, wordOffsetIn } from '../model/caret.js';
+import { watchTyping } from './typing-guard.js';
+import { lineTargets } from './line-target.js';
+import { restyleTo } from '../model/restyle.js';
 
 /** Lines queued per `context.sync()`. */
 const CHUNK = 40;
@@ -52,6 +57,8 @@ export interface Line {
   part: PartRules | null;
   /** The script the line is written in — read in it, and written back in it. */
   script: ScriptKey;
+  /** The notes that end its lines, put back when it is written. */
+  notes: LineNote[];
 }
 
 /** The selection: the first line's fields, for everything that shows one, and
@@ -128,39 +135,16 @@ export async function locate(): Promise<Located> {
           style: read.pStyle,
           isVerse: isVerseParagraph(read),
           unresolved: unresolvedIn([read], script),
-          blocked: inTheWay(paragraphXml(part).join('')),
+          blocked: blockedIn(paragraphXml(part).join(''), runs, script),
           wordText: p.text,
           part: parts[i]!.isNullObject ? null : partOf(parts[i]!.tag),
           script,
+          notes: lineNotes(runs).notes,
         });
       });
     }
     return { ...lines[0]!, lines };
   });
-}
-
-/**
- * NOTHING THE PERSON TYPES NEXT TAKES OUR STYLE.
- *
- * Word gives a typed letter the character style of the one before it, the way
- * bold carries on — so after Short boxed the `e` just typed, every letter that
- * followed went into the box, and after Svarita the next word came out red and
- * was read back as accent. The caret, once placed, is given the default
- * character style, which is what Ctrl+Space does in Word.
- *
- * BY ITS LOCAL NAME. `Range.style` takes the name the person's Word shows —
- * "Zadani font odlomka" in a Croatian one — so the style is looked up by its
- * English name, which `getByNameOrNullObject` accepts, and set by `nameLocal`.
- * WordApi 1.5; where there is none, typing is sticky as it always was.
- */
-async function unstick(context: Word.RequestContext): Promise<void> {
-  if (!Office.context.requirements.isSetSupported('WordApi', '1.5')) return;
-  const plain = context.document.getStyles().getByNameOrNullObject('Default Paragraph Font');
-  plain.load('isNullObject,nameLocal');
-  await context.sync();
-  if (plain.isNullObject) return;
-  context.document.getSelection().style = plain.nameLocal;
-  await context.sync();
 }
 
 /** A line to put back: which line of the selection, and what it now holds. */
@@ -172,6 +156,10 @@ export interface LineWrite {
   wordText: string;
   /** The script to write it in — by default the one it is written in now. */
   script?: ScriptKey;
+  /** The notes that end its lines — see `lineNotes`. */
+  notes: readonly LineNote[];
+  /** The paragraph's style as it was, when the write gives it another. */
+  was?: string | null;
 }
 
 /**
@@ -217,17 +205,20 @@ export async function writeLines(
     for (const w of writes) {
       if (items[w.line]?.text !== w.wordText) throw new LineChanged();
     }
+    /* Into the part's own content where the line IS the part (`line-target.ts`). */
+    const targets = await lineTargets(writes.map((w) => items[w.line]!));
     for (let at = 0; at < writes.length; at += CHUNK) {
-      for (const w of writes.slice(at, at + CHUNK)) {
+      for (const [k, w] of writes.slice(at, at + CHUNK).entries()) {
         const script = w.script ?? scriptOfLine(w.wordText);
-        const plain = restyle(paragraphsXml(w.tm, script), w.style);
         const here = canPlace && caret!.line === w.line;
-        const span = here && caret!.to !== undefined && caret!.to > caret!.at;
-        const offset = (at: number): number => wordOffsetIn(plain, at, script);
-        const ended = span ? withCaretAt(plain, offset(caret!.to!), SELECTION_END_BOOKMARK) : plain;
-        const body = here ? withCaretAt(ended, offset(caret!.at)) : plain;
-        items[w.line]!.getRange(Word.RangeLocation.content)
-          .insertOoxml(packageOf(body, styleSheetFor(body)), Word.InsertLocation.replace);
+        const body = lineXml({
+          tm: w.tm, style: w.style, script, notes: w.notes,
+          ...(here ? { caret: { at: caret!.at, ...(caret!.to === undefined ? {} : { to: caret!.to }) } } : {}),
+        });
+        targets[at + k]!.insertOoxml(packageOf(body, styleSheetFor(body)), Word.InsertLocation.replace);
+        /* By name, where the line is now in another style (`model/restyle.ts`). */
+        const to = restyleTo(body, w.was === undefined ? w.style : w.was);
+        if (to !== null) items[w.line]!.style = to;
       }
       await context.sync();
     }
@@ -248,7 +239,21 @@ export async function writeLines(
       if (!mark.isNullObject) context.document.deleteBookmark(CARET_BOOKMARK);
       if (!end.isNullObject) context.document.deleteBookmark(SELECTION_END_BOOKMARK);
       await context.sync();
-      if (!spans) await unstick(context);
+      /*
+       * NOTHING THE PERSON TYPES NEXT TAKES THE MARK — at the end of a word,
+       * where typing goes on. Word carries a character style on to the letter
+       * typed after it and Office.js cannot reset a bare caret's style, so the
+       * line is watched and what is typed there is made plain
+       * (`typing-guard.ts`). Inside a word the letter after the caret already
+       * stops a style carrying on.
+       */
+      const written = writes.find((w) => w.line === caret!.line);
+      if (!spans && written !== undefined && atWordEnd(written.tm.text, caret!.at)) {
+        const script = written.script ?? scriptOfLine(written.wordText);
+        const plain = lineXml({ tm: written.tm, style: written.style, script, notes: [] });
+        await watchTyping(items[caret!.line]!, { tm: written.tm, style: written.style, script, notes: written.notes },
+          lineXml({ tm: written.tm, style: written.style, script, notes: written.notes }), wordOffsetIn(plain, caret!.at, script));
+      }
     } else if (items.length > 1) {
       items[0]!.getRange('Start').expandTo(items[items.length - 1]!.getRange('End')).select();
       await context.sync();

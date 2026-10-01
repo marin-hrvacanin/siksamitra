@@ -13,7 +13,15 @@
     "id": "purusha-suktam",
     "primaryScript": "iast",
     "profile": {
-      "patch": {},
+      "patch": {
+        "aids": {
+          "vy": true
+        },
+        "sandhi": {
+          "nasalBeforeNasal": false,
+          "visargaBeforeVelar": false
+        }
+      },
       "preset": "taittiriya"
     },
     "recording": {

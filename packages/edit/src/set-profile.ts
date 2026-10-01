@@ -113,7 +113,9 @@ export function setProfile(
   const reports: VerseReport[] = [];
   const refusals: string[] = [];
 
-  const where = target === undefined ? 'the document' : `"${target.title ?? target.id}"`;
+  /* Never "the document": a register belongs to the text it marks — here,
+     the sections that name none of their own (the owner, 2026-09-30). */
+  const where = target === undefined ? 'The sections without a register of their own' : `"${target.title ?? target.id}"`;
   /* Its NAME, not its key: `sukla-yajurveda` is what the file says and
      ‚Śukla Yajurveda’ is what a person says. */
   const named = command.preset === null
@@ -124,7 +126,7 @@ export function setProfile(
     doc: next,
     reports,
     refusals,
-    note: `${where} now follows ${named}. Nothing was re-marked — press `
+    note: `${where} now follow${target === undefined ? '' : 's'} ${named}. Nothing was re-marked — press `
       + 'Re-apply rules where you want it to take effect.',
     history: record(history, {
       before,

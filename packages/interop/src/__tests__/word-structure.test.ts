@@ -35,30 +35,39 @@ describe('a break inside a run', () => {
     const [para] = readParagraphs(p('Translit', '<w:r><w:t xml:space="preserve">vidmahe | </w:t><w:br/><w:t>satya</w:t></w:r>'));
     expect(para!.runs[0]!.text).toBe('vidmahe | \nsatya');
   });
-  it('and so is a tab, and a carriage return', () => {
+  it('and so is a tab, as a tab, and a carriage return', () => {
+    /* A tab read as a space wrote the indent he puts before a pāda back as
+       one — one character either way, as Word counts it. */
     const [para] = readParagraphs(p(null, '<w:r><w:t>a</w:t><w:tab/><w:t>b</w:t><w:cr/><w:t>c</w:t></w:r>'));
-    expect(para!.runs[0]!.text).toBe('a b\nc');
+    expect(para!.runs[0]!.text).toBe('a\tb\nc');
   });
 });
 
-describe('a pause, and who placed it', () => {
+describe('a pause: its colour is its length, one bar each — as his files write it', () => {
   const pauses = (tokens: ChantToken[]) => tokens.filter((t) => t.t === 'pause');
+  const line = (style: string, bar = ' | ') => tokensFromRuns([
+    { text: 'oṁ', rStyle: null, superscript: false }, { text: bar, rStyle: style, superscript: false },
+    { text: 'agnim', rStyle: null, superscript: false }], blank(), 'x');
 
-  it('in his blue is one the rules placed; in his red Pause, one placed by hand', () => {
-    const blue = tokensFromRuns([{ text: 'oṁ', rStyle: null, superscript: false }, { text: ' | ', rStyle: 'Anusvara', superscript: false }, { text: 'agnim', rStyle: null, superscript: false }], blank(), 'x');
-    const red = tokensFromRuns([{ text: 'oṁ', rStyle: null, superscript: false }, { text: ' | ', rStyle: 'Pause', superscript: false }, { text: 'agnim', rStyle: null, superscript: false }], blank(), 'x');
-    expect(pauses(blue)).toEqual([{ t: 'pause', len: 'short', rule: true }]);
-    expect(pauses(red)).toEqual([{ t: 'pause', len: 'short' }]);
-    expect(toTextAndMarks({ id: 'v', tokens: blue }).marks.find((m) => m.k === 'pause')?.by).toBe('rule');
-    expect(toTextAndMarks({ id: 'v', tokens: red }).marks.find((m) => m.k === 'pause')?.by).toBe('hand');
+  /* His Devī Māhātmyam: 815 single bars in his blue `Anusvara`, 119 in his red
+     `Pause`; his sādhanās add twelve `||` in red. The owner, 2026-10-01: "short
+     is blue line and long is red. Both single." */
+  it('one bar in his blue is a SHORT pause', () => {
+    expect(pauses(line('Anusvara'))).toEqual([{ t: 'pause', len: 'short' }]);
+  });
+  it('one bar in his red Pause is a LONG pause', () => {
+    expect(pauses(line('Pause'))).toEqual([{ t: 'pause', len: 'long' }]);
+  });
+  it('and the twelve `||` of his sādhanās are long pauses too', () => {
+    expect(pauses(line('Pause', ' || '))).toEqual([{ t: 'pause', len: 'long' }]);
   });
 
-  it('is written back in the colour it came in', () => {
+  it('is written back as ONE bar, upright, in the colour of its length', () => {
     const doc = (tokens: ChantToken[]): ChantDoc => ({ title: '', titleForms: {}, sections: [{ id: 's', verses: [{ id: 'v', tokens }] }] });
-    const rule: ChantToken[] = [{ t: 'pause', len: 'short', rule: true }];
-    const hand: ChantToken[] = [{ t: 'pause', len: 'long' }];
-    expect(documentXml(doc(rule))).toContain('<w:rStyle w:val="Anusvara"/></w:rPr><w:t xml:space="preserve">|</w:t>');
-    expect(documentXml(doc(hand))).toContain('<w:rStyle w:val="Pause"/></w:rPr><w:t xml:space="preserve">||</w:t>');
+    const upright = '<w:i w:val="0"/><w:iCs w:val="0"/></w:rPr><w:t xml:space="preserve">|</w:t>';
+    expect(documentXml(doc([{ t: 'pause', len: 'short' }]))).toContain(`<w:rStyle w:val="Anusvara"/>${upright}`);
+    expect(documentXml(doc([{ t: 'pause', len: 'long' }]))).toContain(`<w:rStyle w:val="Pause"/>${upright}`);
+    expect(documentXml(doc([{ t: 'pause', len: 'long' }]))).not.toContain('||');
   });
 
   it('keeps who placed it from the markings to the tokens and back', () => {

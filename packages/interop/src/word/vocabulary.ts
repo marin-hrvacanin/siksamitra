@@ -49,6 +49,11 @@ export const VOCABULARY: readonly Entry[] = [
   { legacy: 'Comment', clean: 'Comment', name: 'Comment' },
   { legacy: 'Reference', clean: 'Reference', name: 'Reference' },
   { legacy: 'Insert', clean: 'Insert', name: 'Insert' },
+  /* His Devanāgarī's, under his own names: Word matches a style by name, and a
+     name of ours beside his would be a second style (`style-names.ts`). */
+  { legacy: 'Devanagari', clean: 'Devanagari', name: 'Devanagari' },
+  { legacy: 'Hold', clean: 'Hold', name: 'Hold' },
+  { legacy: 'Phonetic', clean: 'Phonetic', name: 'Phonetic' },
 ];
 
 const TO_CLEAN: ReadonlyMap<string, Entry> = new Map(VOCABULARY.map((e) => [e.legacy, e]));
@@ -86,13 +91,37 @@ const RE_STYLE = /(<w:style\b[^>]*\bw:styleId=")([^"]+)("[^>]*>)([\s\S]*?)(<\/w:
 const RE_NAME = /(<w:name\s+w:val=")[^"]*(")/;
 
 /**
+ * A substituted candrabindu, as the writer writes one: `m` and U+0310 in
+ * `Anusvara`. Matched on the writer's own shape, which is the only one it has.
+ */
+const RE_CANDRA_RUN = /<w:r><w:rPr><w:rStyle w:val="Anusvara"\/><\/w:rPr><w:t xml:space="preserve">m\u0310<\/w:t><\/w:r>/g;
+
+/**
+ * HIS CANDRABINDU, in a document that is his.
+ *
+ * Every one of the 176 candrabindus in the mantra lines of his six reference
+ * documents is U+F141 — URW Palladio ITU's own `m̐`, a private-use character —
+ * in his `VedicAnusvara`, and none is `m` + U+0310. So a line of his written
+ * back with the Unicode pair drew a different `m` with a different candra. In
+ * his documents it is written his way.
+ *
+ * Only there. U+F141 is drawn by URW Palladio ITU and by nothing else: in a
+ * new document, on Word on the web or on a Mac without the font, it is an
+ * empty box — and Palladio has no U+0310, so `VedicAnusvara` cannot carry the
+ * portable pair either. A clean document keeps the Unicode letter.
+ */
+export const withHisCandrabindu = (xml: string): string => xml.replace(RE_CANDRA_RUN,
+  '<w:r><w:rPr><w:rStyle w:val="VedicAnusvara"/></w:rPr><w:t xml:space="preserve">\uf141</w:t></w:r>');
+
+/**
  * XML written in his vocabulary, in the one asked for.
  *
  * Every id a style is defined under or referenced by, and the name each
- * renamed definition shows. Legacy is the identity.
+ * renamed definition shows. Legacy keeps every id, and writes his
+ * candrabindu (`inHisGlyphs`).
  */
 export function inVocabulary(xml: string, vocabulary: Vocabulary): string {
-  if (vocabulary === 'legacy') return xml;
+  if (vocabulary === 'legacy') return withHisCandrabindu(xml);
   return xml
     .replace(RE_STYLE, (all, open: string, id: string, rest: string, inner: string, close: string) => {
       const e = TO_CLEAN.get(id);

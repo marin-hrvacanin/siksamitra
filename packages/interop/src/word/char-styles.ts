@@ -141,11 +141,16 @@ export function charStyles(
      * carry a style in its Styles pane named after nothing on its page — which
      * is the report the owner made about `2holdingchange`.
      */
+    /* `Long` is his — the overline of the Ṛgveda's lengthened svarita — but
+       only a Ṛgvedic line has one, so it is written when a line does. His
+       template's values: Calibri Light, neither bold nor italic, the accent
+       blue, at the svara's size. */
+    ...(used.has('Long') ? [ink('Long', WORD_MARKS.dirgha.color, { sz: svaraSz, face: WORD_MARKS.dirgha.face })] : []),
     /* `Visarga` likewise: his files write a replaced visarga in `Anusvara`. */
     ...(used.has('Visarga') ? [ink('Visarga', mode.change, { italic: true })] : []),
     ...(used.has('Reference')
-      ? [ink('Reference', roleColor(WORD_MARKS.reference.color, mode), {
-        superscript: WORD_MARKS.reference.superscript,
+      ? [ink('Reference', mode[WORD_MARKS.reference.ink], {
+        italic: WORD_MARKS.reference.italic, superscript: WORD_MARKS.reference.superscript,
       })]
       : []),
   ];

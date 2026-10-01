@@ -6,6 +6,7 @@
  */
 import type { ChantToken, ChantUnit } from '@siksamitra/format';
 import { ROLE_OF_ELEMENT } from '@siksamitra/tokens/document-type';
+import { WORD_MARKS } from '@siksamitra/tokens/word';
 import { xmlEscape } from '../xml.js';
 import { PARA_STYLE_OF } from './styles.js';
 import type { WordMedia } from './drawing.js';
@@ -94,6 +95,31 @@ export interface WordPictures {
 export const styledRun = (text: string, rStyle: string | null, sup = false, hidden = false): string =>
   /* `w:rPr` is a schema SEQUENCE: `rStyle`, then `vanish`, then `vertAlign`. */
   `<w:r>${rStyle === null && !sup && !hidden ? '' : `<w:rPr>${rStyle === null ? '' : `<w:rStyle w:val="${rStyle}"/>`}${hidden ? '<w:vanish/>' : ''}${sup ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr>`}`
+  + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
+
+/**
+ * A DAṆḌA, in his face. Not a style: his files set every daṇḍa in Mangal as
+ * direct formatting (`w:hint="cs"` — it is a Devanāgarī character, so Word
+ * reads the complex-script slot), and the paragraph's Arial has no daṇḍa at all,
+ * so a plain run was drawn in whatever fallback Word found. `rFonts` is the
+ * first child `CT_RPr` allows after `rStyle`.
+ */
+export const dandaRun = (text: string): string => {
+  const face = xmlEscape(WORD_MARKS.danda.face);
+  return `<w:r><w:rPr><w:rFonts w:ascii="${face}" w:hAnsi="${face}" w:cs="${face}" w:hint="cs"/></w:rPr>`
+    + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
+};
+
+/**
+ * A PAUSE, UPRIGHT. A pause the rules place is in the substitution blue, as in
+ * his files — and that style, `Anusvara`, is italic, so the bar leaned like a
+ * slash (the owner, 2026-10-01: "why are pauses here in italic? Not good").
+ * The style stays — it is what says the bar is a pause, to every reader — and
+ * the slant is taken off by direct formatting (`i`/`iCs` off, which `CT_RPr`
+ * puts after `rStyle`).
+ */
+export const pauseRun = (text: string, rStyle: string): string =>
+  `<w:r><w:rPr><w:rStyle w:val="${rStyle}"/><w:i w:val="0"/><w:iCs w:val="0"/></w:rPr>`
   + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
 
 /** One paragraph, in a paragraph style. Exported for the same reason. */

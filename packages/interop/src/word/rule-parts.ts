@@ -18,7 +18,7 @@
  * writes a section marked by other rules as one. THE TAG IS VERSIONED (`v1`)
  * because it is stored in people's files: a later format must still read it.
  */
-import { CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES, type ChantProfileKey } from '@siksamitra/format';
+import { CHANT_PROFILE_NOTES, READABLE_PROFILE_KEYS, type ChantProfileKey } from '@siksamitra/format';
 import { DEFAULT_PROFILE_KEY } from '@siksamitra/engine';
 import { xmlEscape, xmlText } from '../xml.js';
 
@@ -36,7 +36,7 @@ export const partTag = (r: PartRules): string => `${PREFIX}${r.register}`;
 export function partOf(tag: string | null | undefined): PartRules | null {
   if (tag === null || tag === undefined || !tag.startsWith(PREFIX)) return null;
   const register = tag.slice(PREFIX.length);
-  return (CHANT_PROFILE_KEYS as readonly string[]).includes(register)
+  return (READABLE_PROFILE_KEYS as readonly string[]).includes(register)
     ? { register: register as ChantProfileKey } : null;
 }
 
@@ -108,7 +108,7 @@ export function recordedRegisterIn(webextensionXml: string): ChantProfileKey | n
     if (m[1] !== REGISTER_SETTING) continue;
     try {
       const v: unknown = JSON.parse(xmlText(m[2] ?? ''));
-      if (typeof v === 'string' && (CHANT_PROFILE_KEYS as readonly string[]).includes(v)) return v as ChantProfileKey;
+      if (typeof v === 'string' && (READABLE_PROFILE_KEYS as readonly string[]).includes(v)) return v as ChantProfileKey;
     } catch { /* not a value this program wrote */ }
   }
   return null;

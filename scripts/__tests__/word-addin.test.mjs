@@ -266,3 +266,15 @@ describe('the file names', () => {
       .toEqual(['manifest.local.xml', 'manifest.pages.xml', 'manifest.vedaunion.xml']);
   });
 });
+
+describe('the tab is labelled with its host', () => {
+  it('so the local add-in and the published one can be told apart on the ribbon', () => {
+    const source = readFileSync('apps/word-addin/manifest.xml', 'utf8');
+    for (const host of Object.values(ADDIN_HOSTS)) {
+      const m = manifestFor(source, host);
+      const label = /<bt:String id="sm\.Tab\.Label" DefaultValue="([^"]*)"\/>/.exec(m)?.[1];
+      expect(label).toBe(host.name.replace(/&/g, '&amp;'));
+    }
+    expect(new Set(Object.values(ADDIN_HOSTS).map((h) => h.name)).size).toBeGreaterThan(1);
+  });
+});

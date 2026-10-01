@@ -31,17 +31,14 @@ import { useMarks, type HoldState, type MarkField } from './useMarks.js';
 import { useSourceMaps } from './useSourceMaps.js';
 import { useFigures, type Figures } from './useFigures.js';
 import { useText } from './useText.js';
-import { useRegister } from './useRegister.js';
+import { useConventions, useRegister, type SetConventions } from './useRegister.js';
 import { useSetRecording } from './useSetRecording.js';
 
 /** How long a burst of typing stays one undo step. Word's feel, roughly. */
 const COALESCE_MS = 900;
 
-
-/** The mark fields a hand edit may set or withdraw. Mirrors the engine's
- *  `OverrideField`, named here so the toolbar can type its buttons. */
-/* The list itself lives with the commands that use it. Re-exported because
-   the keymap and the ribbon both name it. */
+/** The mark fields a hand edit may set or withdraw — the engine's `OverrideField`,
+ *  named for the toolbar; the list lives with its commands (`useMarks.ts`). */
 export type { HoldState, MarkField } from './useMarks.js';
 
 export interface Session {
@@ -135,6 +132,7 @@ export interface Session {
   register: ChantProfileKey | null;
   sectionRegister: ChantProfileKey | null;
   setRegister: (scope: 'document' | 'section', preset: ChantProfileKey | null) => string;
+  setConventions: SetConventions; // the same scopes; `setConventions` in edit
 
   /**
    * Put a mapping of the recitation into the document, as one undoable step.
@@ -383,6 +381,7 @@ export function useSession(doc: ChantDoc): Session {
     register: registerOf(live),
     sectionRegister: section === undefined ? null : registerOf(live, section),
     setRegister,
+    setConventions: useConventions(setLive, setRevision, sectionId),
     setRecording,
     remount,
     rebuild: () => setRemount((n) => n + 1),

@@ -158,8 +158,8 @@ export const TAB: readonly TabGroup[] = [
         'candrabindu', { k: 'combining', v: '̐' }),
       mark('svarabhakti', 'Svarabhakti', 'The svarabhakti dot, at the caret: between an r and the sibilant or h after it (var·ṣa).',
         'svarabhakti', { k: 'sbhakti' }),
-      mark('pause-short', 'Short pause', 'A short pause at the caret: one bar.', 'bar-short', { k: 'pause', v: 'short' }),
-      mark('pause-long', 'Long pause', 'A long pause at the caret: two bars.', 'bar-long', { k: 'pause', v: 'long' }),
+      mark('pause-short', 'Short pause', 'A short pause at the caret: one bar, in blue.', 'bar-short', { k: 'pause', v: 'short' }),
+      mark('pause-long', 'Long pause', 'A long pause at the caret: one bar, in red.', 'bar-long', { k: 'pause', v: 'long' }),
       mark('clear-all', 'Clear all', 'Take every marking off the selected letters: holdings, svaras, changes, aids and pauses.',
         'marks-clear', { k: 'clear' }),
     ],
@@ -198,8 +198,8 @@ export const TAB: readonly TabGroup[] = [
     controls: [
       {
         kind: 'menu', id: 'register', label: 'Register', icon: { name: 'tree' },
-        tip: 'Which śākhā’s rules mark the text here — this part, or the document outside every part. '
-          + 'A document may hold parts marked by different rules.',
+        tip: 'Which śākhā’s rules mark the text here — the part the caret is in, the lines selected (they become a part), '
+          + 'or the lines outside every part. One file may hold parts of different śākhās.',
         items: [
           ...CHANT_PROFILE_KEYS.map((k): Command => ({
             id: `reg-${k}`, fn: fnOf(`reg-${k}`), label: CHANT_PROFILE_NOTES[k].name,
@@ -207,12 +207,12 @@ export const TAB: readonly TabGroup[] = [
           })),
           {
             id: 'part-new', fn: fnOf('part-new'), label: 'New part from these lines', icon: { name: 'part-new' }, does: 'part-new',
-            tip: 'Give the selected lines rules of their own — a sūkta of another śākhā in the middle of the document. '
+            tip: 'Give the selected lines rules of their own — a sūkta of another śākhā among the others. '
               + 'Word draws a frame around the part, titled with its register.',
           },
           {
             id: 'part-dissolve', fn: fnOf('part-dissolve'), label: 'Dissolve this part', icon: { name: 'part-dissolve' }, does: 'part-dissolve',
-            tip: 'Undo the part the caret is in: its lines stay, and the document’s own rules apply to them again.',
+            tip: 'Undo the part the caret is in: its lines stay, and the rules of the lines outside every part apply to them again.',
           },
         ],
       },

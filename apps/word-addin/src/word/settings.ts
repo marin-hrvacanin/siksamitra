@@ -12,8 +12,8 @@
  * Every call is guarded: a host without settings, or a read-only document, is
  * answered with "not recorded", never with a thrown error.
  */
-import { CHANT_PROFILE_KEYS, type ChantProfileKey, type Stage } from '@siksamitra/format';
-import { STAGES } from '@siksamitra/engine';
+import { READABLE_PROFILE_KEYS, type ChantProfileKey, type Stage } from '@siksamitra/format';
+import { CONVENTIONS, STAGES, type ConventionId } from '@siksamitra/engine';
 import { REGISTER_SETTING } from '@siksamitra/interop';
 
 const KEY = REGISTER_SETTING;
@@ -21,7 +21,7 @@ const KEY = REGISTER_SETTING;
 export function recordedRegister(): ChantProfileKey | null {
   try {
     const v: unknown = Office.context.document.settings.get(KEY);
-    return typeof v === 'string' && (CHANT_PROFILE_KEYS as readonly string[]).includes(v)
+    return typeof v === 'string' && (READABLE_PROFILE_KEYS as readonly string[]).includes(v)
       ? v as ChantProfileKey : null;
   } catch {
     return null;
@@ -56,5 +56,76 @@ export async function recordStages(stages: ReadonlySet<Stage>): Promise<void> {
     await new Promise<void>((done) => { s.saveAsync(() => done()); });
   } catch {
     /* Not recorded; the next run uses every stage. */
+  }
+}
+
+const CONVENTIONS_KEY = 'siksamitra.conventions';
+
+/**
+ * The conventions this document is marked with — only the ones a person has
+ * switched; the rest are the register's own. See `CONVENTIONS` in the engine.
+ */
+export function recordedConventions(): Partial<Record<ConventionId, boolean>> {
+  try {
+    const v: unknown = Office.context.document.settings.get(CONVENTIONS_KEY);
+    if (typeof v !== 'object' || v === null) return {};
+    const out: Partial<Record<ConventionId, boolean>> = {};
+    for (const c of CONVENTIONS) {
+      const on = (v as Record<string, unknown>)[c.id];
+      if (typeof on === 'boolean') out[c.id] = on;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+const MARKED_WITH_KEY = 'siksamitra.conventions.markedWith';
+
+/**
+ * THE CONVENTIONS THE TEXT WAS LAST MARKED WITH — not the ones chosen now.
+ *
+ * Word keeps no record of whether a mark was the rules' or a person's, so a
+ * re-run tells the rules' marks by what the rules WOULD have made, and undoes
+ * those. Asked of the conventions chosen NOW, it did not recognise what the
+ * old ones had made: measured in real Word, the visarga marked as a change
+ * before `k` survived switching that convention off, taken for a person's.
+ * `null` until the first run, or the first change of the conventions.
+ */
+export function recordedMarkedWith(): Partial<Record<ConventionId, boolean>> | null {
+  try {
+    const v: unknown = Office.context.document.settings.get(MARKED_WITH_KEY);
+    if (typeof v !== 'object' || v === null) return null;
+    const out: Partial<Record<ConventionId, boolean>> = {};
+    for (const c of CONVENTIONS) {
+      const on = (v as Record<string, unknown>)[c.id];
+      if (typeof on === 'boolean') out[c.id] = on;
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+/** Record that the text is now marked with `used`. */
+export async function recordMarkedWith(used: Partial<Record<ConventionId, boolean>>): Promise<void> {
+  try {
+    const s = Office.context.document.settings;
+    s.set(MARKED_WITH_KEY, used);
+    await new Promise<void>((done) => { s.saveAsync(() => done()); });
+  } catch {
+    /* Not recorded; the next run takes the text as marked with the conventions chosen. */
+  }
+}
+
+export async function recordConventions(chosen: Partial<Record<ConventionId, boolean>>): Promise<void> {
+  try {
+    const s = Office.context.document.settings;
+    /* The first change: what the text was marked with is what was chosen until now. */
+    if (recordedMarkedWith() === null) s.set(MARKED_WITH_KEY, recordedConventions());
+    s.set(CONVENTIONS_KEY, chosen);
+    await new Promise<void>((done) => { s.saveAsync(() => done()); });
+  } catch {
+    /* Not recorded; the next run uses the register's own. */
   }
 }

@@ -12,6 +12,7 @@ import { calls, dialogReplies, host, lastWritten, line } from './word-addin-harn
 
 vi.mock('../../apps/word-addin/src/word/selection.js', async () => (await import('./word-addin-harness.js')).selectionMock);
 vi.mock('../../apps/word-addin/src/word/client.js', async () => (await import('./word-addin-harness.js')).clientMock);
+vi.mock('../../apps/word-addin/src/word/convert.js', async () => (await import('./word-addin-harness.js')).convertMock);
 vi.mock('../../apps/word-addin/src/word/parts.js', async () => (await import('./word-addin-harness.js')).partsMock);
 vi.mock('../../apps/word-addin/src/word/dialog.js', async (real) => ({
   ...(await real<object>()), ...(await import('./word-addin-harness.js')).dialogMock,
@@ -184,12 +185,26 @@ describe('typing', () => {
   });
 });
 
+describe('Import styles on one of his documents', () => {
+  it('converts it to the clean styles and says so', async () => {
+    host.older = ['Translit', 'Prijevod'];
+    await press('import-styles');
+    expect(calls.converted).toBe(1);
+    expect(calls.told[0]!.lines.join(' ')).toContain('now in the clean styles, looking as they did');
+    expect(calls.told[0]!.lines.join(' ')).toContain('The older styles went: Translit, Prijevod.');
+  });
+  it('and does not convert a clean document', async () => {
+    await press('import-styles');
+    expect(calls.converted).toBe(0);
+  });
+});
+
 describe('the document buttons', () => {
   it('Import styles puts the styles in and says how many', async () => {
     host.missing = ['Mantra'];
     await press('import-styles');
     expect(calls.addStyles).toEqual([false]);
-    expect(calls.told[0]!.text).toBe('The 19 śikṣāmitra styles are in this document.');
+    expect(calls.told[0]!.text).toBe('The 11 śikṣāmitra styles are in this document.');
   });
 
   it('Specimen keeps the passage, and says where it is', async () => {
@@ -207,11 +222,65 @@ describe('the document buttons', () => {
 });
 
 describe('parts and registers', () => {
-  it('a register chosen outside every part is the document’s, and re-marks it when asked', async () => {
+  it('a register chosen at a bare caret outside every part is those lines’ — never “the document’s”', async () => {
     host.docLines = [{ index: 0, tm: { text: 'agnim īḻe', marks: [] }, style: 'Translit', blocked: [], part: null, script: 'iast' }];
     await press('reg-rigveda');
     expect(host.settings.get('siksamitra.register')).toBe('rigveda');
-    expect(calls.asked).toEqual(['Re-mark the document as Ṛgveda?']);
+    expect(calls.asked).toEqual(['Re-mark the lines outside every part as Ṛgveda?']);
+    expect(host.part).toBeNull();
+  });
+
+  it('a register chosen over SELECTED lines outside every part makes them a part in it', async () => {
+    host.settings.set('siksamitra.register', 'smarta');
+    host.lines = [line('agnim īḻe', 0, 9), line('purohitam', 0, 9)];
+    await press('reg-rigveda');
+    expect(calls.asked).toEqual(['Mark these lines as Ṛgveda?']);
+    expect(host.part).toEqual({ register: 'rigveda' });
+    /* The lines outside every part keep theirs. */
+    expect(host.settings.get('siksamitra.register')).toBe('smarta');
+    expect(calls.writes).toHaveLength(1);
+  });
+
+  it('a selection partly in a part and partly not is refused — it has no one place to choose for', async () => {
+    host.settings.set('siksamitra.register', 'smarta');
+    host.lines = [line('agnim īḻe', 0, 9, { part: { register: 'rigveda' } }), line('purohitam', 0, 9)];
+    await press('reg-taittiriya');
+    expect(calls.told[0]).toEqual(expect.objectContaining({ kind: 'warn', text: 'The selection is in more than one place.' }));
+    expect(calls.asked).toEqual([]);
+    expect(host.settings.get('siksamitra.register')).toBe('smarta');
+    expect(calls.writes).toHaveLength(0);
+  });
+
+  it('and so is one over parts of different registers', async () => {
+    host.lines = [line('agnim īḻe', 0, 9, { part: { register: 'rigveda' } }), line('purohitam', 0, 9, { part: { register: 'smarta' } })];
+    await press('reg-taittiriya');
+    expect(calls.told[0]!.lines[0]).toContain('different registers');
+    expect(calls.writes).toHaveLength(0);
+  });
+
+  it('a selection inside one part re-marks that part', async () => {
+    host.part = { register: 'rigveda' };
+    host.lines = [line('agnim īḻe', 0, 9, { part: { register: 'rigveda' } }), line('purohitam', 0, 9, { part: { register: 'rigveda' } })];
+    await press('reg-smarta');
+    expect(calls.asked[0]).toContain('Re-mark this part');
+    expect(host.part).toEqual({ register: 'smarta' });
+  });
+
+  it('declined, nothing is made and nothing re-marked', async () => {
+    host.answer = false;
+    host.lines = [line('agnim īḻe', 0, 9), line('purohitam', 0, 9)];
+    await press('reg-rigveda');
+    expect(host.part).toBeNull();
+    expect(calls.writes).toHaveLength(0);
+  });
+
+  it('no wording anywhere speaks of the register “of the document”', async () => {
+    host.docLines = [{ index: 0, tm: { text: 'agnim īḻe', marks: [] }, style: 'Translit', blocked: [], part: null, script: 'iast' }];
+    await press('reg-rigveda');
+    host.part = { register: 'smarta' };
+    await press('part-dissolve');
+    const said = JSON.stringify([calls.asked, calls.told]);
+    expect(said).not.toMatch(/the document’s|of the document|document is marked|Re-mark the document/);
   });
 
   it('a new part from the selection is marked in the register here', async () => {

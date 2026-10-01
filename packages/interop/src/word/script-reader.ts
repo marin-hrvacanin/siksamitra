@@ -18,6 +18,7 @@ import {
   CANDRA, CANDRA_SIGN, DEFAULT_PROFILE_KEY, detectScript, digitsFrom, holdingHostOf, isConsonant, isVowel,
   parseLetters, resolveProfile, scriptClusters, toIast, type Profile, type ScriptKey,
 } from '@siksamitra/engine';
+import { WORD_DEVANAGARI } from '@siksamitra/tokens/word';
 import { mergeRuns, type WordRun } from '../docx-read.js';
 import { SCRIPT_SVARA_BY_CHAR, roleOf } from '../word-styles.js';
 import { bareLetter, changedOf, holdOf, iastRunsOfLetters, type Letter } from './script-letters.js';
@@ -70,6 +71,10 @@ export class ScriptReader {
   private dot = false;
   /** Clusters of a word whose letters came whole, in its hidden run, to pass over. */
   private skip = 0;
+  /** His Devanāgarī holding mark, seen, waiting for the akṣara it stands before. */
+  private pendingHold: Letter['hold'] = null;
+  /** The first space of a pair was kept: words are two spaces apart in his Devanāgarī. */
+  private keptSpace = false;
 
   constructor(
     private readonly script: ScriptKey,
@@ -90,11 +95,39 @@ export class ScriptReader {
   }
 
   feed(r: WordRun): void {
+    /* A pause and the changed letter after it share the blue style, so Word
+       merges them into ONE run — `|फ्म्ँश्` — and the bar is no longer lone.
+       Its bars are split off first, each read as the pause it is. */
+    if (roleOf(r.rStyle) === 'change' && /\|/.test(r.text) && !/^\s*\|{1,2}\s*$/.test(r.text)) {
+      for (const piece of r.text.split(/(\s*\|{1,2}\s*)/)) if (piece !== '') this.feed({ ...r, text: piece });
+      return;
+    }
     const start = this.at;
     if (r.hidden !== true || this.countHidden) this.at += r.text.length;
     if (r.hidden === true && r.text.startsWith(SAID)) { this.said(r.text.slice(SAID.length), start); return; }
     const role = roleOf(r.rStyle);
-    if (role !== null && role !== 'svara' && role !== 'change' && !role.startsWith('hold')) {
+    /* A LONE BAR IN THE BLUE STYLE IS A PAUSE, as the IAST reader has it
+       (`docx-runs.ts`), and passes through as itself. Read as a changed
+       cluster it lost its style — `|` is no letter — and every pause of a line
+       in Devanāgarī, Telugu or Tamil came back as a plain bar in the text. */
+    /* HIS DEVANĀGARĪ (`WORD_DEVANAGARI`): a holding is a mark before the akṣara,
+       in `Hold` — U+0342 short, U+034C long; a reading aid is drawn, in
+       `Phonetic`, after the akṣara it belongs to. */
+    if (role === 'hold-mark') {
+      for (const ch of r.text) {
+        if (ch === WORD_DEVANAGARI.hold.short) this.pendingHold = 'short';
+        else if (ch === WORD_DEVANAGARI.hold.long) this.pendingHold = 'long';
+      }
+      return;
+    }
+    if (role === 'aid') {
+      const mine = this.lettersOf(this.cluster);
+      const on = mine[mine.length - 1];
+      if (on !== undefined && r.text.trim() !== '') on.aid.push(r.text.trim());
+      return;
+    }
+    const pause = role === 'change' && /^\s*\|{1,2}\s*$/.test(r.text);
+    if (pause || (role !== null && role !== 'svara' && role !== 'change' && !role.startsWith('hold'))) {
       this.out.push(r);
       this.from.push(start);
       return;
@@ -111,6 +144,15 @@ export class ScriptReader {
     }
     for (const { segment, index } of scriptClusters(r.text, this.script)) {
       if (this.skip > 0) { this.skip -= 1; continue; }
+      /* TWO SPACES ARE ONE: his Devanāgarī sets every word gap as two (220 of
+         220), and so does the writer. One is still one — a line written before
+         reads as it did — and three are two. */
+      if (segment === ' ' || segment === ' ') {
+        if (this.keptSpace) { this.keptSpace = false; continue; }
+        this.keptSpace = true;
+      } else {
+        this.keptSpace = false;
+      }
       this.clusterOf(segment, r.rStyle, start + index);
     }
   }
@@ -123,7 +165,9 @@ export class ScriptReader {
     const mine = this.lettersOf(this.cluster);
     const style = this.style[this.cluster] ?? { hold: null, changed: false };
     if (s.h !== undefined) mine.forEach((l, k) => { l.hold = s.h!.includes(k) ? style.hold : null; });
-    if (s.c !== undefined) mine.forEach((l, k) => { l.changed = style.changed && s.c!.includes(k); });
+    /* The record says which letters are changed, coloured or not: his
+       Devanāgarī does not colour a changed letter (`scriptWordRuns`). */
+    if (s.c !== undefined) mine.forEach((l, k) => { l.changed = s.c!.includes(k); });
     if (s.s !== undefined) {
       for (const l of mine) l.svara = [];
       for (const [v, k] of s.s) mine[k]?.svara.push(v);
@@ -131,6 +175,9 @@ export class ScriptReader {
     if (s.d !== undefined) mine.forEach((l, k) => { l.dot = k === s.d; });
     for (const k of s.t ?? []) if (mine[k] !== undefined) mine[k]!.tick = true;
     for (const k of s.o ?? []) if (mine[k] !== undefined) mine[k]!.colon = true;
+    /* Where the record names the aids, it is exact: the plain reading of a
+       drawn `Phonetic` run gives way to it rather than being added to. */
+    if (s.a !== undefined) for (const l of mine) l.aid = [];
     for (const [a, k] of s.a ?? []) mine[k]?.aid.push(a);
     for (const [t, k] of s.l ?? []) if (mine[k] !== undefined) mine[k]!.t = t;
   }
@@ -168,7 +215,13 @@ export class ScriptReader {
     const letters = parseLetters(this.iastOf(visible));
     this.cluster += 1;
     const c = this.cluster;
-    const kind = holdOf(rStyle);
+    /* A box on the cluster, as the add-in once wrote it — or his mark before it,
+       which a space does not take: the akṣara after it does. */
+    let kind = holdOf(rStyle);
+    if (kind === null && this.pendingHold !== null && /\S/.test(visible)) {
+      kind = this.pendingHold;
+      this.pendingHold = null;
+    }
     const changed = changedOf(rStyle);
     this.style[c] = { hold: kind, changed };
     const consonants = letters.map((l, k) => (isConsonant(l) ? k : -1)).filter((k) => k >= 0);

@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const web = new URL('../../../', import.meta.url);
 const tsconfig = JSON.parse(readFileSync(new URL('tsconfig.json', web), 'utf8')
@@ -26,7 +27,10 @@ function sources(dir: string): string[] {
 describe('tsconfig paths', () => {
   it('name every workspace package the source imports by its bare name', () => {
     const imported = new Set<string>();
-    for (const f of sources(new URL('src', web).pathname.replace(/^\/([A-Za-z]:)/, '$1'))) {
+    /* `fileURLToPath`, not `.pathname`: a letter outside ASCII in the path —
+       the `ć` of `MarinHrvaćanin` — is percent-encoded in a URL's pathname,
+       and the directory it names does not exist. */
+    for (const f of sources(fileURLToPath(new URL('src', web)))) {
       for (const m of readFileSync(f, 'utf8').matchAll(/from '(@siksamitra\/[a-z-]+)'/g)) {
         imported.add(m[1]!);
       }

@@ -15,7 +15,12 @@
  *      instead and says what that costs;
  *   3. schedules a daily task, for that person, that downloads the manifest
  *      again. The add-in's code needs nothing: Word loads it from the
- *      published folder every time it starts.
+ *      published folder every time it starts;
+ *   4. installs URW Palladio ITU, the face his svaras and his candrabindu are
+ *      set in, for that person — fetched from where it is published and
+ *      checked against its hash first (`word-fonts.mjs`). Without it every
+ *      svara is drawn in a fallback face. A failure here is said, and the
+ *      add-in is installed all the same.
  *
  * `conhost.exe --headless` runs the daily download with no window.
  *
@@ -27,6 +32,17 @@
  * `echo` is written `^>`, or the batch file redirects the line into a file.
  */
 import { DEVELOPER_KEY, WINDOWS_FOLDER, catalogEntries } from './word-catalog.mjs';
+import { PALLADIO, USER_FONTS_KEY } from './word-fonts.mjs';
+import { SITE } from './word-addin.mjs';
+
+/* THE ONE STEP LEFT, SHOWN RATHER THAN PRINTED: the page with it, opened in
+   the browser, and Word started if it is not running — never closed if it is.
+   A person who is not a developer rarely reads a black window's last lines. */
+export const ADD_ONCE = `${SITE}/#add-once`;
+const showTheStep = [
+  `start "" "${ADD_ONCE}"`,
+  'tasklist /FI "IMAGENAME eq WINWORD.EXE" 2>nul | find /I "WINWORD.EXE" >nul || start "" winword',
+];
 
 const FOLDER = `%LOCALAPPDATA%\\${WINDOWS_FOLDER}`;
 /* The same folder as a network path: `%LOCALAPPDATA:~0,1%` is its drive letter
@@ -61,17 +77,20 @@ export function windowsInstaller(host) {
     '  pause',
     '  exit /b 1',
     ')',
+    'call :fonts',
     `schtasks /create /tn "${TASK}" /sc daily /st 12:00 /f /tr "conhost.exe --headless curl.exe -fsSL -o \\"%MANIFEST%\\" %URL%" >nul 2>nul`,
     'if not exist "%SHARE%\\manifest.xml" goto developer',
     `reg delete "${DEVELOPER_KEY}" /v "${host.id}" /f >nul 2>nul`,
     ...catalog.map((e) => regAdd(e)),
     'echo.',
     'echo   Done. Now, once, in Word:',
-    'echo     1. Close Word if it is open, and start it again.',
+    'echo     1. If Word was already open, close it and start it again.',
     `echo     2. ${ONCE}.`,
     `echo     3. Choose ${name}, then Add.`,
     `echo   From then on the ${name} tab is on the ribbon, and it keeps itself up to date.`,
+    'echo   The same steps are opening in your browser.',
     'echo.',
+    ...showTheStep,
     'pause',
     'exit /b 0',
     ':developer',
@@ -83,7 +102,51 @@ export function windowsInstaller(host) {
     'echo   Word until Microsoft fixes it.',
     'echo.',
     'pause',
+    'exit /b 0',
+    ...windowsFonts(),
   ]);
+}
+
+/**
+ * The `:fonts` subroutine: URW Palladio ITU for this person. It comes AFTER
+ * the installer's last `exit`, so neither path falls into it.
+ */
+function windowsFonts() {
+  const faces = PALLADIO.faces;
+  return [
+    ':fonts',
+    'set "FONTS=%LOCALAPPDATA%\\Microsoft\\Windows\\Fonts"',
+    'set "ZIP=%TEMP%\\siksamitra-palladio.zip"',
+    'set "UNZIP=%TEMP%\\siksamitra-palladio"',
+    `curl.exe -fsSL "${PALLADIO.url}" -o "%ZIP%"`,
+    'if errorlevel 1 (',
+    `  echo   Could not download ${PALLADIO.family}, the face the svaras are set in. Run this again later.`,
+    '  exit /b 0',
+    ')',
+    'set "HASH="',
+    `for /f "skip=1 tokens=* delims=" %%h in ('certutil -hashfile "%ZIP%" SHA256') do if not defined HASH set "HASH=%%h"`,
+    'set "HASH=%HASH: =%"',
+    `if /i not "%HASH%"=="${PALLADIO.sha256}" (`,
+    `  echo   The ${PALLADIO.family} download was not the published file, so it was not installed.`,
+    '  del "%ZIP%" >nul 2>nul',
+    '  exit /b 0',
+    ')',
+    'if not exist "%FONTS%" mkdir "%FONTS%"',
+    'if not exist "%UNZIP%" mkdir "%UNZIP%"',
+    /* Windows' own tar (bsdtar), which reads a zip — not whichever `tar` a
+       PATH happens to find first. */
+    '"%SystemRoot%\\System32\\tar.exe" -xf "%ZIP%" -C "%UNZIP%"',
+    ...faces.flatMap((f) => [
+      /* Not over a face already there: one in use cannot be replaced, and on
+         a second run `copy` said so three times about a file that was right. */
+      `if not exist "%FONTS%\\${f.file}" copy /y "%UNZIP%\\${f.file}" "%FONTS%\\${f.file}" >nul`,
+      `reg add "${USER_FONTS_KEY}" /v "${f.name}" /t REG_SZ /d "%FONTS%\\${f.file}" /f >nul`,
+    ]),
+    'rmdir /s /q "%UNZIP%" >nul 2>nul',
+    'del "%ZIP%" >nul 2>nul',
+    `echo   ${PALLADIO.family}, the face the svaras are set in, is installed.`,
+    'exit /b 0',
+  ];
 }
 
 /** `uninstall-windows.cmd`: everything the installer did, undone. */
@@ -113,9 +176,19 @@ export function macInstaller(host) {
     `# Installs ${name} for Microsoft Word on a Mac. Run it again to update the buttons.`,
     `mkdir -p "${dir}"`,
     `curl -fsSL "${host.base}/manifest.xml" -o "${dir}/siksamitra.xml" || { echo "Could not download it. Check the internet connection."; exit 1; }`,
+    `# ${PALLADIO.family}, the face the svaras are set in: checked against its hash first.`,
+    'ZIP="$(mktemp -t siksamitra)"',
+    `if curl -fsSL "${PALLADIO.url}" -o "$ZIP" && [ "$(shasum -a 256 "$ZIP" | cut -d' ' -f1)" = "${PALLADIO.sha256}" ]; then`,
+    '  mkdir -p "$HOME/Library/Fonts"',
+    `  unzip -o -j -q "$ZIP" ${PALLADIO.faces.map((f) => f.file).join(' ')} -d "$HOME/Library/Fonts" && echo "${PALLADIO.family} is installed."`,
+    'else',
+    `  echo "Could not install ${PALLADIO.family}; the svaras will be drawn in another face. Run this again later."`,
+    'fi',
+    'rm -f "$ZIP"',
     `echo "Done. Quit Word and open it again, open a document, then Home > Add-ins > ${name}."`,
     'echo "Word forgets it when it quits (a fault in Word since September 2026), so choose it there"',
     'echo "each time you start Word until Microsoft fixes it."',
+    `open "${ADD_ONCE}"`,
     '',
   ].join('\n');
 }

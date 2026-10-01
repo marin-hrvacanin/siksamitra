@@ -135,3 +135,63 @@ function snap(edits: readonly TextEdit3[], before: string): TextEdit3[] {
   }
   return out;
 }
+
+/** What `carrySpacing` gives back: the text, and where each offset went. */
+export interface Spacing {
+  text: string;
+  /** The offset in `text` of what was at offset `b` of `after`. */
+  at: (b: number) => number;
+}
+
+/**
+ * `before`'s SPACING, put back into `after` wherever the rules only
+ * normalised it.
+ *
+ * The rules normalise whitespace — `derive` reads a no-break space as an
+ * ordinary one, collapses a run of spaces and trims each line — so a re-run
+ * over one of his lines rewrote his spacing: his 4 000-odd no-break spaces
+ * (which keep two words on one line), his double spaces, and the tab that
+ * indents a pāda after `|⏎`. Nothing about the recitation changes; the page
+ * does.
+ *
+ * Aligned character by character by `textEdits`, over `before` with its
+ * no-break spaces and tabs read as spaces — what the rules see — and NOT with
+ * runs collapsed: the rules put two spaces around a pause themselves, and
+ * collapsing counted them twice. Then:
+ *
+ *   - a space the rules left where his no-break space or tab was is his again;
+ *   - an edit that only DELETED whitespace — his double space, his indent — is
+ *     undone, and his whitespace stays;
+ *   - anything else the rules changed stays as the rules made it.
+ *
+ * `at` carries every offset of `after` across, so the markings made on it
+ * move with the text.
+ */
+export function carrySpacing(before: string, after: string): Spacing {
+  if (before === after) return { text: after, at: (b) => b };
+  const seen = before.replace(/[\u00a0\t]/g, ' ');
+  const blank = (s: string): boolean => /^[ \u00a0\t]+$/.test(s);
+  const pos: number[] = [];
+  let out = '';
+  let a = 0;
+  let b = 0;
+  const same = (): void => {
+    pos[b] = out.length;
+    out += after[b] === ' ' ? before[a]! : after[b]!;
+    a += 1;
+    b += 1;
+  };
+  for (const e of textEdits(seen, after)) {
+    while (a < e.from) same();
+    const gone = before.slice(e.from, e.to);
+    if (e.inserted === 0 && blank(gone)) {
+      out += gone;
+    } else {
+      for (let k = 0; k < e.inserted; k += 1, b += 1) { pos[b] = out.length; out += after[b]!; }
+    }
+    a = e.to;
+  }
+  while (b < after.length) same();
+  pos[after.length] = out.length;
+  return { text: out, at: (x) => pos[x] ?? out.length };
+}

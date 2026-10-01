@@ -29,9 +29,10 @@
 import type { ChantDoc, ChantFigure, ChantToken, ChantUnit } from '@siksamitra/format';
 import { FIGURE_DEFAULTS, figureItem } from '@siksamitra/format';
 import { CANDRA, VIRAMA_TICK, digitsIn, type ScriptKey } from '@siksamitra/engine';
-import { BAR_GLYPH, SVARA_CHAR, changeStyle, holdingStyle } from '../word-styles.js';
+import { WORD_DEVANAGARI } from '@siksamitra/tokens/word';
+import { BAR_GLYPH, OVERLINE, SVARA_CHAR, changeStyle, holdingStyle } from '../word-styles.js';
 import {
-  bridging, signature, styleOf, styledParagraph, styledRun, type WordPictures,
+  bridging, dandaRun, pauseRun, signature, styleOf, styledParagraph, styledRun, type WordPictures,
 } from './body-parts.js';
 import { lettersOfIast, scriptWordRuns } from './script-runs.js';
 import { readParagraphs } from '../docx-read.js';
@@ -130,6 +131,10 @@ export function documentXml(
      */
     const trailing = (u: ChantUnit): string => {
       let r = '';
+      /* The Ṛgvedic overline, in his `Long` — after its letter and BEFORE the
+         accent, as his files have it (`yu` `̅` `̍`). It rides in the letter
+         (`u.c` is `u̅`); `glyph` leaves it out of the letter's own run. */
+      if (u.c.includes(OVERLINE)) r += run(OVERLINE, 'Long');
       if (u.svara !== undefined) r += run(SVARA_CHAR.get(u.svara) ?? '', 'Svara');
       /*
        * `Reference`, AND IT USED TO BE `Anusvara`. A `sup` is "a superscript
@@ -162,25 +167,41 @@ export function documentXml(
     /* The candrabindu rides on ITS letter: `m̐` for the gum, and on whatever
        else carries one — `o̐` typed with the Candrabindu button. Writing `m̐`
        for every one put an `m` into `o̐n`, and dropped the `o` it replaced. */
-    const glyph = (u: ChantUnit): string => (u.candra === true ? `${u.c}${CANDRA}` : u.c);
+    const glyph = (u: ChantUnit): string => {
+      const c = u.c.replaceAll(OVERLINE, '');
+      return u.candra === true ? `${c}${CANDRA}` : c;
+    };
 
     tokens.forEach((t, at) => {
       if (t.t === 'br') { runs += '<w:r><w:br/></w:r>'; return; }
+      /* A tab is `<w:tab/>`: a tab character inside `<w:t>` is not drawn as one. */
+      if (t.t === 'sp' && t.tab === true) { runs += '<w:r><w:tab/></w:r>'; return; }
       if (t.t === 'sp') {
+        const space = t.nb === true ? '\u00a0' : ' ';
+        /* In a script line every word gap is two spaces, as his Devan\u0101gar\u012b sets
+           it (`WORD_DEVANAGARI.wordGap`), and nothing is boxed \u2014 the reader
+           reads two as one (`ScriptReader`). */
+        if (as !== 'iast') { runs += run(space.repeat(WORD_DEVANAGARI.wordGap), null); return; }
         const inside = bridging(tokens, at);
-        runs += run(' ', inside === null ? null : holdingStyle(inside.hold!, inside.change === true));
+        runs += run(space, inside === null ? null : holdingStyle(inside.hold!, inside.change === true));
         return;
       }
-      /* A pause the rules placed is in the substitution blue, as in his files
-         (the bīja pause of `oṁ |`); one placed by hand is his red `Pause`. */
-      if (t.t === 'pause') { runs += run(t.len === 'long' ? '||' : '|', t.rule === true ? changeStyle('') : 'Pause'); return; }
+      /* ONE BAR, its colour its length: short in his blue, long in his red. */
+      if (t.t === 'pause') { runs += pauseRun('|', t.len === 'long' ? 'Pause' : changeStyle('')); return; }
       /* A BAR IS NOT A PAUSE. Both were written as `|` in the `Pause` style, so
          all 59 bars in the corpus came back from a round trip as short pauses.
          `¦` is a different character in the same style: the same colour and
          weight on the page, and unambiguous to the reader. */
-      if (t.t === 'bar') { runs += run(BAR_GLYPH, 'Pause'); return; }
+      if (t.t === 'bar') { runs += pauseRun(BAR_GLYPH, 'Pause'); return; }
       if (t.t === 'num') { runs += run(digitsIn(t.s, as), null); return; }
-      if (t.t === 'danda' || t.t === 'text') { runs += run(t.s, null); return; }
+      if (t.t === 'danda') { runs += dandaRun(t.s); return; }
+      if (t.t === 'text') { runs += run(t.s, null); return; }
+      /* A SLOT IS ITS OWN LETTERS, written where it stands. It fell through to
+         the `syl` test below and was skipped, so the deity's name of the Pūjā
+         Vidhi — `śrī devan dhyāyāmi` — was `śrī  dhyāyāmi` on every page this
+         wrote, in the app's Export Word and in Word alike. Found bringing the
+         corpus into Word (`tests/integration/insert-document.test.ts`). */
+      if (t.t === 'slot') { runs += verseRuns(t.tokens, as); return; }
       if (t.t !== 'syl') return;
       if (at < skipTo) return;
       if (as !== 'iast') {

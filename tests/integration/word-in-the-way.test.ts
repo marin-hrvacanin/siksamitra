@@ -69,15 +69,20 @@ describe('what is NOT in the way — the controls', () => {
 
 const REF = 'Library/reference';
 describe.skipIf(!existsSync(REF))('what it costs his own files', () => {
-  for (const f of existsSync(REF) ? readdirSync(REF).filter((x) => x.endsWith('.docx')) : []) {
+  for (const f of existsSync(REF) ? readdirSync(REF).filter((x) => x.endsWith('.docx') && !x.startsWith('~$')) : []) {
     it(f, () => {
       const xml = strFromU8(unzipSync(new Uint8Array(readFileSync(`${REF}/${f}`)))['word/document.xml']!);
       const mantras = [...xml.matchAll(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g)].map((m) => m[0])
         .filter((p) => p.includes('w:pStyle w:val="Translit"'));
       const refused = mantras.filter((p) => inTheWay(p).length > 0);
-      /* The lines with a picture on them, and nothing else. */
-      for (const p of refused) expect(inTheWay(p)).toEqual([expect.stringMatching(/^a picture/)]);
-      expect(refused.length).toBeLessThanOrEqual(3);
+      /* Three kinds, measured over his six reference documents, and each is
+         right to refuse: a picture; a table-of-contents bookmark, which in
+         his files sits on a line holding only a note (nothing to mark); and
+         bold or strike he applied himself — five lines of Devī Māhātmyam and
+         one of the Rudram — which a rewrite would lose. */
+      const known = /^(a picture|a bookmark|formatting of its own)/;
+      for (const p of refused) for (const why of inTheWay(p)) expect(why).toMatch(known);
+      expect(refused.length).toBeLessThanOrEqual(Math.max(3, Math.ceil(mantras.length / 100)));
     });
   }
 });

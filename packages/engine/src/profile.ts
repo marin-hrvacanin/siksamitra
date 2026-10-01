@@ -134,6 +134,33 @@ export interface Profile {
      * precedes it. Off, every line opens bare (the older convention).
      */
     readonly lineContinues?: boolean;
+    /**
+     * A GEMINATE — two of one consonant, or a consonant and its aspirate —
+     * under one box or two letters' worth of it. The owner's ruling
+     * (2026-09-07, confirmed 2026-09-30): `one` is the default — the older
+     * convention, one box on one letter (`u[t]tama`); `whole` is the newer
+     * one his Devī Māhātmyam v6.62 and Rudram v1.622 use, one box over both
+     * (`u[tt]ama`, `ga[cch]ati`), switchable per document.
+     */
+    readonly geminate?: 'one' | 'whole';
+  };
+
+  /**
+   * Two substitutions the owner ruled on 2026-09-30, each switchable.
+   */
+  readonly sandhi: {
+    /**
+     * `ṁ` before a NASAL takes that nasal — `puraṁ mahā` → `puram mahā`,
+     * `śagmāṁ no` → `śagmān no` — as it takes the nasal of any stop's row:
+     * "always the exact same form of the anunāsika". On; his files do it five
+     * times in six, and the rules never did.
+     */
+    readonly nasalBeforeNasal: boolean;
+    /**
+     * `ḥ` before `k` / `kh` is marked as a change — his blue, the letter
+     * recited otherwise (`devyaḥ krodha`, `duḥkha`). On; off leaves it plain.
+     */
+    readonly visargaBeforeVelar: boolean;
   };
 
   readonly scripts: readonly ChantScriptKey[];
@@ -160,10 +187,16 @@ type DeepPartial<T> = {
 };
 
 const BASE = {
-  aids: { jna: true, vy: true, sv: false, semivowel: true },
+  /* `vy` OFF, by the owner's ruling of 2026-09-30: "u between v and y happens
+     more rarely and is optional". `jñ` always. */
+  aids: { jna: true, vy: false, sv: false, semivowel: true },
   svarabhakti: true,
   pauses: { bija: true, hiatus: true },
-  holdings: { noInitialBox: true, crosswordHost: 'aspirate' as const, firstHost: true, lineContinues: true },
+  holdings: {
+    noInitialBox: true, crosswordHost: 'aspirate' as const, firstHost: true, lineContinues: true,
+    geminate: 'one' as const,
+  },
+  sandhi: { nasalBeforeNasal: true, visargaBeforeVelar: true },
   scripts: ['iast', 'deva', 'tel', 'tam'] as readonly ChantScriptKey[],
 };
 

@@ -119,10 +119,12 @@ export type { BadEntryName } from './entry-name.js';
 
 export { builtInStyleIds, canonicalStyleId } from './word/style-names.js';
 /* His style names or clean ones, chosen per document. See `word/vocabulary.ts`. */
-export { fromClean, inVocabulary, VOCABULARY, vocabularyOf } from './word/vocabulary.js';
+export { fromClean, inVocabulary, VOCABULARY, vocabularyOf, withHisCandrabindu } from './word/vocabulary.js';
+export { DOC_DEFAULTS, hisStylesAsClean, legacyStylesIn, withHisDefinitions } from './word/clean-styles.js';
 export type { Vocabulary } from './word/vocabulary.js';
 /* What a paragraph carries that rewriting it would lose. See `word/in-the-way.ts`. */
 export { inTheWay } from './word/in-the-way.js';
+export { lineNotes, withLineNotes, type LineNote } from './word/line-notes.js';
 export { wordRun } from './docx-read.js';
 export {
   SAID, WORD_SCRIPTS, iastPositions, iastRunsOf, lettersOfIast, scriptOfLine, scriptWordRuns, wordInScript, wordScript,
@@ -134,3 +136,5 @@ export { bridging } from './word/body.js';
 export {
   REGISTER_SETTING, partOf, partTag, partTitle, partXml, recordedRegisterIn, type PartRules,
 } from './word/rule-parts.js';
+export { OPENABLE, openDocumentFile } from './open-file.js';
+export type { OpenedFile } from './open-file.js';

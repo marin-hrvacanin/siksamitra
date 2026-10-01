@@ -80,3 +80,13 @@ export function wordOffsetIn(paragraph: string, modelAt: number, script: ScriptK
   if (read === undefined) return 0;
   return toWord(offsetMap(mergeRuns(read.runs), script), modelAt);
 }
+
+/**
+ * Is a caret at `at` at the END of a word — nothing after it, or a space, a
+ * daṇḍa or a pause? Only there may the add-in reset the caret's character
+ * style: Word applies a style set on a caret INSIDE a word to the whole word.
+ */
+export const atWordEnd = (text: string, at: number): boolean => {
+  const next = text[at];
+  return next === undefined || /[\s।॥|¦]/u.test(next);
+};

@@ -109,7 +109,15 @@ export type ChantToken =
   | ChantSyllable
   | ChantText
   | ChantSlot
-  | { t: 'sp' }
+  /**
+   * A word space. `nb` when it is a NO-BREAK space (U+00A0): his files use
+   * 4 000-odd of them in mantra lines, placed by hand to keep two words on
+   * one line, and a line written back with ordinary spaces moved where Word
+   * breaks it. `tab` when it is a TAB — the indent he puts before a pāda
+   * after `|⏎`. Neither is recited differently: a reader that ignores both
+   * reads the same text.
+   */
+  | { t: 'sp'; nb?: true; tab?: true }
   /**
    * A pause. `rule` when the RULES placed it rather than a person — which a
    * Word document says by its colour: his files write what the rules did in

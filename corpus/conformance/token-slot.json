@@ -672,8 +672,15 @@
     "primaryScript": "iast",
     "profile": {
       "patch": {
+        "aids": {
+          "vy": true
+        },
         "holdings": {
           "noInitialBox": true
+        },
+        "sandhi": {
+          "nasalBeforeNasal": false,
+          "visargaBeforeVelar": false
         },
         "svara": {
           "lengthening": false

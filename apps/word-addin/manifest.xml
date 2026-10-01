@@ -1361,21 +1361,6 @@
                         <FunctionName>smRegSmarta</FunctionName>
                       </Action>
                     </Item>
-                    <Item id="sm.tab.reg-prose">
-                      <Label resid="sm.reg-prose.L"/>
-                      <Supertip>
-                        <Title resid="sm.reg-prose.L"/>
-                        <Description resid="sm.reg-prose.T"/>
-                      </Supertip>
-                      <Icon>
-                        <bt:Image size="16" resid="sm.i.tree.16"/>
-                        <bt:Image size="32" resid="sm.i.tree.32"/>
-                        <bt:Image size="80" resid="sm.i.tree.80"/>
-                      </Icon>
-                      <Action xsi:type="ExecuteFunction">
-                        <FunctionName>smRegProse</FunctionName>
-                      </Action>
-                    </Item>
                     <Item id="sm.tab.part-new">
                       <Label resid="sm.part-new.L"/>
                       <Supertip>
@@ -2013,7 +1998,6 @@
         <bt:String id="sm.reg-rigveda.L" DefaultValue="Ṛgveda"/>
         <bt:String id="sm.reg-sukla-yajurveda.L" DefaultValue="Śukla Yajurveda"/>
         <bt:String id="sm.reg-smarta.L" DefaultValue="Smārta / purāṇic"/>
-        <bt:String id="sm.reg-prose.L" DefaultValue="Prose"/>
         <bt:String id="sm.part-new.L" DefaultValue="New part from these lines"/>
         <bt:String id="sm.part-dissolve.L" DefaultValue="Dissolve this part"/>
         <bt:String id="sm.reapply.L" DefaultValue="Re-apply rules"/>
@@ -2030,7 +2014,7 @@
         <bt:String id="sm.ins-consonants.T" DefaultValue="The consonants, by where they are spoken: gutturals to sibilants."/>
         <bt:String id="sm.ins-vedic.T" DefaultValue="Vedic signs, accents and punctuation: ḻ, ꣳ, the daṇḍas and the avagraha."/>
         <bt:String id="sm.script.T" DefaultValue="Write the mantra lines in IAST, Devanāgarī, Telugu or Tamil — the selected ones, or the whole document when nothing is selected. Every mark is kept, and IAST again gives back exactly what was there."/>
-        <bt:String id="sm.register.T" DefaultValue="Which śākhā’s rules mark the text here — this part, or the document outside every part. A document may hold parts marked by different rules."/>
+        <bt:String id="sm.register.T" DefaultValue="Which śākhā’s rules mark the text here — the part the caret is in, the lines selected (they become a part), or the lines outside every part. One file may hold parts of different śākhās."/>
         <bt:String id="sm.hold-short.T" DefaultValue="A short holding: a thin box around the letters. With nothing selected, the letter before the caret. Press again to take it off. (Ctrl+H)"/>
         <bt:String id="sm.hold-long.T" DefaultValue="A long holding: a thick box around the letters. With nothing selected, the letter before the caret. Press again to take it off. (Ctrl+Shift+H)"/>
         <bt:String id="sm.hold-clear.T" DefaultValue="Take the holding off the letters, and leave every other marking. With nothing selected, the letter before the caret. (Ctrl+K)"/>
@@ -2104,13 +2088,12 @@
         <bt:String id="sm.script-deva.T" DefaultValue="Write the selected mantra lines in Devanāgarī, or the whole document when nothing is selected."/>
         <bt:String id="sm.script-tel.T" DefaultValue="Write the selected mantra lines in Telugu, or the whole document when nothing is selected."/>
         <bt:String id="sm.script-tam.T" DefaultValue="Write the selected mantra lines in Tamil, or the whole document when nothing is selected."/>
-        <bt:String id="sm.reg-taittiriya.T" DefaultValue="Kṛṣṇa Yajurveda — Puruṣa Sūktam, Śrī Rudram, Mantra Puṣpam, Viṣṇu Sūktam. Accents are taken from the source as written, and an anusvāra before a sibilant or h is shown as gṁ / gm."/>
-        <bt:String id="sm.reg-rigveda.T" DefaultValue="Ṛgvedic sūktas — Durgā Sūktam, Śrī Sūktam, Bhāgya Sūktam. Accents are taken from the source as written, and the anusvāra keeps its own form rather than becoming a g-form."/>
+        <bt:String id="sm.reg-taittiriya.T" DefaultValue="Kṛṣṇa Yajurveda, the Taittirīya śākhā — Śrī Rudram, Puruṣa Sūktam, Durgā Sūktam, Mantra Puṣpam. Accents are taken from the source as written, and an anusvāra before a sibilant or h is shown as gṁ / gm."/>
+        <bt:String id="sm.reg-rigveda.T" DefaultValue="Texts recited in a Ṛgvedic śākhā, in its own accentuation. Accents are taken from the source as written, and the anusvāra keeps its own form rather than becoming a g-form."/>
         <bt:String id="sm.reg-sukla-yajurveda.T" DefaultValue="Vājasaneyi texts — Rudrāṣṭādhyāyī and the Mādhyandina recension. As Taittirīya, including the g-forms, over the Śukla recension’s own accentuation."/>
-        <bt:String id="sm.reg-smarta.T" DefaultValue="Stotras, aṣṭakas, āgamic and purāṇic verse — Lalitā, Viṣṇu Sahasranāma. No accents are read from the source; the metre supplies them, the anusvāra is left as it is, and no semivowel aids are added."/>
-        <bt:String id="sm.reg-prose.T" DefaultValue="Saṅkalpa, nāmāvalīs, offerings and instructions. No accents at all, and the only pause is the one after a bīja."/>
-        <bt:String id="sm.part-new.T" DefaultValue="Give the selected lines rules of their own — a sūkta of another śākhā in the middle of the document. Word draws a frame around the part, titled with its register."/>
-        <bt:String id="sm.part-dissolve.T" DefaultValue="Undo the part the caret is in: its lines stay, and the document’s own rules apply to them again."/>
+        <bt:String id="sm.reg-smarta.T" DefaultValue="Stotras, aṣṭakas, nāmāvalīs, āgamic and purāṇic verse — Lalitā and Viṣṇu Sahasranāma. No accents are read from the source; the metre supplies them, the anusvāra is left as it is, and no semivowel aids are added."/>
+        <bt:String id="sm.part-new.T" DefaultValue="Give the selected lines rules of their own — a sūkta of another śākhā among the others. Word draws a frame around the part, titled with its register."/>
+        <bt:String id="sm.part-dissolve.T" DefaultValue="Undo the part the caret is in: its lines stay, and the rules of the lines outside every part apply to them again."/>
         <bt:String id="sm.reapply.T" DefaultValue="Run the marking rules over the selection, or over the whole document when nothing is selected. What you placed by hand stays. (Ctrl+Shift+R)"/>
         <bt:String id="sm.reapply-mine-out.T" DefaultValue="Run the marking rules and DROP what you placed by hand, over the selection or the whole document."/>
         <bt:String id="sm.import-styles.T" DefaultValue="Bring the śikṣāmitra styles into this document — the mantra line, the translation, the holdings, the svaras and the rest — so it looks like a Veda Union document."/>

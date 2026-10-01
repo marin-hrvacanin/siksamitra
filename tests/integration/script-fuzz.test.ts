@@ -16,6 +16,8 @@ import { describe, expect, it } from 'vitest';
 import type { MarkCommand } from '@siksamitra/edit';
 import { applyCommand } from '@siksamitra/edit';
 import type { TextAndMarks } from '@siksamitra/format';
+import { CHANT_PROFILE_KEYS } from '@siksamitra/format';
+import { STAGES, rerun, resolveProfile } from '@siksamitra/engine';
 import { decodeRuns, paragraphRuns } from '../../apps/word-addin/src/model/paragraph.js';
 
 const LETTERS = ['a', 'ā', 'i', 'ī', 'u', 'ū', 'ṛ', 'ṝ', 'ḷ', 'e', 'ai', 'o', 'au', 'ṁ', 'ṃ', 'ḥ', 'k', 'kh', 'g', 'gh', 'ṅ',
@@ -65,6 +67,52 @@ describe('random lines, in every script', () => {
           let back: string;
           try { back = canon(decodeRuns(paragraphRuns(tm, script)[0] ?? [], script)); } catch (e) { back = `threw: ${(e as Error).message}`; }
           if (back !== iast) wrong.push(JSON.stringify(tm.text));
+        }
+        expect(wrong).toEqual([]);
+      });
+    }
+  }
+});
+
+/*
+ * AND LINES THE RULES MARKED — what a person's commands never make.
+ *
+ * The half above places marks by hand only, and a pause the RULES place is
+ * written in the blue `Anusvara` style, as his files write it. Every such
+ * pause in a Devanāgarī, Telugu or Tamil line came back as a plain bar in the
+ * text — found by running the add-in in Word (`tools/word-ui/dirty.ts`), not
+ * here, because nothing here made one. So: random words, marked by the engine
+ * in every register, in every script and back.
+ */
+/** Letters and markings only: not who or which stage placed them, not the syllable boundaries a read adds. */
+const bare = (tm: TextAndMarks): string =>
+  JSON.stringify([tm.text, tm.marks.filter((m) => m.k !== 'syl').map(({ by: _b, stage: _s, ...m }) => JSON.stringify(m)).sort()]);
+
+describe('random lines the rules marked, in every register and every script', () => {
+  for (const seed of [3, 41]) {
+    let s = seed;
+    const rnd = (): number => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    const pick = <T>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)]!;
+    const texts = Array.from({ length: 60 }, () => Array.from({ length: 2 + Math.floor(rnd() * 5) }, () => (rnd() < 0.7
+      ? pick(WORDS.filter((w) => /^[a-zāīūṛṝḷṁḥṅñṭḍṇśṣ]+$/.test(w)))
+      : Array.from({ length: 2 + Math.floor(rnd() * 4) }, () => pick(LETTERS.filter((l) => /^[a-zāīūṛṝḷṁḥṅñṭḍṇśṣ]+$/.test(l)))).join(''))).join(' '));
+    for (const register of CHANT_PROFILE_KEYS) {
+      const sample = texts.flatMap((text) => {
+        try {
+          return [rerun({ text, marks: [] }, { stages: STAGES, mode: 'keep-hand', from: 0, to: text.length, profile: resolveProfile([{ preset: register }]) })];
+        } catch { return []; }
+      });
+      it(`${register}, seed ${seed}: every script and back, exactly`, () => {
+        expect(sample.length).toBeGreaterThan(40);
+        const wrong: string[] = [];
+        for (const tm of sample) {
+          const iast = bare(decodeRuns(paragraphRuns(tm, 'iast')[0] ?? []));
+          expect(iast, 'the IAST reading of an engine line is the engine line').toBe(bare(tm));
+          for (const script of ['deva', 'tel', 'tam'] as const) {
+            let back: string;
+            try { back = bare(decodeRuns(paragraphRuns(tm, script)[0] ?? [], script)); } catch (e) { back = `threw: ${(e as Error).message}`; }
+            if (back !== iast) wrong.push(`${script}: ${JSON.stringify(tm.text)}`);
+          }
         }
         expect(wrong).toEqual([]);
       });

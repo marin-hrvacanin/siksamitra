@@ -252,7 +252,14 @@ const MARK_FACES = {
   palladio: 'URW Palladio ITU',
   /** `Virama`, which shares the svara's colour and size but not its face. */
   arial: 'Arial',
+  /** Every daṇḍa of his, in every mantra line of all six reference documents:
+   *  direct formatting on the run, `w:hint="cs"`. Arial has no daṇḍa, so
+   *  without it Word falls back to whatever face it finds. */
+  mangal: 'Mangal',
+  /** `Long` — the Ṛgvedic overline. Measured off his template. */
+  calibriLight: 'Calibri Light',
 } as const;
+
 
 export const WORD_MARKS = {
   /** `Holding` — `w:bdr w:sz="2"`. */
@@ -272,8 +279,10 @@ export const WORD_MARKS = {
   vedicChange: { color: '0070C0', italic: true, face: MARK_FACES.palladio },
   /** `Pause` — one style for both lengths; the glyph count decides. */
   pause: { color: 'C00000', italic: true },
+  /** A daṇḍa — no style, only a face. See `MARK_FACES.mangal`. */
+  danda: { face: MARK_FACES.mangal },
   /** `Long` — the dīrgha overline (unresolved, 00 §5.1). */
-  dirgha: { color: '4472C4', size: fromHalfPoints(36) },
+  dirgha: { color: '4472C4', size: fromHalfPoints(36), face: MARK_FACES.calibriLight },
   /** `Comment` — a source note under a section. Times New Roman in his file. */
   comment: { color: '808080', size: fromHalfPoints(22), italic: true },
   /**
@@ -293,22 +302,21 @@ export const WORD_MARKS = {
    * style. So this is that style, `Name` and `Nma` are both READ as it, and
    * nothing writes either of them again.
    *
-   * THE COLOUR IS THE THEME'S `quiet`, not his blue, and that is a choice
-   * rather than a measurement. Both of his specify `0070C0` — but blue means
-   * "the letter actually recited" everywhere else in his vocabulary
-   * (`Anusvara`, `VedicAnusvara`), so a counting number in it reads as a
-   * substitution. Neither style appears anywhere in the corpus (`seen: 0`), so
-   * there is no page of his to match. `quiet` is the register the document
-   * already has for exactly this — "verse numbers, folios: present but not
-   * read" — which is his own description of the thing: "barely visible little
-   * info next to the word". Being a `var()`, it follows every theme instead of
-   * being one grey.
+   * IT LOOKS LIKE HIS RAISED AID: the substitution blue, italic, raised. It
+   * was the theme's grey, chosen on the premise that a `sup` is a counting
+   * number — and in his files it almost never is. Measured over the six
+   * reference documents: every `sup` but a handful is a READING AID (`ṁ^u`,
+   * `ḥ^f`, `jñ^g`), and he writes every one of those as `Anusvara` with
+   * `w:vertAlign="superscript"` — blue, italic, raised. So re-marking one of
+   * his lines turned 712 of his raised letters grey. His `Name` and `Nma` are
+   * that blue as well. One look for one marking, and it is his.
    *
    * NO SIZE OF ITS OWN. `w:vertAlign="superscript"` already scales a run to
-   * about two thirds; his `Nma` also asks for 6 pt, which superscripted is
-   * smaller than the paper can print.
+   * about two thirds, which is what his raised aids are; his `Nma` also asks
+   * for 6 pt, which superscripted is smaller than the paper can print.
    */
-  reference: { color: 'var(--doc-quiet)', superscript: true },
+  /** The theme's `change` ink, which is `Anusvara`'s — see `char-styles.ts`. */
+  reference: { ink: 'change', italic: true, superscript: true },
 } as const;
 
 /**
@@ -367,3 +375,8 @@ export const WORD_SUBSTITUTES = {
 
 /* His `Title`, his `Normal` line, and his running head: `word-furniture.ts`. */
 export * from './word-furniture.js';
+
+/* The ribbon's own values and Devanāgarī's are files of their own (this one
+   was over the 400-line limit); re-exported, so every import stays `tokens/word`. */
+export * from './word-ribbon.js';
+export * from './word-devanagari.js';

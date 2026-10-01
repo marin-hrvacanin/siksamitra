@@ -23,6 +23,7 @@
  * the same paragraph imported from a file cannot disagree.
  */
 import type { ChantToken, ChantUnit } from '@siksamitra/format';
+import { spaceToken } from '@siksamitra/format';
 import { parseLetters, ANU, CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
 import type { ScriptKey } from '@siksamitra/engine';
 import { iastRunsOf } from './word/script-runs.js';
@@ -110,14 +111,25 @@ export function tokensFromRuns(
    */
   const space = (piece: string): void => {
     flush();
-    /* A newline is a LINE, not a space — the same rule as the plain branch. */
-    if (/\n/.test(piece)) {
+    /*
+     * A NEWLINE IS A LINE, NOT A SPACE: `readParagraphs` writes `<w:br/>` as a
+     * newline and `importDocx` puts one between consecutive `Translit`
+     * paragraphs, so both ways a verse is broken into pādas arrive here — and
+     * reading them as spaces ran every verse together onto one line.
+     *
+     * EVERY OTHER WHITESPACE CHARACTER IS KEPT AS IT IS. Runs of them used to
+     * be folded into one space and a line's leading ones dropped, which a
+     * re-marked line wrote back: his double spaces single, and the tab that
+     * indents a pāda after `|⏎` gone. Only the paragraph's own leading
+     * whitespace is still dropped — there is nothing before it to space from.
+     */
+    const lines = piece.split('\n');
+    if (lines.length > 1) {
       while (tokens.length > 0 && tokens[tokens.length - 1]!.t === 'sp') tokens.pop();
       if (tokens.length > 0 && tokens[tokens.length - 1]!.t !== 'br') tokens.push({ t: 'br' });
-      return;
     }
-    const last = tokens[tokens.length - 1];
-    if (last !== undefined && last.t !== 'sp' && last.t !== 'br') tokens.push({ t: 'sp' });
+    if (tokens.length === 0) return;
+    for (const ch of lines[lines.length - 1]!) tokens.push(spaceToken(ch) ?? { t: 'sp' });
   };
 
   const addLetters = (text: string, apply: (u: ChantUnit) => void): void => {
@@ -177,10 +189,12 @@ export function tokensFromRuns(
     }
 
     if (role === 'virama') {
-      word.push({ c: VIRAMA_TICK });
-      bump('virama');
-      /* Anything typed after the tick, in its style, is still text. */
-      addLetters(run.text.replaceAll(VIRAMA_TICK, ''), () => {});
+      /* A tick for each tick in the run, and no other: his Devī sets a `*` in
+         this style, and one was invented for it on every rewrite. Anything
+         else typed in the style is still text. */
+      for (const piece of run.text.split(new RegExp(`(${VIRAMA_TICK})`))) {
+        if (piece === VIRAMA_TICK) { word.push({ c: VIRAMA_TICK }); bump('virama'); } else if (piece !== '') addLetters(piece, () => {});
+      }
       continue;
     }
 
@@ -193,22 +207,31 @@ export function tokensFromRuns(
       const bars = (run.text.split(BAR_GLYPH).length - 1);
       const pipes = (run.text.match(/\|/g) ?? []).length;
       if (bars > 0 || pipes > 0) {
-        if (tokens.length > 0 && tokens[tokens.length - 1]!.t !== 'sp') tokens.push({ t: 'sp' });
+        /* The run's own spaces, and no others: a space invented before the
+           pause put one into `…ˎ|`, which he wrote without. */
+        space(/^\s*/.exec(run.text)![0]);
         if (bars > 0) {
           for (let k = 0; k < bars; k += 1) tokens.push({ t: 'bar' });
           bump('bar');
         } else {
-          /* In the substitution blue, the RULES placed it — his convention,
-             and what the writer writes for one (`rule` on the token). */
-          const byRule = roleOf(run.rStyle) === 'change';
-          tokens.push({ t: 'pause', len: pipes >= 2 ? 'long' : 'short', ...(byRule ? { rule: true as const } : {}) });
+          /* THE COLOUR IS THE LENGTH, as his files have it: a short pause is
+             ONE bar in the substitution blue (`Anusvara` — 815 of them in his
+             Devī Māhātmyam), a long pause ONE bar in his red `Pause` (119
+             there). It was read as who placed it — blue the rules, red a
+             person — and the length from the number of bars, so his every
+             long pause came in as a short one; the twelve `||` in his two
+             sādhanās are long pauses too. The owner, 2026-10-01: "short is
+             blue line and long is red. Both single." */
+          const short = roleOf(run.rStyle) === 'change' && pipes < 2;
+          tokens.push({ t: 'pause', len: short ? 'short' : 'long' });
           bump('pause');
         }
       }
       /* Letters typed after a pause take the pause's style in Word, and they
          are the person's text: read them, never drop them. */
-      const rest = run.text.replaceAll(BAR_GLYPH, '').replace(/\|/g, '');
-      if (rest.trim() !== '') addLetters(rest, () => {});
+      const tail = run.text.trimStart().replace(/^[|¦]+/, '');
+      space(/^\s*/.exec(tail)![0]);
+      if (tail.trim() !== '') addLetters(tail.trimStart(), () => {});
       continue;
     }
 
@@ -357,23 +380,7 @@ export function tokensFromRuns(
     holdRun = null;
     for (const piece of run.text.split(/(\s+|।|॥)/)) {
       if (piece === '') continue;
-      if (/^\s+$/.test(piece)) {
-        flush();
-        /*
-         * A NEWLINE IS A LINE, NOT A SPACE. `readParagraphs` writes `<w:br/>`
-         * as a newline and `importDocx` puts one between consecutive `Translit`
-         * paragraphs, so both ways a verse is broken into pādas arrive here —
-         * and reading them as spaces ran every verse together onto one line.
-         */
-        if (piece.includes('\n')) {
-          while (tokens.length > 0 && tokens[tokens.length - 1]!.t === 'sp') tokens.pop();
-          if (tokens.length > 0 && tokens[tokens.length - 1]!.t !== 'br') tokens.push({ t: 'br' });
-          continue;
-        }
-        const last = tokens[tokens.length - 1];
-        if (last !== undefined && last.t !== 'sp' && last.t !== 'br') tokens.push({ t: 'sp' });
-        continue;
-      }
+      if (/^\s+$/.test(piece)) { space(piece); continue; }
       if (piece === '।' || piece === '॥') {
         flush();
         /* NO SPACE IS INVENTED HERE. A space around a daṇḍa arrives as its own

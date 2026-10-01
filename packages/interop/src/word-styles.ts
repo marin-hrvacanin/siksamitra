@@ -15,7 +15,7 @@
  *
  * See specs/chant-editor/03-INTEROP.md §2.
  */
-import { WORD_MARKS } from '@siksamitra/tokens/word';
+import { WORD_DEVANAGARI, WORD_MARKS } from '@siksamitra/tokens/word';
 import type { ChantSvara } from '@siksamitra/format';
 import { MARK_CHAR, PLAN_MARK, typedAs, VIS } from '@siksamitra/engine';
 
@@ -50,6 +50,13 @@ export type WordMarkRole =
    * `Reference`. See `WORD_MARKS.reference`.
    */
   | 'reference'
+  /**
+   * HIS DEVANĀGARĪ HOLDING: not a box but a small mark BEFORE the held akṣara
+   * — U+0342 short, U+034C long — in his `Hold` (`WORD_DEVANAGARI`).
+   */
+  | 'hold-mark'
+  /** A reading aid written visibly, as his Devanāgarī does, in his `Phonetic`. */
+  | 'aid'
   | 'ignore';
 
 export interface WordCharStyle {
@@ -131,7 +138,16 @@ export const WORD_CHAR_STYLES: readonly WordCharStyle[] = [
   },
   {
     id: 'Pause', role: 'pause', color: WORD_MARKS.pause.color, italic: true, seen: 119,
-    note: 'ONE style for both lengths — the glyph count decides: | short, || long',
+    note: 'a LONG pause: one bar in his red (a short one is one bar in his blue `Anusvara`)',
+  },
+  /* HIS DEVANĀGARĪ'S OWN TWO — `śrī_kanakadhārā_…_Devanagari_joined.docx`. */
+  {
+    id: 'Hold', role: 'hold-mark', color: WORD_DEVANAGARI.hold.color, sz: WORD_DEVANAGARI.hold.size, seen: 335,
+    note: 'the mark before a held akṣara: U+0342 short, U+034C long',
+  },
+  {
+    id: 'Phonetic', role: 'aid', color: WORD_DEVANAGARI.aid.color, sz: WORD_DEVANAGARI.aid.size, seen: 38,
+    note: 'a reading aid, visible: small raised Latin letters',
   },
   {
     id: 'Comment',
@@ -201,6 +217,7 @@ export interface WordParaStyle {
 
 export const WORD_PARA_STYLES: readonly WordParaStyle[] = [
   { id: 'Translit', role: 'verse-line', seen: 434, note: 'the mantra lines' },
+  { id: 'Devanagari', role: 'verse-line', seen: 56, note: 'his mantra lines in Devanāgarī' },
   { id: 'Prijevod', role: 'translation', seen: 197, note: 'Croatian for "translation"' },
   { id: 'Title', role: 'title' },
   { id: 'Heading1', role: 'title' },
@@ -238,6 +255,9 @@ export function paraRoleOf(pStyle: string | null): WordParaRole {
  */
 export const BAR_GLYPH = '¦';
 
+/** U+0305, the Ṛgvedic overline: in the letter in the model, in `Long` in Word. */
+export const OVERLINE = '̅';
+
 /** The character style a held letter takes, given what else is on it. */
 export function holdingStyle(hold: 'short' | 'long', change: boolean): string {
   const base = hold === 'long' ? '2Holding' : 'Holding';
@@ -261,18 +281,21 @@ export const SVARA_BY_CHAR: ReadonlyMap<string, ChantSvara> = PLAN_MARK;
 export const SVARA_CHAR: ReadonlyMap<ChantSvara, string> = MARK_CHAR;
 
 /**
- * The svara as a character in an INDIC script: the Vedic accent signs Unicode
- * defines for exactly this — U+0951 the stroke above (the svarita), U+0952
- * the line below (the anudātta), U+1CDA the double stroke above (the dīrgha
- * svarita). Vedic texts in Devanāgarī, Telugu and Tamil all write them, and
- * each sits on the akṣara before it — where the app draws its mark.
+ * The svara as a character in an INDIC script — AS HIS DEVANĀGARĪ WRITES IT:
+ * the same combining marks as his IAST (U+0331 the line below, U+030D the
+ * stroke above, U+030E the double stroke), in his `Svara` — Palladio — after
+ * the akṣara (`WORD_DEVANAGARI`). Unicode's own Vedic signs (U+0952, U+0951,
+ * U+1CDA) are what the add-in wrote before it had his file; they are still
+ * READ, so a line written then reads as it did.
  */
-export const SCRIPT_SVARA_CHAR: ReadonlyMap<ChantSvara, string> = new Map<ChantSvara, string>([
+export const SCRIPT_SVARA_CHAR: ReadonlyMap<ChantSvara, string> = MARK_CHAR;
+const VEDIC_SIGNS: ReadonlyMap<ChantSvara, string> = new Map<ChantSvara, string>([
   ['svarita', '॑'], ['anudatta', '॒'], ['dirgha-svarita', '᳚'],
 ]);
-export const SCRIPT_SVARA_BY_CHAR: ReadonlyMap<string, ChantSvara> = new Map(
-  [...SCRIPT_SVARA_CHAR.entries()].map(([m, c]) => [c, m]),
-);
+export const SCRIPT_SVARA_BY_CHAR: ReadonlyMap<string, ChantSvara> = new Map([
+  ...[...VEDIC_SIGNS.entries()].map(([m, c]) => [c, m] as const),
+  ...[...SCRIPT_SVARA_CHAR.entries()].map(([m, c]) => [c, m] as const),
+]);
 
 /** The counts the reference file carries — an import must reproduce them
  *  exactly (gate W2, specs/chant-editor/03-INTEROP.md §2.6). */

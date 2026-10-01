@@ -32,11 +32,12 @@ interface FakeLine {
   wordText: string;
   part: { register: string } | null;
   script: ScriptKey;
+  notes: unknown[];
 }
 
 export const line = (text: string, from: number, to = from, more: Partial<FakeLine> = {}): FakeLine => ({
   tm: { text, marks: [] }, map: null, from, to, style: 'Translit', isVerse: true, unresolved: [], blocked: [],
-  wordText: text, part: null, script: 'iast', ...more,
+  wordText: text, part: null, script: 'iast', notes: [], ...more,
 });
 
 interface DocLine {
@@ -51,6 +52,8 @@ export const host = {
   /** The whole document's mantra lines, for a whole-document run. */
   docLines: [] as DocLine[],
   missing: [] as string[],
+  /** His older style ids the document still uses. */
+  older: [] as string[],
   /** The part the caret is in, if any. */
   part: null as { register: string } | null,
   /** What `Office.context.document.settings` holds. */
@@ -67,6 +70,7 @@ export const calls = {
   asked: [] as string[],
   dialogs: [] as string[],
   addStyles: [] as boolean[],
+  converted: 0,
   associated: [] as string[],
   taskpane: 0,
   browser: [] as string[],
@@ -85,16 +89,24 @@ export const selectionMock = {
 };
 
 export const clientMock = {
-  readDocument: vi.fn(async () => ({ lines: structuredClone(host.docLines), total: host.docLines.length + 2 })),
-  writeDocument: vi.fn(async (changed: DocLine[], total: number) => {
-    calls.documentWrites.push({ changed: structuredClone(changed), total });
+  readDocument: vi.fn(async () => ({ lines: structuredClone(host.docLines), shape: { total: host.docLines.length + 2, hidden: [] } })),
+  writeDocument: vi.fn(async (changed: DocLine[], shape: { total: number }) => {
+    calls.documentWrites.push({ changed: structuredClone(changed), total: shape.total });
     return changed.length;
   }),
-  documentStyles: vi.fn(async () => ({ missing: [...host.missing], total: 19 })),
+  documentStyles: vi.fn(async () => ({ missing: [...host.missing], total: 11, older: [...host.older] })),
   addStyles: vi.fn(async (keep: boolean) => { calls.addStyles.push(keep); host.missing = []; }),
   learn: vi.fn(),
   packageOf: vi.fn(),
-  documentVocabulary: vi.fn(() => 'clean'),
+};
+
+/** `word/convert.ts`: a conversion counted, the older names gone. */
+export const convertMock = {
+  convertDocument: vi.fn(async () => {
+    calls.converted += 1;
+    host.older = [];
+    return { written: 3, kept: [], removed: ['Translit', 'Prijevod'] };
+  }),
 };
 
 export const partsMock = {
@@ -154,6 +166,7 @@ beforeEach(() => {
   host.lines = [line('agnim īḻe', 9)];
   host.docLines = [];
   host.missing = [];
+  host.older = [];
   host.part = null;
   host.settings.clear();
   host.answer = true;

@@ -46,33 +46,35 @@
  */
 import type { TextAndMarks } from '@siksamitra/format';
 import { styleSheet, styleSheetFor } from '../model/sheet.js';
-import { missingStyles, specimenBody, styleIds } from '../model/setup.js';
+import { specimenBody, styleIds } from '../model/setup.js';
 import { specimenMarks } from '../model/specimen-text.js';
-import { documentPartOf, flatPackage, restyle } from '../model/opc.js';
+import { documentPartOf } from '../model/opc.js';
+import { packageFor, stylesPartOf } from '../model/package.js';
+import { blockedIn, lineXml } from '../model/line-xml.js';
+import { bodyShape, nextToHidden, wordIndexOf, type BodyShape } from '../model/paragraph-index.js';
+import { lineTargets } from './line-target.js';
+import { restyleTo } from '../model/restyle.js';
 import { decodeRuns, isVerseParagraph, paragraphsXml } from '../model/paragraph.js';
 import {
-  inTheWay, inVocabulary, mergeRuns, paragraphXml, partOf, readParagraphs, scriptOfLine, vocabularyOf,
+  VOCABULARY, builtInStyleIds, hisStylesAsClean, inVocabulary, legacyStylesIn, lineNotes, mergeRuns, paragraphXml, partOf, readParagraphs, scriptOfLine,
 } from '@siksamitra/interop';
 import type { ScriptKey } from '@siksamitra/engine';
-import type { PartRules, Vocabulary } from '@siksamitra/interop';
+import type { LineNote, PartRules } from '@siksamitra/interop';
 
 /*
- * WHICH NAMES THIS DOCUMENT'S STYLES GO BY — his, or clean ones.
+ * WHAT THIS DOCUMENT'S OWN STYLES LOOK LIKE, under the clean names.
  *
- * Learnt from every package Word hands back, and LEGACY IS STICKY: one of his
- * ids seen anywhere means the document is his, and a later read of a paragraph
- * that happens to carry none cannot make it clean again. Everything is built in
- * his ids and translated only here, on the way into Word. See `vocabulary.ts`.
+ * Every write is in the clean vocabulary (`model/package.ts`). What is learnt
+ * from each package Word hands back is his definitions: a document of his
+ * keeps its look because the clean styles written into it take them. Learnt
+ * once per style — the first definition seen is the document's own.
  */
-let spoken: Vocabulary = 'clean';
+const his = new Map<string, string>();
 export function learn(xml: string): void {
-  if (vocabularyOf(xml) === 'legacy') spoken = 'legacy';
+  for (const [id, style] of hisStylesAsClean(stylesPartOf(xml) || xml)) if (!his.has(id)) his.set(id, style);
 }
-/** The package to insert, in the document's own vocabulary. */
-export const packageOf = (body: string, sheet: string): string =>
-  flatPackage(inVocabulary(body, spoken), inVocabulary(sheet, spoken));
-/** For the pane: which names the document uses. */
-export const documentVocabulary = (): Vocabulary => spoken;
+/** The package to insert: the clean vocabulary, in this document's look. */
+export const packageOf = (body: string, sheet: string): string => packageFor(body, sheet, his);
 
 /** One paragraph of the document, addressed by index — for a whole-document run. */
 export interface DocParagraph {
@@ -85,6 +87,8 @@ export interface DocParagraph {
   part: PartRules | null;
   /** The script it is written in, and is written back in. */
   script: ScriptKey;
+  /** The notes that end its lines, put back when it is written. */
+  notes: readonly LineNote[];
 }
 
 /** What one read of the whole document saw. */
@@ -92,7 +96,9 @@ export interface DocumentRead {
   /** The mantra paragraphs, addressed by their index among ALL paragraphs. */
   readonly lines: readonly DocParagraph[];
   /**
-   * How many paragraphs there are ALTOGETHER, so the write can check.
+   * How many paragraphs there are ALTOGETHER, so the write can check — and
+   * which of them Word may leave out of its own count: those whose MARK is
+   * hidden, and `getOoxml`'s own empty last one (`model/paragraph-index.ts`).
    *
    * The indices above come from this read and are used against a DIFFERENT
    * one, and the two readers are not the same code: ours is a regex over
@@ -101,7 +107,7 @@ export interface DocumentRead {
    * together with the paragraph after it — and 27 of his 872 paragraphs are
    * that shape. Every index from the first one onwards was wrong.
    */
-  readonly total: number;
+  readonly shape: BodyShape;
 }
 
 /**
@@ -121,16 +127,27 @@ export async function readDocument(): Promise<DocumentRead> {
     const all = readParagraphs(part, ooxml.value);
     const raw = paragraphXml(part);
     const lines: DocParagraph[] = [];
+    const shape = bodyShape(raw);
+    const { hidden } = shape;
     all.forEach((p, index) => {
       if (!isVerseParagraph(p)) return;
       const runs = mergeRuns(p.runs);
       const script = scriptOfLine(runs.filter((r) => r.hidden !== true).map((r) => r.text).join(''));
+      /* A `Comment` run that does not end a line cannot be put back, and a
+         write without it deletes it. It used to be written anyway: a
+         whole-document run went through `blocked` alone, which never looked
+         for one — so every note in the document was deleted by it. */
+      const { notes } = lineNotes(runs);
       lines.push({
-        index, tm: decodeRuns(runs, script), style: p.pStyle, blocked: inTheWay(raw[index] ?? ''),
-        part: partOf(p.sdt), script,
+        index, tm: decodeRuns(runs, script), style: p.pStyle,
+        blocked: [
+          ...blockedIn(raw[index] ?? '', runs, script),
+          ...(nextToHidden(index, hidden) ? ['hidden text right before it, which Word joins to it'] : []),
+        ],
+        part: partOf(p.sdt), script, notes,
       });
     });
-    return { lines, total: all.length };
+    return { lines, shape };
   });
 }
 
@@ -142,9 +159,7 @@ export async function readDocument(): Promise<DocumentRead> {
  * underneath us — which is the same assumption every Office add-in makes
  * between two syncs.
  */
-export async function writeDocument(
-  changed: readonly DocParagraph[], total: number,
-): Promise<number> {
+export async function writeDocument(changed: readonly DocParagraph[], shape: BodyShape): Promise<number> {
   if (changed.length === 0) return 0;
   return Word.run(async (context) => {
     const paragraphs = context.document.body.paragraphs;
@@ -161,22 +176,36 @@ export async function writeDocument(
      * one after it. Fixed in `docx-read.ts`, and checked here because a
      * silent mismatch costs a document and a message costs nothing.
      */
-    if (paragraphs.items.length !== total) {
+    /* Word's count may leave out the paragraphs whose mark is hidden; any other
+       difference is the document changing under the read. */
+    const at = wordIndexOf(shape, paragraphs.items.length);
+    if (at === undefined) {
       throw new Error(`the document changed while it was being read — `
-        + `${total} paragraphs became ${paragraphs.items.length}. `
+        + `${shape.total} paragraphs became ${paragraphs.items.length}. `
         + 'Nothing was written. Try again.');
     }
-    for (const one of changed) {
-      const target = paragraphs.items[one.index];
-      if (target === undefined || one.blocked.length > 0) continue;
-      const body = restyle(paragraphsXml(one.tm, one.script), one.style);
+    let written = 0;
+    const going = changed.flatMap((one) => {
+      const index = one.blocked.length > 0 ? null : at(one.index);
+      const p = index === null ? undefined : paragraphs.items[index];
+      return p === undefined ? [] : [{ one, p }];
+    });
+    /* Into the part's own content where the line IS the part (`line-target.ts`). */
+    const targets = await lineTargets(going.map((g) => g.p));
+    for (const [k, { one }] of going.entries()) {
+      const target = targets[k]!;
+      written += 1;
+      const body = lineXml({ tm: one.tm, style: one.style, script: one.script, notes: one.notes });
       /* Per body, for the reason in `model/sheet.ts` — and cached on the set
          of styles a body names, so 434 paragraphs build a handful of sheets. */
-      target.getRange(Word.RangeLocation.content)
-        .insertOoxml(packageOf(body, styleSheetFor(body)), Word.InsertLocation.replace);
+      target.insertOoxml(packageOf(body, styleSheetFor(body)), Word.InsertLocation.replace);
+      /* By name, where the line is now in another style (`model/restyle.ts`). */
+      const to = restyleTo(body, one.style);
+      const paragraph = going[k]!.p;
+      if (to !== null) paragraph.style = to;
     }
     await context.sync();
-    return changed.length;
+    return written;
   });
 }
 
@@ -190,10 +219,12 @@ export async function writeDocument(
 
 /** What the open document has of the add-in's vocabulary. */
 export interface DocStyles {
-  /** Style ids the document has not got. Empty means it is ready. */
+  /** OUR styles the document has not got, by their clean names. Empty: ready. */
   readonly missing: readonly string[];
-  /** How many the add-in knows about, `Normal` included. */
+  /** How many of ours there are — Word's own built-ins are not counted. */
   readonly total: number;
+  /** His older style ids the document still uses: a document to convert. */
+  readonly older: readonly string[];
 }
 
 /**
@@ -206,17 +237,31 @@ export interface DocStyles {
  * of them.
  */
 export async function documentStyles(): Promise<DocStyles> {
-  const sheet = styleSheet();
+  /* OURS ONLY, IN THE CLEAN NAMES. Word's own built-ins — Normal, the
+     headings, Header, Caption — are Word's and always there to be used; they
+     are not ours to count, and his older ids are not a vocabulary to offer. */
+  const ours = styleIds(inVocabulary(styleSheet(), 'clean')).filter((s) => s.custom);
   return Word.run(async (context) => {
     const ooxml = context.document.body.getOoxml();
     await context.sync();
     learn(ooxml.value);
+    /* By NAME as well as id: Word makes an inserted style's id from its name,
+       dropping what is not ASCII — our `Virāma` is `Virma` in every document,
+       `Vedic Anusvāra` is `VedicAnusvra` — and counted by id they were
+       "missing" for ever, however often they were imported. Measured in Word. */
+    const sheet = stylesPartOf(ooxml.value);
+    const table = builtInStyleIds(sheet);
+    const have = new Set(styleIds(sheet).map((s) => table.get(s.id) ?? s.id));
     return {
-      missing: missingStyles(ooxml.value, sheet),
-      total: styleIds(sheet).filter((x) => x.id !== 'Normal').length,
+      missing: ours.filter((s) => !have.has(s.id)).map((s) => cleanName(s.id)),
+      total: ours.length,
+      older: legacyStylesIn(ooxml.value),
     };
   });
 }
+
+/** A clean style id as a person reads it: `HoldingShort` is "Holding · Short". */
+const cleanName = (id: string): string => VOCABULARY.find((e) => e.clean === id)?.name ?? id;
 
 /**
  * Put the vocabulary into the document.
@@ -239,10 +284,18 @@ export async function addStyles(keep: boolean): Promise<void> {
      moment the marked line in the specimen grew a raised aid, and put a style
      in their Styles pane named after nothing on their page. */
   const sheet = styleSheet();
-  const body = specimenBody(sheet, paragraphsXml(specimenMarks()));
-  const pkg = packageOf(body, sheet);
+  const specimen = specimenBody(sheet, paragraphsXml(specimenMarks()));
   await Word.run(async (context) => {
     const body = context.document.body;
+    /* HIS LOOK FIRST. Word keeps a style the document already has, so the
+       clean styles that go in now are the ones every later write gets: in one
+       of his documents they must be HIS definitions, or `Mantra` arrives in
+       ours and his lines, converted, change face. Any range's OOXML carries
+       the whole styles part, so one paragraph's is read, not the body's. */
+    const first = body.paragraphs.getFirst().getRange().getOoxml();
+    await context.sync();
+    learn(first.value);
+    const pkg = packageOf(specimen, sheet);
     const count = async (): Promise<number> => {
       const ps = body.paragraphs;
       ps.load('items');

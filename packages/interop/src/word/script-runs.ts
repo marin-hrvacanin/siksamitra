@@ -38,7 +38,8 @@ import {
   CANDRA_SIGN, scriptClusters, transliterateSyllableSpans, type Profile, type ScriptKey,
 } from '@siksamitra/engine';
 import { mergeRuns, type WordRun } from '../docx-read.js';
-import { SCRIPT_SVARA_CHAR, changeStyle, holdingStyle } from '../word-styles.js';
+import { WORD_DEVANAGARI } from '@siksamitra/tokens/word';
+import { SCRIPT_SVARA_CHAR } from '../word-styles.js';
 import { sameLetter, type Letter } from './script-letters.js';
 import { SAID, ScriptReader, plainProfile, type Read, type Said } from './script-reader.js';
 
@@ -145,20 +146,35 @@ export function scriptWordRuns(
     /* Another spelling of the same sound — `ṃ` for `ṁ` — is said as well. */
     if (where[i]!.t !== t.t) P.letter.push([t.t, k]);
   });
-  const explicit = parts.map(() => new Set<'held' | 'changed' | 'svara' | 'dot'>());
+  const explicit = parts.map(() => new Set<'held' | 'changed' | 'svara' | 'dot' | 'aid'>());
+  /*
+   * AS HIS DEVANĀGARĪ IS WRITTEN (`WORD_DEVANAGARI`), never a box: a box round
+   * a conjunct falls apart on the page. A holding is his small raised mark
+   * standing BEFORE the akṣara — U+0342 short, U+034C long — in `Hold`; the
+   * accents follow the akṣara in a run of their own, in `Svara`; a reading aid
+   * is drawn, small and raised, in `Phonetic`; and the IAST's hyphen is not
+   * written — it is hidden text, so it is read back and nothing is lost. What
+   * the plain reading of all that does not give back exactly — which letter
+   * of a conjunct is held, which an aid follows — is in the hidden record.
+   */
+  const D = WORD_DEVANAGARI;
   const emit = (): WordRun[] => parts.flatMap((segment, c) => {
     const P = plans[c]!;
     const E = explicit[c]!;
     const out: WordRun[] = [];
     if (P.dot !== null) out.push({ text: '·', rStyle: 'Svara', superscript: false });
-    const style = P.kind !== null ? holdingStyle(P.kind, P.changed.length > 0)
-      : P.changed.length > 0 ? changeStyle(P.changeLetter) : null;
-    out.push({ text: segment + P.svara.map(([s]) => SCRIPT_SVARA_CHAR.get(s) ?? '').join(''), rStyle: style, superscript: false });
+    if (/^-+$/.test(segment)) return [...out, { text: segment, rStyle: null, superscript: false, hidden: true }];
+    if (P.kind !== null) out.push({ text: P.kind === 'long' ? D.hold.long : D.hold.short, rStyle: D.hold.style, superscript: false });
+    /* A changed letter is not coloured in his Devanāgarī — the aid drawn after
+       it says what is recited — so which letters are changed is in the record. */
+    out.push({ text: segment, rStyle: null, superscript: false });
+    if (P.svara.length > 0) out.push({ text: P.svara.map(([s]) => SCRIPT_SVARA_CHAR.get(s) ?? '').join(''), rStyle: 'Svara', superscript: false });
+    if (P.aid.length > 0) out.push({ text: P.aid.map(([a]) => a).join(''), rStyle: D.aid.style, superscript: false });
     const s: Said = {
       ...(E.has('held') ? { h: P.held } : {}), ...(E.has('changed') ? { c: P.changed } : {}),
       ...(E.has('svara') ? { s: P.svara } : {}), ...(E.has('dot') && P.dot !== null ? { d: P.dot } : {}),
       ...(P.tick.length > 0 ? { t: P.tick } : {}), ...(P.colon.length > 0 ? { o: P.colon } : {}),
-      ...(P.aid.length > 0 ? { a: P.aid } : {}), ...(P.letter.length > 0 ? { l: P.letter } : {}),
+      ...(E.has('aid') ? { a: P.aid } : {}), ...(P.letter.length > 0 ? { l: P.letter } : {}),
     };
     if (Object.keys(s).length > 0) out.push(said(s));
     return out;
@@ -175,6 +191,7 @@ export function scriptWordRuns(
       if (t.changed !== g.changed) E.add('changed');
       if (t.svara.join() !== g.svara.join()) E.add('svara');
       if (t.dot !== g.dot) E.add('dot');
+      if (t.aid.join('\u0000') !== g.aid.join('\u0000')) E.add('aid');
     }
   }
   return whole();

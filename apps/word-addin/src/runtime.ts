@@ -25,6 +25,7 @@ import { defaultRules, runOverDocument, runOverSelection } from './word/rules.js
 import { dissolvePartHere, makePart, selectPartHere } from './word/parts.js';
 import { registerHere, setRegisterHere } from './word/register.js';
 import { addStyles, documentStyles } from './word/client.js';
+import { convertDocument } from './word/convert.js';
 import { scriptDocument, scriptName, scriptSelection } from './word/script.js';
 import { DEFAULT_PROFILE_KEY, type ScriptKey } from '@siksamitra/engine';
 import { DIALOG_SIZE, ask, dialog, tell } from './word/dialog.js';
@@ -53,15 +54,48 @@ async function wholeScript(script: ScriptKey): Promise<void> {
 }
 
 /**
- * A register chosen from the menu: recorded for the part the caret is in, or
- * for the document outside every part — and then, if the person says so, the
- * text it applies to is re-marked, undoing what the old register made first.
+ * A register chosen from the menu — for the text it is chosen FOR.
+ *
+ * A śākhā belongs to a chant, a part, a selection; never to "the document"
+ * (the owner, 2026-09-30: "'of the document' has no meaning"). So: with the
+ * caret in a part, that part; with lines SELECTED outside every part, those
+ * lines become a part of their own in it; with a bare caret outside every
+ * part, the lines outside every part. Then, if the person says so, the text it
+ * applies to is re-marked, undoing what the old register made first.
  */
 async function chooseRegister(register: ChantProfileKey): Promise<void> {
-  const before = await setRegisterHere(register);
   const name = CHANT_PROFILE_NOTES[register].name;
+  const here = await locate();
+  const selected = here.lines.length > 1 || here.from !== here.to;
+  /* A selection in more than one place — partly in a part and partly not, or
+     over parts of different registers — has no one "here" to choose for. It
+     used to take the FIRST line's: a selection beginning outside and reaching
+     into a part changed every line outside every part. */
+  const places = new Set(here.lines.map((l) => l.part?.register ?? null));
+  if (selected && places.size > 1) {
+    await tell({ text: 'The selection is in more than one place.', kind: 'warn', lines: [
+      places.has(null)
+        ? 'Some of it is in a part and some is not. Select only lines outside every part to make them a part of their own, or put the caret in the part to change its register.'
+        : 'It reaches over parts of different registers. Put the caret in the part whose register is to change.',
+    ] });
+    return;
+  }
+  if (selected && here.lines.every((l) => l.part === null)) {
+    const was = (await registerHere()).register;
+    if (!(await ask(`Mark these lines as ${name}?`, 'Mark them',
+      'They become a part of their own, in this register, and are re-marked by its rules; what you placed by hand stays. '
+        + 'The lines outside every part keep theirs.'))) return;
+    if ((await makePart({ register })) !== 'made') {
+      await tell({ text: 'The selection reaches into a part.', kind: 'warn', lines: ['Parts do not nest. Select lines outside every part, or dissolve the part first.'] });
+      return;
+    }
+    await selectPartHere();
+    await tell(await runOverSelection(await locate(), { ...defaultRules('keep-hand'), register, was }));
+    return;
+  }
+  const before = await setRegisterHere(register);
   if (before.register === register) {
-    await tell({ text: `${before.inPart ? 'This part is' : 'The document is'} marked as ${name} already.`, kind: 'plain',
+    await tell({ text: `${before.inPart ? 'This part is' : 'The lines outside every part are'} marked as ${name} already.`, kind: 'plain',
       lines: ['Re-apply rules re-marks it, if the text has changed.'] });
     return;
   }
@@ -73,8 +107,9 @@ async function chooseRegister(register: ChantProfileKey): Promise<void> {
     await tell(await runOverSelection(await locate(), rules));
     return;
   }
-  if (!(await ask(`Re-mark the document as ${name}?`, 'Re-mark it',
-    'Every mantra line outside a part of its own is re-marked by the new register. Parts keep their own.'))) return;
+  if (!(await ask(`Re-mark the lines outside every part as ${name}?`, 'Re-mark them',
+    'Every mantra line outside a part of its own is re-marked by the new register. Parts keep their own. '
+      + 'To give only some lines a register, select them and choose it.'))) return;
   await tell(await runOverDocument(rules, (p) => p.part === null));
 }
 
@@ -84,7 +119,7 @@ async function newPart(): Promise<void> {
   await tell(made === 'made'
     ? { text: `These lines are a part of their own now, marked as ${CHANT_PROFILE_NOTES[register].name}.`, kind: 'plain',
       lines: ['Choose a register from this menu, with the caret inside it, to mark it by other rules.'] }
-    : { text: 'The caret is inside a part already.', kind: 'warn', lines: ['Parts do not nest. Dissolve this one first.'] });
+    : { text: 'These lines are in a part already.', kind: 'warn', lines: ['Parts do not nest. Select lines outside every part, or dissolve the part first.'] });
 }
 
 async function dissolvePart(): Promise<void> {
@@ -94,17 +129,26 @@ async function dissolvePart(): Promise<void> {
     return;
   }
   const doc = (await registerHere()).register;
-  await tell({ text: 'The part is gone; its lines are the document’s again.', kind: 'plain',
-    lines: doc === was.register ? [] : ['They are still marked as the part was. Re-apply rules re-marks them by the document’s register.'] });
+  await tell({ text: 'The part is gone; its lines are outside every part again.', kind: 'plain',
+    lines: doc === was.register ? [] : ['They are still marked as the part was. Re-apply rules re-marks them by the register of the lines outside every part.'] });
 }
 
 async function styles(keep: boolean): Promise<void> {
   await addStyles(keep);
+  /* A document in his older style names is taken into the clean ones — the
+     same look (`word/convert.ts`). */
+  const before = await documentStyles();
+  const converted = before.older.length > 0 ? await convertDocument() : null;
   const now = await documentStyles();
+  const said = converted === null ? [] : [
+    `${converted.written} paragraph(s) now in the clean styles, looking as they did.`,
+    ...(converted.removed.length === 0 ? [] : [`The older styles went: ${converted.removed.join(', ')}.`]),
+    ...converted.kept.map((k) => `Left as it was — ${k}.`),
+  ];
   await tell(now.missing.length === 0
-    ? { text: `The ${now.total} śikṣāmitra styles are in this document.`, kind: 'plain',
-      lines: keep ? ['The specimen is at the end of the document. Delete it when you have read it; the styles stay.'] : [] }
-    : { text: 'Some styles did not go in.', kind: 'warn', lines: [`Still missing: ${now.missing.join(', ')}.`] });
+    ? { text: `The ${now.total} śikṣāmitra styles are in this document.`, kind: converted?.kept.length ? 'warn' : 'plain',
+      lines: [...said, ...(keep ? ['The specimen is at the end of the document. Delete it when you have read it; the styles stay.'] : [])] }
+    : { text: 'Some styles did not go in.', kind: 'warn', lines: [...said, `Still missing: ${now.missing.join(', ')}.`] });
 }
 
 /** The typing help: every key of the palette, and a letter pressed for its long form. */

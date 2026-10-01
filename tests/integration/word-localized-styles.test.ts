@@ -51,9 +51,12 @@ describe('the package a Croatian Word on the web really returned', () => {
     expect(t.get('Zaglavlje')).toBe('Header');
     expect(t.get('Opisslike')).toBe('Caption');
     expect(t.get('Normal')).toBe('Normal');
-    /* The custom styles are not built-ins and are not in the table. */
-    expect(t.has('Translit')).toBe(false);
-    expect(t.has('Holding')).toBe(false);
+    /* His custom styles are known BY NAME too, as the clean vocabulary's — Word
+       makes an id from a name, so the name is what to trust (`style-names.ts`)
+       — and read through the vocabulary they are his ids again. */
+    expect(t.get('Translit')).toBe('Mantra');
+    expect(t.get('Holding')).toBe('HoldingShort');
+    expect(canonicalStyleId('Translit', t)).toBe('Translit');
   });
 
   it('read with its table, the paragraphs carry the English ids', () => {

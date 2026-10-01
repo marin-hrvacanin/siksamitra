@@ -37,9 +37,9 @@ import type { TextAndMarks, TokenHelp } from '@siksamitra/format';
 import type { ChantToken, ChantVerse } from '@siksamitra/format';
 import type { ImportReport, WordParagraph, WordRun } from '@siksamitra/interop';
 import {
-  documentXml, mergeRuns, paraRoleOf, readParagraphs, tokensFromRuns,
+  documentXml, lineNotes, mergeRuns, paraRoleOf, readParagraphs, tokensFromRuns,
 } from '@siksamitra/interop';
-import { parseLetters, type ScriptKey } from '@siksamitra/engine';
+import { splitLetters, type ScriptKey } from '@siksamitra/engine';
 import { carriable } from './carry.js';
 
 /**
@@ -65,10 +65,15 @@ export const isVerseParagraph = (p: WordParagraph): boolean =>
  */
 export const TOKEN_HELP: TokenHelp = {
   spell: (iast: string) => ({ deva: iast } as Omit<ChantSyllable, 't' | 'units' | 'iast'>),
-  /* A letter is not a character: `bh` is one letter written with two, and
-     walking the text character by character turns every aspirate into its
-     plain consonant. `parseLetters` is the engine's own division. */
-  split: parseLetters,
+  /* A letter is not a character: `bh` is one letter written with two, and a
+     combining mark rides on the letter before it. `splitLetters` is the
+     division `tokensOf` uses — the app's, and every re-run's — so a line the
+     add-in writes is cut into letters exactly as the rules cut it. It used
+     to be `parseLetters`, which splits a combining mark off as a letter of its
+     own: the Ṛgvedic overline of `yu̅̍vase` became a letter, the svarita over
+     `u̅` covered two letters, and every such line was written with its accent
+     twice — 115 of his lines. */
+  split: splitLetters,
 };
 
 /** A one-verse document, which is all `documentXml` needs to write a line. */
@@ -129,28 +134,17 @@ export function blankReport(): ImportReport {
  * One paragraph's runs as text and markings.
  *
  * A `<w:br/>` inside the paragraph is a LINE, and `readParagraphs` gives it to
- * us as a newline in a run's text. It has to be handled here rather than left to
- * the importer: `tokensFromRuns` reads any run of whitespace as a space, so a
- * verse of four pādas would come back as one long line. `importDocx` has the
- * same gap and loses every line break inside a verse.
+ * us as a newline in a run's text, which `tokensFromRuns` reads as a `br`.
+ *
+ * ONE CALL OVER THE WHOLE PARAGRAPH. This used to cut the runs at every
+ * newline and decode each line on its own, from when the importer read a
+ * newline as a space. It does not any more, and the cutting cost something:
+ * each line then STARTED a decode, and a decode drops leading whitespace — so
+ * the tab that indents his pādas after `|⏎` was written back as nothing, in 82
+ * of his lines.
  */
 export function decodeRuns(runs: readonly WordRun[], script: ScriptKey = 'iast'): TextAndMarks {
-  const report = blankReport();
-  const tokens: ChantToken[] = [];
-  let line: WordRun[] = [];
-  const flush = (): void => {
-    tokens.push(...tokensFromRuns(line, report, `l-${tokens.length}`, script));
-    line = [];
-  };
-  for (const r of runs) {
-    if (!r.text.includes('\n')) { line.push(r); continue; }
-    const pieces = r.text.split('\n');
-    for (const [i, piece] of pieces.entries()) {
-      if (i > 0) { flush(); tokens.push({ t: 'br' }); }
-      if (piece !== '') line.push({ ...r, text: piece });
-    }
-  }
-  flush();
+  const tokens = tokensFromRuns([...runs], blankReport(), 'l-0', script);
   return toTextAndMarks({ id: 'v', tokens } as ChantVerse);
 }
 
@@ -202,12 +196,18 @@ export function unresolvedIn(paras: readonly WordParagraph[], script: ScriptKey 
     .map((p, i) => tokensFromRuns(p.runs, report, `p-${i + 1}`, script))
     .map((tokens) => toTextAndMarks({ id: 'v', tokens } as ChantVerse).text)
     .join(' ');
+  /* A note at the end of a line is not lost: it is taken out and put back
+     (`lineNotes` in interop). Only a `Comment` run somewhere else still is. */
+  const noted = new Set(paras.flatMap((p) => {
+    const { notes, stray } = lineNotes(mergeRuns(p.runs));
+    return stray ? [] : notes.flatMap((n) => n.runs.map((r) => r.text.trim()));
+  }));
   return report.unresolved.map((u) => ({
     what: u.what,
     raw: u.raw,
-    lossy: u.raw.trim() !== '' && !decoded.includes(u.raw.trim()),
+    lossy: u.raw.trim() !== '' && !decoded.includes(u.raw.trim()) && !noted.has(u.raw.trim()),
     /* Matched on the message because that is where the importer states it, and
        the importer's audience is an audit. See `advisory` above. */
-    ...(u.what.startsWith('a holding box covers') ? { advisory: true } : {}),
+    ...(u.what.startsWith('a holding box covers') || noted.has(u.raw.trim()) ? { advisory: true } : {}),
   }));
 }

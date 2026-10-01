@@ -47,3 +47,17 @@ describe('the caret mark', () => {
     expect(x).toContain('<w:t xml:space="preserve">b</w:t>');
   });
 });
+
+describe('atWordEnd — where the caret may be unstuck', () => {
+  it('at the end of the line, before a space, a daṇḍa or a pause', async () => {
+    const { atWordEnd } = await import('../caret.js');
+    expect(atWordEnd('agnim', 5)).toBe(true);
+    expect(atWordEnd('agnim īḷe', 5)).toBe(true);
+    expect(atWordEnd('agnim।', 5)).toBe(true);
+  });
+  it('never inside a word — Word would restyle the whole word', async () => {
+    const { atWordEnd } = await import('../caret.js');
+    expect(atWordEnd('agnim', 4)).toBe(false);
+    expect(atWordEnd('agnim', 0)).toBe(false);
+  });
+});

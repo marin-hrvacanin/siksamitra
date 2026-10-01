@@ -11,14 +11,16 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES } from '@siksamitra/format';
 import type { ChantProfileKey, Stage } from '@siksamitra/format';
-import { STAGES } from '@siksamitra/engine';
+import { CONVENTIONS, STAGES, resolveProfile, type ConventionId } from '@siksamitra/engine';
 import { officeChord } from '@siksamitra/ui';
 import { COMMANDS, LEADER_COMMANDS } from '../commands-table.js';
 import { ADDIN_VERSION, GUIDE_URL } from '../version.js';
 import { addStyles, documentStyles, type DocStyles } from '../word/client.js';
-import { recordStages, recordedStages } from '../word/settings.js';
+import { convertDocument } from '../word/convert.js';
+import { recordConventions, recordStages, recordedConventions, recordedStages } from '../word/settings.js';
 import { registerHere, setRegisterHere } from '../word/register.js';
 import { useMode } from './useMode.js';
+import { InsertDocument } from './InsertDocument.js';
 
 /**
  * THE FIVE STAGES, in plain words rather than the engine's identifiers.
@@ -37,11 +39,12 @@ export function Settings(): ReactNode {
   const [register, setRegister] = useState<ChantProfileKey>('taittiriya');
   const [inPart, setInPart] = useState(false);
   const [stages, setStages] = useState<ReadonlySet<Stage>>(recordedStages);
+  const [chosen, setChosen] = useState<Partial<Record<ConventionId, boolean>>>(recordedConventions);
   const [styles, setStyles] = useState<DocStyles | null>(null);
   const [busy, setBusy] = useState(false);
 
   const readStyles = (): void => { void documentStyles().then(setStyles, () => setStyles(null)); };
-  /* Which register marks the text at the caret: its part's, or the document's. */
+  /* Which register marks the text at the caret: its part's, or that of the lines outside every part. */
   const readHere = (): void => {
     void registerHere().then((h) => { setInPart(h.inPart); setRegister(h.register ?? 'taittiriya'); }, () => undefined);
   };
@@ -58,6 +61,7 @@ export function Settings(): ReactNode {
     const again = (): void => {
       readHere();
       setStages(recordedStages());
+      setChosen(recordedConventions());
     };
     Office.addin?.onVisibilityModeChanged?.(() => { again(); readStyles(); });
     return undefined;
@@ -70,19 +74,33 @@ export function Settings(): ReactNode {
     setStages(next);
     void recordStages(next);
   };
+  /* On unless switched: what the register does by itself, then what this
+     document has chosen. */
+  const defaults = resolveProfile([{ preset: register }]);
+  const isOn = (id: ConventionId): boolean =>
+    chosen[id] ?? CONVENTIONS.find((c) => c.id === id)!.isOn(defaults);
+  const flip = (id: ConventionId): void => {
+    const next = { ...chosen, [id]: !isOn(id) };
+    setChosen(next);
+    void recordConventions(next);
+  };
   const put = async (): Promise<void> => {
     setBusy(true);
-    try { await addStyles(false); } finally { setBusy(false); readStyles(); }
+    try {
+      await addStyles(false);
+      /* His older names are taken into the clean ones — the same look. */
+      if ((styles?.older.length ?? 0) > 0) await convertDocument();
+    } finally { setBusy(false); readStyles(); }
   };
 
   return (
     <div className="set" data-chrome="palladio" data-mode={mode} data-density="compact">
       <section className="set__box">
-        <h2 className="set__h">Register {inPart ? '— this part' : '— the document'}</h2>
+        <h2 className="set__h">Register {inPart ? '— this part' : '— lines outside every part'}</h2>
         <p className="set__note">
           {inPart
             ? 'The caret is in a part with rules of its own. What you choose here marks this part only.'
-            : 'Which śākhā’s rules mark the document, outside any part of its own.'}
+            : 'The caret is in no part. What you choose here marks the lines outside every part; to give some lines a śākhā of their own, select them and choose it from the tab’s Register menu.'}
           {' '}Choosing one here re-marks nothing: press Re-apply rules on the tab, or choose from the tab’s
           Register menu, which offers to.
         </p>
@@ -115,23 +133,51 @@ export function Settings(): ReactNode {
       </section>
 
       <section className="set__box">
+        <h2 className="set__h">Conventions</h2>
+        <p className="set__note">How the text is marked where marked texts differ. Kept in the file; Re-apply rules uses them.</p>
+        <fieldset className="set__conv">
+          <legend className="set__sr">Conventions</legend>
+          {CONVENTIONS.map((c) => (
+            <label key={c.id} className="set__convrow">
+              <input type="checkbox" checked={isOn(c.id)} onChange={() => flip(c.id)} />
+              <span>
+                <strong>{c.label}</strong>
+                <span className="set__eg"><span className="set__typed">{c.example.typed}</span> → <span className="set__marked">{c.example.marked}</span></span>
+                <span className="set__what">{c.note}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      </section>
+
+      <section className="set__box">
         <h2 className="set__h">Styles in this document</h2>
+        {styles !== null && styles.older.length > 0 && (
+          <p className="set__note">
+            This document uses the older style names ({styles.older.join(', ')}). Import styles takes it into the
+            clean ones — Mantra, Translation, Holding · Short and the rest — and it looks exactly as it does now.
+          </p>
+        )}
         {styles === null
           ? <p className="set__note">Reading the document…</p>
-          : styles.missing.length === 0
+          : styles.missing.length === 0 && styles.older.length === 0
             ? <p className="set__note">All {styles.total} śikṣāmitra styles are here.</p>
             : (
               <>
-                <p className="set__note">
-                  {styles.total - styles.missing.length} of {styles.total} are here. A marking adds the style it
-                  needs by itself; Import styles brings them all in at once. Missing: {styles.missing.join(', ')}.
-                </p>
+                {styles.missing.length > 0 && (
+                  <p className="set__note">
+                    {styles.total - styles.missing.length} of {styles.total} are here. A marking adds the style it
+                    needs by itself; Import styles brings them all in at once. Missing: {styles.missing.join(', ')}.
+                  </p>
+                )}
                 <button type="button" className="set__btn" disabled={busy} onClick={() => { void put(); }}>
                   Import styles
                 </button>
               </>
             )}
       </section>
+
+      <InsertDocument />
 
       <section className="set__box">
         <h2 className="set__h">Keyboard shortcuts</h2>

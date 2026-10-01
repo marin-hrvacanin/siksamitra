@@ -56,6 +56,16 @@ export const CANDIDATE_PATCHES: readonly { label: string; patch: Record<string, 
   { label: ' +initial-box', patch: { holdings: { noInitialBox: false } } },
   { label: ' −bīja-pause +initial-box',
     patch: { pauses: { bija: false, hiatus: true }, holdings: { noInitialBox: false } } },
+  /* The conventions before the owner's rulings of 2026-09-30, which his older
+     files were marked with — the sādhanā v9.1.4 among them: the `u` of `vy`,
+     `ṁ` kept before a nasal, `ḥ` before `k` left plain. And the newer
+     geminate box his newest files use. */
+  { label: ' before-2026-09-30',
+    patch: { aids: { vy: true }, sandhi: { nasalBeforeNasal: false, visargaBeforeVelar: false } } },
+  { label: ' −bīja-pause before-2026-09-30',
+    patch: { pauses: { bija: false, hiatus: true }, aids: { vy: true }, sandhi: { nasalBeforeNasal: false, visargaBeforeVelar: false } } },
+  { label: ' +geminate-box', patch: { holdings: { geminate: 'whole' } } },
+  { label: ' −bīja-pause +geminate-box', patch: { pauses: { bija: false, hiatus: true }, holdings: { geminate: 'whole' } } },
 ];
 
 export interface AttachReport {

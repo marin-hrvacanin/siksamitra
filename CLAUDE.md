@@ -381,6 +381,9 @@ because it needs Word installed, and it SKIPS LOUDLY when there is none.
 
 ```bash
 npm run check:word:live         # 29 checks: his own document, and a line in every script
+npm run check:word:live:reference   # EVERY mantra line of his reference docs, written in real Word
+npm run check:word:reference    # the same without Word: do his lines, rewritten, LOOK the same?
+npm run check:word:ui           # the add-in's own commands RUN in Word (WORD_UI_DOC, CDP port 9229)
 WORD_WRITE_MODE=whole npm run check:word:live   # reproduces a fault it found
 npm run word-addin:validate     # Microsoft's own validator, all three hosts
 CHROME=<path> npm run check:word:pane   # the PUBLISHED Settings panel and dialogs, rendered

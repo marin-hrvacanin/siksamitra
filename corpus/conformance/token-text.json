@@ -26,9 +26,16 @@
     "primaryScript": "iast",
     "profile": {
       "patch": {
+        "aids": {
+          "vy": true
+        },
         "pauses": {
           "bija": false,
           "hiatus": true
+        },
+        "sandhi": {
+          "nasalBeforeNasal": false,
+          "visargaBeforeVelar": false
         }
       },
       "preset": "taittiriya"
