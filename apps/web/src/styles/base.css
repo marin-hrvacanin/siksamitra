@@ -105,6 +105,9 @@ html, body { overflow-x: hidden; }
   overflow: hidden;
 }
 .work.is-alone { grid-template-columns: 0 1fr; }
+/* The Ask pane, on the right — a third column only while it is open. */
+.work.has-ask { grid-template-columns: var(--nav-w) 1fr var(--ask-w); }
+.work.is-alone.has-ask { grid-template-columns: 0 1fr var(--ask-w); }
 /*
  * EACH COLUMN NAMED, for the same reason the rows are.
  *
@@ -116,6 +119,7 @@ html, body { overflow-x: hidden; }
  */
 .nav { grid-column: 1; }
 .canvas { grid-column: 2; }
+.ask { grid-column: 3; }
 
 /* The button that brings the panel back. It sits over the document's own
    scroller, quiet until the pointer is near it. */

@@ -46,6 +46,8 @@ function context(over: Partial<CommandContext> = {}): CommandContext & { calls: 
     openDoc: () => calls.push('openDoc'),
     save: () => calls.push('save'),
     saveAs: () => calls.push('saveAs'),
+    askOpen: false,
+    setAskOpen: (open: boolean) => calls.push(`ask:${open}`),
     ...over,
   } as CommandContext & { calls: string[] };
 }
@@ -245,5 +247,16 @@ describe('the editing keys', () => {
       expect(b.hint, `"${b.label}" has no hint`).toBeTypeOf('string');
       expect(b.hint!.length).toBeGreaterThan(10);
     }
+  });
+});
+
+describe('Ask', () => {
+  it('is a toggle on the View tab: pressed, it opens or closes the pane, and shows which', () => {
+    const ask = COMMANDS.find((c) => c.id === 'view.ask')!;
+    expect(ask.group).toBe('view');
+    const closed = context({ askOpen: false });
+    ask.run(closed);
+    expect(closed.calls).toEqual(['ask:true']);
+    expect(ask.active?.(context({ askOpen: true }))).toBe(true);
   });
 });

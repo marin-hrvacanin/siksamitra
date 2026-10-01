@@ -29,7 +29,7 @@ export type { SessionOptions, SessionState } from './session.js';
 export { checkDocument } from './tools/check.js';
 export type { Finding } from './tools/check.js';
 export { blocksOf } from './tools/sources.js';
-export { findIn, fold } from './library.js';
+export { findIn, fold, publishedLibrary } from './library.js';
 export { panelHtml, plainOf, telegramHtml, telegramPieces } from './markdown.js';
 export { lineRange } from './tools/document.js';
 export type {

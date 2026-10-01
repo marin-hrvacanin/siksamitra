@@ -203,6 +203,7 @@ export const BASE = {
      a section's name at this size, narrow enough that the page keeps its
      measure at 1280px, which is the window this program opens at. */
   "nav-w": "14rem",
+  "ask-w": "22rem",
   /* The reading measure of the web view, where there is no page to take it
      from — about 70 characters of the reading face, which is the width prose
      has been set at since long before screens. */

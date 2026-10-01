@@ -12,6 +12,9 @@
  *     message, said back in the chat so the conversation reads as it went;
  *   - every chat is worked on by itself — one person's long request does not
  *     hold up another's — and a chat's own messages one after another;
+ *   - WHAT IT IS DOING IS SHOWN: a status line under the request, kept to
+ *     the step it is on ("Reading a source…"), saying so when the model is
+ *     slow, and taken away when the answer comes;
  *   - AN UPDATE DOES NOT CUT A REQUEST OFF: on stop, the bot takes no new
  *     message, finishes what it is working on, answers, and only then exits
  *     (the container gives it five minutes — `docker-compose.yml`).
@@ -22,7 +25,7 @@ import { ROOT, loadConfig } from './config.js';
 import { botCore, type BotReply, type Who } from './bot-core.js';
 import { nodeHost } from './host.js';
 import { fileLedger, fileSessions } from './store.js';
-import { plainOf, telegramPieces } from '@siksamitra/agent';
+import { TOOL_LABELS, plainOf, telegramPieces } from '@siksamitra/agent';
 
 const config = loadConfig();
 if (config.telegramToken === undefined) throw new Error('no TELEGRAM_BOT_TOKEN in .env');
@@ -40,7 +43,64 @@ const core = botCore({
   owners: config.owners,
   secrets: config.secrets,
   log: (line) => console.log(JSON.stringify({ at: new Date().toISOString(), ...line })),
+  progress: (chat, tool) => statuses.get(chat)?.step(TOOL_LABELS[tool] ?? 'Working'),
 });
+
+/**
+ * The status line of one request: posted when the work is not quick, edited
+ * as the steps go by (at most every two seconds, which Telegram allows), and
+ * deleted when the answer comes.
+ */
+class Status {
+  private message: Promise<number | null> | null = null;
+  private text = 'Working';
+  private last = 0;
+  private quiet: ReturnType<typeof setTimeout> | undefined;
+  private readonly start: ReturnType<typeof setTimeout>;
+
+  constructor(private readonly ctx: Context) {
+    this.start = setTimeout(() => this.show(), 2500);
+    this.listen();
+  }
+
+  step(label: string): void {
+    this.text = label;
+    this.listen();
+    if (this.message === null) return;
+    const now = Date.now();
+    if (now - this.last < 2000) return;
+    this.last = now;
+    void this.edit(`${label}…`);
+  }
+
+  async done(): Promise<void> {
+    clearTimeout(this.start);
+    clearTimeout(this.quiet);
+    const id = await this.message;
+    if (id != null) await this.ctx.api.deleteMessage(this.ctx.chat!.id, id).catch(() => undefined);
+  }
+
+  private show(): void {
+    this.message = this.ctx.reply(`${this.text}…`).then((m) => m.message_id, () => null);
+  }
+
+  /* A minute with no step: the model is taking its time — said, not hidden. */
+  private listen(): void {
+    clearTimeout(this.quiet);
+    this.quiet = setTimeout(() => {
+      if (this.message === null) this.show();
+      void this.edit(`${this.text}… the model is slow just now; still working.`);
+    }, 60_000);
+  }
+
+  private async edit(text: string): Promise<void> {
+    const id = await this.message;
+    if (id != null) await this.ctx.api.editMessageText(this.ctx.chat!.id, id, text).catch(() => undefined);
+  }
+}
+
+/** The status line of each chat's request in progress. */
+const statuses = new Map<string, Status>();
 
 /** The choices last offered in each chat, by the button's number. */
 const offered = new Map<number, readonly string[]>();
@@ -79,14 +139,21 @@ function work(ctx: Context, who: Who, text: string): void {
   const chat = String(ctx.chat!.id);
   const typing = setInterval(() => { void ctx.replyWithChatAction('typing').catch(() => undefined); }, 4500);
   void ctx.replyWithChatAction('typing').catch(() => undefined);
+  const status = new Status(ctx);
+  statuses.set(chat, status);
   const job: Promise<void> = core.handle(chat, who, text)
-    .then((reply) => answer(ctx, reply))
+    .then(async (reply) => { await status.done(); await answer(ctx, reply); })
     .catch(async (e: unknown) => {
       /* The fault is the server's log's; the person is told only that it failed. */
       console.error(e);
       await ctx.reply('Something went wrong on my side — please try again, or send /new.').catch(() => undefined);
     })
-    .finally(() => { clearInterval(typing); inflight.delete(job); });
+    .finally(() => {
+      clearInterval(typing);
+      void status.done();
+      if (statuses.get(chat) === status) statuses.delete(chat);
+      inflight.delete(job);
+    });
   inflight.add(job);
 }
 

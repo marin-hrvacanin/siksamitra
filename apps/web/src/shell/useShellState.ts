@@ -28,6 +28,9 @@ export interface ShellState {
   /** The File view — a place, over the whole window, not a panel. */
   readonly fileOpen: boolean;
   readonly setFileOpen: (open: boolean) => void;
+  /** The Ask pane, beside the document on the right. */
+  readonly askOpen: boolean;
+  readonly setAskOpen: (open: boolean) => void;
 }
 
 export function useShellState(): ShellState {
@@ -35,7 +38,8 @@ export function useShellState(): ShellState {
   const [navOpen, setNavOpen] = useState(true);
   const [navRows, setNavRows] = useState<ReadonlySet<string>>(new Set());
   const [fileOpen, setFileOpen] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
   return {
-    folded, setFolded, navOpen, setNavOpen, navRows, setNavRows, fileOpen, setFileOpen,
+    folded, setFolded, navOpen, setNavOpen, navRows, setNavRows, fileOpen, setFileOpen, askOpen, setAskOpen,
   };
 }

@@ -14,8 +14,10 @@
 @import './styles/titlebar.css';
 @import '@siksamitra/ui/controls.css';
 @import '@siksamitra/ui/ribbon.css';
+@import '@siksamitra/ui/agent.css';
 @import './styles/canvas.css';
 @import './styles/nav.css';
+@import './styles/ask.css';
 @import '@siksamitra/ui/popover.css';
 @import '@siksamitra/ui/tooltip.css';
 @import './styles/backstage.css';

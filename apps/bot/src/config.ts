@@ -40,9 +40,13 @@ export function loadConfig(): BotConfig {
   const key = e.DEEPSEEK_API_KEY?.trim() || e.AGENT_API_KEY?.trim();
   if (key === undefined || key === '') throw new Error('no API key: set DEEPSEEK_API_KEY in .env');
   const thinking = (e.AGENT_THINKING?.trim() || 'high') as Thinking;
+  /* A chat cannot wait nine minutes on one call: two minutes, one more try,
+     then the person is told the provider is busy. */
+  const timeoutMs = num(e.AGENT_TIMEOUT_S, 120) * 1000;
+  const retries = num(e.AGENT_RETRIES, 1);
   const model = base.includes('deepseek.com')
-    ? deepseek({ apiKey: key, model: modelId, thinking, baseUrl: base })
-    : chatCompletions({ baseUrl: base, apiKey: key, model: modelId });
+    ? deepseek({ apiKey: key, model: modelId, thinking, baseUrl: base, timeoutMs, retries })
+    : chatCompletions({ baseUrl: base, apiKey: key, model: modelId, timeoutMs, retries });
   const price = PRICES[modelId] ?? {
     input: num(e.AGENT_PRICE_INPUT, NaN), cached: num(e.AGENT_PRICE_CACHED, NaN), output: num(e.AGENT_PRICE_OUTPUT, NaN),
   };

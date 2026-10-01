@@ -1,0 +1,29 @@
+/*
+ * The Ask pane — Śrutidhara beside the document. The conversation inside is
+ * the shared panel's (`@siksamitra/ui/agent.css`); this is only its frame,
+ * drawn as the navigation panel on the other side is.
+ */
+.ask {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--chrome-raise);
+  border-inline-start: var(--border-hair) solid var(--chrome-line);
+}
+.ask__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-block-end: var(--border-hair) solid var(--chrome-line);
+}
+.ask__title { font-weight: 600; color: var(--chrome-ink); }
+.ask__close {
+  display: grid; place-items: center;
+  width: var(--control-h); height: var(--control-h);
+  border: 0; border-radius: var(--chrome-radius);
+  background: transparent; color: var(--chrome-ink-soft); cursor: pointer;
+}
+.ask__close:hover { background: var(--chrome-sunk); }
+.ask__body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3); }
+.ask__body .agent { height: 100%; }

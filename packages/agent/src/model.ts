@@ -110,13 +110,18 @@ export type Thinking = 'off' | 'low' | 'high' | 'max';
  * DeepSeek, by name: its base URL, and its thinking switch in the body
  * (`thinking`, `reasoning_effort`). V4.1 Flash is `deepseek-flash`.
  */
-export function deepseek(o: { apiKey: string; model?: string; thinking?: Thinking; fetch?: FetchLike; baseUrl?: string }): Model {
+export function deepseek(o: {
+  apiKey: string; model?: string; thinking?: Thinking; fetch?: FetchLike; baseUrl?: string;
+  timeoutMs?: number; retries?: number;
+}): Model {
   const thinking = o.thinking ?? 'high';
   return chatCompletions({
     baseUrl: o.baseUrl ?? 'https://api.deepseek.com',
     apiKey: o.apiKey,
     model: o.model ?? 'deepseek-flash',
     ...(o.fetch === undefined ? {} : { fetch: o.fetch }),
+    ...(o.timeoutMs === undefined ? {} : { timeoutMs: o.timeoutMs }),
+    ...(o.retries === undefined ? {} : { retries: o.retries }),
     extra: thinking === 'off'
       ? { thinking: { type: 'disabled' } }
       : { thinking: { type: 'enabled' }, reasoning_effort: thinking },

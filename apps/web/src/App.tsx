@@ -24,7 +24,9 @@ import { useDocFile } from './shell/useDocFile.js';
 import { useAccount } from './account/useAccount.js';
 import { Toolbar } from './shell/Toolbar.js';
 import { Icon, TooltipLayer } from '@siksamitra/ui';
-import { handleKey, type CommandContext } from './shell/commands.js';
+import { handleKey } from './shell/commands.js';
+import { useCommandContext } from './shell/useCommandContext.js';
+import { AskPane } from './shell/AskPane.js';
 import { EditorSurface } from './editor/EditorSurface.js';
 import { useContextualTab } from './shell/useContextualTab.js';
 import { useShellState } from './shell/useShellState.js';
@@ -118,7 +120,7 @@ export function App() {
   usePrintPaper(state.page);
   /* What is open, folded and expanded — see `shell/useShellState.ts`. */
   const {
-    folded, setFolded, navOpen, setNavOpen, navRows, setNavRows, fileOpen, setFileOpen,
+    folded, setFolded, navOpen, setNavOpen, navRows, setNavRows, fileOpen, setFileOpen, askOpen, setAskOpen,
   } = useShellState();
 
   /*
@@ -145,41 +147,11 @@ export function App() {
      DOM half of `packages/layout`'s arithmetic. See `useScrollAnchor.ts`. */
   const { goToBlock, switchView, withAnchor } = useScrollAnchor(scroller, state.setView);
 
-  const ctx: CommandContext = useMemo(() => ({
-    view: state.view.kind,
-    setView: switchView,
-    cycleView: () => switchView(
-      state.view.kind === 'flow' ? 'paged' : state.view.kind === 'paged' ? 'web' : 'flow',
-    ),
-    zoom: state.zoom,
-    /*
-     * EVERY GEOMETRY CHANGE KEEPS THE READER'S PLACE, not just a change of
-     * view. Zoom scales every length and re-wraps the column, so the words
-     * under the eye move while `scrollTop` does not — measured on Śrī Rudram
-     * as eleven blocks of drift from one press of Zoom in. A page size
-     * re-paginates outright. `withAnchor` is what `switchView` already was.
-     */
-    zoomIn: () => withAnchor(state.zoomIn),
-    zoomOut: () => withAnchor(state.zoomOut),
-    resetZoom: () => withAnchor(state.resetZoom),
-    setZoomMode: (m: Parameters<typeof state.setZoom>[0]) => withAnchor(() => state.setZoom(m)),
-    paginated: state.view.paginated,
-    pageSize: state.page.id,
-    setPageSize: (id: string) => withAnchor(() => state.setPageSize(id)),
-    script,
-    setScript,
-    showMarks,
-    setShowMarks,
-    theme: look.mode,
-    setTheme: (m: string) => look.setMode(m === 'dark' ? 'dark' : 'light'),
-    editing: session.editing,
-    hasDoc: doc !== null,
-    dirty: file.dirty,
-    newDoc: file.newDoc,
-    openDoc: file.openDoc,
-    save: file.save,
-    saveAs: file.saveAs,
-  }), [state, switchView, withAnchor, script, showMarks, look, session.editing, doc, file]);
+  /* Everything a command may act on — see `shell/useCommandContext.ts`. */
+  const ctx = useCommandContext({
+    state, switchView, withAnchor, script, setScript, showMarks, setShowMarks, look,
+    editing: session.editing, doc, file, askOpen, setAskOpen,
+  });
 
   /** One keyboard handler, reading the registry. No shortcut lives elsewhere. */
   useEffect(() => {
@@ -289,7 +261,7 @@ export function App() {
         <GuardDialog name={file.name} action={file.pending} onAnswer={file.answer} />
       )}
 
-      <div className={navShown ? 'work' : 'work is-alone'}>
+      <div className={`${navShown ? 'work' : 'work is-alone'}${askOpen ? ' has-ask' : ''}`}>
       {navShown ? (
         <NavPanel
           doc={doc}
@@ -369,6 +341,7 @@ export function App() {
         ))}
         {doc !== null && <EditorSurface session={session} scroller={scroller} />}
       </div>
+      {askOpen && <AskPane adopt={file.adopt} onClose={() => setAskOpen(false)} />}
       </div>
 
       {/*

@@ -19,7 +19,7 @@
  * `/new` forgets the chat's session; `/spent` says what has been spent.
  */
 import {
-  OverBudget, Session, withoutPaths, type Delivered, type Host, type Ledger, type Limits, type Model, type Price,
+  ModelError, OverBudget, Session, withoutPaths, type Delivered, type Host, type Ledger, type Limits, type Model, type Price,
 } from '@siksamitra/agent';
 import { createHash } from 'node:crypto';
 import type { SessionStore } from './store.js';
@@ -136,6 +136,15 @@ export function botCore(deps: BotDeps) {
           return { text: done.text || 'Done.', files, ...(choices === undefined ? {} : { choices }) };
         } catch (e) {
           note(e instanceof OverBudget ? 'over-budget' : 'failed');
+          /* The provider's trouble, said as such — not "something went wrong". */
+          if (e instanceof ModelError) {
+            const text = e.status === 408 || e.status === 429 || e.status >= 500
+              ? 'The model provider (DeepSeek) is overloaded just now and did not answer. Please try again in a few minutes.'
+              : e.status === 401 || e.status === 402 || e.status === 403
+                ? 'The bot cannot reach its model just now (its key or account). The owner has been told by the log.'
+                : 'The model refused that request. Please try again, or put it another way.';
+            return { text, files };
+          }
           if (e instanceof OverBudget) {
             return {
               text: e.which === 'global'

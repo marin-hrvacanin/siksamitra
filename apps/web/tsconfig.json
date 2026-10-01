@@ -27,6 +27,9 @@
       "@siksamitra/interop": [
         "../../packages/interop/src/index.ts"
       ],
+      "@siksamitra/agent": [
+        "../../packages/agent/src/index.ts"
+      ],
       "@siksamitra/layout": [
         "../../packages/layout/src/index.ts"
       ],

@@ -111,6 +111,20 @@ describe('the log', () => {
   });
 });
 
+describe('when the provider fails', () => {
+  it('a model that does not answer is said to be overloaded, not "something went wrong"', async () => {
+    const { ModelError } = await import('@siksamitra/agent');
+    const model = { id: 'deepseek-flash', complete: async () => { throw new ModelError(408, 'the model did not answer within 120 s, 2 times'); } };
+    const core = botCore({
+      model, price: PRICE, limits: {}, ledger: memoryLedger(), sessions: memorySessions(), allowed: new Set(['42']),
+      host: (deliver) => ({ ...testHost(), deliver }),
+    });
+    const r = await core.handle('c1', { id: '42' }, 'hello');
+    expect(r.text).toMatch(/overloaded just now/);
+    expect(r.text).not.toMatch(/120 s/);
+  });
+});
+
 describe('choices', () => {
   it('the agent’s choices come back with the answer, to be shown as buttons', async () => {
     const model = scripted([

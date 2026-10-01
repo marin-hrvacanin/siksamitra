@@ -48,6 +48,10 @@ export interface CommandContext {
   readonly openDoc: () => void;
   readonly save: () => void;
   readonly saveAs: () => void;
+
+  /* ── Ask: Śrutidhara beside the document — see `shell/AskPane.tsx` ────── */
+  readonly askOpen: boolean;
+  readonly setAskOpen: (open: boolean) => void;
 }
 
 export type CommandGroup = 'view' | 'zoom' | 'text' | 'appearance' | 'file';
@@ -181,6 +185,15 @@ export const COMMANDS: readonly Command[] = [
     // Fitting a whole page is meaningless where there is no page.
     enabled: (c) => c.paginated,
     run: (c) => c.setZoomMode({ kind: 'fit-page' }),
+  },
+  {
+    id: 'view.ask',
+    icon: 'conversation',
+    label: 'Ask',
+    hint: 'Ask Śrutidhara for a text, marked and checked',
+    group: 'view',
+    active: (c) => c.askOpen,
+    run: (c) => c.setAskOpen(!c.askOpen),
   },
   {
     id: 'text.marks',
