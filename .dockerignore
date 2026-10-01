@@ -1,0 +1,14 @@
+# What a container build of this repository never takes in. Above all a
+# local .env: the server's secrets are its own, given at run time.
+.git
+.env
+.env.*
+!.env.example
+**/node_modules
+**/dist
+out
+artifacts
+Library
+.venv
+apps/desktop/src-tauri/target
+*.log

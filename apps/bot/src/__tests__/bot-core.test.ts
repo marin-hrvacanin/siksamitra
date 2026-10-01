@@ -95,3 +95,18 @@ describe('the bot', () => {
     expect(second).toEqual(['one', 'two']);
   });
 });
+
+describe('the log', () => {
+  it('keeps how a request went, and not a word of it', async () => {
+    const lines: unknown[] = [];
+    const model = scripted(deliverSteps());
+    const core = botCore({
+      model, price: PRICE, limits: { global: 5 }, ledger: memoryLedger(), sessions: memorySessions(), allowed: new Set(['42']),
+      host: (deliver) => ({ ...testHost(), deliver }), log: (l) => lines.push(l),
+    });
+    await core.handle('chat-777', { id: '42' }, 'the Puruṣa Sūktam, Taittirīya, please');
+    expect(lines).toEqual([expect.objectContaining({ steps: 4, files: ['pdf'], outcome: 'answered' })]);
+    const said = JSON.stringify(lines);
+    expect(said).not.toMatch(/Puruṣa|Here it is|chat-777|42/);
+  });
+});

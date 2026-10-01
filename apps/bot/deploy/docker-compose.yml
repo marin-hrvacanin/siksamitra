@@ -1,0 +1,28 @@
+name: siksamitra-bot
+
+# Source: github.com/marin-hrvacanin/siksamitra (public), branch `bot`, checked out in ./src.
+# Built on this box by deploy-git-apps whenever that branch moves (checked every minute).
+# The bot polls Telegram, so nothing is published and Caddy has no site for it.
+services:
+  bot:
+    build:
+      context: ./src
+      dockerfile: apps/bot/Dockerfile
+    image: siksamitra-bot:latest
+    pull_policy: never          # local image; keeps update-apps from trying a registry
+    container_name: siksamitra-bot
+    restart: unless-stopped
+    env_file: [.env]            # DEEPSEEK_API_KEY, TELEGRAM_BOT_TOKEN, BOT_ALLOWED_USERS, BOT_OWNERS, limits
+    volumes:
+      - ./data:/data            # the spending ledger and each chat's session
+    read_only: true
+    tmpfs: [/tmp]
+    shm_size: 256m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 512
+    mem_limit: 1g
+    networks: [outbound]
+
+networks:
+  outbound: {}                  # its own: the internet, and no other container

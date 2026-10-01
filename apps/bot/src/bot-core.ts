@@ -21,6 +21,7 @@
 import {
   OverBudget, Session, withoutPaths, type Delivered, type Host, type Ledger, type Limits, type Model, type Price,
 } from '@siksamitra/agent';
+import { createHash } from 'node:crypto';
 import type { SessionStore } from './store.js';
 
 export interface BotDeps {
@@ -39,6 +40,18 @@ export interface BotDeps {
   readonly secrets?: readonly string[];
   /** Progress while a request is worked on — a tool's name. */
   readonly progress?: (chat: string, what: string) => void;
+  /** One line per request for the server's log: never what was asked or answered. */
+  readonly log?: (line: TurnLog) => void;
+}
+
+/** What the server's log keeps of a request: how it went, and nothing anyone said. */
+export interface TurnLog {
+  readonly chat: string;
+  readonly steps: number;
+  readonly cost: number;
+  readonly files: readonly string[];
+  readonly ms: number;
+  readonly outcome: 'answered' | 'over-budget' | 'failed';
 }
 
 export interface BotReply {
@@ -70,6 +83,9 @@ export function scrubbed(text: string, secrets: readonly string[] = []): string 
   out = out.replace(/\bsk-[A-Za-z0-9_-]{16,}/g, '[hidden]').replace(/\b\d{6,}:[A-Za-z0-9_-]{30,}\b/g, '[hidden]');
   return withoutPaths(out);
 }
+
+/** A chat as the log names it: a short tag, not its id. */
+export const chatTag = (chat: string): string => createHash('sha256').update(`siksamitra:${chat}`).digest('hex').slice(0, 10);
 
 /** Messages from one chat run one after another. */
 const queues = new Map<string, Promise<unknown>>();
@@ -107,10 +123,16 @@ export function botCore(deps: BotDeps) {
           host: deps.host(async (f) => { files.push(f); }),
           ...(deps.progress === undefined ? {} : { onEvent: (e) => { if (e.kind === 'tool') deps.progress!(chat, e.name); } }),
         }, deps.sessions.load(chat));
+        const started = Date.now();
+        const note = (outcome: TurnLog['outcome'], steps = 0, cost = 0): void => deps.log?.({
+          chat: chatTag(chat), steps, cost, files: files.map((f) => f.format), ms: Date.now() - started, outcome,
+        });
         try {
           const done = await session.ask(said);
+          note('answered', done.steps, done.cost);
           return { text: done.text || 'Done.', files };
         } catch (e) {
+          note(e instanceof OverBudget ? 'over-budget' : 'failed');
           if (e instanceof OverBudget) {
             return {
               text: e.which === 'global'

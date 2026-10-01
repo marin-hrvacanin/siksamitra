@@ -29,6 +29,7 @@ const core = botCore({
   allowed: config.allowed,
   owners: config.owners,
   secrets: config.secrets,
+  log: (line) => console.log(JSON.stringify({ at: new Date().toISOString(), ...line })),
 });
 
 bot.on('message:text', async (ctx) => {
