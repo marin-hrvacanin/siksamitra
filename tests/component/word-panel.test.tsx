@@ -3,7 +3,7 @@
  *
  * Every tab, and every button on them pressed the way a person presses it:
  * the marking tiles reach the line under the caret and light up for what the
- * selection already carries; a register chosen there is the ribbon's command;
+ * selection already carries; a source chosen there is the ribbon's command;
  * the stages and switches are kept in the document; what the add-in says
  * appears inside the panel. Word is faked at its edges by the harness, as for
  * the runtime's own tests.
@@ -16,7 +16,7 @@ import { calls, host, line } from './word-addin-harness.js';
 vi.mock('../../apps/word-addin/src/word/selection.js', async () => (await import('./word-addin-harness.js')).selectionMock);
 vi.mock('../../apps/word-addin/src/word/client.js', async () => (await import('./word-addin-harness.js')).clientMock);
 vi.mock('../../apps/word-addin/src/word/convert.js', async () => (await import('./word-addin-harness.js')).convertMock);
-vi.mock('../../apps/word-addin/src/word/parts.js', async () => (await import('./word-addin-harness.js')).partsMock);
+vi.mock('../../apps/word-addin/src/word/sources.js', async () => (await import('./word-addin-harness.js')).sourcesMock);
 vi.mock('../../apps/word-addin/src/word/dialog.js', async (real) => ({
   ...(await real<object>()), ...(await import('./word-addin-harness.js')).dialogMock,
 }));
@@ -115,8 +115,41 @@ describe('the Mark tab', () => {
   });
 });
 
+describe('the source', () => {
+  it('is named once, in the header, for the line at the caret', async () => {
+    host.settings.set('siksamitra.register', 'smarta');
+    host.lines = [line('agnim īḻe', 3, 3, { part: { register: 'rigveda' } })];
+    await draw();
+    expect([...el.querySelectorAll('.pnl-chip--accent')].map((c) => c.textContent)).toEqual(['Ṛgveda']);
+  });
+
+  it('a selection across two sources names both, lights both, and chooses neither', async () => {
+    host.settings.set('siksamitra.register', 'smarta');
+    host.lines = [line('agnim īḻe', 0, 9, { part: { register: 'rigveda' } }), line('yā devī', 0, 7)];
+    await draw();
+    expect(el.querySelector('.pnl-chip--accent')!.textContent).toBe('Ṛgveda and Smārta / purāṇic');
+    await tab('Rules');
+    const cards = [...el.querySelectorAll('.pnl-reg')];
+    expect(cards.filter((c) => c.getAttribute('data-here') === 'yes').map((c) => c.querySelector('.pnl-reg__name')!.textContent))
+      .toEqual(['Ṛgveda', 'Smārta / purāṇic']);
+    expect(cards.filter((c) => c.getAttribute('aria-checked') === 'true')).toHaveLength(0);
+    expect(el.textContent).toContain('Source · these 2 lines');
+  });
+
+  it('a card pressed is the ribbon’s Source command: the selected lines take it', async () => {
+    host.settings.set('siksamitra.register', 'smarta');
+    host.lines = [line('yā devī sarvabhūteṣu śaktirūpeṇa saṁsthitā', 0, 42)];
+    await draw();
+    await tab('Rules');
+    const card = [...el.querySelectorAll<HTMLButtonElement>('.pnl-reg')].find((c) => c.textContent!.includes('Taittirīya'))!;
+    await press(card);
+    expect(calls.sources).toEqual([{ scope: 'selection', source: 'taittiriya' }]);
+    expect(calls.writes).toHaveLength(1);
+  });
+});
+
 describe('the Rules tab', () => {
-  it('offers the four registers, the one at the caret chosen, and no prose', async () => {
+  it('offers the four sources, the one at the caret chosen, and no prose', async () => {
     host.settings.set('siksamitra.register', 'rigveda');
     await draw();
     await tab('Rules');
@@ -137,6 +170,27 @@ describe('the Rules tab', () => {
     const vy = [...el.querySelectorAll<HTMLLabelElement>('.pnl-switch')].find((l) => l.textContent!.includes('raised u on v'))!.querySelector('input')!;
     await act(async () => { vy.click(); });
     expect(host.settings.get('siksamitra.conventions')).toEqual({ 'vy-aid': true });
+  });
+
+  it('the purāṇic svaras are greyed on a Vedic line, saying where they apply, and live on a Smārta one', async () => {
+    const puranic = (): HTMLLabelElement => [...el.querySelectorAll<HTMLLabelElement>('.pnl-switch')]
+      .find((l) => l.textContent!.includes('purāṇic śloka'))!;
+    host.lines = [line('agnim īḻe', 3, 3, { part: { register: 'rigveda' } })];
+    await draw();
+    await tab('Rules');
+    expect(puranic().querySelector('input')!.disabled).toBe(true);
+    expect(puranic().getAttribute('data-applies')).toBe('no');
+    expect(puranic().textContent).toContain('Smārta and purāṇic lines');
+    /* Greyed, it still shows what the Smārta lines have: on, by default. */
+    expect(puranic().querySelector('input')!.checked).toBe(true);
+    act(() => root.unmount());
+    root = createRoot(el);
+    host.lines = [line('yā devī', 3, 3, { part: { register: 'smarta' } })];
+    await draw();
+    await tab('Rules');
+    expect(puranic().querySelector('input')!.disabled).toBe(false);
+    await act(async () => { puranic().querySelector('input')!.click(); });
+    expect(host.settings.get('siksamitra.conventions')).toEqual({ 'puranic-svara': false });
   });
 });
 

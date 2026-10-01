@@ -19,8 +19,9 @@
  *
  * Word gives a custom tab two kinds of control, a button and a dropdown menu
  * (learn.microsoft.com/office/dev/add-ins/design/add-in-commands); the typing
- * help and the messages are dialogs, and Settings is the one thing that opens
- * the side panel.
+ * help opens in the side panel, which is the add-in's home: what is marked at
+ * the caret, every mark at one click, the source and the rules
+ * (`ui/Panel.tsx`).
  */
 import type { ChantProfileKey } from '@siksamitra/format';
 import { CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES } from '@siksamitra/format';
@@ -34,14 +35,12 @@ export type Does =
   | { mark: MarkCommand }
   /** The rules over the selection — or, with nothing selected, the document. */
   | { rules: ReRunMode }
-  /** Mark the document in this register from now on, and offer to re-mark it. */
+  /** The selected lines — or, with nothing selected, every line — take this source, and are re-marked by it. */
   | { register: ChantProfileKey }
   /** Type this character at the caret, through the model (`typeAt`). */
   | { insert: string }
   /** Write the selected mantra lines — or, with nothing selected, the document — in this script. */
   | { script: ScriptKey }
-  /** Make the selected lines a part with rules of its own, or undo one. */
-  | 'part-new' | 'part-dissolve'
   | 'typing-help' | 'import-styles' | 'specimen' | 'panel' | 'guide';
 
 export interface Command {
@@ -153,24 +152,13 @@ export const TAB: readonly TabGroup[] = [
         tip: `Like Auto-mark, but what you marked by hand goes too: the rules decide every mark in the selected lines.${WHOLE}`,
       }),
       {
-        kind: 'menu', id: 'register', label: 'Register', icon: { name: 'tree' },
-        tip: 'Which śākhā’s rules Auto-mark uses: for the part the caret is in, or for the selected lines — they become a part '
-          + 'of their own. One document can hold parts of different śākhās.',
-        items: [
-          ...CHANT_PROFILE_KEYS.map((k): Command => ({
-            id: `reg-${k}`, fn: fnOf(`reg-${k}`), label: CHANT_PROFILE_NOTES[k].name,
-            tip: `${CHANT_PROFILE_NOTES[k].where}. ${CHANT_PROFILE_NOTES[k].what}`.slice(0, 250), icon: { name: 'tree' }, does: { register: k },
-          })),
-          {
-            id: 'part-new', fn: fnOf('part-new'), label: 'New part from these lines', icon: { name: 'part-new' }, does: 'part-new',
-            tip: 'Give the selected lines rules of their own — a sūkta of another śākhā among the others. '
-              + 'Word draws a thin frame around the part, titled with its register.',
-          },
-          {
-            id: 'part-dissolve', fn: fnOf('part-dissolve'), label: 'Dissolve this part', icon: { name: 'part-dissolve' }, does: 'part-dissolve',
-            tip: 'Undo the part the caret is in. Its lines and their marks stay; they are outside every part again.',
-          },
-        ],
+        kind: 'menu', id: 'register', label: 'Source', icon: { name: 'tree' },
+        tip: 'Whose rules mark the text. Select lines and choose: they take that source and are marked by it. '
+          + 'With nothing selected, every line does. The panel shows the source of the line at the caret.',
+        items: CHANT_PROFILE_KEYS.map((k): Command => ({
+          id: `reg-${k}`, fn: fnOf(`reg-${k}`), label: CHANT_PROFILE_NOTES[k].name,
+          tip: `${CHANT_PROFILE_NOTES[k].where}. ${CHANT_PROFILE_NOTES[k].what}`.slice(0, 250), icon: { name: 'tree' }, does: { register: k },
+        })),
       },
     ],
   },

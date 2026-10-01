@@ -13,7 +13,7 @@ import { calls, host, line } from './word-addin-harness.js';
 vi.mock('../../apps/word-addin/src/word/selection.js', async () => (await import('./word-addin-harness.js')).selectionMock);
 vi.mock('../../apps/word-addin/src/word/client.js', async () => (await import('./word-addin-harness.js')).clientMock);
 vi.mock('../../apps/word-addin/src/word/convert.js', async () => (await import('./word-addin-harness.js')).convertMock);
-vi.mock('../../apps/word-addin/src/word/parts.js', async () => (await import('./word-addin-harness.js')).partsMock);
+vi.mock('../../apps/word-addin/src/word/sources.js', async () => (await import('./word-addin-harness.js')).sourcesMock);
 vi.mock('../../apps/word-addin/src/word/dialog.js', async (real) => ({
   ...(await real<object>()), ...(await import('./word-addin-harness.js')).dialogMock,
 }));

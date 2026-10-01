@@ -95,19 +95,20 @@ files, assembled by `scripts/word-publish.mjs`.
 
 **Everything is on the ribbon.** The śikṣāmitra tab holds every command —
 Holding, Svara, Change, Reading aids, Insert (typing help and the IAST
-palettes), Script, Rules (registers, parts, re-applying), Document — and the
+palettes), Script, Rules (the source, re-applying), Document — and the
 right-click menu repeats the marks. The manifest is generated from one table,
 `apps/word-addin/src/commands-table.ts`, together with every icon and every
 keyboard shortcut (`npm run gen:word-commands`), and a test fails if the
 manifest on disk is not what the table generates.
 
 **One page, loaded once.** `taskpane.html` is the shared runtime Word keeps
-loaded behind the tab (`runtime.ts` registers each command). When *Settings* is
-pressed the same page is shown as a side panel: the register (for the part the
-caret is in, or the document), the stages the rules run, the styles in the
-document, and the keyboard shortcuts. What a command has to *say* — a refusal, a
-question before the whole document is changed, the typing help — is an Office
-dialog (`said.html`, `type.html`).
+loaded behind the tab (`runtime.ts` registers each command). When *Panel* is
+pressed the same page is shown as a side panel — the add-in's home: the line at
+the caret drawn with its marks, every mark at one press, the source and the
+rules, the scripts, the keyboard and the document's styles. What a command has
+to *say* — a refusal, a question before the whole document is changed — appears
+inside the panel when it is open, and in an Office dialog when it is not
+(`said.html`).
 
 **A marking with nothing selected goes on the letter before the caret**, and the
 caret comes back where it was, so typing carries on; a pause and a svarabhakti
@@ -127,10 +128,15 @@ there. What a cluster cannot show — which consonant of र्ष a box is on, 
 reading aid — is kept in Word's own hidden text after it. Headings and
 translations are never transliterated.
 
-**Parts.** One document may hold chants of different traditions: *Rules → New
-part from these lines* makes the selection a content control with rules of its
-own, and *Register* then applies to that part only. Outside every part, the
-document's register (kept in the document's own settings) applies.
+**The source.** Every mantra line has one: the śākhā whose rules mark it.
+Select lines and choose one (*Source* on the ribbon, or a card on the panel's
+Rules tab): those lines take it and are re-marked by it, at once. With nothing
+selected, choosing one asks first, then every line takes it. The panel's
+header names the source of the line at the caret — or, for a selection over
+lines of two sources, both. That is all a person meets: there is nothing to
+create or dissolve. Underneath, a line of the document's own source carries no
+record, and a run of lines of another sits in a content control tagged with it,
+hidden — no frame, no title (`word/sources.ts`, `model/sources-package.ts`).
 
 ---
 
@@ -176,23 +182,23 @@ the rules placed in his blue and those placed by hand in his red.
 - Word's own styles (`Normal`, `Heading 1`…) are never listed as missing and
   never touched.
 
-**A register belongs to a part, never to "the document".** Choosing one with
-the caret in a part marks that part; with lines selected outside every part,
-they become a part of their own in it; with a bare caret outside every part,
-it is the register of the lines outside every part — and the wording says
-exactly that.
+**Choosing a source, in every case.** One letter selected is its whole line;
+lines of several sources selected all take the one chosen, each first undone
+from what ITS old source made; the document's own source chosen takes the
+record off; a heading, a translation or a comment in the selection takes no
+source and is not marked; a line the rules may not rewrite (a picture on it)
+is refused before its source changes. Any path between sources ends where the
+last one alone would have put the line (`packages/engine/src/__tests__/rerun-sources.test.ts`,
+all sixteen directions).
 
-**The conventions** (Settings → Conventions, `packages/engine/src/conventions.ts`)
-are the rulings where marked texts differ, each with an example typed and
-marked: ṁ before a nasal takes that nasal, ḥ before k/kh marked as a change
-(both on), the raised u between v and y (off), and the geminate's box on one
-letter or both (one). They are kept in the file and Re-apply rules uses them.
-
-**A register belongs to what it is chosen for — and a selection in two
-places is refused.** A selection partly in a part and partly not, or over two
-parts of different registers, has no one place to choose for; it is said, and
-nothing changes. A new part is refused if ANY selected line is in a part
-already: parts never nest.
+**The switches** (panel → Rules, `packages/engine/src/conventions.ts`) are the
+rulings where marked texts differ, each with an example typed and marked: ṁ
+before a nasal takes that nasal, ḥ before k/kh marked as a change (both on),
+the purāṇic śloka's svaras by its metre (on), the raised u between v and y
+(off), and the geminate's box on one letter or both (one). They are kept in the
+file and Auto-mark uses them. A switch with nothing to do for the lines at the
+caret is greyed and says where it applies — the purāṇic svaras on a Vedic
+line, whose svaras are its own.
 
 **Word forgets who placed a mark; the add-in asks again.** A marking carries
 whether a person or the rules placed it, and Re-apply keeps a person's. Word
@@ -203,13 +209,12 @@ it, and a mark exactly theirs is theirs again (`model/provenance.ts`). That is
 what makes switching a register or a convention and back give back exactly
 what was there.
 
-**A part can be made with another document open.** Word refuses an add-in a
-new content control whenever another document is open in it — a blank one is
-enough (measured on 16.0.20430: `GeneralException` on every kind of range) —
-while one arriving inside an `insertOoxml` package goes in. So when Word
-refuses, the selected paragraphs' own package is wrapped in the part and put
-back (`model/part-package.ts`); retitling and dissolving a part were never
-affected.
+**The record is written in XML, so it works with another document open.**
+Word refuses an add-in a new content control whenever another document is open
+in it — a blank one is enough (measured on 16.0.20430: `GeneralException` on
+every kind of range) — while one arriving inside an `insertOoxml` package goes
+in. So a source is always set by rewriting the selected stretch's own package
+(`model/sources-package.ts`), and the paragraph count is checked after.
 
 **A box pressed on an akṣara is on its consonant.** In a script line the
 smallest thing a person can select is the akṣara (`स` is `s` and `a`), so a

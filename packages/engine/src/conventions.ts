@@ -14,7 +14,7 @@
  *     one, a box on one letter, stays the default (2026-09-07).
  *
  * ONE TABLE, read by every surface that offers them — the Word add-in's
- * Settings today — so a switch cannot mean one thing in one program and
+ * panel today — so a switch cannot mean one thing in one program and
  * another in the next. Whether a switch is ON is read from the resolved
  * profile, never typed here, so the table cannot drift from the defaults.
  */
@@ -37,6 +37,15 @@ export interface Convention {
   readonly off: Patch;
   /** Is it on under this profile? */
   readonly isOn: (p: Profile) => boolean;
+  /**
+   * Has it anything to do under this profile? A switch that would change
+   * nothing — the purāṇic svaras over a Vedic line, whose svaras are the
+   * text's own — is offered greyed, with `onlyFor` saying where it does
+   * apply. Absent: it applies under every profile.
+   */
+  readonly applies?: (p: Profile) => boolean;
+  /** Where it applies, in a person's words, when `applies` can say no. */
+  readonly onlyFor?: string;
 }
 
 export const CONVENTIONS: readonly Convention[] = [
@@ -67,6 +76,8 @@ export const CONVENTIONS: readonly Convention[] = [
     /* `null`, not `undefined`: a patch's undefined is no change at all. */
     off: { svara: { meter: null } },
     isOn: (p) => p.svara.meter != null,
+    applies: (p) => p.svara.register === 'conventional',
+    onlyFor: 'Smārta and purāṇic lines: a Vedic line’s svaras are its own.',
   },
   {
     id: 'vy-aid',
@@ -87,6 +98,9 @@ export const CONVENTIONS: readonly Convention[] = [
     isOn: (p) => p.holdings.geminate === 'whole',
   },
 ];
+
+/** Does this convention change anything under `p`? */
+export const conventionApplies = (c: Convention, p: Profile): boolean => c.applies?.(p) ?? true;
 
 /** The patch that sets each chosen convention; one not chosen is the profile's own. */
 export function conventionsPatch(chosen: Readonly<Partial<Record<ConventionId, boolean>>>): Patch {

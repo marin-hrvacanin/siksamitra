@@ -3,7 +3,7 @@
  * runtime, its dialogs and its Settings panel.
  *
  * The modules that talk to Word — `word/selection.ts`, `word/client.ts`,
- * `word/parts.ts` — and the one that opens windows, `word/dialog.ts`, are
+ * `word/sources.ts` — and the one that opens windows, `word/dialog.ts`, are
  * replaced by the mocks below, whose answers each test sets on `host`.
  * Everything between them and the ribbon is the code under test: the actions,
  * the rules, the scripts, the register. Shared so that a second test file does
@@ -14,7 +14,7 @@
  *   vi.mock('../../apps/word-addin/src/word/selection.js',
  *     async () => (await import('./word-addin-harness.js')).selectionMock);
  *
- * and the same for `client.js` (`clientMock`), `parts.js` (`partsMock`) and
+ * and the same for `client.js` (`clientMock`), `sources.js` (`sourcesMock`) and
  * `dialog.js` (`dialogMock`).
  */
 import { beforeEach, vi } from 'vitest';
@@ -54,8 +54,6 @@ export const host = {
   missing: [] as string[],
   /** His older style ids the document still uses. */
   older: [] as string[],
-  /** The part the caret is in, if any. */
-  part: null as { register: string } | null,
   /** What `Office.context.document.settings` holds. */
   settings: new Map<string, unknown>(),
   /** How the next question is answered. */
@@ -74,6 +72,8 @@ export const calls = {
   associated: [] as string[],
   taskpane: 0,
   browser: [] as string[],
+  /** Each source chosen: for the selected lines, or for every line. */
+  sources: [] as { scope: 'selection' | 'document'; source: string }[],
 };
 
 export const selectionMock = {
@@ -109,12 +109,24 @@ export const convertMock = {
   }),
 };
 
-export const partsMock = {
-  partHere: vi.fn(async () => host.part),
-  setPartHere: vi.fn(async (r: { register: string }) => { if (host.part === null) return false; host.part = r; return true; }),
-  makePart: vi.fn(async (r: { register: string }) => { if (host.part !== null) return 'inside'; host.part = r; return 'made'; }),
-  dissolvePartHere: vi.fn(async () => { const was = host.part; host.part = null; return was; }),
-  selectPartHere: vi.fn(async () => host.part !== null),
+/**
+ * `word/sources.ts`: what Word's XML rewrite does to the record, done to the
+ * fake lines — the selected lines take the source (no record when it is the
+ * document's own), or every line loses its record and the document's own
+ * source is the chosen one.
+ */
+export const sourcesMock = {
+  setSourceOfSelection: vi.fn(async (source: string, own: string) => {
+    calls.sources.push({ scope: 'selection', source });
+    const to = source === own ? null : { register: source };
+    host.lines = host.lines.map((l) => (l.isVerse ? { ...l, part: to } : l));
+  }),
+  setSourceOfDocument: vi.fn(async (source: string) => {
+    calls.sources.push({ scope: 'document', source });
+    host.settings.set('siksamitra.register', source);
+    host.lines = host.lines.map((l) => ({ ...l, part: null }));
+    host.docLines = host.docLines.map((l) => ({ ...l, part: null }));
+  }),
 };
 
 export const dialogMock = {
@@ -167,7 +179,6 @@ beforeEach(() => {
   host.docLines = [];
   host.missing = [];
   host.older = [];
-  host.part = null;
   host.settings.clear();
   host.answer = true;
   dialogReplies.splice(0);

@@ -13,7 +13,7 @@ import { calls, dialogReplies, host, lastWritten, line } from './word-addin-harn
 vi.mock('../../apps/word-addin/src/word/selection.js', async () => (await import('./word-addin-harness.js')).selectionMock);
 vi.mock('../../apps/word-addin/src/word/client.js', async () => (await import('./word-addin-harness.js')).clientMock);
 vi.mock('../../apps/word-addin/src/word/convert.js', async () => (await import('./word-addin-harness.js')).convertMock);
-vi.mock('../../apps/word-addin/src/word/parts.js', async () => (await import('./word-addin-harness.js')).partsMock);
+vi.mock('../../apps/word-addin/src/word/sources.js', async () => (await import('./word-addin-harness.js')).sourcesMock);
 vi.mock('../../apps/word-addin/src/word/dialog.js', async (real) => ({
   ...(await real<object>()), ...(await import('./word-addin-harness.js')).dialogMock,
 }));
@@ -214,7 +214,7 @@ describe('the document buttons', () => {
     expect(calls.told[0]!.lines[0]).toContain('end of the document');
   });
 
-  it('Settings opens the side panel, and the guide opens in the browser', async () => {
+  it('Panel opens the side panel, and the guide opens in the browser', async () => {
     await press('panel');
     await press('guide');
     expect(calls.taskpane).toBe(1);
@@ -222,77 +222,134 @@ describe('the document buttons', () => {
   });
 });
 
-describe('parts and registers', () => {
-  it('a register chosen at a bare caret outside every part is those lines’ — never “the document’s”', async () => {
-    host.docLines = [{ index: 0, tm: { text: 'agnim īḻe', marks: [] }, style: 'Translit', blocked: [], part: null, script: 'iast' }];
-    await press('reg-rigveda');
-    expect(host.settings.get('siksamitra.register')).toBe('rigveda');
-    expect(calls.asked).toEqual(['Re-mark the lines outside every part as Ṛgveda?']);
-    expect(host.part).toBeNull();
-  });
+describe('sources', () => {
+  /* What the rules make of a plain line in a source — the engine's answer,
+     computed here independently of the runtime. */
+  const T = 'yā devī sarvabhūteṣu śaktirūpeṇa saṁsthitā';
+  const byRules = async (source: string): Promise<string> => {
+    const { rerun, resolveProfile, STAGES } = await import('@siksamitra/engine');
+    const out = rerun({ text: T, marks: [] }, {
+      stages: [...STAGES], mode: 'keep-hand', profile: resolveProfile([{ preset: source as never }]), from: 0, to: T.length,
+    });
+    return out.text;
+  };
+  /* The lines Word now holds: what was last written to each, as a person would see. */
+  const follow = (): void => {
+    const last = calls.writes.at(-1);
+    if (last === undefined) return;
+    for (const w of last.writes) host.lines[w.line] = { ...host.lines[w.line]!, tm: structuredClone(w.tm) as never };
+  };
+  const whole = (text = T, more = {}) => line(text, 0, text.length, more);
 
-  it('a register chosen over SELECTED lines outside every part makes them a part in it', async () => {
+  it('with nothing selected it asks, then every line takes it and it is the document’s own', async () => {
     host.settings.set('siksamitra.register', 'smarta');
-    host.lines = [line('agnim īḻe', 0, 9), line('purohitam', 0, 9)];
-    await press('reg-rigveda');
-    expect(calls.asked).toEqual(['Mark these lines as Ṛgveda?']);
-    expect(host.part).toEqual({ register: 'rigveda' });
-    /* The lines outside every part keep theirs. */
-    expect(host.settings.get('siksamitra.register')).toBe('smarta');
-    expect(calls.writes).toHaveLength(1);
-  });
-
-  it('a selection partly in a part and partly not is refused — it has no one place to choose for', async () => {
-    host.settings.set('siksamitra.register', 'smarta');
-    host.lines = [line('agnim īḻe', 0, 9, { part: { register: 'rigveda' } }), line('purohitam', 0, 9)];
+    host.docLines = [
+      { index: 0, tm: { text: T, marks: [] }, style: 'Translit', blocked: [], part: null, script: 'iast' },
+      { index: 1, tm: { text: T, marks: [] }, style: 'Translit', blocked: [], part: { register: 'rigveda' }, script: 'iast' },
+    ];
     await press('reg-taittiriya');
-    expect(calls.told[0]).toEqual(expect.objectContaining({ kind: 'warn', text: 'The selection is in more than one place.' }));
-    expect(calls.asked).toEqual([]);
-    expect(host.settings.get('siksamitra.register')).toBe('smarta');
-    expect(calls.writes).toHaveLength(0);
+    expect(calls.asked).toEqual(['Mark every line as Taittirīya?']);
+    expect(calls.sources).toEqual([{ scope: 'document', source: 'taittiriya' }]);
+    expect(host.settings.get('siksamitra.register')).toBe('taittiriya');
+    const wrote = calls.documentWrites[0]!.changed.map((l) => l.tm.text);
+    expect(wrote).toEqual([await byRules('taittiriya'), await byRules('taittiriya')]);
+    expect(calls.told[0]!.text).toMatch(/^Every line is Taittirīya now\./);
   });
 
-  it('and so is one over parts of different registers', async () => {
-    host.lines = [line('agnim īḻe', 0, 9, { part: { register: 'rigveda' } }), line('purohitam', 0, 9, { part: { register: 'smarta' } })];
-    await press('reg-taittiriya');
-    expect(calls.told[0]!.lines[0]).toContain('different registers');
-    expect(calls.writes).toHaveLength(0);
-  });
-
-  it('a selection inside one part re-marks that part', async () => {
-    host.part = { register: 'rigveda' };
-    host.lines = [line('agnim īḻe', 0, 9, { part: { register: 'rigveda' } }), line('purohitam', 0, 9, { part: { register: 'rigveda' } })];
-    await press('reg-smarta');
-    expect(calls.asked[0]).toContain('Re-mark this part');
-    expect(host.part).toEqual({ register: 'smarta' });
-  });
-
-  it('declined, nothing is made and nothing re-marked', async () => {
+  it('declined, nothing is recorded and nothing written', async () => {
     host.answer = false;
-    host.lines = [line('agnim īḻe', 0, 9), line('purohitam', 0, 9)];
     await press('reg-rigveda');
-    expect(host.part).toBeNull();
-    expect(calls.writes).toHaveLength(0);
+    expect(calls.sources).toEqual([]);
+    expect(calls.documentWrites).toEqual([]);
+    expect(calls.writes).toEqual([]);
   });
 
-  it('no wording anywhere speaks of the register “of the document”', async () => {
-    host.docLines = [{ index: 0, tm: { text: 'agnim īḻe', marks: [] }, style: 'Translit', blocked: [], part: null, script: 'iast' }];
-    await press('reg-rigveda');
-    host.part = { register: 'smarta' };
-    await press('part-dissolve');
-    const said = JSON.stringify([calls.asked, calls.told]);
-    expect(said).not.toMatch(/the document’s|of the document|document is marked|Re-mark the document/);
-  });
-
-  it('a new part from the selection is marked in the register here', async () => {
+  it('selected lines take it without a question, and only they — the document’s own stays', async () => {
     host.settings.set('siksamitra.register', 'smarta');
-    await press('part-new');
-    expect(host.part).toEqual({ register: 'smarta' });
-    expect(calls.told[0]!.text).toContain('Smārta');
+    host.lines = [whole()];
+    await press('reg-taittiriya');
+    expect(calls.asked).toEqual([]);
+    expect(calls.sources).toEqual([{ scope: 'selection', source: 'taittiriya' }]);
+    expect(host.lines[0]!.part).toEqual({ register: 'taittiriya' });
+    expect(host.settings.get('siksamitra.register')).toBe('smarta');
+    expect(calls.writes[0]!.writes[0]!.tm.text).toBe(await byRules('taittiriya'));
+    expect(calls.told[0]!.text).toMatch(/^This line is Taittirīya now\./);
   });
 
-  it('dissolving where there is no part says so', async () => {
-    await press('part-dissolve');
-    expect(calls.told[0]).toEqual(expect.objectContaining({ kind: 'warn', text: 'The caret is not in a part.' }));
+  it('ONE LETTER selected is its whole line: the ṁ before s becomes the gum (the owner’s case)', async () => {
+    host.settings.set('siksamitra.register', 'smarta');
+    const at = T.indexOf('ṁ');
+    host.lines = [line(T, at, at + 1)];
+    await press('reg-taittiriya');
+    expect(calls.writes[0]!.writes[0]!.tm.text).toBe(await byRules('taittiriya'));
+    expect(calls.writes[0]!.writes[0]!.tm.text).not.toBe(T);
+  });
+
+  it('any direction and back: Ṛgveda → Taittirīya → Smārta → Ṛgveda is what Ṛgveda made', async () => {
+    host.settings.set('siksamitra.register', 'smarta');
+    host.lines = [whole()];
+    await press('reg-rigveda'); follow();
+    const first = structuredClone(host.lines[0]!.tm);
+    await press('reg-taittiriya'); follow();
+    expect(host.lines[0]!.tm.text).toBe(await byRules('taittiriya'));
+    await press('reg-smarta'); follow();
+    /* The document's own: the record comes off. */
+    expect(host.lines[0]!.part).toBeNull();
+    expect(host.lines[0]!.tm.text).toBe(await byRules('smarta'));
+    await press('reg-rigveda'); follow();
+    expect(host.lines[0]!.tm).toEqual(first);
+    /* And again: nothing to change. */
+    const before = calls.writes.length;
+    await press('reg-rigveda');
+    expect(calls.writes.length === before || calls.writes.at(-1)!.writes.length === 0).toBe(true);
+  });
+
+  it('a selection across two sources: all take the one chosen, each undone from its own', async () => {
+    host.settings.set('siksamitra.register', 'smarta');
+    host.lines = [whole(T, { part: { register: 'taittiriya' } })];
+    await press('reg-taittiriya'); follow();
+    /* Line 1 as Taittirīya marked it, line 2 as Smārta did. */
+    host.lines = [host.lines[0]!, whole(await byRules('smarta'))];
+    await press('reg-rigveda'); follow();
+    expect(host.lines.map((l) => l.part)).toEqual([{ register: 'rigveda' }, { register: 'rigveda' }]);
+    expect(host.lines.map((l) => l.tm.text)).toEqual([await byRules('rigveda'), await byRules('rigveda')]);
+    expect(calls.told.at(-1)!.text).toMatch(/^These 2 lines are Ṛgveda now\./);
+  });
+
+  it('a heading in the selection takes no source and is not marked', async () => {
+    host.settings.set('siksamitra.register', 'smarta');
+    host.lines = [whole('Durgā Sūktam', { style: 'Heading2', isVerse: false }), whole()];
+    await press('reg-taittiriya');
+    expect(calls.writes[0]!.writes.map((w) => w.line)).toEqual([1]);
+    expect(calls.told[0]!.text).toMatch(/^This line is Taittirīya now\./);
+  });
+
+  it('only headings and translations selected: nothing recorded, and it says why', async () => {
+    host.lines = [whole('Durgā Sūktam', { style: 'Heading2', isVerse: false }), whole('prijevod', { style: 'Prijevod', isVerse: false })];
+    await press('reg-taittiriya');
+    expect(calls.sources).toEqual([]);
+    expect(calls.told[0]).toEqual(expect.objectContaining({ kind: 'warn', text: 'Nothing to mark: these are not mantra lines.' }));
+  });
+
+  it('a line the rules may not rewrite is refused BEFORE its source changes', async () => {
+    host.lines = [whole(T, { blocked: ['a picture'] })];
+    await press('reg-taittiriya');
+    expect(calls.sources).toEqual([]);
+    expect(calls.writes).toEqual([]);
+    expect(calls.told[0]!.kind).toBe('warn');
+  });
+
+  it('Auto-mark over a heading and a mantra line marks only the mantra line', async () => {
+    host.lines = [whole('Durgā Sūktam', { style: 'Heading2', isVerse: false }), whole()];
+    await press('reapply');
+    expect(calls.writes[0]!.writes.map((w) => w.line)).toEqual([1]);
+  });
+
+  it('nothing it says speaks of parts', async () => {
+    host.docLines = [{ index: 0, tm: { text: T, marks: [] }, style: 'Translit', blocked: [], part: null, script: 'iast' }];
+    await press('reg-rigveda');
+    host.lines = [whole()];
+    await press('reg-smarta');
+    expect(JSON.stringify([calls.asked, calls.told])).not.toMatch(/\bparts?\b/i);
   });
 });

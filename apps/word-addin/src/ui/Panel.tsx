@@ -17,13 +17,12 @@
  * tabs across the top, nothing wider than the panel.
  */
 import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
-import { CHANT_PROFILE_NOTES } from '@siksamitra/format';
 import { Icon, type IconName } from '@siksamitra/ui';
 import { attachPanel, currentNotices, dismiss, subscribe, type Notice } from './notices.js';
 import { TABS, openTab, useTab } from './panel/nav.js';
 import { useHere } from './panel/useHere.js';
 import { MarkTab, usePress } from './panel/MarkTab.js';
-import { RulesTab } from './panel/RulesTab.js';
+import { RulesTab, sourcesName } from './panel/RulesTab.js';
 import { ScriptTab } from './panel/ScriptTab.js';
 import { TypeTab } from './panel/TypeTab.js';
 import { DocumentTab } from './panel/DocumentTab.js';
@@ -61,17 +60,15 @@ export function Panel(): ReactNode {
   const { busy, press } = usePress(here);
   const notices = useSyncExternalStore(subscribe, currentNotices);
   useEffect(() => attachPanel(), []);
-  const register = here.register?.register ?? null;
+  const several = here.sources.length > 1;
 
   return (
     <div className="pnl" data-chrome="palladio" data-mode={mode} data-density="compact">
       <header className="pnl-top">
         <span className="pnl-brand">śikṣāmitra</span>
-        {register !== null && (
-          <span className="pnl-chip pnl-chip--accent" title="The register that marks the text at the caret">
-            {CHANT_PROFILE_NOTES[register].name}
-          </span>
-        )}
+        <span className="pnl-chip pnl-chip--accent" title={several ? 'The sources of the selected lines' : 'The source of the line at the caret: whose rules mark it'}>
+          {sourcesName(here.sources)}
+        </span>
       </header>
       <nav className="pnl-tabs" role="tablist" aria-label="śikṣāmitra">
         {TABS.map((t) => (

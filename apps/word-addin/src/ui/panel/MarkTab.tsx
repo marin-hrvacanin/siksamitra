@@ -9,7 +9,6 @@
  * rule for Bold, from the same `selectionAcross` the press acts on.
  */
 import { useState, type ReactNode } from 'react';
-import { CHANT_PROFILE_NOTES } from '@siksamitra/format';
 import { letterBefore, selectionAcross, type Span } from '@siksamitra/edit';
 import { getScript } from '@siksamitra/engine';
 import { officeChord } from '@siksamitra/ui';
@@ -51,7 +50,6 @@ export function MarkTab({ here, busy, press }: {
     .filter((m) => m.from < Math.max(target[1], target[0] + 1) && target[0] < Math.max(m.to, m.from + 1))
     .map((m) => markName(m.k, m.v))
     .filter((n): n is string => n !== null);
-  const register = here.register?.register ?? null;
 
   return (
     <>
@@ -61,11 +59,6 @@ export function MarkTab({ here, busy, press }: {
         ) : (
           <>
             <div className="pnl-chips">
-              {register !== null && (
-                <span className="pnl-chip pnl-chip--accent">
-                  {CHANT_PROFILE_NOTES[register].name}{here.register?.inPart === true ? ' · this part' : ''}
-                </span>
-              )}
               <span className="pnl-chip">{getScript(at.script)?.name ?? at.script}</span>
               {at.lines.length > 1 && <span className="pnl-chip">{at.lines.length} lines</span>}
             </div>

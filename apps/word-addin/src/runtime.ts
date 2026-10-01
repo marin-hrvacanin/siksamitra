@@ -20,10 +20,10 @@ import { CHANT_PROFILE_NOTES } from '@siksamitra/format';
 import { ALL_COMMANDS, type Command } from './commands-table.js';
 import { GUIDE_URL } from './version.js';
 import { locate, type Located } from './word/selection.js';
-import { markSelection, typeInSelection, type Said } from './word/actions.js';
-import { defaultRules, runOverDocument, runOverSelection } from './word/rules.js';
-import { dissolvePartHere, makePart, selectPartHere } from './word/parts.js';
-import { registerHere, setRegisterHere } from './word/register.js';
+import { markSelection, refusalOf, typeInSelection, type Said } from './word/actions.js';
+import { defaultRules, markable, recordedFor, runOverDocument, runOverSelection } from './word/rules.js';
+import { setSourceOfDocument, setSourceOfSelection } from './word/sources.js';
+import { recordedRegister } from './word/settings.js';
 import { addStyles, documentStyles } from './word/client.js';
 import { convertDocument } from './word/convert.js';
 import { scriptDocument, scriptName, scriptSelection } from './word/script.js';
@@ -55,83 +55,53 @@ async function wholeScript(script: ScriptKey): Promise<void> {
 }
 
 /**
- * A register chosen from the menu — for the text it is chosen FOR.
+ * A SOURCE IS CHOSEN — the one place a line's source is changed, from the
+ * ribbon's Source menu and the panel's alike.
  *
- * A śākhā belongs to a chant, a part, a selection; never to "the document"
- * (the owner, 2026-09-30: "'of the document' has no meaning"). So: with the
- * caret in a part, that part; with lines SELECTED outside every part, those
- * lines become a part of their own in it; with a bare caret outside every
- * part, the lines outside every part. Then, if the person says so, the text it
- * applies to is re-marked, undoing what the old register made first.
+ * Every mantra line has one source, kept invisibly (`word/sources.ts`). With
+ * lines selected, those lines take it; with nothing selected, every line does,
+ * after asking. Each line is re-marked by the new source's rules, undoing
+ * what ITS old source made first — a selection may reach over several — and
+ * what a person placed by hand stays. There are no "parts" to know about: a
+ * śākhā belongs to the text it marks (the owner, 2026-09-30, and 2026-10-01:
+ * "the text itself has some record of what the source is").
  */
-async function chooseRegister(register: ChantProfileKey): Promise<void> {
-  const name = CHANT_PROFILE_NOTES[register].name;
+async function chooseSource(source: ChantProfileKey): Promise<void> {
+  const name = CHANT_PROFILE_NOTES[source].name;
   const here = await locate();
   const selected = here.lines.length > 1 || here.from !== here.to;
-  /* A selection in more than one place — partly in a part and partly not, or
-     over parts of different registers — has no one "here" to choose for. It
-     used to take the FIRST line's: a selection beginning outside and reaching
-     into a part changed every line outside every part. */
-  const places = new Set(here.lines.map((l) => l.part?.register ?? null));
-  if (selected && places.size > 1) {
-    await tell({ text: 'The selection is in more than one place.', kind: 'warn', lines: [
-      places.has(null)
-        ? 'Some of it is in a part and some is not. Select only lines outside every part to make them a part of their own, or put the caret in the part to change its register.'
-        : 'It reaches over parts of different registers. Put the caret in the part whose register is to change.',
-    ] });
+  const rules = { ...defaultRules('keep-hand'), register: source };
+  if (!selected) {
+    if (!(await ask(`Mark every line as ${name}?`, 'Mark every line',
+      'Every mantra line takes this source and is re-marked by its rules. What you placed by hand stays; '
+        + 'Word’s Undo takes it back.'))) return;
+    const done = await runOverDocument(rules);
+    await setSourceOfDocument(source);
+    await tell({ ...done, text: `Every line is ${name} now. ${done.text}` });
     return;
   }
-  if (selected && here.lines.every((l) => l.part === null)) {
-    const was = (await registerHere()).register;
-    if (!(await ask(`Mark these lines as ${name}?`, 'Mark them',
-      'They become a part of their own, in this register, and are re-marked by its rules; what you placed by hand stays. '
-        + 'The lines outside every part keep theirs.'))) return;
-    if ((await makePart({ register })) !== 'made') {
-      await tell({ text: 'The selection reaches into a part.', kind: 'warn', lines: ['Parts do not nest. Select lines outside every part, or dissolve the part first.'] });
-      return;
-    }
-    await selectPartHere();
-    await tell(await runOverSelection(await locate(), { ...defaultRules('keep-hand'), register, was }));
+  /* Refused BEFORE the record changes: a line the rules may not rewrite would
+     otherwise be left with a source its marks are not of. */
+  const refused = refusalOf(here);
+  if (refused !== null) { await tell(refused); return; }
+  const count = here.lines.filter(markable).length;
+  if (count === 0) {
+    await tell({ text: 'Nothing to mark: these are not mantra lines.', kind: 'warn',
+      lines: ['A source is for mantra lines. Titles, translations and comments have none.'] });
     return;
   }
-  const before = await setRegisterHere(register);
-  if (before.register === register) {
-    await tell({ text: `${before.inPart ? 'This part is' : 'The lines outside every part are'} marked as ${name} already.`, kind: 'plain',
-      lines: ['Auto-mark re-marks it, if the text has changed.'] });
+  /* Each line's source as it was, before the record changes. */
+  const was = here.lines.map((l) => recordedFor(l.part));
+  await setSourceOfSelection(source, recordedRegister() ?? DEFAULT_PROFILE_KEY);
+  const now = await locate();
+  if (now.lines.length !== here.lines.length) {
+    await tell({ text: 'The source is set, but the lines could not be re-marked.', kind: 'warn',
+      lines: ['Select the same lines and press Auto-mark.'] });
     return;
   }
-  const rules = { ...defaultRules('keep-hand'), register, was: before.register };
-  if (before.inPart) {
-    if (!(await ask(`Re-mark this part as ${name}?`, 'Re-mark it',
-      'Its lines are re-marked by the rules of the new register. What you placed by hand stays.'))) return;
-    await selectPartHere();
-    await tell(await runOverSelection(await locate(), rules));
-    return;
-  }
-  if (!(await ask(`Re-mark the lines outside every part as ${name}?`, 'Re-mark them',
-    'Every mantra line outside a part of its own is re-marked by the new register. Parts keep their own. '
-      + 'To give only some lines a register, select them and choose it.'))) return;
-  await tell(await runOverDocument(rules, (p) => p.part === null));
-}
-
-async function newPart(): Promise<void> {
-  const register = (await registerHere()).register ?? DEFAULT_PROFILE_KEY;
-  const made = await makePart({ register });
-  await tell(made === 'made'
-    ? { text: `These lines are a part of their own now, marked as ${CHANT_PROFILE_NOTES[register].name}.`, kind: 'plain',
-      lines: ['Choose a register from this menu, with the caret inside it, to mark it by other rules.'] }
-    : { text: 'These lines are in a part already.', kind: 'warn', lines: ['Parts do not nest. Select lines outside every part, or dissolve the part first.'] });
-}
-
-async function dissolvePart(): Promise<void> {
-  const was = await dissolvePartHere();
-  if (was === null) {
-    await tell({ text: 'The caret is not in a part.', kind: 'warn', lines: [] });
-    return;
-  }
-  const doc = (await registerHere()).register;
-  await tell({ text: 'The part is gone; its lines are outside every part again.', kind: 'plain',
-    lines: doc === was.register ? [] : ['They are still marked as the part was. Auto-mark re-marks them by the register of the lines outside every part.'] });
+  const whole = { ...now, lines: now.lines.map((l) => ({ ...l, from: 0, to: l.tm.text.length })) };
+  const done = await runOverSelection(whole, { ...rules, wasEach: was });
+  await tell({ ...done, text: `${count === 1 ? 'This line is' : `These ${count} lines are`} ${name} now. ${done.text}` });
 }
 
 async function styles(keep: boolean): Promise<void> {
@@ -176,9 +146,7 @@ export async function run(c: Command): Promise<void> {
   if (d === 'specimen') return styles(true);
   if (d === 'guide') { Office.context.ui.openBrowserWindow(GUIDE_URL); return undefined; }
   if (d === 'panel') { await Office.addin.showAsTaskpane(); return undefined; }
-  if (d === 'part-new') return newPart();
-  if (d === 'part-dissolve') return dissolvePart();
-  if ('register' in d) return chooseRegister(d.register);
+  if ('register' in d) return chooseSource(d.register);
   const here = await locate();
   if ('rules' in d) {
     return isCaret(here) ? wholeDocument(d.rules) : unlessFine(await runOverSelection(here, defaultRules(d.rules)));

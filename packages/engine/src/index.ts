@@ -28,8 +28,8 @@ export { applyOverrides, isOverrideField } from './overrides.js';
 export type { OverrideField, OverrideResult } from './overrides.js';
 
 // ── parametrization ─────────────────────────────────────────────────────────
-export { PROFILES, DEFAULT_PROFILE, DEFAULT_PROFILE_KEY, lengthens, resolveProfile } from './profile.js';
-export { CONVENTIONS, conventionsPatch } from './conventions.js';
+export { PROFILES, DEFAULT_PROFILE, DEFAULT_PROFILE_KEY, lengthens, placesSvaras, resolveProfile } from './profile.js';
+export { CONVENTIONS, conventionApplies, conventionsPatch } from './conventions.js';
 export type { Convention, ConventionId } from './conventions.js';
 export type {
   Profile, ProfileKey, ChantProfileRef, Recension, MeterKey, SvaraRegister,

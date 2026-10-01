@@ -35,7 +35,7 @@ import {
 import type { ChantVerse } from '@siksamitra/format';
 import type { Profile } from './profile.js';
 import { derive } from './pipeline.js';
-import { lengthens } from './profile.js';
+import { lengthens, placesSvaras } from './profile.js';
 import { invertVerse } from './invert.js';
 import { tokensOf } from './open-doc.js';
 
@@ -183,8 +183,12 @@ export function rerunRange(tm: TextAndMarks, req: ReRunRequest): ReRun {
    * through the register the range is marked in NOW, so a Ṛgveda line's
    * overlines come off before any register puts its own on.
    */
-  const typed = invertVerse(tokensOf({ text: slice, marks: inside }), {
-    lengthened: lengthens(req.previous ?? req.profile),
+  const now = req.previous ?? req.profile;
+  /* A svara the register's own rules placed — the śloka's — is not an accent
+     of the text, so it is not the svara stage's input (`placesSvaras`). */
+  const input = placesSvaras(now) ? inside.filter((m) => !(m.k === 'svara' && m.by === 'rule')) : inside;
+  const typed = invertVerse(tokensOf({ text: slice, marks: input }), {
+    lengthened: lengthens(now),
   });
   const d = derive({
     lines: typed.lines.length === 0 ? [''] : typed.lines,

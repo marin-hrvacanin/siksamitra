@@ -159,12 +159,16 @@ body { background: var(--chrome-bg); }
 }
 .pnl-reg:hover:not(:disabled) { background: var(--chrome-sunk); }
 .pnl-reg[aria-checked="true"] { border-color: var(--chrome-accent); box-shadow: inset var(--border-thick) 0 0 var(--chrome-accent); }
+/* One of several sources the selected lines have: lit, but not chosen. */
+.pnl-reg[data-here="yes"]:not([aria-checked="true"]) { border-color: var(--chrome-accent); border-style: dashed; }
 .pnl-reg__name { font-weight: 600; }
 .pnl-reg__where { font-size: var(--text-ui-sm); color: var(--chrome-ink-soft); }
 
 .pnl-switches { display: flex; flex-direction: column; gap: var(--space-2); }
 .pnl-switch { display: flex; align-items: flex-start; gap: var(--space-2); }
 .pnl-switch > span { display: flex; flex-direction: column; gap: var(--space-1); }
+/* A switch with nothing to do for the lines here: greyed, saying where it applies. */
+.pnl-switch[data-applies="no"] { color: var(--chrome-ink-mute); }
 .pnl-eg { font-family: var(--doc-verse-face); }
 .pnl-typed { color: var(--chrome-ink-soft); }
 

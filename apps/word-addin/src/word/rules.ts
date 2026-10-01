@@ -1,12 +1,11 @@
 /**
  * THE RULES, RUN BECAUSE A PERSON ASKED — over the selection or the document.
  *
- * EVERY LINE BY ITS OWN RULES. A document may hold parts marked in different
- * registers (`word/rule-parts.ts` in interop), so a line is marked in its part's register,
- * or in the register of the lines outside every part — never in one register chosen for
- * the whole run. When a register is being CHANGED, the caller passes the new
- * one (`register`) and the one the lines are marked in now (`was`), which is
- * undone first; recording the change is the caller's, done before the run.
+ * EVERY LINE BY ITS OWN SOURCE. A document may hold lines of different
+ * śākhās (`word/sources.ts`), so a line is marked by its own source's rules —
+ * never by one register chosen for the whole run. When a source is being
+ * CHANGED, the caller passes the new one (`register`) and the one each line is
+ * marked in now (`was`, or `wasEach` line by line), which is undone first.
  *
  * Only lines the rules change are written, so a second run writes nothing.
  */
@@ -14,7 +13,7 @@ import type { ChantProfileKey, Stage, TextAndMarks } from '@siksamitra/format';
 import {
   DEFAULT_PROFILE_KEY, STAGES, conventionsPatch, rerun, resolveProfile, showsLengthening, type ReRunMode,
 } from '@siksamitra/engine';
-import type { PartRules } from '@siksamitra/interop';
+import { paraRoleOf, type PartRules } from '@siksamitra/interop';
 import { refusalOf, sameText, type Said } from './actions.js';
 import { readDocument, writeDocument, type DocParagraph } from './client.js';
 import { writeLines, type Line, type LineWrite, type Located } from './selection.js';
@@ -89,16 +88,28 @@ function rerunLine(tm: TextAndMarks, from: number, to: number, rules: Rules, par
   });
 }
 
+/**
+ * Is this a line the rules mark? A mantra line, or a plain one — a line typed
+ * into Word is in `Normal`, and marked it becomes a mantra line (`writeOf`).
+ * A title, a translation, a comment is left as it is: a selection reaching
+ * over a sūkta's heading and its Croatian marked them all, holdings and all.
+ */
+export const markable = (l: Line): boolean => l.isVerse || paraRoleOf(l.style) === 'prose';
+
 /** The rules over the selection: a caret means its whole line, a selection the
  *  part of each line that is selected — recompute over a range, as the app does. */
 export async function runOverSelection(here: Located, rules: Rules): Promise<Said> {
   const refused = refusalOf(here);
   if (refused !== null) return refused;
+  if (!here.lines.some(markable)) {
+    return said('Nothing to mark: these are not mantra lines.', 'warn',
+      ['Auto-mark marks mantra lines. Titles, translations and comments are left as they are.']);
+  }
   const whole = here.lines.length === 1 && here.from === here.to;
   const range = (l: Line): [number, number] => (whole ? [0, l.tm.text.length] : [l.from, l.to]);
   const outs = here.lines.map((l, i) => {
     const [from, to] = range(l);
-    return to > from ? rerunLine(l.tm, from, to, rules, l.part, i) : null;
+    return to > from && markable(l) ? rerunLine(l.tm, from, to, rules, l.part, i) : null;
   });
   const writes: LineWrite[] = [];
   outs.forEach((out, i) => {

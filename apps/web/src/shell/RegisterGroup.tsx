@@ -24,7 +24,7 @@
  */
 import { useRef, useState, type ReactNode } from 'react';
 import { CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES, type ChantProfileKey } from '@siksamitra/format';
-import { CONVENTIONS } from '@siksamitra/engine';
+import { CONVENTIONS, conventionApplies, resolveProfile } from '@siksamitra/engine';
 import { conventionsOf } from '@siksamitra/edit';
 import { Popover } from '@siksamitra/ui';
 import { RibbonButton } from '@siksamitra/ui';
@@ -121,6 +121,9 @@ export function RegisterGroup(
           <p className="menu__lbl menu__lbl--second">Conventions</p>
           {CONVENTIONS.map((c) => {
             const on = conventionsOf(session.doc, scope === 'section' ? section : undefined)[c.id];
+            /* A switch with nothing to do under this register is greyed and
+               says where it applies — the add-in's panel does the same. */
+            const live = conventionApplies(c, resolveProfile([session.doc.profile, scope === 'section' ? section?.profile : undefined]));
             return (
               <button
                 type="button"
@@ -128,11 +131,12 @@ export function RegisterGroup(
                 role="menuitemcheckbox"
                 className={on ? 'menu__opt menu__opt--tall is-on' : 'menu__opt menu__opt--tall'}
                 aria-checked={on}
-                title={c.note}
+                disabled={!live}
+                title={live ? c.note : c.onlyFor}
                 onClick={() => onNote(session.setConventions(scope, { [c.id]: !on }))}
               >
                 <span className="menu__name">{on ? '✓ ' : ''}{c.label}</span>
-                <span className="menu__note">{c.example.typed} → {c.example.marked}</span>
+                <span className="menu__note">{live ? `${c.example.typed} → ${c.example.marked}` : c.onlyFor}</span>
               </button>
             );
           })}

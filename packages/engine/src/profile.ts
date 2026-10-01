@@ -304,3 +304,13 @@ export function resolveProfile(
 /** Does this register lengthen the svarita — and so must reading its marks
  *  back undo that? One question, asked by every inverter. */
 export const lengthens = (p: Pick<Profile, 'svara'>): boolean => p.svara.lengthening === true;
+
+/**
+ * Does this register PLACE svaras of its own — the śloka's, by its metre —
+ * rather than read the ones the text has? Then a svara its rules placed is
+ * its output, and re-marking in another register must take it off rather
+ * than read it as an accent of the text: Smārta's śloka svaras, re-marked as
+ * Ṛgveda, were kept and lengthened into dīrgha-svaritas.
+ */
+export const placesSvaras = (p: Pick<Profile, 'svara'>): boolean =>
+  p.svara.register === 'conventional' && p.svara.meter != null;

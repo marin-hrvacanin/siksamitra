@@ -192,36 +192,6 @@
                         <FunctionName>smRegSmarta</FunctionName>
                       </Action>
                     </Item>
-                    <Item id="sm.tab.part-new">
-                      <Label resid="sm.part-new.L"/>
-                      <Supertip>
-                        <Title resid="sm.part-new.L"/>
-                        <Description resid="sm.part-new.T"/>
-                      </Supertip>
-                      <Icon>
-                        <bt:Image size="16" resid="sm.i.part-new.16"/>
-                        <bt:Image size="32" resid="sm.i.part-new.32"/>
-                        <bt:Image size="80" resid="sm.i.part-new.80"/>
-                      </Icon>
-                      <Action xsi:type="ExecuteFunction">
-                        <FunctionName>smPartNew</FunctionName>
-                      </Action>
-                    </Item>
-                    <Item id="sm.tab.part-dissolve">
-                      <Label resid="sm.part-dissolve.L"/>
-                      <Supertip>
-                        <Title resid="sm.part-dissolve.L"/>
-                        <Description resid="sm.part-dissolve.T"/>
-                      </Supertip>
-                      <Icon>
-                        <bt:Image size="16" resid="sm.i.part-dissolve.16"/>
-                        <bt:Image size="32" resid="sm.i.part-dissolve.32"/>
-                        <bt:Image size="80" resid="sm.i.part-dissolve.80"/>
-                      </Icon>
-                      <Action xsi:type="ExecuteFunction">
-                        <FunctionName>smPartDissolve</FunctionName>
-                      </Action>
-                    </Item>
                   </Items>
                 </Control>
               </Group>
@@ -1646,12 +1616,6 @@
         <bt:Image id="sm.i.tree.16" DefaultValue="https://localhost:3000/ribbon/tree-16.png"/>
         <bt:Image id="sm.i.tree.32" DefaultValue="https://localhost:3000/ribbon/tree-32.png"/>
         <bt:Image id="sm.i.tree.80" DefaultValue="https://localhost:3000/ribbon/tree-80.png"/>
-        <bt:Image id="sm.i.part-new.16" DefaultValue="https://localhost:3000/ribbon/part-new-16.png"/>
-        <bt:Image id="sm.i.part-new.32" DefaultValue="https://localhost:3000/ribbon/part-new-32.png"/>
-        <bt:Image id="sm.i.part-new.80" DefaultValue="https://localhost:3000/ribbon/part-new-80.png"/>
-        <bt:Image id="sm.i.part-dissolve.16" DefaultValue="https://localhost:3000/ribbon/part-dissolve-16.png"/>
-        <bt:Image id="sm.i.part-dissolve.32" DefaultValue="https://localhost:3000/ribbon/part-dissolve-32.png"/>
-        <bt:Image id="sm.i.part-dissolve.80" DefaultValue="https://localhost:3000/ribbon/part-dissolve-80.png"/>
         <bt:Image id="sm.i.hold-short.16" DefaultValue="https://localhost:3000/ribbon/hold-short-16.png"/>
         <bt:Image id="sm.i.hold-short.32" DefaultValue="https://localhost:3000/ribbon/hold-short-32.png"/>
         <bt:Image id="sm.i.hold-short.80" DefaultValue="https://localhost:3000/ribbon/hold-short-80.png"/>
@@ -1889,7 +1853,7 @@
         <bt:String id="sm.grp.signs" DefaultValue="Signs"/>
         <bt:String id="sm.grp.script" DefaultValue="Script"/>
         <bt:String id="sm.grp.tools" DefaultValue="śikṣāmitra"/>
-        <bt:String id="sm.register.L" DefaultValue="Register"/>
+        <bt:String id="sm.register.L" DefaultValue="Source"/>
         <bt:String id="sm.clear.L" DefaultValue="Clear"/>
         <bt:String id="sm.ins-vowels.L" DefaultValue="Vowels"/>
         <bt:String id="sm.ins-consonants.L" DefaultValue="Consonants"/>
@@ -1900,8 +1864,6 @@
         <bt:String id="sm.reg-rigveda.L" DefaultValue="Ṛgveda"/>
         <bt:String id="sm.reg-sukla-yajurveda.L" DefaultValue="Śukla Yajurveda"/>
         <bt:String id="sm.reg-smarta.L" DefaultValue="Smārta / purāṇic"/>
-        <bt:String id="sm.part-new.L" DefaultValue="New part from these lines"/>
-        <bt:String id="sm.part-dissolve.L" DefaultValue="Dissolve this part"/>
         <bt:String id="sm.hold-short.L" DefaultValue="Short"/>
         <bt:String id="sm.hold-long.L" DefaultValue="Long"/>
         <bt:String id="sm.hold-clear.L" DefaultValue="Clear holdings"/>
@@ -1983,7 +1945,7 @@
       <bt:LongStrings>
         <bt:String id="sm.Ctx.Tip" DefaultValue="Mark the selected letters, or the letter before the caret."/>
         <bt:String id="sm.GetStarted.Description" DefaultValue="Everything is on the śikṣāmitra tab. Type a letter and press Short or Long, or a svara — or right-click a selection."/>
-        <bt:String id="sm.register.T" DefaultValue="Which śākhā’s rules Auto-mark uses: for the part the caret is in, or for the selected lines — they become a part of their own. One document can hold parts of different śākhās."/>
+        <bt:String id="sm.register.T" DefaultValue="Whose rules mark the text. Select lines and choose: they take that source and are marked by it. With nothing selected, every line does. The panel shows the source of the line at the caret."/>
         <bt:String id="sm.clear.T" DefaultValue="Take marks off — one kind, or all of them. On the selected letters, or the letter before the caret. The letters themselves stay."/>
         <bt:String id="sm.ins-vowels.T" DefaultValue="Type a long vowel, vocalic ṛ or ḷ, the anusvāra or the visarga at the caret."/>
         <bt:String id="sm.ins-consonants.T" DefaultValue="Type a consonant at the caret, by where it is spoken: gutturals to sibilants."/>
@@ -1994,8 +1956,6 @@
         <bt:String id="sm.reg-rigveda.T" DefaultValue="Texts recited in a Ṛgvedic śākhā, in its own accentuation. Accents are taken from the source as written, and the anusvāra keeps its own form rather than becoming a g-form."/>
         <bt:String id="sm.reg-sukla-yajurveda.T" DefaultValue="Vājasaneyi texts — Rudrāṣṭādhyāyī and the Mādhyandina recension. As Taittirīya, including the g-forms, over the Śukla recension’s own accentuation."/>
         <bt:String id="sm.reg-smarta.T" DefaultValue="Stotras, aṣṭakas, nāmāvalīs, āgamic and purāṇic verse — Lalitā and Viṣṇu Sahasranāma. No accents are read from the source; the metre supplies them, the anusvāra is left as it is, and no semivowel aids are added."/>
-        <bt:String id="sm.part-new.T" DefaultValue="Give the selected lines rules of their own — a sūkta of another śākhā among the others. Word draws a thin frame around the part, titled with its register."/>
-        <bt:String id="sm.part-dissolve.T" DefaultValue="Undo the part the caret is in. Its lines and their marks stay; they are outside every part again."/>
         <bt:String id="sm.hold-short.T" DefaultValue="A short holding: a thin box around the letter. On the selected letters, or the letter before the caret. Press again to take it off. (Ctrl+H)"/>
         <bt:String id="sm.hold-long.T" DefaultValue="A long holding: a thick box around the letter. On the selected letters, or the letter before the caret. Press again to take it off. (Ctrl+Shift+H)"/>
         <bt:String id="sm.hold-clear.T" DefaultValue="Take the holdings off, and leave every other mark. On the selected letters, or the letter before the caret. (Ctrl+K)"/>

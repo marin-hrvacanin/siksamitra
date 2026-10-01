@@ -33,13 +33,29 @@ async function open(s: ReturnType<typeof session>, onNote = vi.fn()): Promise<vo
 const byText = (t: string) => [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.includes(t));
 
 describe('the Rules menu', () => {
-  it('offers every convention, each with what it does to a typed example', async () => {
+  it('offers every convention, each with what it does to a typed example — or, greyed, where it applies', async () => {
     await open(session());
     for (const c of CONVENTIONS) {
       const b = byText(c.label)!;
       expect(b, c.id).toBeDefined();
-      expect(b.textContent).toContain(`${c.example.typed} → ${c.example.marked}`);
+      /* The default register is Taittirīya: the purāṇic svaras have nothing to do there. */
+      if (c.id === 'puranic-svara') {
+        expect(b.disabled).toBe(true);
+        expect(b.textContent).toContain(c.onlyFor);
+      } else {
+        expect(b.disabled, c.id).toBe(false);
+        expect(b.textContent).toContain(`${c.example.typed} → ${c.example.marked}`);
+      }
     }
+  });
+
+  it('in a Smārta document the purāṇic svaras are a live switch', async () => {
+    const s = session();
+    s.doc = { ...s.doc, profile: { preset: 'smarta' } } as never;
+    await open(s);
+    const b = byText(CONVENTIONS.find((c) => c.id === 'puranic-svara')!.label)!;
+    expect(b.disabled).toBe(false);
+    expect(b.getAttribute('aria-checked')).toBe('true');
   });
 
   it('shows each as the document has it — the registry’s default where nothing is switched', async () => {

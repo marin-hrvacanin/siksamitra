@@ -1,16 +1,23 @@
 /**
- * RULES — which śākhā marks the text here, what the rules mark, and the
+ * RULES — whose rules mark the text here, what the rules mark, and the
  * switches where marked texts differ.
  *
- * Choosing a register here is the ribbon's Register menu, pressed: the same
- * command (`run`), so a selection outside every part becomes a part of its
- * own and is re-marked, and a part is re-marked by its new register — each
- * after asking, in the panel. What is kept in the document (the stages, the
- * switches) is `word/settings.ts`'s, as before.
+ * THE SOURCE. Every mantra line has one: the śākhā whose rules mark it. A
+ * card pressed is the ribbon's Source menu, pressed — the same command
+ * (`run`): the selected lines take that source and are re-marked by it, or,
+ * with nothing selected, every line does, after asking. The cards light the
+ * source of the lines here; a selection across lines of two sources lights
+ * both. There is nothing else to manage — no part to make or undo.
+ *
+ * A SWITCH THAT CHANGES NOTHING HERE IS GREYED, saying where it applies
+ * (`applies` in the engine's `CONVENTIONS`): the purāṇic svaras over a Vedic
+ * line, whose svaras are the text's own. The switches are the document's,
+ * kept by `word/settings.ts`, so a greyed one keeps its value for the lines
+ * it does apply to.
  */
 import { useState, type ReactNode } from 'react';
 import { CHANT_PROFILE_KEYS, CHANT_PROFILE_NOTES, type ChantProfileKey, type Stage } from '@siksamitra/format';
-import { CONVENTIONS, STAGES, resolveProfile, type ConventionId } from '@siksamitra/engine';
+import { CONVENTIONS, STAGES, conventionApplies, resolveProfile, type Convention, type ConventionId } from '@siksamitra/engine';
 import { COMMANDS, type Command } from '../../commands-table.js';
 import { recordConventions, recordStages, recordedConventions, recordedStages } from '../../word/settings.js';
 import type { Here } from './useHere.js';
@@ -25,13 +32,26 @@ export const STAGE_LABEL: Readonly<Record<Stage, string>> = {
 };
 
 const byId = (id: string): Command => COMMANDS.find((c) => c.id === id)!;
+const profileOf = (k: ChantProfileKey) => resolveProfile([{ preset: k }]);
+
+/** What choosing a source will reach, in a few words. */
+export function sourceScope(here: Here): string {
+  const lines = here.at?.lines.filter((l) => l.isVerse).length ?? 0;
+  const selected = here.at !== null && (here.at.from !== here.at.to || here.at.lines.length > 1);
+  if (!selected) return 'every line';
+  return lines <= 1 ? 'this line' : `these ${lines} lines`;
+}
+
+/** The sources here, named: "Ṛgveda", or "Ṛgveda and Taittirīya". */
+export const sourcesName = (sources: readonly ChantProfileKey[]): string => {
+  const names = sources.map((k) => CHANT_PROFILE_NOTES[k].name);
+  return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+};
 
 export function RulesTab({ here, busy, press }: { here: Here; busy: boolean; press: (c: Command) => void }): ReactNode {
   const [stages, setStages] = useState<ReadonlySet<Stage>>(recordedStages);
   const [chosen, setChosen] = useState<Partial<Record<ConventionId, boolean>>>(recordedConventions);
-  const register: ChantProfileKey = here.register?.register ?? 'taittiriya';
-  const inPart = here.register?.inPart === true;
-  const selected = here.at !== null && (here.at.from !== here.at.to || here.at.lines.length > 1);
+  const scope = sourceScope(here);
 
   const toggle = (s: Stage): void => {
     const next = new Set(stages);
@@ -39,12 +59,17 @@ export function RulesTab({ here, busy, press }: { here: Here; busy: boolean; pre
     setStages(next);
     void recordStages(next);
   };
-  /* On unless switched: what the register does by itself, then what this
-     document has chosen. */
-  const defaults = resolveProfile([{ preset: register }]);
-  const isOn = (id: ConventionId): boolean => chosen[id] ?? CONVENTIONS.find((c) => c.id === id)!.isOn(defaults);
-  const flip = (id: ConventionId): void => {
-    const next = { ...chosen, [id]: !isOn(id) };
+  /* Does a switch do anything for the lines here — and if not, its value is
+     the one it has where it does apply. */
+  const appliesHere = (c: Convention): boolean => here.sources.some((k) => conventionApplies(c, profileOf(k)));
+  const isOn = (c: Convention): boolean => {
+    const v = chosen[c.id];
+    if (v !== undefined) return v;
+    const where = appliesHere(c) ? here.sources : CHANT_PROFILE_KEYS.filter((k) => conventionApplies(c, profileOf(k)));
+    return c.isOn(profileOf(where.find((k) => conventionApplies(c, profileOf(k))) ?? here.own));
+  };
+  const flip = (c: Convention): void => {
+    const next = { ...chosen, [c.id]: !isOn(c) };
     setChosen(next);
     void recordConventions(next);
   };
@@ -52,20 +77,22 @@ export function RulesTab({ here, busy, press }: { here: Here; busy: boolean; pre
   return (
     <>
       <section className="pnl-group">
-        <h3 className="pnl-h">Register {inPart ? '· this part' : selected ? '· the selected lines' : '· lines outside every part'}</h3>
+        <h3 className="pnl-h">Source · {scope}</h3>
         <p className="pnl-quiet">
-          {selected && !inPart
-            ? 'Choose one to make the selected lines a part of their own, marked by its rules.'
-            : inPart ? 'The caret is in a part with rules of its own: choosing one re-marks this part.'
-              : 'Choosing one re-marks the lines outside every part. Select lines first to give them a register of their own.'}
+          {scope === 'every line'
+            ? 'Choose one to mark every line by its rules. Select lines first to give only them a source.'
+            : here.sources.length > 1
+              ? `The selected lines are ${sourcesName(here.sources)}. Choose one and they all take it.`
+              : 'Choose one: the selected lines take it and are re-marked by it.'}
         </p>
-        <div className="pnl-cards" role="radiogroup" aria-label="Register">
+        <div className="pnl-cards" role="radiogroup" aria-label="Source">
           {CHANT_PROFILE_KEYS.map((k) => (
             <button
               type="button"
               key={k}
               role="radio"
-              aria-checked={k === register}
+              aria-checked={here.sources.length === 1 && here.sources[0] === k}
+              data-here={here.sources.includes(k) ? 'yes' : undefined}
               className="pnl-reg"
               disabled={busy}
               onClick={() => press(byId(`reg-${k}`))}
@@ -74,12 +101,6 @@ export function RulesTab({ here, busy, press }: { here: Here; busy: boolean; pre
               <span className="pnl-reg__where">{CHANT_PROFILE_NOTES[k].where}</span>
             </button>
           ))}
-        </div>
-        <div className="pnl-wrap">
-          <button type="button" className="pnl-btn pnl-btn--small" disabled={busy || !selected} onClick={() => press(byId('part-new'))}
-            title={byId('part-new').tip}>New part from the selection</button>
-          <button type="button" className="pnl-btn pnl-btn--small" disabled={busy || !inPart} onClick={() => press(byId('part-dissolve'))}
-            title={byId('part-dissolve').tip}>Dissolve this part</button>
         </div>
       </section>
 
@@ -99,16 +120,19 @@ export function RulesTab({ here, busy, press }: { here: Here; busy: boolean; pre
         <h3 className="pnl-h">Switches</h3>
         <p className="pnl-quiet">Where marked texts differ. Kept in the document; Auto-mark uses them.</p>
         <div className="pnl-switches">
-          {CONVENTIONS.map((c) => (
-            <label key={c.id} className="pnl-switch pnl-switch--long">
-              <input type="checkbox" checked={isOn(c.id)} onChange={() => flip(c.id)} />
-              <span>
-                <strong>{c.label}</strong>
-                <span className="pnl-eg"><span className="pnl-typed">{c.example.typed}</span> → <span>{c.example.marked}</span></span>
-                <span className="pnl-quiet">{c.note}</span>
-              </span>
-            </label>
-          ))}
+          {CONVENTIONS.map((c) => {
+            const live = appliesHere(c);
+            return (
+              <label key={c.id} className="pnl-switch pnl-switch--long" data-applies={live ? undefined : 'no'}>
+                <input type="checkbox" checked={isOn(c)} disabled={!live} onChange={() => flip(c)} />
+                <span>
+                  <strong>{c.label}</strong>
+                  <span className="pnl-eg"><span className="pnl-typed">{c.example.typed}</span> → <span>{c.example.marked}</span></span>
+                  <span className="pnl-quiet">{live ? c.note : c.onlyFor}</span>
+                </span>
+              </label>
+            );
+          })}
         </div>
       </section>
     </>
