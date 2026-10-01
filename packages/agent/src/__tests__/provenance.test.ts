@@ -7,7 +7,7 @@
  * told where every part came from, so it spends its calls comparing.
  */
 import { describe, expect, it } from 'vitest';
-import { Workspace, checkDocument, toolsFor } from '../index.js';
+import { Workspace, checkDocument, toolsFor, verseLetters } from '../index.js';
 import { PURUSHA_PAGE, testHost } from './fixtures.js';
 
 const tool = (name: string) => toolsFor('deliver', testHost()).find((t) => t.spec.name === name)!;
@@ -64,5 +64,28 @@ describe('built verse by verse', () => {
     expect(asked[0]).toContain('are both verses there?');
     expect(asked[0]).toContain('s-1-v1 ← w1 lines 5-6');
     expect(asked[0]).toContain('w1: https://sanskritdocuments.org/x');
+  });
+});
+
+describe('a Ṛgveda text, whose rules transform its accents', () => {
+  /* Two verses of the Nāsadīya Sūkta as sanskritdocuments.org prints them, an English gloss between. */
+  const PAGE = [
+    'नास॑दासी॒न्नो सदा॑सीत्त॒दानीं॒ नासी॒द्रजो॒ नो व्यो॑मा प॒रो यत् ।',
+    'किमाव॑रीवः॒ कुह॒ कस्य॒ शर्म॒न्नम्भः॒ किमा॑सी॒द्गह॑नं गभी॒रम् ॥ १॥ ',
+    'Then even nothingness was not, nor existence,',
+    'न मृ॒त्युरा॑सीद॒मृतं॒ न तर्हि॒ न रात्र्या॒ अह्न॑ आसीत्प्रके॒तः ।',
+    'आनी॑दवा॒तं स्व॒धया॒ तदेकं॒ तस्मा॑द्धा॒न्यन्न प॒रः किं च॒नास॑ ॥ २॥',
+  ];
+  it('checks clean: the rebuilt source is marked by the same rules before it is compared', async () => {
+    const ws = new Workspace();
+    const ctx = { ws, host: testHost(), review: async () => '' };
+    ws.keep('https://sanskritdocuments.org/nasadiya', 'page', PAGE);
+    await tool('build_document').run({
+      title: 'nāsadīya sūktam', locus: 'ṛgvedasaṁhitā 10.129', source: 'rigveda',
+      sections: [{ verses: [{ witness: 'w1', at: '1-2' }, { witness: 'w1', at: '4-5' }] }],
+    }, ctx);
+    /* The rules did transform them — the overline of the lengthened svarita is there. */
+    expect(ws.need().sections[0]!.verses.map((v) => verseLetters(v)).join('')).toContain('̅');
+    expect(checkDocument(ws)).toEqual([]);
   });
 });

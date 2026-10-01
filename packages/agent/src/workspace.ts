@@ -145,10 +145,10 @@ const registerName = (doc: ChantDoc, section?: { profile?: { preset?: string } }
 
 /** The document in a few lines: ids, titles, sources, first words. */
 export function outlineOf(doc: ChantDoc, firstWords = 48): string {
-  const out = [`"${doc.title}" — source: ${registerName(doc)}`];
+  const out = [`"${doc.title}"${doc.source === undefined ? '' : ` · ${doc.source}`} — source: ${registerName(doc)}`];
   for (const s of doc.sections) {
     const own = s.profile?.preset === undefined ? '' : ` · source ${registerName(doc, s)}`;
-    out.push(`${s.id} "${s.title}"${s.source === undefined ? '' : ` · cite: ${s.source}`}${own} · ${s.verses.length} verse(s)`);
+    out.push(`${s.id}${s.part === undefined ? '' : ` [${s.part}]`} "${s.title ?? ''}"${s.source === undefined ? '' : ` · cite: ${s.source}`}${own} · ${s.verses.length} verse(s)`);
     for (const v of s.verses) {
       const letters = verseLetters(v).replace(/\n/g, ' / ');
       out.push(`  ${v.id}${v.n === undefined ? '' : ` (${v.n})`}: ${letters.length > firstWords ? `${letters.slice(0, firstWords)}…` : letters}`);

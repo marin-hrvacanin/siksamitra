@@ -42,7 +42,7 @@ function linesOf(ws: Workspace, witness: string, at: string): string[] {
 }
 
 interface SectionArg {
-  title: string;
+  title?: string;
   cite?: string;
   witness?: string;
   lines?: string;
@@ -53,13 +53,13 @@ type From = { witness: string; at: string };
 
 /** One section of `build_document`, its letters taken from where it says — and, per verse, from where. */
 function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; from?: From; verseFrom: (From | undefined)[] } {
-  if (typeof s.title !== 'string') throw new Error('every section needs a title');
+  const title = typeof s.title === 'string' && s.title.trim() !== '' ? { title: s.title } : {};
   if (s.witness !== undefined && s.lines !== undefined) {
     /* The source's own lines, grouped into verses by its own numbering
        (a daṇḍa and a number end a verse) — the builder's rule for his files. */
     const flow = linesOf(ws, s.witness, s.lines);
     return {
-      section: { title: s.title, ...(s.cite === undefined ? {} : { cite: s.cite }), verses: [], flow },
+      section: { ...title, ...(s.cite === undefined ? {} : { cite: s.cite }), verses: [], flow },
       from: { witness: s.witness, at: s.lines },
       verseFrom: [],
     };
@@ -69,9 +69,9 @@ function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; fro
     const lines = v.witness !== undefined && v.at !== undefined ? linesOf(ws, v.witness, v.at) : (v.lines ?? []);
     return { lines, ...(v.translation === undefined ? {} : { translation: v.translation }) };
   });
-  if (verses.length === 0) throw new Error(`section "${s.title}" has no verses — give witness + lines, or verses`);
+  if (verses.length === 0) throw new Error(`section "${s.title ?? ''}" has no verses — give witness + lines, or verses`);
   const verseFrom = given.map((v) => (v.witness !== undefined && v.at !== undefined ? { witness: v.witness, at: v.at } : undefined));
-  return { section: { title: s.title, ...(s.cite === undefined ? {} : { cite: s.cite }), verses }, verseFrom };
+  return { section: { ...title, ...(s.cite === undefined ? {} : { cite: s.cite }), verses }, verseFrom };
 }
 
 /** Which witness lines each section, or each verse, was built from — what `check` compares. */
@@ -87,7 +87,7 @@ function recordSources(ws: Workspace, built: ReturnType<typeof sectionOf>[]): vo
     /* A verse given is a verse made, or the builder split one: a line inside
        it ends with a verse's number, which closes a verse in his files. */
     if (s.verses.length !== b.verseFrom.length) {
-      throw new Error(`section "${s.title}": ${b.verseFrom.length} verse(s) given, ${s.verses.length} made — a line inside a verse ends with a daṇḍa and a number; give each verse its own lines`);
+      throw new Error(`section "${s.title ?? s.id}": ${b.verseFrom.length} verse(s) given, ${s.verses.length} made — a line inside a verse ends with a daṇḍa and a number; give each verse its own lines`);
     }
     s.verses.forEach((v, j) => {
       const f = b.verseFrom[j];
@@ -130,17 +130,21 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
     writes: true,
     spec: {
       name: 'build_document',
-      description: 'Make a new document and mark it by the rules of its source. Each section takes its letters from a '
-        + 'witness (witness + lines: the source\'s own lines, grouped into verses by its own verse numbers), or from '
-        + 'verses you give (each verse: lines typed, or witness + at). Never retype a text you have a witness for.',
+      description: 'Make a new document, laid out as his own (the name, its locus, then the verses), and mark it by the rules '
+        + 'of its source. Each section takes its letters from a witness (witness + lines: the source\'s own lines, grouped '
+        + 'into verses by its own verse numbers), or from verses you give (each verse: lines typed, or witness + at). Never '
+        + 'retype a text you have a witness for. Names and loci in lower-case IAST, as he writes them: "puruṣa sūktam", '
+        + '"ṛgvedasaṁhitā 10.90".',
       parameters: params({
-        title: str('The document\'s title, as the person would say it.'),
+        title: str('The text\'s name: "nāsadīya sūktam".'),
+        locus: str('Where it is from: "ṛgvedasaṁhitā 10.129", "taittirīya āraṇyaka 3.12".'),
+        description: str('What it is, in one line of English: "The hymn of creation".'),
         source: SOURCE,
         sections: {
           type: 'array',
           items: params({
-            title: str('The section\'s heading.'),
-            cite: str('Where it is from: "Taittirīya Āraṇyaka 3.12", a book, a URL.'),
+            title: str('The section\'s own heading — only when the text has more than one section ("prathamo\'nuvākaḥ").'),
+            cite: str('That section\'s own source line, when it differs from the locus.'),
             witness: str('A witness id (w1…), with lines.'),
             lines: str('Its lines, 1-based inclusive: "12-58".'),
             verses: {
@@ -152,16 +156,21 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
                 translation: str('A translation of the verse.'),
               }),
             },
-          }, ['title']),
+          }),
         },
       }, ['title', 'source', 'sections']),
     },
     async run(args, { ws }) {
       const title = arg<string>(args, 'title', 'string');
+      const locus = opt<string>(args, 'locus', 'string');
+      const description = opt<string>(args, 'description', 'string');
       const source = arg<ChantProfileKey>(args, 'source', 'string');
       if (!CHANT_PROFILE_KEYS.includes(source)) throw new Error(`source must be one of ${CHANT_PROFILE_KEYS.join(', ')}`);
       const built = arg<SectionArg[]>(args, 'sections', 'array').map((s) => sectionOf(ws, s));
-      ws.open(documentOf({ title, sections: built.map((b) => b.section) }));
+      ws.open(documentOf({
+        title, ...(locus === undefined ? {} : { locus }), ...(description === undefined ? {} : { description }),
+        sections: built.map((b) => b.section),
+      }));
       recordSources(ws, built);
       ws.run({ k: 'profile', scope: 'document', preset: source });
       const marked = markAll(ws, 'keep-hand');

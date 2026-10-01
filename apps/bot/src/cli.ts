@@ -31,7 +31,8 @@ if (request === '') {
 }
 
 const config = loadConfig();
-const out = join(ROOT, 'out/agent');
+/* `AGENT_OUT` for a run where the checkout is read-only — inside the bot's container, `/tmp`. */
+const out = process.env.AGENT_OUT ?? join(ROOT, 'out/agent');
 mkdirSync(out, { recursive: true });
 const host = nodeHost(ROOT, async (file) => {
   writeFileSync(join(out, file.name), file.bytes);

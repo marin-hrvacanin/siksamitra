@@ -50,6 +50,24 @@ const settledKey = (v: ChantVerse): string => {
 const spaced = (s: string): string => s.replace(/[ \t ]+/g, ' ').replace(/ ?\n ?/g, '\n').trim();
 const cut = (s: string, n = 90): string => (s.length > n ? `${s.slice(0, n)}…` : s);
 
+/**
+ * The source's lines as the document would have them: built by the same
+ * builder and marked by the same rules in the same register. The rules
+ * TRANSFORM the accents — the Ṛgveda lengthens a svarita and draws its
+ * overline — so the text's own accents and the marked page's are not the same
+ * characters, and comparing them called every verse of the Nāsadīya Sūkta
+ * wrong. Both sides marked alike, a difference can only be a difference in
+ * what went in: a letter retyped, a verse dropped, an accent moved.
+ */
+function asMarked(o: Parameters<typeof documentOf>[0], doc: ChantDoc): ChantVerse[] {
+  const copy = new Workspace();
+  copy.open(documentOf(o));
+  const preset = doc.profile?.preset;
+  if (preset !== undefined) copy.run({ k: 'profile', scope: 'document', preset });
+  markAll(copy, 'keep-hand');
+  return copy.need().sections[0]?.verses ?? [];
+}
+
 export function checkDocument(ws: Workspace): Finding[] {
   const doc = ws.need();
   const out: Finding[] = [];
@@ -64,7 +82,7 @@ export function checkDocument(ws: Workspace): Finding[] {
       const vw = vf === undefined ? undefined : ws.witnesses.get(vf.witness);
       if (vf === undefined || vw === undefined) continue;
       const lines = vw.lines.slice(vf.from - 1, vf.to);
-      const again = documentOf({ title: '_', sections: [{ title: '_', verses: [{ lines }] }] }).sections[0]?.verses ?? [];
+      const again = asMarked({ title: '_', sections: [{ verses: [{ lines }] }] }, doc);
       const want = again.map((x) => spaced(verseLetters(x))).join('\n');
       const have = spaced(verseLetters(v));
       if (want !== have) out.push({ severity: 'error', where: v.id, what: `differs from ${vw.id} lines ${vf.from}-${vf.to}: has "${cut(have)}", the source "${cut(want)}"` });
@@ -74,7 +92,7 @@ export function checkDocument(ws: Workspace): Finding[] {
     const w = from === undefined ? undefined : ws.witnesses.get(from.witness);
     if (from !== undefined && w !== undefined) {
       const flow = w.lines.slice(from.from - 1, from.to);
-      const again = documentOf({ title: '_', sections: [{ title: '_', verses: [], flow }] }).sections[0]?.verses ?? [];
+      const again = asMarked({ title: '_', sections: [{ verses: [], flow }] }, doc);
       const want = again.map((v) => spaced(verseLetters(v)));
       const have = s.verses.map((v) => spaced(verseLetters(v)));
       if (want.length !== have.length) {
