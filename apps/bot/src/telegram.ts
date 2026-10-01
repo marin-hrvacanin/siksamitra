@@ -12,9 +12,10 @@
  *     message, said back in the chat so the conversation reads as it went;
  *   - every chat is worked on by itself — one person's long request does not
  *     hold up another's — and a chat's own messages one after another;
- *   - WHAT IT IS DOING IS SHOWN: a status line under the request, kept to
- *     the step it is on ("Reading a source…"), saying so when the model is
- *     slow, and taken away when the answer comes;
+ *   - WHAT IT IS DOING IS SHOWN: a checklist under the request, each step
+ *     with its detail and ticked when done ("✓ Looked in the library for
+ *     “gāyatrī” — found …"), the model's slowness said, and the list taken
+ *     away when the answer comes;
  *   - AN UPDATE DOES NOT CUT A REQUEST OFF: on stop, the bot takes no new
  *     message, finishes what it is working on, answers, and only then exits
  *     (the container gives it five minutes — `docker-compose.yml`).
@@ -25,7 +26,7 @@ import { ROOT, loadConfig } from './config.js';
 import { botCore, type BotReply, type Who } from './bot-core.js';
 import { nodeHost } from './host.js';
 import { fileLedger, fileSessions } from './store.js';
-import { TOOL_LABELS, plainOf, telegramPieces } from '@siksamitra/agent';
+import { plainOf, telegramPieces } from '@siksamitra/agent';
 
 const config = loadConfig();
 if (config.telegramToken === undefined) throw new Error('no TELEGRAM_BOT_TOKEN in .env');
@@ -43,18 +44,28 @@ const core = botCore({
   owners: config.owners,
   secrets: config.secrets,
   log: (line) => console.log(JSON.stringify({ at: new Date().toISOString(), ...line })),
-  progress: (chat, tool) => statuses.get(chat)?.step(TOOL_LABELS[tool] ?? 'Working'),
+  progress: (chat, step) => {
+    const status = statuses.get(chat);
+    if (status === undefined) return;
+    if ('started' in step) status.started(step.started); else status.finished(step.outcome, step.failed);
+  },
 });
 
 /**
- * The status line of one request: posted when the work is not quick, edited
- * as the steps go by (at most every two seconds, which Telegram allows), and
- * deleted when the answer comes.
+ * THE CHECKLIST OF ONE REQUEST — what the agent is doing, as it does it.
+ *
+ * Posted when the work is not quick, and edited as it goes (at most every
+ * two seconds, which Telegram allows): each step a line, ticked when done
+ * with what came of it, the current one last; when the model goes quiet
+ * for a minute, that is said too. Deleted when the answer comes.
  */
 class Status {
   private message: Promise<number | null> | null = null;
-  private text = 'Working';
+  private readonly lines: string[] = [];
+  private current = 'Thinking';
   private last = 0;
+  private slow = false;
+  private pending: ReturnType<typeof setTimeout> | undefined;
   private quiet: ReturnType<typeof setTimeout> | undefined;
   private readonly start: ReturnType<typeof setTimeout>;
 
@@ -63,34 +74,54 @@ class Status {
     this.listen();
   }
 
-  step(label: string): void {
-    this.text = label;
+  started(what: string): void {
+    this.current = what;
+    this.slow = false;
     this.listen();
-    if (this.message === null) return;
-    const now = Date.now();
-    if (now - this.last < 2000) return;
-    this.last = now;
-    void this.edit(`${label}…`);
+    this.render();
+  }
+
+  finished(outcome: string, failed: boolean): void {
+    this.lines.push(`${failed ? '✗' : '✓'} ${this.current}${outcome === '' ? '' : ` — ${outcome}`}`);
+    this.current = 'Thinking';
+    this.listen();
+    this.render();
   }
 
   async done(): Promise<void> {
     clearTimeout(this.start);
     clearTimeout(this.quiet);
+    clearTimeout(this.pending);
     const id = await this.message;
     if (id != null) await this.ctx.api.deleteMessage(this.ctx.chat!.id, id).catch(() => undefined);
   }
 
+  private text(): string {
+    const shown = this.lines.slice(-8);
+    const now = `⏳ ${this.current}…${this.slow ? ' (the model is slow just now; still working)' : ''}`;
+    return [...(this.lines.length > 8 ? ['…'] : []), ...shown, now].join('\n');
+  }
+
   private show(): void {
-    this.message = this.ctx.reply(`${this.text}…`).then((m) => m.message_id, () => null);
+    if (this.message !== null) return;
+    this.message = this.ctx.reply(this.text()).then((m) => m.message_id, () => null);
+  }
+
+  /* An edit at most every two seconds; the last one always goes. */
+  private render(): void {
+    if (this.message === null) return;
+    clearTimeout(this.pending);
+    const wait = Math.max(0, 2000 - (Date.now() - this.last));
+    this.pending = setTimeout(() => {
+      this.last = Date.now();
+      void this.edit(this.text());
+    }, wait);
   }
 
   /* A minute with no step: the model is taking its time — said, not hidden. */
   private listen(): void {
     clearTimeout(this.quiet);
-    this.quiet = setTimeout(() => {
-      if (this.message === null) this.show();
-      void this.edit(`${this.text}… the model is slow just now; still working.`);
-    }, 60_000);
+    this.quiet = setTimeout(() => { this.slow = true; this.show(); this.render(); }, 60_000);
   }
 
   private async edit(text: string): Promise<void> {

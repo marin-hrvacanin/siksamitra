@@ -19,7 +19,8 @@
  * `/new` forgets the chat's session; `/spent` says what has been spent.
  */
 import {
-  ModelError, OverBudget, Session, withoutPaths, type Delivered, type Host, type Ledger, type Limits, type Model, type Price,
+  ModelError, OverBudget, Session, stepResult, stepStarted, withoutPaths,
+  type Delivered, type Host, type Ledger, type Limits, type Model, type Price,
 } from '@siksamitra/agent';
 import { createHash } from 'node:crypto';
 import type { SessionStore } from './store.js';
@@ -38,8 +39,8 @@ export interface BotDeps {
   readonly owners?: ReadonlySet<string>;
   /** Strings that must never appear in a reply: the key, the token. */
   readonly secrets?: readonly string[];
-  /** Progress while a request is worked on — a tool's name. */
-  readonly progress?: (chat: string, what: string) => void;
+  /** Progress while a request is worked on: a step starting, or its outcome. */
+  readonly progress?: (chat: string, step: { readonly started: string } | { readonly outcome: string; readonly failed: boolean }) => void;
   /** One line per request for the server's log: never what was asked or answered. */
   readonly log?: (line: TurnLog) => void;
 }
@@ -124,7 +125,12 @@ export function botCore(deps: BotDeps) {
         const session = new Session({
           id: chat, user, mode: 'deliver', model: deps.model, price: deps.price, limits: deps.limits, ledger: deps.ledger,
           host: { ...deps.host(async (f) => { files.push(f); }), choose: (question, options) => { choices = { question, options }; } },
-          ...(deps.progress === undefined ? {} : { onEvent: (e) => { if (e.kind === 'tool') deps.progress!(chat, e.name); } }),
+          ...(deps.progress === undefined ? {} : {
+            onEvent: (e) => {
+              if (e.kind === 'tool') deps.progress!(chat, { started: stepStarted(e.name, e.args) });
+              if (e.kind === 'result') deps.progress!(chat, { outcome: stepResult(e.name, e.text, e.failed), failed: e.failed });
+            },
+          }),
         }, deps.sessions.load(chat));
         const started = Date.now();
         const note = (outcome: TurnLog['outcome'], steps = 0, cost = 0): void => deps.log?.({

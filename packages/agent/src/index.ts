@@ -23,6 +23,7 @@ export type { BuiltFrom, Origin, Witness } from './workspace.js';
 export { runTurn, capped, withoutPaths } from './loop.js';
 export type { AgentEvent, TurnOptions, TurnResult } from './loop.js';
 export { TOOL_LABELS, systemFor, toolsFor } from './modes.js';
+export { stepResult, stepStarted } from './steps.js';
 export type { Mode } from './modes.js';
 export { Session, compact } from './session.js';
 export type { SessionOptions, SessionState } from './session.js';
