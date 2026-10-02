@@ -105,3 +105,9 @@ describe('a stanza told from prose', () => {
     expect(layoutOf(Array.from({ length: 10 }, () => 'tvame̱va pra̱tyakṣa̱ṁ brahmā̍-si ।'))).toBe('hang');
   });
 });
+
+describe('a final consonant carrying an accent of his', () => {
+  it('keeps the accent and takes the tick after it (agnimīḻe 1)', () => {
+    expect(clipped('ya̱jñasya̅̍ de̱vamṛ̱-tvijam̎ ।')).toBe('ya̱jñasya̅̍ de̱vamṛ̱-tvijam̎ˎ।');
+  });
+});

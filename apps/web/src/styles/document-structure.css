@@ -21,9 +21,14 @@
   line-height: calc(var(--doc-verse-size) * var(--doc-verse-lead));
   margin: 0 var(--doc-verse-right) 0 calc(var(--doc-verse-indent) - var(--doc-verse-hanging));
 }
+/* A REMARK IN BODY TEXT is his `Normal` paragraph with its mark in `Comment`
+   (krimi saṁhāraka's "The taittirīya āraṇyaka germ-destroying mantra"): the
+   comment's face on Normal's line and Normal's space after. It once took the
+   translation's, and the verse under it stood 5.6 pt high. */
 .doc .doc__source--body {
-  margin: 0 var(--doc-translation-right) var(--doc-translation-after) var(--doc-translation-indent);
-  text-indent: calc(-1 * var(--doc-translation-hanging));
+  margin: 0 var(--doc-body-right) var(--doc-body-after) var(--doc-body-indent);
+  line-height: var(--doc-body-lead);
+  text-indent: calc(-1 * var(--doc-body-hanging));
   white-space: pre-line;
 }
 
@@ -105,7 +110,7 @@
 .doc .pada { position: relative; top: var(--doc-verse-shift); }
 .doc .doc__translation { position: relative; top: var(--doc-translation-shift); }
 .doc .doc__source--verse { position: relative; top: var(--doc-comment-on-verse-shift); }
-.doc .doc__source--body { position: relative; top: var(--doc-translation-shift); }
+.doc .doc__source--body { position: relative; top: var(--doc-body-shift); }
 .doc .doc__instruction { position: relative; top: var(--doc-body-shift); }
 .doc .doc__name { position: relative; top: var(--doc-part-shift); }
 .doc .doc__part { position: relative; top: var(--doc-section-shift); }

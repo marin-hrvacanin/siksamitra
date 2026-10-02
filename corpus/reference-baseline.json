@@ -1,8 +1,8 @@
 {
   "DevI MAhAtmyam v6.62 - New Gita - IAST.docx": {
-    "matched": 34269,
-    "syllables": 35504,
-    "verses": 1229
+    "matched": 34404,
+    "syllables": 35501,
+    "verses": 1230
   },
   "Rudra kṣamā prārthana.docx": {
     "matched": 0,
@@ -10,38 +10,58 @@
     "verses": 0
   },
   "Veda Union sAdhanA v9.1.13 IAST.docx": {
-    "matched": 13901,
-    "syllables": 14594,
-    "verses": 384
+    "matched": 13948,
+    "syllables": 14592,
+    "verses": 386
+  },
+  "Veda Union sAdhanA v9.1.13 IAST.pdf": {
+    "matched": 14167,
+    "syllables": 14983,
+    "verses": 361
   },
   "Veda Union sAdhanA v9.1.4 IAST.docx": {
-    "matched": 13482,
-    "syllables": 14119,
-    "verses": 384
+    "matched": 13525,
+    "syllables": 14116,
+    "verses": 386
+  },
+  "agnimīḻe sūktam IAST v0.1.pdf": {
+    "matched": 239,
+    "syllables": 245,
+    "verses": 10
   },
   "krimi saṁhāraka sūktam v0 IAST.docx": {
-    "matched": 117,
+    "matched": 118,
+    "syllables": 122,
+    "verses": 3
+  },
+  "krimi saṁhāraka sūktam v0 IAST.pdf": {
+    "matched": 118,
     "syllables": 122,
     "verses": 3
   },
   "parjanya sūktam v0.1.docx": {
-    "matched": 455,
+    "matched": 458,
     "syllables": 504,
     "verses": 11
   },
   "rudram v1.622 - IAST.docx": {
-    "matched": 6831,
+    "matched": 6845,
     "syllables": 7017,
     "verses": 189
   },
   "śrī kanakadhārā stotram v1.29 - IAST.docx": {
-    "matched": 1141,
+    "matched": 1143,
     "syllables": 1176,
     "verses": 23
   },
   "śrī mīnākṣī pañcaratna stotram v1.2 - IAST.docx": {
-    "matched": 398,
+    "matched": 399,
     "syllables": 404,
     "verses": 6
+  },
+  "śrī_kanakadhārā_&_śiva_pañcākṣara_stotram_v1_3_Devanagari_joined.docx": {
+    "matched": 1380,
+    "syllables": 1455,
+    "verses": 29
   }
 }

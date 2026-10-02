@@ -159,7 +159,8 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
         title: str('The text\'s name: "bhū sūktam".'),
         subtitle: str('Under the name: its tradition ("kṛṣṇa yajurvedīya", "ṛgvedīya", "śukla yajurvedīya") or its other name ("saṁnyāsa sūktam").'),
         locus: str('Where it is from: "taittirīya saṁhitā 1.5.3", "ṛgvedasaṁhitā 10.129" — the source line above the verses.'),
-        description: str('What it is, in one line of English: "The hymn of creation".'),
+        description: str('What it is, in one line of English: "The hymn of creation". For the website; not shown on the page.'),
+        remark: str('Only when his page would carry one: a remark under the name, shown in small grey ("The taittirīya āraṇyaka germ-destroying mantra").'),
         source: SOURCE,
         sections: {
           type: 'array',
@@ -203,12 +204,14 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
       const locus = opt<string>(args, 'locus', 'string');
       const subtitle = opt<string>(args, 'subtitle', 'string');
       const description = opt<string>(args, 'description', 'string');
+      const remark = opt<string>(args, 'remark', 'string');
       const source = arg<ChantProfileKey>(args, 'source', 'string');
       if (!CHANT_PROFILE_KEYS.includes(source)) throw new Error(`source must be one of ${CHANT_PROFILE_KEYS.join(', ')}`);
       const built = arg<SectionArg[]>(args, 'sections', 'array').map((s) => sectionOf(ws, s));
       ws.open(documentOf({
         title, ...(subtitle === undefined ? {} : { subtitle }), ...(locus === undefined ? {} : { locus }),
         ...(description === undefined ? {} : { description }),
+        ...(remark === undefined ? {} : { remark }),
         sections: built.map((b) => b.section),
       }));
       recordSources(ws, built);

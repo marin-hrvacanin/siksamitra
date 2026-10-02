@@ -26,12 +26,13 @@ const REFERENCE = new RegExp(`(?:\\s*[।॥|]{0,2}\\s*${DIGIT}+(?:\\s*[।|.]\\
 const LEADING_NUMBER = new RegExp(`^${DIGIT}+\\s+(?=\\S)`, 'u');
 /** The end of a verse as the source wrote it: daṇḍas, maybe a number between. */
 const ENDING = new RegExp(`\\s*(?:[।॥|]{1,2}\\s*${DIGIT}*\\s*[।॥|]{0,2})\\s*$`, 'u');
-/** A word's last consonant, right before a daṇḍa. */
-const FINAL_STOP = /([kgcjṭḍtdpbṅñṇnmyrlvśṣs])[ \t]*(?=[।॥|])/gu;
+/** A word's last consonant, right before a daṇḍa — an accent of his on it
+ *  (agnimīḻe's `devamṛtvijam̎ˎ।`) stays with it, before the tick. */
+const FINAL_STOP = /([kgcjṭḍtdpbṅñṇnmyrlvśṣs])(\p{M}*)[ \t]*(?=[।॥|])/gu;
 export const VIRAMA_TICK = 'ˎ';
 
 /** Each word-final consonant before a daṇḍa, clipped with the tick. */
-export const clipped = (line: string): string => line.replace(FINAL_STOP, `$1${VIRAMA_TICK}`);
+export const clipped = (line: string): string => line.replace(FINAL_STOP, `$1$2${VIRAMA_TICK}`);
 
 /** A source's line with its apparatus taken off. */
 export function cleanLine(line: string): string {

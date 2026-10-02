@@ -88,6 +88,12 @@ export interface Outline {
   readonly locus?: string;
   /** What it is, in a line of English — for the website. */
   readonly description?: string;
+  /**
+   * A remark of his under the name and tradition, in the comment's small
+   * grey as body text — krimi saṁhāraka's "The taittirīya āraṇyaka
+   * germ-destroying mantra". Shown on the page, where `description` is not.
+   */
+  readonly remark?: string;
   readonly sections: readonly OutlineSection[];
 }
 
@@ -127,6 +133,10 @@ export function versesOfFlow(flow: readonly string[]): OutlineVerse[] {
 export function paragraphsOf(o: Outline): WordParagraph[] {
   const out: WordParagraph[] = [para('Heading2', [wordRun(o.title)])];
   if (o.subtitle !== undefined && o.subtitle.trim() !== '') out.push(para('Heading3', [wordRun(o.subtitle.trim())]));
+  /* A remark is a body paragraph in his comment style, where a source is a mantra line's. */
+  for (const line of (o.remark ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== '')) {
+    out.push(para(null, [wordRun(line, 'Comment')]));
+  }
   let n = 0;
   const counted = (v: OutlineVerse): boolean => v.numbered !== false;
   const total = o.sections.reduce((k, s) => k + [...versesOfFlow(s.flow ?? []), ...s.verses].filter(counted).length, 0);

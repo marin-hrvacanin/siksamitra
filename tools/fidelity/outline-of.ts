@@ -59,10 +59,17 @@ export function outlineOfPdf(path: string): Outline {
       verses: s.verses.map(verseOf),
     });
   }
+  /* His remark under the heading: a note in body text, before the first verse. */
+  const remark = [
+    ...(doc.front ?? []).filter((n) => n.comment === 'body').map((n) => n.text.en ?? ''),
+    ...(first?.items ?? []).filter((it) => it.t === 'instruction' && it.instruction.comment === 'body')
+      .map((it) => (it.t === 'instruction' ? it.instruction.text.en ?? '' : '')),
+  ].filter((t) => t !== '').join('\n');
   return {
     title: doc.title,
     ...(first?.title ? { subtitle: first.title } : {}),
     ...(first?.source ? { locus: first.source } : {}),
+    ...(remark === '' ? {} : { remark }),
     sections,
   };
 }

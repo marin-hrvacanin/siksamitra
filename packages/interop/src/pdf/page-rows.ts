@@ -57,6 +57,9 @@ export interface PdfRow {
  */
 const HANGING = 8;
 const COMMENT_GAP = 20;
+/** Under a heading, a remark in body text stands 21.7 pt down (krimi
+ *  saṁhāraka), a comment on a mantra line 29 to 31 (bhū sūktam, sūryopaniṣat). */
+const REMARK_GAP = 26;
 
 /** The character style a text event is written in, as his Word files write it. */
 function styleOf(e: Extract<PdfEvent, { kind: 'text' }>): string | null {
@@ -126,6 +129,11 @@ export function paragraphsOfRows(rows: readonly PdfRow[]): WordParagraph[] {
     if (row.cls === 'small') {
       if (open?.pStyle === 'Prijevod' && hangs(row) && (gap === undefined || gap < COMMENT_GAP)) {
         open.para.runs.push(wordRun(`\n${text}`));
+        continue;
+      }
+      if (last !== undefined && (last.cls === 'title' || last.cls === 'subtitle') && gap !== undefined && gap < REMARK_GAP) {
+        out.push({ pStyle: null, runs: [wordRun(text, 'Comment')] });
+        open = null;
         continue;
       }
       const comment = gap === undefined ? last?.cls !== 'shloka' && open?.pStyle !== 'Prijevod' : gap >= COMMENT_GAP;

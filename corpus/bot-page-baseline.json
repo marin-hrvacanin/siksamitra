@@ -1,8 +1,35 @@
 {
-  "Veda Union sAdhanA v9.1.13 IAST.pdf": { "skip": "a book of 79 sections — the bot makes single texts" },
-  "agnimīḻe sūktam IAST v0.1.pdf": { "source": "rigveda" },
-  "bhū sūktam v1.1.pdf": { "source": "taittiriya" },
-  "krimi saṁhāraka sūktam v0 IAST.pdf": { "source": "taittiriya" },
-  "pūrṇakumbha mantra v0.pdf": { "source": "taittiriya" },
-  "sūryopaniṣat v0.pdf": { "source": "rigveda" }
+  "Veda Union sAdhanA v9.1.13 IAST.pdf": {
+    "skip": "a book of 79 sections — the bot makes single texts"
+  },
+  "agnimīḻe sūktam IAST v0.1.pdf": {
+    "source": "rigveda",
+    "perfect": 33,
+    "lines": 46,
+    "pages": "2/2"
+  },
+  "krimi saṁhāraka sūktam v0 IAST.pdf": {
+    "source": "taittiriya",
+    "perfect": 23,
+    "lines": 23,
+    "pages": "1/1"
+  },
+  "bhū sūktam v1.1.pdf": {
+    "source": "taittiriya",
+    "perfect": 73,
+    "lines": 77,
+    "pages": "2/2"
+  },
+  "pūrṇakumbha mantra v0.pdf": {
+    "source": "taittiriya",
+    "perfect": 28,
+    "lines": 30,
+    "pages": "1/1"
+  },
+  "sūryopaniṣat v0.pdf": {
+    "source": "rigveda",
+    "perfect": 167,
+    "lines": 174,
+    "pages": "5/5"
+  }
 }

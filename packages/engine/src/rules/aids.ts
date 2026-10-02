@@ -18,7 +18,12 @@ import type { Elem } from '../lex.js';
 import type { RuleCtx } from './types.js';
 
 /**
- * A dot on a `ś ṣ h` immediately preceded by `r`.
+ * A dot on a `ś ṣ h` immediately preceded by `r`, IN ONE WORD.
+ *
+ * Measured on his files (2026-10-02): inside a word he dots it 109 times in
+ * 110 — the sādhanā 23 of 23, rudram v1.622 15 of 15, Devī v6.62 71 of 72 —
+ * and across a word boundary never, 6 times of 6 (`sthapatir hataḥ`, Devī's
+ * five). This once carried the `r` over word spaces.
  *
  * The trigger set in `sanskrit_rules.js` is far too wide taken literally — it
  * would fire on `kṣ`, `sm`, `śś`, `ts` and the owner marks none of those.
@@ -31,14 +36,14 @@ import type { RuleCtx } from './types.js';
  * contacts for that reason.
  */
 export function applySvarabhakti(ctx: RuleCtx): void {
-  let prev: Elem | null = null; // the last LETTER, across word spaces
+  let prev: Elem | null = null; // the last LETTER of the word being read
   ctx.elems.forEach((e, i) => {
     if (e.kind !== 'letter') {
       // A pause or line break separates the two.
       prev = null;
       return;
     }
-    if (SBHAKTI_TRIGGERS.has(e.ch) && prev !== null && prev.ch === SBHAKTI_AFTER) {
+    if (SBHAKTI_TRIGGERS.has(e.ch) && prev !== null && prev.ch === SBHAKTI_AFTER && prev.word === e.word) {
       e.sbhakti = true;
       ctx.trace(i, `svarabhakti before ${e.ch} after r`, 'svarabhakti.r-sibilant');
     }
