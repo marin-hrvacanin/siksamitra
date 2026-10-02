@@ -18,12 +18,14 @@ export interface NodeHost extends Host {
 /**
  * `look`: the page it made, as a picture — given to the agent only when its
  * model takes pictures (`Model.sees`; the session decides, for every host).
+ * `own`: where his own documents are (`library.ts`) — the server's data
+ * directory; on his machine, `Library/bot-library/` when it is left out.
  */
-export function nodeHost(root: string, deliver: (file: Delivered) => Promise<void>): NodeHost {
+export function nodeHost(root: string, deliver: (file: Delivered) => Promise<void>, own?: string): NodeHost {
   const exporters = nodeExporters();
   return {
     where: 'a Telegram chat: what you deliver is sent into the chat as a file',
-    library: diskLibrary(root),
+    library: diskLibrary(root, own),
     research: webResearch(),
     exporters,
     deliver,

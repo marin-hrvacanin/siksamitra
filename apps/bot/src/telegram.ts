@@ -41,7 +41,7 @@ const core = botCore({
   limits: config.limits,
   ledger: fileLedger(join(config.dataDir, 'ledger.jsonl')),
   sessions: fileSessions(join(config.dataDir, 'sessions')),
-  host: (deliver) => nodeHost(ROOT, deliver),
+  host: (deliver) => nodeHost(ROOT, deliver, join(config.dataDir, 'library')),
   allowed: config.allowed,
   ...(config.contact === undefined ? {} : { contact: config.contact }),
   owners: config.owners,

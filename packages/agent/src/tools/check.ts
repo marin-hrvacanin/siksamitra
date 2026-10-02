@@ -285,6 +285,16 @@ export const CHECK_TOOLS: readonly Tool[] = [
       const format = asked as DeliveryFormat;
       const make = host.exporters?.[format];
       if (make === undefined) return `this host cannot make a ${format}`;
+      /* HIS OWN FILE, AS IT IS — a text of his, opened and not changed since,
+         asked for in the format he made it in, is sent as his bytes: nothing a
+         conversion could alter reaches the person (`Library.original`). */
+      const his = ws.opened !== null && ws.opened.doc === doc && host.library?.original !== undefined
+        ? await host.library.original(ws.opened.id) : null;
+      if (his !== null && his.name.toLowerCase().endsWith(`.${format === 'vedaunion' ? 'vuchant' : format}`)) {
+        if (host.deliver === undefined) return `his own ${his.name} is the file, but this host cannot hand it over`;
+        await host.deliver({ name: his.name, mime: MIME[format], bytes: his.bytes, format, summary });
+        return `delivered his own file, ${his.name} (${Math.round(his.bytes.length / 1024)} KB), as he made it`;
+      }
       const stem = (opt<string>(args, 'name', 'string') ?? doc.title).replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'document';
       const file = await make(doc, stem);
       if (host.deliver === undefined) return `made ${file.name} (${Math.round(file.bytes.length / 1024)} KB), but this host cannot hand it over`;

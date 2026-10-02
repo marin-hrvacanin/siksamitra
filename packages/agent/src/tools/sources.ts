@@ -15,7 +15,7 @@
 import { toIast } from '@siksamitra/engine';
 import { asIast } from '../letters.js';
 import { fold } from '../library.js';
-import { outlineOf, versesOf, type Witness, type Workspace } from '../workspace.js';
+import { outlineOf, verseLetters, versesOf, type Witness, type Workspace } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
 
 /* Devanāgarī LETTERS — not the daṇḍas and digits an IAST line has too: a
@@ -130,13 +130,15 @@ export const SOURCE_TOOLS: readonly Tool[] = [
     needs: 'library',
     spec: {
       name: 'find_text',
-      description: 'Look for a text in the library: the verified corpus (already marked and checked — prefer it) and the owner\'s own files.',
+      description: 'Look for a text in the library: the verified corpus and his own documents. Each is shown with its tradition, its locus and its FIRST WORDS — what tells the text asked for from a namesake.',
       parameters: params({ query: str('A title or a few words: "puruṣa sūktam", "rudram", "durgā".') }, ['query']),
     },
     async run(args, { host }) {
       const hits = await host.library!.find(arg<string>(args, 'query', 'string'));
       if (hits.length === 0) return 'nothing in the library matches — search the web';
-      return hits.slice(0, 12).map((h) => `${h.id} · ${h.title} · ${h.kind}${h.source === undefined ? '' : ` · ${h.source}`}${h.note === undefined ? '' : ` · ${h.note}`}`).join('\n');
+      return hits.slice(0, 12).map((h) => `${h.id} · ${h.title} · ${h.kind === 'verified' ? 'verified' : 'his own'}`
+        + `${h.source === undefined ? '' : ` · ${h.source}`}${h.note === undefined ? '' : ` · ${h.note}`}`
+        + `${h.first === undefined ? '' : ` · begins "${h.first}"`}`).join('\n');
     },
   },
   {
@@ -152,7 +154,49 @@ export const SOURCE_TOOLS: readonly Tool[] = [
       const { doc } = await host.library!.load(id);
       /* Verified or his own: its marks are its author's, kept as they are. */
       ws.open(doc, 'author');
+      ws.opened = { id, doc: ws.need() };
       return `${outlineOf(ws.need())}\n\n(its marks are its author's: deliver it as it is; the rules are not run over it unless the person asks)`;
+    },
+  },
+  {
+    writes: false,
+    needs: 'library',
+    spec: {
+      name: 'read_example',
+      description: 'Read a library text — one of his own documents best — as an EXAMPLE of how he sets such a text: his word breaks and junctions, his lines and layout, his sources and translations. '
+        + 'It is NOT opened as the document, and nothing of it is delivered.',
+      parameters: params({
+        id: str('Its id from find_text.'),
+        verses: str('Which of its verses, as 1-4 — at most eight. The first four when left out.'),
+      }, ['id']),
+    },
+    async run(args, { host }) {
+      /* AN EXAMPLE CANNOT BE SENT. Read here and never opened, so the document
+         the person gets is the one the agent built — his own concern: "I don't
+         want it to misinterpret something as being found in the library and
+         send something wrong, but it is nice as an example" (2026-10-02). */
+      const { doc } = await host.library!.load(arg<string>(args, 'id', 'string'));
+      const all = doc.sections.flatMap((s) => s.verses.map((v) => ({ s, v })));
+      if (all.length === 0) return 'it has no verses to show';
+      /* As much of the range as the text has: an example is read, not cited. */
+      const spec = opt<string>(args, 'verses', 'string') ?? '1-4';
+      const m = /^\s*(\d+)\s*(?:-\s*(\d+))?\s*$/u.exec(spec);
+      if (m === null) throw new Error(`"${spec}" is not a range of verses like 1-4`);
+      const a = Math.min(Math.max(1, Number(m[1])), all.length);
+      const b = Math.min(all.length, Math.max(a, Number(m[2] ?? m[1])), a + 7);
+      const head = [doc.subtitle, doc.source].filter((x) => typeof x === 'string' && x.trim() !== '').join(' · ');
+      const out = [`AN EXAMPLE, not the document: "${doc.title}"${head === '' ? '' : ` · ${head}`} — verses ${a}-${b} of ${all.length}`];
+      let section: string | null = null;
+      for (const { s, v } of all.slice(a - 1, b)) {
+        if (s.id !== section) {
+          section = s.id;
+          const named = [s.title, s.source].filter((x) => typeof x === 'string' && x.trim() !== '').join(' · ');
+          if (named !== '') out.push(`[${named}]`);
+        }
+        for (const line of verseLetters(v).split('\n')) out.push(`  ${line}`);
+        if (v.translation?.en !== undefined) out.push(`  — ${v.translation.en.replace(/\n/g, ' / ')}`);
+      }
+      return out.join('\n');
     },
   },
   {

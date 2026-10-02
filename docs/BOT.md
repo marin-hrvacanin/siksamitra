@@ -60,6 +60,37 @@ See `.env.example`. The ones that matter:
 
 After changing it: `cd /srv/apps/siksamitra-bot && docker compose up -d`.
 
+## His own documents in its library
+
+Besides the verified corpus, the bot's library holds the owner's own
+documents — kept on the server only, in the data directory's `library/`,
+never in the image or the repository. They are made on his machine, where
+his PDFs can be read:
+
+```bash
+PATH=.venv/Scripts:$PATH npx tsx --conditions=development tools/bot-library.ts   # → Library/bot-library/
+tar -C Library -cf - bot-library | ssh root@<server> 'cd /srv/apps/siksamitra-bot/data &&
+  rm -rf library && mkdir library.new && tar -C library.new -xf - && mv library.new/bot-library library &&
+  rmdir library.new && chown -R 1000:1000 library && chmod 700 library'
+```
+
+Each of his files is read as `sm import` reads it, kept as a `.smdoc` beside a
+copy of the file itself, with an index of its name (from the file's name —
+the importer's title is often a first heading such as "śrī śaṅkarācārya
+kṛta"), version, script, tradition, locus, first words and verses. Run it
+again after he changes a document; the bot reads the folder when it starts.
+
+What keeps a text of his from being sent wrongly:
+
+- `find_text` shows each with its tradition, its locus and its first words,
+  and the prompt allows a library text to be delivered only when it IS the
+  text asked for — not a namesake, not a text that contains it, not a section
+  of a larger one unless that section is what was asked;
+- opened and untouched, asked for in the format he made it in, it is sent as
+  **his own file**, byte for byte — nothing a conversion could alter;
+- as an example — how he sets such a text — it is read with `read_example`,
+  which never opens it, so an example cannot be sent.
+
 ## Conversations, and a new task
 
 Each chat is one conversation, kept between messages, and `/new` starts it

@@ -75,11 +75,19 @@ export class Workspace {
     return this.state.doc;
   }
 
+  /**
+   * The library text that is open, as it was opened — `open_text` says so.
+   * While the document IS that one, untouched, `deliver` may send his own
+   * file instead of a file made from it.
+   */
+  opened: { readonly id: string; readonly doc: ChantDoc } | null = null;
+
   open(doc: ChantDoc, origin: Origin = 'built'): void {
     this.state = newState(doc);
     this.history = emptyHistory();
     this.builtFrom.clear();
     this.origin = origin;
+    this.opened = null;
   }
 
   /** A witness kept, under a fresh id. */

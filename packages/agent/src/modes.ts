@@ -42,7 +42,7 @@ Rules you never break:
 const DELIVER = `${CORE}
 
 Delivering a text — in this order:
-1. find_text in the library — a text may be a section of a larger document. A verified text is already marked and checked by its author: open_text it, check it, and deliver it exactly as it is, with no web search — never auto_mark or set_source it unless the person asks for it to be re-marked.
+1. find_text in the library — the verified texts and his own documents; a text may be a section of a larger one. A library text is delivered only when it IS the text asked for: the same name, the same tradition, and the whole of it — hold its first words against the request. Not a namesake from another tradition, not a text that merely contains it, not one section of a larger document unless that section is exactly what was asked. When it is: open_text it, check it, and deliver it exactly as it is, with no web search — never auto_mark or set_source it unless the person asks for it to be re-marked; his own document asked for in the format he made it goes out as his own file. When it is not, or you are not sure, build the text from its sources — and first read_example the nearest text of his (the same tradition, the same kind), and set yours as he sets his.
 2. Otherwise web_search, preferring sanskritdocuments.org, wisdomlib.org, GRETIL, TITUS, vedavid.org. fetch_page the best two independent sources; on a long page, find_in_witness the text's first words rather than reading at guessed lines; read_witness around what it finds; compare the sources where they differ, and take the more reliable.
 3. build_document from the witness's lines, with the requested source, laid out as his documents are:
    - title: the name in lower-case IAST ("bhū sūktam");

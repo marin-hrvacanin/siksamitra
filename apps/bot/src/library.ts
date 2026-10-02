@@ -1,11 +1,15 @@
 /**
- * THE LIBRARY ON DISK — the verified corpus first, then the owner's own files.
+ * THE LIBRARY ON DISK — the verified corpus, then the owner's own documents.
  *
  * `corpus/chants/*.json` are marked and checked: the agent opens one and
- * delivers it as it is. `Library/reference/` (his .docx files, present on his
- * machine and on his server, never in the repository) is read the way the app
- * opens them, `openDocumentFile`. Titles are matched with the diacritics and
- * the usual spellings folded — "purusha" finds "puruṣa".
+ * delivers it as it is. HIS OWN DOCUMENTS are a folder `tools/bot-library.ts`
+ * writes from his files, on his machine — each read as `sm import` reads it,
+ * kept as the lossless `.smdoc` beside a copy of his own file, and an index
+ * of what tells one text from another: title, version, tradition, locus,
+ * first words, verses. On the server the folder is the data directory's
+ * `library/`, outside the image and outside the repository; on his machine,
+ * `Library/bot-library/`. Titles are matched with the diacritics and the
+ * usual spellings folded — "purusha" finds "puruṣa".
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { basename, join } from 'node:path';
@@ -17,7 +21,27 @@ import { findIn, indexEntries, sectionDoc, type Library, type LibraryEntry } fro
 
 interface Entry extends LibraryEntry { readonly path: string }
 
-export function diskLibrary(root: string): Library {
+/** One of his documents, as `tools/bot-library.ts` writes it into `index.json`. */
+export interface HisDocument {
+  /** `his:<slug>`; a section is `his:<slug>#<section>`. */
+  readonly id: string;
+  readonly title: string;
+  /** Out of his file's name: `v1.1`. */
+  readonly version?: string;
+  /** The script his file is written in. */
+  readonly script: 'IAST' | 'Devanāgarī';
+  /** His own file, copied beside the document as it is. */
+  readonly file: string;
+  /** The document, as the importer read it. */
+  readonly smdoc: string;
+  readonly tradition?: string;
+  readonly locus?: string;
+  readonly first: string;
+  readonly verses: number;
+  readonly sections: readonly { readonly id: string; readonly title: string; readonly first: string; readonly verses: number }[];
+}
+
+export function diskLibrary(root: string, his = join(root, 'Library', 'bot-library')): Library {
   const entries: Entry[] = [];
   const corpus = join(root, 'corpus/chants');
   if (existsSync(corpus)) {
@@ -26,30 +50,44 @@ export function diskLibrary(root: string): Library {
       for (const e of indexEntries(basename(f, '.json'), JSON.parse(readFileSync(path, 'utf8')))) entries.push({ ...e, path });
     }
   }
-  const reference = join(root, 'Library/reference');
-  if (existsSync(reference)) {
-    for (const f of readdirSync(reference).filter((n) => /\.(docx|smdoc|vuchant)$/i.test(n))) {
-      entries.push({ id: `ref:${f}`, title: f.replace(/\.[a-z]+$/i, ''), kind: 'reference', path: join(reference, f) });
+  const index = join(his, 'index.json');
+  const own: readonly HisDocument[] = existsSync(index) ? JSON.parse(readFileSync(index, 'utf8')) as HisDocument[] : [];
+  for (const h of own) {
+    const named = `${h.title}${h.version === undefined ? '' : ` ${h.version}`}`;
+    const path = join(his, h.smdoc);
+    entries.push({
+      id: h.id, title: named, kind: 'reference', path, first: h.first,
+      ...(h.tradition === undefined ? {} : { source: h.tradition }),
+      note: `his own document, in ${h.script}, ${h.verses} verses${h.locus === undefined ? '' : ` · ${h.locus}`}`,
+    });
+    for (const s of h.sections) {
+      entries.push({ id: `${h.id}#${s.id}`, title: `${s.title} — in ${named}`, kind: 'reference', path, first: s.first, note: `a section of his document, ${s.verses} verse(s)` });
     }
   }
   return {
     async find(query) {
-      return findIn(entries, query).map(({ id, title, kind, source, note }) => ({
+      return findIn(entries, query).map(({ id, title, kind, source, note, first }) => ({
         id, title, kind, ...(source === undefined ? {} : { source }), ...(note === undefined ? {} : { note }),
+        ...(first === undefined ? {} : { first }),
       }));
     },
     async load(id): Promise<{ doc: ChantDoc; kind: LibraryEntry['kind'] }> {
       const e = entries.find((x) => x.id === id);
       if (e === undefined) throw new Error(`no library text "${id}"`);
+      const section = id.split('#')[1];
+      let doc: ChantDoc;
       if (e.kind === 'verified') {
         const read = readChantFile(readFileSync(e.path, 'utf8'));
         if (!read.ok) throw new Error(read.error);
-        const doc = openChantDoc(read.doc);
-        const section = id.split('#')[1];
-        return { doc: section === undefined ? doc : sectionDoc(doc, section), kind: e.kind };
+        doc = openChantDoc(read.doc);
+      } else {
+        doc = openChantDoc((await openDocumentFile(new Uint8Array(readFileSync(e.path)), basename(e.path))).doc);
       }
-      const opened = await openDocumentFile(new Uint8Array(readFileSync(e.path)), basename(e.path));
-      return { doc: openChantDoc(opened.doc), kind: e.kind };
+      return { doc: section === undefined ? doc : sectionDoc(doc, section), kind: e.kind };
+    },
+    async original(id) {
+      const h = own.find((x) => x.id === id);
+      return h === undefined ? null : { name: h.file, bytes: new Uint8Array(readFileSync(join(his, h.file))) };
     },
   };
 }

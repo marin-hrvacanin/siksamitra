@@ -24,11 +24,19 @@ export interface LibraryEntry {
   /** `verified`: marked and checked, use as it is. `reference`: his own files. */
   readonly kind: 'verified' | 'reference';
   readonly note?: string;
+  /** Its first words — what tells the text asked for from a namesake. */
+  readonly first?: string;
 }
 
 export interface Library {
   find(query: string): Promise<readonly LibraryEntry[]>;
   load(id: string): Promise<{ readonly doc: ChantDoc; readonly kind: LibraryEntry['kind'] }>;
+  /**
+   * His own file, as he made it — for a whole text of his: delivered unchanged
+   * and in its own format, it is sent as these bytes, so nothing a conversion
+   * could alter reaches the person. Null for anything else.
+   */
+  original?(id: string): Promise<{ readonly name: string; readonly bytes: Uint8Array } | null>;
 }
 
 export interface SearchHit { readonly title: string; readonly url: string; readonly snippet: string }

@@ -64,7 +64,7 @@
     "build:layout": "npm run -w @siksamitra/layout build",
     "check:modules": "node tools/check-modules.mjs",
     "run": "node scripts/run.mjs",
-    "build:web": "npm run -w @siksamitra/web build && node tools/build-stamp.mjs --write apps/web/dist",
+    "build:web": "tsc -b && npm run -w @siksamitra/web build && node tools/build-stamp.mjs --write apps/web/dist",
     "design": "tsx tools/design/preview.mjs",
     "fonts": "node tools/fonts/fetch.mjs && node tools/fonts/gen-css.mjs",
     "fonts:css": "node tools/fonts/gen-css.mjs",
