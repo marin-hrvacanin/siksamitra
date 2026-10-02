@@ -13,7 +13,7 @@
 import type { ChantSvara } from '@siksamitra/format';
 import { parseLetters } from '../alphabet.js';
 import type { RuleCtx } from './types.js';
-import { MARK_CHAR, PLAN_MARK } from './svara.js';
+import { PLAN_MARK, SVARA_TEXT, kampaOf } from './svara.js';
 
 /**
  * What is NOT a letter in a witness line.
@@ -67,7 +67,9 @@ export function applyAttestedSvara(ctx: RuleCtx, accented: string[]): void {
   const perLine: (ChantSvara | null)[][] = accented.map((line) => {
     const slots: (ChantSvara | null)[] = [];
     for (const letter of parseLetters(line)) {
-      const mark = PLAN_MARK.get(letter);
+      /* A kampa is its vowel's svara and takes no slot: counted as a letter,
+         it put every accent after it one letter late. */
+      const mark = PLAN_MARK.get(letter) ?? kampaOf(letter);
       if (mark !== undefined) {
         if (slots.length > 0) slots[slots.length - 1] = mark;
         continue;
@@ -127,7 +129,7 @@ export function witnessLine(letters: readonly { c: string; svara?: ChantSvara }[
   let out = '';
   for (const u of letters) {
     out += u.c;
-    if (u.svara !== undefined) out += MARK_CHAR.get(u.svara) ?? '';
+    if (u.svara !== undefined) out += SVARA_TEXT.get(u.svara) ?? '';
   }
   return out;
 }

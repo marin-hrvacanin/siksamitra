@@ -100,6 +100,37 @@ export function layoutOf(lines: readonly string[]): VerseLayout {
   return (lines.length === 4 || lines.length === 6) && padas && !prose ? 'halves' : 'hang';
 }
 
+/**
+ * HIS SHORT PĀDAS TWO TO A LINE — a pāda of four to nine syllables (the
+ * anuṣṭubh's, the gāyatrī's) shares its line with the next, as his pages set
+ * them: `atriṇā tvā krime hanmi । kaṇvena jamadagninā ।` (krimi saṁhāraka
+ * sūktam), `agnimī-ḻe purohitaṁi yajñasya devamṛ-tvijamˎ।` (agnimīḻe sūktam),
+ * his sādhanā's every anuṣṭubh. A longer pāda — the triṣṭubh's eleven, the
+ * jagatī's twelve — keeps a line of its own (bhū sūktam, pūrṇakumbha). Two are
+ * joined only when the first ends with a daṇḍa, and only where they fit.
+ *
+ * Answers the lines, and for each the lines of the given it holds.
+ */
+export function pairedPadas(lines: readonly string[], fits: (line: string) => boolean): { lines: string[]; from: number[][] } {
+  /* Four to nine: the Āraṇyaka's pādas are not all eight — `krimīṇāgṁ rājā` is five — and a lone `oṁ` is none. */
+  const short = (l: string): boolean => { const n = syllablesOf(l); return n >= 4 && n <= 9; };
+  const out: string[] = [];
+  const from: number[][] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const a = lines[i]!;
+    const b = lines[i + 1];
+    if (b !== undefined && /।\s*$/u.test(a) && short(a) && short(b) && fits(`${a} ${b}`)) {
+      out.push(`${a} ${b}`);
+      from.push([i, i + 1]);
+      i += 1;
+    } else {
+      out.push(a);
+      from.push([i]);
+    }
+  }
+  return { lines: out, from };
+}
+
 /** A verse's lines as his paragraphs, each the lines it holds. */
 export function paragraphsIn(lines: readonly string[], layout: VerseLayout): string[][] {
   const size = layout === 'flush' ? 1 : layout === 'halves' ? 2 : Math.max(1, lines.length);

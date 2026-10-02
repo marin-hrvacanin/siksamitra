@@ -131,7 +131,7 @@ class name, never an element, never a style.
 | field | meaning | occurrences in the corpus |
 | --- | --- | --- |
 | `c` | the IAST letter, after sandhi | 37 626 |
-| `svara` | the accent: `anudatta`, `svarita`, `dirgha-svarita` | 6 093 |
+| `svara` | the accent: `anudatta`, `svarita`, `dirgha-svarita`, and the Ṛgveda's two kampas, `kampa` (written `1̱̍` after its vowel) and `dirgha-kampa` (`3̱̍`) — a reader that does not know them still has every letter | 6 093 |
 | `hold` | a holding on this letter: `short` or `long` | 4 789 |
 | `hg` | the holding GROUP id — a box spanning several letters is one `hg`, not several `hold`s | 4 789 |
 | `change` | a change-style letter: an anusvāra rewritten by rule, shown as itself | 964 |

@@ -68,7 +68,7 @@ function letterAt(elems: readonly Elem[], line: number, letter: number): Elem | 
 }
 
 const SVARAS: ReadonlySet<string> = new Set<ChantSvara>([
-  'anudatta', 'svarita', 'dirgha-svarita',
+  'anudatta', 'svarita', 'dirgha-svarita', 'kampa', 'dirgha-kampa',
 ]);
 
 /**

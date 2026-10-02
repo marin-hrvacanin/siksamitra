@@ -16,7 +16,7 @@ import type { ChantSvara } from '@siksamitra/format';
 import { typedLetter } from '@siksamitra/format';
 import {
   CANDRA, CANDRA_SIGN, DEFAULT_PROFILE_KEY, detectScript, digitsFrom, holdingHostOf, isConsonant, isVowel,
-  parseLetters, resolveProfile, scriptClusters, toIast, type Profile, type ScriptKey,
+  kampaOf, parseLetters, resolveProfile, scriptClusters, toIast, type Profile, type ScriptKey,
 } from '@siksamitra/engine';
 import { WORD_DEVANAGARI } from '@siksamitra/tokens/word';
 import { mergeRuns, type WordRun } from '../docx-read.js';
@@ -140,6 +140,9 @@ export class ScriptReader {
     }
     /* A run in the accent's style, of accents and dots alone: the svarabhakti
        dot before a cluster, or an accent a person styled on its own. */
+    /* A kampa, `३̱̍`, is ONE svara of the akṣara before it, read whole. */
+    const kampa = role === 'svara' ? kampaOf(r.text.trim()) : undefined;
+    if (kampa !== undefined) { this.accent(kampa); return; }
     if (role === 'svara' && [...r.text].every((ch) => SCRIPT_SVARA_BY_CHAR.has(ch) || ch === '·')) {
       for (const ch of r.text) {
         if (ch === '·') this.dot = true;

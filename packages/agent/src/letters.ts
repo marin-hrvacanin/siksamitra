@@ -9,7 +9,6 @@
  * as one rule.
  */
 import { normalize, toIast } from '@siksamitra/engine';
-import { cleanLine } from './lines.js';
 
 /* Its letters: an IAST line has daṇḍas and digits of the block too. */
 const DEVANAGARI = /[\u0900-\u0963\u0970-\u097F]/u;
@@ -135,26 +134,17 @@ export function letterDifference(lines: readonly string[], spaced: readonly stri
   return null;
 }
 
-/** Are these the source's own lines — the same letters, broken where it breaks them? */
-function sourceLines(lines: readonly string[], spaced: readonly string[]): boolean {
-  return lines.length === spaced.length && lines.every((l, i) => {
-    const want = strictLetters(l);
-    const got = strictLetters(spaced[i]!);
-    return want === got || (i === 0 && dropsOpeningOm(want, got));
-  });
-}
-
-
 /* ── the svaras, carried from the source ─────────────────────────────────── */
 
 /** The svara signs, as his IAST writes them — udātta, anudātta, dīrgha svarita
  *  — with the overline the Ṛgveda's rules draw and a low line, which a model
  *  copying a marked page may bring along. */
 const SVARA_SIGN = /[\u0305\u030D\u030E\u0331\u0332]/u;
-/** A pluta's numeral: the vowel it lengthens, its svaras after it too, are one
+/** A KAMPA's numeral — `1̱̍` the hrasva, `3̱̍` the dīrgha, as his śikṣā (v5)
+ *  writes them: the vowel it undulates, and the svaras after it too, are one
  *  bearer — vignanam's `वो॒३॒॑ऽ`, `vo̱३̱̍'`. A real run was refused ten builds
  *  because the svaras after the ३ were nobody's (2026-10-02). */
-const PLUTA = /[३3]/u;
+const KAMPA_NUMERAL = /[१३13]/u;
 const VOWEL = /[aāiīuūṛṝḷḹeo]/u;
 
 /** Each vowel of a text with the svaras on it, and each gum that bears one. */
@@ -172,7 +162,7 @@ function walk(text: string, put?: (bearer: 'vowel' | 'gum', at: number, own: str
   const marksFrom = (j: number): string => {
     let m = '';
     while (j < text.length && SVARA_SIGN.test(text[j]!)) m += text[j++]!;
-    if (j < text.length && PLUTA.test(text[j]!)) { m += text[j++]!; while (j < text.length && SVARA_SIGN.test(text[j]!)) m += text[j++]!; }
+    if (j < text.length && KAMPA_NUMERAL.test(text[j]!)) { m += text[j++]!; while (j < text.length && SVARA_SIGN.test(text[j]!)) m += text[j++]!; }
     return m;
   };
   while (i < text.length) {
@@ -229,19 +219,64 @@ export function withSourceSvaras(lines: readonly string[], spaced: readonly stri
   return text.split('\n');
 }
 
+/** How many vowels a text has, read as `walk` reads them: `ai` and `au` one each. */
+function vowelsIn(text: string): number {
+  let n = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const two = text.slice(i, i + 2);
+    if (two === 'ai' || two === 'au') { n += 1; i += 1; } else if (VOWEL.test(text[i]!)) n += 1;
+  }
+  return n;
+}
+
+/** Each daṇḍa of a text, by how many of its vowels come before it — a pair of them one. */
+function dandasIn(text: string): { readonly after: number; readonly danda: string }[] {
+  const out: { after: number; danda: string }[] = [];
+  let n = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const two = text.slice(i, i + 2);
+    if (two === 'ai' || two === 'au') { n += 1; i += 1; continue; }
+    if (VOWEL.test(text[i]!)) { n += 1; continue; }
+    if (/[।॥|]/u.test(text[i]!) && out[out.length - 1]?.after !== n) out.push({ after: n, danda: text[i] === '|' ? '।' : text[i]! });
+  }
+  return out;
+}
+
 /**
- * THE SOURCE'S DAṆḌAS, WHERE HIS LINES END WITH THEM. A source ends a
- * half-verse with a daṇḍa and his line ends with it too (`mahi̱tvā ।`); the
- * model, retyping the line with his breaks, left it out — daṇḍas are no
- * letters, so nothing said so (2026-10-02). Carried where the lines are the
- * source's own; the last line's close is the builder's, with its number.
+ * THE SOURCE'S DAṆḌAS, CARRIED BY WHERE THEY STAND — after which vowel — and
+ * not by its line ends. A real run (krimi saṁhāraka sūktam, 2026-10-02) set a
+ * source line of pādas as a line a pāda and lost the daṇḍa after each, which
+ * his page has (`atriṇā tvā krime hanmi । kaṇvena jamadagninā ।`). A daṇḍa goes
+ * at the end of the word its vowel is in, unless one is there already; the
+ * last is the builder's, closed with the verse's number.
  */
 export function withSourceDandas(lines: readonly string[], spaced: readonly string[]): string[] {
-  /* Only over the source's own line ends: lines broken elsewhere carry their own. */
-  if (!sourceLines(lines, spaced)) return [...spaced];
-  return spaced.map((s, i) => {
-    if (i === spaced.length - 1 || /[।॥|]\s*$/u.test(s)) return s;
-    const end = /([।॥|])[\s।॥|0-9०-९]*$/u.exec(cleanLine(lines[i]!));
-    return end === null ? s : `${s.trimEnd()} ${end[1] === '|' ? '।' : end[1]}`;
-  });
+  const source = lines.map(asIast).join(' ').normalize('NFC');
+  const text = spaced.join('\n').normalize('NFC');
+  const ours = vowelsIn(text);
+  /* An opening oṁ the model left out — the one change to its letters allowed. */
+  const skip = vowelsIn(source) - ours;
+  if (skip < 0 || skip > 2) return [...spaced];
+  const wanted = dandasIn(source).map((d) => ({ ...d, after: d.after - skip })).filter((d) => d.after > 0 && d.after < ours);
+  let out = '';
+  let n = 0;
+  let next = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const two = text.slice(i, i + 2);
+    const len = two === 'ai' || two === 'au' ? 2 : VOWEL.test(text[i]!) ? 1 : 0;
+    out += text.slice(i, i + Math.max(1, len));
+    i += Math.max(1, len) - 1;
+    if (len > 0) n += 1;
+    while (next < wanted.length && wanted[next]!.after < n) next += 1;
+    if (next >= wanted.length || wanted[next]!.after !== n || len === 0) continue;
+    /* The vowel the daṇḍa follows: to the end of its word, and the daṇḍa there. */
+    let j = i + 1;
+    while (j < text.length && !/\s/u.test(text[j]!)) j += 1;
+    out += text.slice(i + 1, j);
+    const rest = text.slice(j).replace(/^[ \t]+/u, '');
+    if (!/^[।॥|]/u.test(rest) && !/[।॥|]$/u.test(out)) out += ` ${wanted[next]!.danda}`;
+    i = j - 1;
+    next += 1;
+  }
+  return out.split('\n');
 }

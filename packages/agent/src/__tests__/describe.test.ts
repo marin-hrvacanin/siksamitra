@@ -21,7 +21,8 @@ describe('a delivered file, described', () => {
     expect(said.split('\n')).toEqual([
       'bhū sūktam — kṛṣṇa yajurvedīya',
       'From: taittirīya saṁhitā 1.5.3',
-      '1 verse, beginning “bhūmir bhūmnā dyaur variṇā ।”',
+      /* Two pādas of eight, so one line of his (`pairedPadas`). */
+      '1 verse, beginning “bhūmir bhūmnā dyaur variṇā । upasthe te devyadite ॥”',
       'Its letters are those of bhū sūktam (sanskritdocuments.org).',
       'Checked: every letter is the source’s, every mark the rules’.',
     ]);

@@ -59,6 +59,41 @@ export const MARK_CHAR: ReadonlyMap<ChantSvara, string> = new Map(
 );
 
 /**
+ * THE KAMPA — an undulation, two of a svara's kinds, as his śikṣā writes them
+ * ("śikṣā — the science of pronunciation" v5, the kampas): a DIGIT after the
+ * vowel that undulates, carrying the line below and the stroke above —
+ * `1̱̍` the hrasva (ucca-nīca) kampa, `3̱̍` the dīrgha (nīca-ucca-nīca) one;
+ * `१॒॑`, `३॒॑` in a Devanāgarī edition. Its mark is the digit and the two
+ * strokes together, so it is one svara of the vowel, not a letter and not a
+ * verse's number.
+ *
+ * Kept apart from `PLAN_MARK`: a plan string is positions and marks, and a
+ * mark with a digit in it would read as a position.
+ */
+const BELOW = String.fromCodePoint(0x0331);
+const ABOVE = String.fromCodePoint(0x030d);
+export const KAMPA_MARKS = `${BELOW}${ABOVE}`;
+export const KAMPA_CHAR: ReadonlyMap<ChantSvara, string> = new Map<ChantSvara, string>([
+  ['kampa', `1${KAMPA_MARKS}`], ['dirgha-kampa', `3${KAMPA_MARKS}`],
+]);
+
+/** The kampa a piece of text is, as a source may write it — or nothing. Its
+ *  digit in Latin or Devanāgarī, its two marks in either order, as IAST's
+ *  strokes or Devanāgarī's own (U+0952, U+0951). */
+const KAMPA = /^([13१३])(?:[\u0331\u0952][\u030d\u0951]|[\u030d\u0951][\u0331\u0952])$/u;
+export function kampaOf(text: string): ChantSvara | undefined {
+  const m = KAMPA.exec(text);
+  if (m === null) return undefined;
+  return m[1] === '1' || m[1] === '१' ? 'kampa' : 'dirgha-kampa';
+}
+
+/** Is this svara a kampa — drawn as its digit, not as a stroke? */
+export const isKampa = (s: ChantSvara | undefined): boolean => s === 'kampa' || s === 'dirgha-kampa';
+
+/** Every svara as the text writes it: a mark, or a kampa's digit and marks. */
+export const SVARA_TEXT: ReadonlyMap<ChantSvara, string> = new Map([...MARK_CHAR, ...KAMPA_CHAR]);
+
+/**
  * Parse a plan string — `parseAutoSvaraPlan` exactly.
  *
  * `2̍4̍6̱8̍9̱11̱14̍` is position 2 svarita, 4 svarita, 6 anudātta, 8 svarita,

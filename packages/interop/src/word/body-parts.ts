@@ -7,6 +7,7 @@
 import type { ChantToken, ChantUnit } from '@siksamitra/format';
 import { ROLE_OF_ELEMENT } from '@siksamitra/tokens/document-type';
 import { WORD_MARKS } from '@siksamitra/tokens/word';
+import { kampaOf } from '@siksamitra/engine';
 import { xmlEscape } from '../xml.js';
 import { PARA_STYLE_OF } from './styles.js';
 import type { WordMedia } from './drawing.js';
@@ -93,9 +94,22 @@ export interface WordPictures {
  * calls corrupted.
  */
 export const styledRun = (text: string, rStyle: string | null, sup = false, hidden = false): string =>
-  /* `w:rPr` is a schema SEQUENCE: `rStyle`, then `vanish`, then `vertAlign`. */
-  `<w:r>${rStyle === null && !sup && !hidden ? '' : `<w:rPr>${rStyle === null ? '' : `<w:rStyle w:val="${rStyle}"/>`}${hidden ? '<w:vanish/>' : ''}${sup ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr>`}`
+  /* `w:rPr` is a schema SEQUENCE: `rStyle`, `vanish`, `color`, `sz`, `szCs`, then `vertAlign`. */
+  `<w:r>${rStyle === null && !sup && !hidden ? '' : `<w:rPr>${rStyle === null ? '' : `<w:rStyle w:val="${rStyle}"/>`}${hidden ? '<w:vanish/>' : ''}${kampaLook(text, rStyle)}${sup ? '<w:vertAlign w:val="superscript"/>' : ''}</w:rPr>`}`
   + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
+
+/**
+ * His kampa, `3̱̍` — the digit and its two marks in one `Svara` run — in the
+ * kampa's own blue at the line's size, as his śikṣā (v5) sets it, where his
+ * svaras are red. Here, in the one writer of a run, so the export and the
+ * add-in's rewrites are the same; the style stays his `Svara`, so a file of
+ * his reads it without a style of ours.
+ */
+function kampaLook(text: string, rStyle: string | null): string {
+  if (rStyle !== 'Svara' || kampaOf(text.trim()) === undefined) return '';
+  const sz = Math.round(WORD_MARKS.kampa.size * 2);
+  return `<w:color w:val="${WORD_MARKS.kampa.color}"/><w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>`;
+}
 
 /**
  * A DAṆḌA, in his face. Not a style: his files set every daṇḍa in Mangal as

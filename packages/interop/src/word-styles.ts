@@ -17,7 +17,7 @@
  */
 import { WORD_DEVANAGARI, WORD_MARKS } from '@siksamitra/tokens/word';
 import type { ChantSvara } from '@siksamitra/format';
-import { MARK_CHAR, PLAN_MARK, typedAs, VIS } from '@siksamitra/engine';
+import { KAMPA_MARKS, MARK_CHAR, PLAN_MARK, SVARA_TEXT, typedAs, VIS } from '@siksamitra/engine';
 
 /** What a character style means in the chant model. */
 export type WordMarkRole =
@@ -279,7 +279,8 @@ export const HOLD_CHANGE_ROLES: ReadonlySet<WordMarkRole> = new Set<WordMarkRole
 /** The combining marks a `Svara` run carries, and what they mean — the
  *  engine's one table (`PLAN_MARK`), under the names this contract uses. */
 export const SVARA_BY_CHAR: ReadonlyMap<string, ChantSvara> = PLAN_MARK;
-export const SVARA_CHAR: ReadonlyMap<ChantSvara, string> = MARK_CHAR;
+/** What a `Svara` run writes: a mark, or a kampa's digit and its two marks. */
+export const SVARA_CHAR: ReadonlyMap<ChantSvara, string> = SVARA_TEXT;
 
 /**
  * The svara as a character in an INDIC script — AS HIS DEVANĀGARĪ WRITES IT:
@@ -289,7 +290,11 @@ export const SVARA_CHAR: ReadonlyMap<ChantSvara, string> = MARK_CHAR;
  * U+1CDA) are what the add-in wrote before it had his file; they are still
  * READ, so a line written then reads as it did.
  */
-export const SCRIPT_SVARA_CHAR: ReadonlyMap<ChantSvara, string> = MARK_CHAR;
+export const SCRIPT_SVARA_CHAR: ReadonlyMap<ChantSvara, string> = new Map<ChantSvara, string>([
+  ...MARK_CHAR,
+  /* A kampa in his Devanāgarī: its digit the script's, its marks his IAST's. */
+  ['kampa', `१${KAMPA_MARKS}`], ['dirgha-kampa', `३${KAMPA_MARKS}`],
+]);
 const VEDIC_SIGNS: ReadonlyMap<ChantSvara, string> = new Map<ChantSvara, string>([
   ['svarita', '॑'], ['anudatta', '॒'], ['dirgha-svarita', '᳚'],
 ]);

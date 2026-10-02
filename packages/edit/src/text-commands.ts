@@ -17,7 +17,7 @@
  * suppressed; the engine here runs only when asked, so the suppression a person
  * needs is "press Long again".
  */
-import type { Mark, MarkKind, TextAndMarks } from '@siksamitra/format';
+import type { ChantSvara, Mark, MarkKind, TextAndMarks } from '@siksamitra/format';
 import {
   assertMarks, coverage, mark, normalise, removeMark, shiftForEdit, toggleMark,
 } from '@siksamitra/format';
@@ -25,7 +25,8 @@ import { ANU, CANDRA, PLAN_MARK, isConsonant, isVowel, typedAs, VIS } from '@sik
 
 export type MarkCommand =
   | { k: 'hold'; v: 'short' | 'long' }
-  | { k: 'svara'; v: 'anudatta' | 'svarita' | 'dirgha-svarita' }
+  /** Any svara the format has — the two kampas too (`KAMPA_CHAR`). */
+  | { k: 'svara'; v: ChantSvara }
   /** A dot before the range's start. A point marking. */
   | { k: 'sbhakti' }
   /** A pause at the range's start. A point marking. */

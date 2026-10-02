@@ -71,9 +71,9 @@ describe('the source’s daṇḍas, where his lines end with them', () => {
   it('a half-line the model left open is closed as the source closes it', () => {
     expect(withSourceDandas(SOURCE, OPEN)).toEqual([`${OPEN[0]} ।`, OPEN[1]]);
   });
-  it('but not where the model broke the lines elsewhere — the daṇḍa ends the source’s line, not this one', () => {
+  it('and where the model broke the lines elsewhere, the daṇḍa stays where the source has it — after mahitvā', () => {
     const moved = ["bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣam", "mahi̱tvā u̱pasthe̍ te devy adite̱'gnim a̍nnā̱dam a̱nnādyā̱yā''da̍dhe"];
-    expect(withSourceDandas(SOURCE, moved)).toEqual(moved);
+    expect(withSourceDandas(SOURCE, moved)).toEqual([moved[0], moved[1]!.replace('mahi̱tvā ', 'mahi̱tvā । ')]);
   });
   it('the last line is the builder’s to close, with its number', () => {
     expect(withSourceDandas(SOURCE, ['a ।', 'b'])[1]).toBe('b');

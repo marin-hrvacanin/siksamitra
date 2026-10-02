@@ -16,7 +16,11 @@
 /** The four scripts a marked syllable carries. */
 export type ChantScriptKey = 'iast' | 'deva' | 'tel' | 'tam';
 
-export type ChantSvara = 'anudatta' | 'svarita' | 'dirgha-svarita';
+/**
+ * A syllable's svara. `kampa` and `dirgha-kampa` are the Ṛgveda's two
+ * undulations, written `1̱̍` and `3̱̍` after their vowel (`KAMPA_CHAR`).
+ */
+export type ChantSvara = 'anudatta' | 'svarita' | 'dirgha-svarita' | 'kampa' | 'dirgha-kampa';
 
 /** One letter of a syllable, with the marks that land on that specific letter. */
 export interface ChantUnit {

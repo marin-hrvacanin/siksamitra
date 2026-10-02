@@ -40,7 +40,7 @@
  * as letters. So each svara character goes into a run of that style here.
  */
 import type { ChantDoc } from '@siksamitra/format';
-import { openChantDoc } from '@siksamitra/engine';
+import { KAMPA_CHAR, kampaOf, openChantDoc } from '@siksamitra/engine';
 import {
   SVARA_BY_CHAR, VERSE_END, buildDocument, reportFor, wordRun, type WordParagraph, type WordRun,
 } from '@siksamitra/interop';
@@ -48,7 +48,7 @@ import { advanceWidth, fitLine, type LineFit } from '@siksamitra/layout';
 import {
   MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK, MANTRA_LINE_FILL, WORD_PAGE, WORD_PARAGRAPHS,
 } from '@siksamitra/tokens/word';
-import { cleanLine, groupedBy, layoutOf, numbered, paragraphsIn, unnumbered, type VerseLayout } from './lines.js';
+import { cleanLine, groupedBy, layoutOf, numbered, pairedPadas, paragraphsIn, unnumbered, type VerseLayout } from './lines.js';
 
 /*
  * HIS COLUMN, and how wide a line of his may run in it: the width a line
@@ -124,7 +124,18 @@ export interface Outline {
 export function runsOf(line: string): WordRun[] {
   const runs: WordRun[] = [];
   let plain = '';
-  for (const ch of line) {
+  /* A kampa — `३̱̍` as a Devanāgarī source gives it, `3̱̍` as his IAST writes
+     it — is ONE svara: split mark by mark, it came out `3̱`, the stroke above
+     lost, in the manyu sūktam (2026-10-02). */
+  for (const piece of line.split(KAMPA_IN_LINE)) {
+    const kampa = kampaOf(piece);
+    if (kampa !== undefined) {
+      if (plain !== '') runs.push(wordRun(plain));
+      plain = '';
+      runs.push(wordRun(KAMPA_CHAR.get(kampa)!, 'Svara'));
+      continue;
+    }
+    for (const ch of piece) {
     if (SVARA_BY_CHAR.has(ch)) {
       if (plain !== '') runs.push(wordRun(plain));
       plain = '';
@@ -132,10 +143,14 @@ export function runsOf(line: string): WordRun[] {
     } else {
       plain += ch;
     }
+    }
   }
   if (plain !== '') runs.push(wordRun(plain));
   return runs;
 }
+
+/** Where a kampa stands in a line: a digit and its two marks. */
+const KAMPA_IN_LINE = /([13१३](?:[\u0331\u0952][\u030d\u0951]|[\u030d\u0951][\u0331\u0952]))/u;
 
 const para = (pStyle: string | null, runs: WordRun[], ours?: 'start' | 'more'): WordParagraph =>
   ({ pStyle, runs, ...(ours === undefined ? {} : { ours }) });
@@ -180,8 +195,13 @@ export function paragraphsOf(o: Outline): WordParagraph[] {
     }
     if (si === 0 && !headed) remark();
     for (const v of [...versesOfFlow(s.flow ?? []), ...s.verses]) {
-      const kept = v.lines.map((l, i) => ({ line: cleanLine(l), note: (v.lineNotes?.[i] ?? '').trim() }))
+      const given = v.lines.map((l, i) => ({ line: cleanLine(l), note: (v.lineNotes?.[i] ?? '').trim() }))
         .filter((x) => x.line !== '');
+      /* His short pādas two to a line (`pairedPadas`), unless the outline sets the paragraphs. */
+      const pairs = v.paragraphs === undefined
+        ? pairedPadas(given.map((x) => x.line), (l) => MANTRA_FIT.widthOf(l) <= MANTRA_FIT.limit)
+        : { lines: given.map((x) => x.line), from: given.map((_, i) => [i]) };
+      const kept = pairs.from.map((ix, k) => ({ line: pairs.lines[k]!, note: ix.map((i) => given[i]!.note).filter((x) => x !== '').join(' ') }));
       const lines = kept.map((x) => x.line);
       if (lines.length === 0) continue;
       if (counted(v)) n += 1;
@@ -215,7 +235,9 @@ export function paragraphsOf(o: Outline): WordParagraph[] {
         }), tag()));
         at += p.length;
       }
-      const t = (v.translation ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== '');
+      /* A translation given a line a pāda goes with its pādas, two to a line too. */
+      const said = (v.translation ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== '');
+      const t = said.length === given.length ? pairs.from.map((ix) => ix.map((i) => said[i]!).join(' ')) : said;
       const follows = t.length === lines.length ? groupedBy(t, groups.map((g) => g.length)) : undefined;
       for (const p of groupedBy(t, v.translationParagraphs) ?? follows ?? paragraphsIn(t, 'hang')) {
         out.push(para('Prijevod', [wordRun(p.join('\n'))]));

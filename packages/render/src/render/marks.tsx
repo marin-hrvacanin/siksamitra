@@ -21,6 +21,7 @@
  */
 import { Fragment, type ReactNode } from 'react';
 import type { ChantScriptKey, ChantSyllable, ChantToken } from '@siksamitra/format';
+import { KAMPA_CHAR, isKampa } from '@siksamitra/engine';
 import { holdBoxVars } from '../holdBox';
 import { CANDRA_SIGN as DEVA_CANDRA, SCRIPT_DIGITS as DIGITS } from '@siksamitra/engine';
 
@@ -124,7 +125,9 @@ export function renderUnit(
   local = key,
 ): ReactNode {
   const cls = ['u'];
-  if (o.showMarks && u.svara) cls.push(`sv-${u.svara}`);
+  /* A kampa is drawn as itself — `3̱̍` after its vowel — not as a stroke. */
+  const kampa = o.showMarks && isKampa(u.svara) ? kampaText(u.svara!, 'iast') : null;
+  if (o.showMarks && u.svara && kampa === null) cls.push(`sv-${u.svara}`);
   if (o.showMarks && u.change) cls.push('is-change');
   if (o.showMarks && u.c === VIRAMA) cls.push('u--virama');
   /* The Vedic anusvāra (`gum`): his page draws it as one glyph of his
@@ -148,9 +151,15 @@ export function renderUnit(
             first face that had both, DejaVu on the bot's server (2026-10-02). */}
         {long ? <span className="u__long" aria-hidden="true" /> : null}
       </span>
+      {kampa === null ? null : <span className="kampa" aria-hidden="true">{kampa}</span>}
       {withSup && u.sup ? <sup className="u__sup">{u.sup}</sup> : null}
     </Fragment>
   );
+}
+
+/** A kampa as its script writes it: the script's digit, and the two marks. */
+export function kampaText(svara: NonNullable<Unit['svara']>, sc: ScriptKey): string {
+  return toScriptDigits(KAMPA_CHAR.get(svara) ?? '', sc);
 }
 
 /**
@@ -218,7 +227,10 @@ export function renderSyl(
   }
   const anyHoldLong = syl.units.some((u) => u.hold === 'long');
   const anyHoldShort = !anyHoldLong && syl.units.some((u) => u.hold === 'short');
-  const svara = syl.units.find((u) => u.svara)?.svara;
+  const found = syl.units.find((u) => u.svara)?.svara;
+  /* A kampa follows the akṣara as its digit (`kampaText`); never a stroke. */
+  const kampa = o.showMarks && isKampa(found) ? kampaText(found!, sc) : null;
+  const svara = kampa === null ? found : undefined;
   const change = syl.units.some((u) => u.change);
   const candra = syl.units.some((u) => u.candra);
   const sbhakti = syl.units[0]?.sbhakti; // the epenthetic dot precedes the akṣara
@@ -262,6 +274,7 @@ export function renderSyl(
           </span>
         )
         : aksara}
+      {kampa === null ? null : <span className="kampa" aria-hidden="true">{kampa}</span>}
     </Fragment>
   );
 }

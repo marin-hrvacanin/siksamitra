@@ -452,7 +452,7 @@
 
 .syl { position: relative; white-space: nowrap; }
 .syl--aksara { display: inline-block; position: relative; line-height: 1; }
-
+.kampa { color: var(--c-svara); font-weight: 700; } /* a kampa, `3̱̍`: its digit and marks after its vowel */
 .u { position: relative; }
 .u.sv-svarita, .u.sv-dirgha-svarita, .u.sv-anudatta { display: inline-block; line-height: 1; }
 

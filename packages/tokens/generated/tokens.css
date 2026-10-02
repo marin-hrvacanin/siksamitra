@@ -2732,6 +2732,14 @@
 
 /* His marks, as Word draws them — packages/tokens/word-marks.mjs. */
 [data-doc="word"] .doc .pada { --mark-reach: 0.5em; }
+/* His kampa, "3̱̍" — as his śikṣā (v5) sets it: Palladio, bold, its own dark
+   blue, at the size of its line; drawn after its vowel, with the width a digit has. */
+[data-doc="word"] .doc .kampa {
+  font-family: 'URW Palladio ITU', 'Gentium Book Plus', serif;
+  font-weight: 700;
+  font-size: 1.0000em;
+  color: #002060;
+}
 [data-doc="word"] .doc .hold.hold-short,
 [data-doc="word"] .doc .hold.hold-long {
   display: inline;

@@ -8,7 +8,7 @@
  * are `same`.
  */
 import type { ChantSvara } from '@siksamitra/format';
-import { parseLetters } from '@siksamitra/engine';
+import { kampaOf, parseLetters } from '@siksamitra/engine';
 import { mergeRuns, type WordRun } from '../docx-read.js';
 import { SVARA_BY_CHAR, SVARA_CHAR, changeStyle, holdingStyle, roleOf } from '../word-styles.js';
 
@@ -44,6 +44,9 @@ export function lettersOfIast(runs: readonly WordRun[]): Letter[] {
   for (const r of mergeRuns([...runs])) {
     const role = roleOf(r.rStyle);
     if (role === 'svara') {
+      /* A kampa, `3̱̍`, is ONE svara of the letter before it, read whole. */
+      const kampa = kampaOf(r.text.trim());
+      if (kampa !== undefined) { last()?.svara.push(kampa); continue; }
       for (const ch of r.text) {
         const svara = SVARA_BY_CHAR.get(ch);
         if (svara !== undefined) last()?.svara.push(svara);

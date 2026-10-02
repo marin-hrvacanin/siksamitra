@@ -137,6 +137,7 @@ export function documentXml(
          accent, as his files have it (`yu` `̅` `̍`). It rides in the letter
          (`u.c` is `u̅`); `glyph` leaves it out of the letter's own run. */
       if (u.c.includes(OVERLINE)) r += run(OVERLINE, 'Long');
+      /* A kampa's colour and size are the run writer's (`styledRun`). */
       if (u.svara !== undefined) r += run(SVARA_CHAR.get(u.svara) ?? '', 'Svara');
       /*
        * `Reference`, AND IT USED TO BE `Anusvara`. A `sup` is "a superscript

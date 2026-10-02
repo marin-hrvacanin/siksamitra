@@ -54,6 +54,14 @@ export function wordMarkRules(themeId) {
   return `
 /* His marks, as Word draws them — packages/tokens/word-marks.mjs. */
 ${at} .pada { --mark-reach: ${SVARA_REACH_EM}em; }
+/* His kampa, "3̱̍" — as his śikṣā (v5) sets it: Palladio, bold, its own dark
+   blue, at the size of its line; drawn after its vowel, with the width a digit has. */
+${at} .kampa {
+  font-family: ${stack(WORD_MARKS.kampa.face, 'Gentium Book Plus')};
+  font-weight: ${WORD_MARKS.kampa.bold ? 700 : 400};
+  font-size: ${(WORD_MARKS.kampa.size / verse).toFixed(4)}em;
+  color: #${WORD_MARKS.kampa.color.toLowerCase()};
+}
 ${at} .hold.hold-short,
 ${at} .hold.hold-long {
   display: inline;

@@ -24,10 +24,11 @@
 import type { ChantToken, ChantUnit } from '@siksamitra/format';
 import { spaceToken } from '@siksamitra/format';
 import { parseLetters, ANU, CANDRA, VIRAMA_TICK } from '@siksamitra/engine';
+import { readSvaraRun } from './docx-svara.js';
 import type { ScriptKey } from '@siksamitra/engine';
 import { iastRunsOf } from './word/script-runs.js';
 import {
-  HOLD_CHANGE_ROLES, SVARA_BY_CHAR, roleOf,
+  HOLD_CHANGE_ROLES, roleOf,
   type WordMarkRole,
 } from './word-styles.js';
 import { mergeRuns, type WordRun } from './docx-read.js';
@@ -169,28 +170,13 @@ export function tokensFromRuns(
     const bump = (k: string) => { report.marks[k] = (report.marks[k] ?? 0) + 1; };
 
     if (role === 'svara') {
-      // The run's combining marks ARE the accent; each attaches to the letter
-      // before it, which is the last letter already emitted.
-      for (const ch of run.text) {
-        const svara = SVARA_BY_CHAR.get(ch);
-        const host = lastUnit();
-        if (svara !== undefined && host !== undefined) {
-          host.svara = svara;
-          bump('svara');
-        } else if (ch === VIRAMA_TICK) {
-          word.push({ c: VIRAMA_TICK });
-          bump('virama');
-        } else if (ch === '·') {
-          pendingSbhakti = true;
-        } else {
-          /* A space, or a letter, in the accent's style is still text: Word
-             gives whatever is typed after an accent the accent's style, so
-             `m̍ ile` arrives as one Svara run. It used to skip the space —
-             the fault `space` above records for the boxes — and a second
-             press on the line wrote `m̍ile` back into the document. */
-          addLetters(ch, () => {});
-        }
-      }
+      /* What a Svara run holds — a kampa whole, or its marks one by one (`docx-svara.ts`). */
+      readSvaraRun(run.text, {
+        accent: (svara) => { const host = lastUnit(); if (host === undefined) return false; host.svara = svara; bump('svara'); return true; },
+        tick: () => { word.push({ c: VIRAMA_TICK }); bump('virama'); },
+        dot: () => { pendingSbhakti = true; },
+        letter: (ch) => addLetters(ch, () => {}),
+      });
       continue;
     }
 

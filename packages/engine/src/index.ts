@@ -38,7 +38,9 @@ export type {
 // ── the rules, as data ──────────────────────────────────────────────────────
 export { RULES, STAGE_ORDER, isEnabled } from './rules/index.js';
 export type { Rule, Stage, RuleCtx, Trace, Warning } from './rules/types.js';
-export { MARK_CHAR, PLAN_MARK, SVARA_PLANS, parsePlan, formatPlan } from './rules/svara.js';
+export {
+  KAMPA_CHAR, KAMPA_MARKS, MARK_CHAR, PLAN_MARK, SVARA_PLANS, SVARA_TEXT, formatPlan, isKampa, kampaOf, parsePlan,
+} from './rules/svara.js';
 export { witnessLine } from './rules/witness.js';
 export type { SvaraPlan, SvaraPosition } from './rules/svara.js';
 

@@ -85,6 +85,11 @@ export const WORD_MARKS = {
   holdLong: { color: '538135', weight: fromEighths(8) },
   /** `Svara` — URW Palladio ITU, BOLD, 18 pt, #943634. All four measured. */
   svara: { color: '943634', size: fromHalfPoints(36), face: MARK_FACES.palladio, bold: true },
+  /**
+   * The kampa, `3̱̍` — as his śikṣā (v5) sets it: Palladio, bold, its own dark
+   * blue, at the size of the line it stands in (where his svaras are red).
+   */
+  kampa: { color: '002060', size: fromHalfPoints(32), face: MARK_FACES.palladio, bold: true },
   /** `Virama` — the svara's colour and size, Arial, and not bold. */
   virama: { color: '943634', size: fromHalfPoints(36), face: MARK_FACES.arial },
   /** `Anusvara` — the letter actually recited. No face of its own. */
