@@ -70,6 +70,13 @@ export interface OutlineVerse {
   readonly note?: string;
   /** False for a verse he leaves without a number: the closing śānti, an optional verse. */
   readonly numbered?: boolean;
+  /**
+   * A verse some recite and some do not, set as his prastāvanā sets one
+   * (sādhanā, its sarasvatī verse of ṚV 5.43.11): "(optional verse)" before
+   * its source note, its lines in brackets — `( ā no̍ di̱vo …` to `… śṛ̍ṇotu ॥ )`
+   * — and no number. Only with its source known: its note names it.
+   */
+  readonly optional?: boolean;
   /** How its lines are set, when his rule (`layoutOf`) would set them otherwise. */
   readonly layout?: VerseLayout;
   /** A note at the end of each line, `''` where it has none: "p.b. sūryā̍d (with svarita)". */
@@ -160,7 +167,7 @@ export function paragraphsOf(o: Outline): WordParagraph[] {
     }
   };
   let n = 0;
-  const counted = (v: OutlineVerse): boolean => v.numbered !== false;
+  const counted = (v: OutlineVerse): boolean => v.numbered !== false && v.optional !== true;
   const total = o.sections.reduce((k, s) => k + [...versesOfFlow(s.flow ?? []), ...s.verses].filter(counted).length, 0);
   o.sections.forEach((s, si) => {
     const headed = s.title !== undefined && s.title.trim() !== '';
@@ -180,13 +187,18 @@ export function paragraphsOf(o: Outline): WordParagraph[] {
       if (counted(v)) n += 1;
       let first = true;
       const tag = (): 'start' | 'more' => { const t = first ? 'start' : 'more'; first = false; return t; };
-      for (const note of (v.note ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== '')) {
+      const notes = (v.note ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== '');
+      /* His optional verse says so first, on its source line. */
+      if (v.optional === true) notes[0] = `(optional verse) ${notes[0] ?? ''}`.trim();
+      for (const note of notes) {
         out.push(para('Translit', [wordRun(note, 'Comment')], tag()));
       }
       /* Its paragraphs, their lines on soft breaks, its number at the end —
          the verse held together by its tags. */
       const layout = v.layout ?? layoutOf(lines);
-      const ended = counted(v) ? numbered(lines, n, total) : unnumbered(lines);
+      const closed = counted(v) ? numbered(lines, n, total) : unnumbered(lines);
+      /* In brackets AFTER its ending: `… śṛ̍ṇotu ॥ )`, as his. */
+      const ended = v.optional === true ? bracketed(closed) : closed;
       const groups = groupedBy(ended, v.paragraphs) ?? paragraphsIn(ended, layout);
       let at = 0;
       for (const p of groups) {
@@ -236,12 +248,26 @@ export function headingFault(o: Outline): string | undefined {
       return `a section headed "${s.title}" repeats the title. A text of one part has no heading of its own, and a closing śānti is the last verse of the last section (numbered: false) — never a section`;
     }
   }
+  for (const v of o.sections.flatMap((s) => s.verses)) {
+    if (v.optional === true && !/[0-9]/u.test(v.note ?? '')) {
+      return `an optional verse names where it is from in its note, as his prastāvanā does ("TS 1.8.22. ṚV 5.43.11 - bhaumo'trirṛṣiḥ, viśve devā devatāḥ, triṣṭup chandaḥ") — or it is left out`;
+    }
+  }
   for (const c of [o.locus, ...o.sections.map((s) => s.cite)]) {
     if (c !== undefined && c.trim() !== '' && !/[0-9]/u.test(c) && c.trim().split(/\s+/u).length < 2) {
       return `"${c}" is no source line: a source line names a work and the place in it ("taittirīya saṁhitā 4.4.12")`;
     }
   }
   return undefined;
+}
+
+/** An optional verse's lines in his brackets: `( ` before the first, ` )` after the last. */
+export function bracketed(lines: readonly string[]): string[] {
+  if (lines.length === 0) return [];
+  const out = [...lines];
+  out[0] = `( ${out[0]}`;
+  out[out.length - 1] = `${out[out.length - 1]} )`;
+  return out;
 }
 
 /** The document an outline describes, opened. */

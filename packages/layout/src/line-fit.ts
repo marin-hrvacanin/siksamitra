@@ -26,8 +26,10 @@ export interface LineFit {
   readonly limit: number;
 }
 
-/** A sign a line writes rather than a word: daṇḍas, a verse's number, a bar. */
-const SIGN_ONLY = /^[।॥|¦0-9०-९ˎ]+$/u;
+/** A sign a line writes rather than a word: daṇḍas, a verse's number, a bar, a closing bracket. */
+const SIGN_ONLY = /^[।॥|¦0-9०-९ˎ)\]]+$/u;
+/** An opening bracket, which goes with the word after it: `( ā no̍`. */
+const OPENS = /^[([]+$/u;
 /** A piece that closes a half-verse, where a line had best end. */
 const CLOSES = /[।|¦]$/u;
 
@@ -37,11 +39,14 @@ const CLOSES = /[।|¦]$/u;
  */
 export function piecesOf(line: string): string[] {
   const out: string[] = [];
+  let opening = '';
   for (const word of line.split(' ')) {
     if (word === '') continue;
-    if (out.length > 0 && SIGN_ONLY.test(word)) out[out.length - 1] += ` ${word}`;
-    else out.push(word);
+    if (OPENS.test(word)) { opening += `${word} `; continue; }
+    if (out.length > 0 && opening === '' && SIGN_ONLY.test(word)) out[out.length - 1] += ` ${word}`;
+    else { out.push(`${opening}${word}`); opening = ''; }
   }
+  if (opening !== '') out.push(opening.trimEnd());
   return out;
 }
 

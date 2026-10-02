@@ -51,7 +51,7 @@ interface SectionArg {
   lines?: string;
   verses?: {
     lines?: string[]; witness?: string; at?: string; translation?: string; note?: string; spaced?: string[];
-    numbered?: boolean; layout?: VerseLayout; lineNotes?: string[]; paragraphs?: number[]; translationParagraphs?: number[];
+    numbered?: boolean; optional?: boolean; layout?: VerseLayout; lineNotes?: string[]; paragraphs?: number[]; translationParagraphs?: number[];
   }[];
 }
 
@@ -120,6 +120,7 @@ function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; fro
       ...(v.translation === undefined ? {} : { translation: v.translation }),
       ...(v.note === undefined || v.note.trim() === '' ? {} : { note: pageNote(v.note, `section "${s.title ?? ''}"`) }),
       ...(v.numbered === false ? { numbered: false } : {}),
+      ...(v.optional === true ? { optional: true } : {}),
       ...(v.layout === undefined ? {} : { layout: v.layout }),
       ...(v.lineNotes === undefined || v.lineNotes.every((x) => x.trim() === '') ? {} : { lineNotes: v.lineNotes.map((n) => pageNote(n, `section "${s.title ?? ''}"`)) }),
       ...(v.paragraphs === undefined ? {} : { paragraphs: v.paragraphs }),
@@ -222,7 +223,8 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
                 },
                 translation: str('Its translation, in English: a line for each of its lines.'),
                 note: str('A line above the verse, when it has one: "Also in maitrāyaṇī saṁhitā 1.7.1.1", "optional", its metre, its ṛṣi.'),
-                numbered: { type: 'boolean', description: 'false for a verse he leaves unnumbered: the closing śānti, an optional verse.' },
+                numbered: { type: 'boolean', description: 'false for a verse he leaves unnumbered: the closing śānti.' },
+                optional: { type: 'boolean', description: 'true for a verse some recite and some do not — only when more than one verified edition has it and its source is known (its note names it): set as his prastāvanā sets one, "(optional verse)" before the note, its lines in brackets, unnumbered.' },
                 paragraphs: {
                   type: 'array', items: { type: 'integer' },
                   description: 'Only when his page sets it otherwise than layout says: how many lines each of its paragraphs holds, [9, 1].',

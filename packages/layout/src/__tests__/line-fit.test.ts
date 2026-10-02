@@ -57,3 +57,15 @@ describe('a line too wide for its column', () => {
     expect(out.join(' ')).toBe('aa bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb cc');
   });
 });
+
+describe('his brackets, round an optional verse', () => {
+  it('an opening bracket goes with the word after it, a closing one with the sign before it', () => {
+    expect(piecesOf('( ā no divo ॥ )')).toEqual(['( ā', 'no', 'divo ॥ )']);
+  });
+  it('so a line is never left ending in "(" nor begun with ")"', () => {
+    for (const l of fitLine('( aaaa bbbb cccc dddd eeee ffff ॥ )', letters)) {
+      expect(l).not.toMatch(/\($/u);
+      expect(l).not.toMatch(/^\)/u);
+    }
+  });
+});
