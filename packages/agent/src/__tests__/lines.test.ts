@@ -111,3 +111,10 @@ describe('a final consonant carrying an accent of his', () => {
     expect(clipped('ya̱jñasya̅̍ de̱vamṛ̱-tvijam̎ ।')).toBe('ya̱jñasya̅̍ de̱vamṛ̱-tvijam̎ˎ।');
   });
 });
+
+describe('a gum the source writes out', () => {
+  it('goes back to the anusvāra the rules make it from', () => {
+    expect(cleanLine('pra̱tīcī̍menāgm̐ ha̱viṣā̍ yajāmaḥ ।')).toBe('pra̱tīcī̍menāṁ ha̱viṣā̍ yajāmaḥ ।');
+    expect(cleanLine('sa de̱vām̐ eha va̍kṣati ।')).toBe('sa de̱vām̐ eha va̍kṣati ।');
+  });
+});

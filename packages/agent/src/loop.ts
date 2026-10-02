@@ -82,14 +82,40 @@ export function capped(text: string, max: number): string {
   return `${text.slice(0, max)}\n… (${text.length - max} more characters — ask for a narrower range)`;
 }
 
+/** Base64 without Node's `Buffer`: the loop runs in the app and the add-in too. */
+function base64Of(bytes: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
 export async function runTurn(opts: TurnOptions, userText: string): Promise<TurnResult> {
-  const max = opts.maxSteps ?? 24;
+  /* Forty: a real request — two searches, two pages, finding the text in each,
+     building, checking, a second look and the file — took twenty-four and
+     still had the file to make. */
+  const max = opts.maxSteps ?? 40;
   const maxResult = opts.maxResult ?? 6000;
   const byName = new Map(opts.tools.map((t) => [t.spec.name, t]));
   const specs = opts.tools.map((t) => t.spec);
   opts.messages.push({ role: 'user', content: userText });
   let cost = 0;
   let usage: Usage = { input: 0, cached: 0, output: 0 };
+
+  /* What `look` showed this step, for the next request only (`tools/look.ts`):
+     the picture goes with that request and is not kept in the conversation. */
+  let shown: { at: number; images: string[] } | null = null;
+  const ctx: ToolContext = {
+    ...opts.ctx,
+    show: (png, caption) => {
+      const url = `data:image/png;base64,${base64Of(png)}`;
+      if (shown === null) {
+        opts.messages.push({ role: 'user', content: caption });
+        shown = { at: opts.messages.length - 1, images: [url] };
+      } else {
+        shown.images.push(url);
+      }
+    },
+  };
 
   for (let step = 1; step <= max; step += 1) {
     await checkBudget(opts.ledger, opts.limits, opts.session, cost);
@@ -108,7 +134,11 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
       opts.messages.push({ role: 'user', content: '(from the program: three steps are left in this turn — finish now: deliver what you have, or tell the person what you found and what you need from them)' });
     }
     const last = step === max;
-    const reply = await opts.model.complete({ messages: [{ role: 'system', content: opts.system }, ...opts.messages], tools: last ? [] : specs });
+    const seen = shown as { at: number; images: string[] } | null;
+    const messages = seen === null ? opts.messages
+      : opts.messages.map((m, i) => (i === seen.at && m.role === 'user' ? { ...m, images: seen.images } : m));
+    shown = null;
+    const reply = await opts.model.complete({ messages: [{ role: 'system', content: opts.system }, ...messages], tools: last ? [] : specs });
     const c = costOf(reply.usage, opts.price);
     cost += c;
     usage = add(usage, reply.usage);
@@ -135,7 +165,7 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
       try {
         if (tool === undefined) throw new Error(`there is no tool "${call.name}"`);
         const args = JSON.parse(call.arguments === '' ? '{}' : call.arguments) as Record<string, unknown>;
-        text = await tool.run(args, opts.ctx);
+        text = await tool.run(args, ctx);
       } catch (e) {
         failed = true;
         text = `error: ${withoutPaths(e instanceof Error ? e.message : String(e))}`;

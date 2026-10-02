@@ -37,6 +37,11 @@ interface Fold {
  * Ordered. The Vedic-anusvāra fold must run before anything that reads an
  * anusvāra, which is why it is not left to the caller.
  */
+/** The Taittirīya gum written out as letters — `gm̐`, `ggm̐`, `gṁ` — which a
+ *  source means as the anusvāra the gum rule makes it from. One pattern, for
+ *  the fold below and for anything else that takes a source's line in. */
+export const WRITTEN_GUM = /g{1,2}(?:m̐|ṁ)/g;
+
 const FOLDS: readonly Fold[] = [
   // Devanāgarī accent signs → the IAST combining marks (sanskrit_rules.js ~L293).
   { rule: 'svara.udatta-sign', from: /॑/g, to: '̍', label: '॑ → ◌̍' },
@@ -57,6 +62,22 @@ const FOLDS: readonly Fold[] = [
     to: ANU,
     label: 'ꣳ / ँ → ṁ',
     note: 'the Vedic anusvāra sign is folded to the underlying ṁ so the gum can be derived',
+  },
+  /**
+   * THE GUM WRITTEN OUT, as an IAST source writes it — `pratīcīmenāgm̐
+   * haviṣā`, `yajñagṁ` — folded to the anusvāra it stands for, as `ꣳ` is, so
+   * the gum rule makes it, reading aid and all, the first time. Kept as
+   * letters, a first run left it bare and a second, reading its own gum back,
+   * added the aid: the agent's check found the rules disagreeing with
+   * themselves over bhū sūktam 11 (2026-10-02). `g` before an anusvāra or a
+   * candrabindu `m` is written nowhere else.
+   */
+  {
+    rule: 'anusvara.written-gum',
+    from: WRITTEN_GUM,
+    to: ANU,
+    label: 'gm̐ / gṁ → ṁ',
+    note: 'the gum, written out, is folded to the ṁ it stands for so the gum rule derives it once',
   },
   // Dravidian orthography's long marks.
   { rule: 'vowel.o-macron', from: /ō/g, to: 'o', label: 'ō → o' },

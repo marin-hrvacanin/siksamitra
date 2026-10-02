@@ -37,7 +37,7 @@ mkdirSync(out, { recursive: true });
 const host = nodeHost(ROOT, async (file) => {
   writeFileSync(join(out, file.name), file.bytes);
   console.log(`\n  → ${join('out/agent', file.name)} (${Math.round(file.bytes.length / 1024)} KB, ${file.format})`);
-});
+}, config.vision);
 const ledger = fileLedger(join(config.dataDir, 'ledger.jsonl'));
 
 const show = (e: AgentEvent): void => {

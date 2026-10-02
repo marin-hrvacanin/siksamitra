@@ -57,6 +57,15 @@ export class Workspace {
   private seq = 0;
   readonly witnesses = new Map<string, Witness>();
   readonly builtFrom = new Map<string, BuiltFrom>();
+  /**
+   * What this request has spent on research — reset when a request begins
+   * (`newRequest`). A real run (bhū sūktam, 2026-10-02) spent 18 of its 24
+   * steps on seven searches and eleven pages, and ran out before delivering.
+   */
+  readonly spent = { searches: 0, pages: 0 };
+
+  /** A request begins: its research budget is whole again. */
+  newRequest(): void { this.spent.searches = 0; this.spent.pages = 0; }
 
   get doc(): ChantDoc | null { return this.state?.doc ?? null; }
 

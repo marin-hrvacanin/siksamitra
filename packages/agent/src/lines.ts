@@ -19,6 +19,8 @@
  * do not place it (`docs/authoring/MARKING-RULES.md`, "Virāma").
  */
 
+import { WRITTEN_GUM } from '@siksamitra/engine';
+
 const DIGIT = '[0-9०-९]';
 /** A reference: two or more numbers, each closed by a daṇḍa or a bar. */
 const REFERENCE = new RegExp(`(?:\\s*[।॥|]{0,2}\\s*${DIGIT}+(?:\\s*[।|.]\\s*${DIGIT}+)+\\s*[।॥|]{1,2})+(?:\\s*[॥|]{1,2}\\s*${DIGIT}+\\s*[॥|]{1,2})?\\s*$`, 'u');
@@ -34,9 +36,14 @@ export const VIRAMA_TICK = 'ˎ';
 /** Each word-final consonant before a daṇḍa, clipped with the tick. */
 export const clipped = (line: string): string => line.replace(FINAL_STOP, `$1$2${VIRAMA_TICK}`);
 
-/** A source's line with its apparatus taken off. */
+/**
+ * A source's line with its apparatus taken off — and the Taittirīya gum, when
+ * the source writes it out (`pratīcīmenāgm̐`), back to the anusvāra the rules
+ * make it from (`WRITTEN_GUM`): kept as letters, it was marked bare once and
+ * with its reading aid the next time.
+ */
 export function cleanLine(line: string): string {
-  let l = line.trim();
+  let l = line.trim().replace(WRITTEN_GUM, 'ṁ');
   const hadReference = REFERENCE.test(l);
   l = l.replace(REFERENCE, '').replace(LEADING_NUMBER, '').trim();
   /* A reference closed the verse; the closing stays — numbered below. */

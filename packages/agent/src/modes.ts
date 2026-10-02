@@ -17,6 +17,7 @@
 import { CHECK_TOOLS } from './tools/check.js';
 import { DOCUMENT_TOOLS } from './tools/document.js';
 import { SOURCE_TOOLS } from './tools/sources.js';
+import { LOOK_TOOLS } from './tools/look.js';
 import type { Host, Tool } from './tools/types.js';
 
 export type Mode = 'deliver' | 'document';
@@ -53,7 +54,8 @@ Delivering a text — in this order:
    - numbered: false for the closing śānti and for an optional verse; every other verse is numbered by the program;
    - every verse with its translation: faithful English, a line for each of the verse's lines.
    His layout (a stanza of four or six pādas a paragraph per half-verse, prose one paragraph) and his line conventions (the reference numbers taken off, a final consonant before a daṇḍa clipped with ˎ) are the program's: give layout or paragraphs only when the source sets a verse otherwise.
-4. check, then review; fix what they find.
+   His texts separate the words that a source runs together: give each verse taken from a source its lines again in "spaced", in IAST — a space between words ("bhūmi̍r bhū̱mnā dyaur"), a hyphen where a word's last consonant has joined the next word's vowel ("devya-dite", "agnima-nnādam"), an apostrophe where two vowels merged ("va̍ri̱ṇā'ntari̍kṣam") — every letter and svara the source's own; the program refuses any other change. A verse's lines are its own words only: not the source's heading, its invocation or its numbers.
+4. check, then review; fix what they find. If you can look, look at the first page once, and fix what you see wrong.
 5. deliver: pdf unless the person asked for docx or smdoc; vedaunion only for "the VedaUnion website upload".`;
 
 const DOCUMENT = `${CORE}
@@ -117,7 +119,7 @@ export const TOOL_LABELS: Readonly<Record<string, string>> = {
   offer_choices: 'Asking you to choose',
 };
 
-const ALL: readonly Tool[] = [...SOURCE_TOOLS, ...DOCUMENT_TOOLS, ...CHECK_TOOLS];
+const ALL: readonly Tool[] = [...SOURCE_TOOLS, ...DOCUMENT_TOOLS, ...CHECK_TOOLS, ...LOOK_TOOLS];
 
 /** The tools of a mode that this host can run, in a fixed order. */
 export function toolsFor(mode: Mode | 'review', host: Host): Tool[] {

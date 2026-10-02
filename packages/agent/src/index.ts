@@ -30,10 +30,10 @@ export { Session, compact } from './session.js';
 export type { SessionOptions, SessionState } from './session.js';
 export { checkDocument } from './tools/check.js';
 export type { Finding } from './tools/check.js';
-export { blocksOf } from './tools/sources.js';
+export { RESEARCH, blocksOf } from './tools/sources.js';
 export { findIn, fold, indexEntries, publishedLibrary, sectionDoc } from './library.js';
 export { panelHtml, plainOf, telegramHtml, telegramPieces } from './markdown.js';
 export { lineRange } from './tools/document.js';
 export type {
-  Delivered, DeliveryFormat, Exporters, Host, Library, LibraryEntry, Research, SearchHit, Tool, ToolContext,
+  Delivered, DeliveryFormat, Exporters, Host, Library, LibraryEntry, Research, SearchHit, Shot, Tool, ToolContext,
 } from './tools/types.js';

@@ -53,8 +53,11 @@ const settledKey = (v: ChantVerse): string => {
  * as he does (`॥ 3॥`), where the source closed it its own way and carried its
  * own references (`lines.ts`).
  */
+/* Letters only. His word breaks — a space, a junction's hyphen or apostrophe —
+   are not a source's to have, and the agent may add them (`spaced` in
+   `document.ts`); every letter and svara must still be the source's. */
 const spaced = (s: string): string => s.replace(/[।॥|]+|[0-9०-९]+/gu, ' ')
-  .replace(/[ \t ]+/g, ' ').replace(/ ?\n ?/g, '\n').trim();
+  .replace(/[ \t \-'’ʼˎ]+/gu, '').replace(/\n+/g, '\n').trim();
 const cut = (s: string, n = 90): string => (s.length > n ? `${s.slice(0, n)}…` : s);
 
 /**

@@ -79,6 +79,20 @@ export interface Host {
    * one they pick comes back as their next message.
    */
   readonly choose?: (question: string, options: readonly string[]) => void;
+  /**
+   * The document as it will print, one page of it as a PNG — for a model that
+   * sees (`look` in `tools/look.ts`). A host without a renderer, or with a
+   * model that does not take images, leaves it out and the tool is not offered.
+   */
+  readonly look?: (doc: ChantDoc, page: number) => Promise<Shot>;
+}
+
+/** One page of the document, as the person will see it. */
+export interface Shot {
+  readonly png: Uint8Array;
+  /** Which page this is, from 1, and how many there are. */
+  readonly page: number;
+  readonly pages: number;
 }
 
 export interface ToolContext {
@@ -86,6 +100,8 @@ export interface ToolContext {
   readonly host: Host;
   /** A second agent asked to find what is wrong — see `review` in `tools/check.ts`. */
   readonly review: (task: string) => Promise<string>;
+  /** Show the model a picture, with the next thing it reads (`look`). */
+  readonly show?: (png: Uint8Array, caption: string) => void;
 }
 
 export interface Tool {

@@ -14,7 +14,7 @@
  */
 import { addVerseCommand, removeVerseCommand, setTextCommand, splitLines } from '@siksamitra/edit';
 import { CHANT_PROFILE_KEYS, type ChantProfileKey } from '@siksamitra/format';
-import { STAGES } from '@siksamitra/engine';
+import { STAGES, normalize, toIast } from '@siksamitra/engine';
 import { documentOf, versesOfFlow, type OutlineSection, type OutlineVerse } from '../build.js';
 import type { VerseLayout } from '../lines.js';
 import { outlineOf, type Workspace } from '../workspace.js';
@@ -48,12 +48,47 @@ interface SectionArg {
   witness?: string;
   lines?: string;
   verses?: {
-    lines?: string[]; witness?: string; at?: string; translation?: string; note?: string;
+    lines?: string[]; witness?: string; at?: string; translation?: string; note?: string; spaced?: string[];
     numbered?: boolean; layout?: VerseLayout; lineNotes?: string[]; paragraphs?: number[]; translationParagraphs?: number[];
   }[];
 }
 
 type From = { witness: string; at: string };
+
+/**
+ * A LINE'S LETTERS, STRICTLY — every letter and every svara, in IAST; only
+ * what his word breaks add set aside: spaces, hyphens, the apostrophe of a
+ * vowel junction, the virāma tick. What `spaced` may differ from its source in.
+ */
+const DEVANAGARI = /[\u0900-\u097F]/u;
+export const strictLetters = (line: string): string =>
+  /* The engine's own fold: Devanāgarī's accent signs to IAST's, ꣳ and a
+     written-out gum to ṁ — so a source in either script compares. */
+  normalize(DEVANAGARI.test(line) ? toIast(line, 'deva').iast : line).text.normalize('NFC')
+    .replace(/[\s\-'’ʼˎ।॥|0-9०-९]/gu, '');
+
+/**
+ * HIS WORD BREAKS, OVER A SOURCE'S LETTERS. A web source runs words together
+ * (`bhūmirbhūmnā dyaurvariṇā'ntarikṣam`) where his page separates them
+ * (`bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣam`) and marks a junction
+ * (`devya-dite`, `agnima-nnādam`). The model may give the lines so, in IAST —
+ * and only if every letter and svara is the source's own, unchanged: the bot
+ * never retypes a mantra (2026-10-02, the bot's own bhū sūktam).
+ */
+function spacedOf(lines: readonly string[], spaced: readonly string[] | undefined, where: string): readonly string[] {
+  if (spaced === undefined || spaced.length === 0) return lines;
+  if (spaced.length !== lines.length) throw new Error(`${where}: spaced has ${spaced.length} line(s), its source ${lines.length}`);
+  spaced.forEach((s, i) => {
+    const want = strictLetters(lines[i]!);
+    const got = strictLetters(s);
+    if (want === got) return;
+    let at = 0;
+    while (at < want.length && want[at] === got[at]) at += 1;
+    throw new Error(`${where}, line ${i + 1}: spaced changes a letter at "${got.slice(Math.max(0, at - 8), at + 8)}" `
+      + `where the source has "${want.slice(Math.max(0, at - 8), at + 8)}" — add only spaces, hyphens and apostrophes`);
+  });
+  return spaced;
+}
 
 /** One section of `build_document`, its letters taken from where it says — and, per verse, from where. */
 function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; from?: From; verseFrom: (From | undefined)[] } {
@@ -70,7 +105,8 @@ function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; fro
   }
   const given = s.verses ?? [];
   const verses: OutlineVerse[] = given.map((v) => {
-    const lines = v.witness !== undefined && v.at !== undefined ? linesOf(ws, v.witness, v.at) : (v.lines ?? []);
+    const taken = v.witness !== undefined && v.at !== undefined ? linesOf(ws, v.witness, v.at) : (v.lines ?? []);
+    const lines = spacedOf(taken, v.spaced, `section "${s.title ?? ''}"`);
     /* A verse given is ONE verse: lines that the source's own numbering makes
        two (a line inside ends with a daṇḍa and a number) are refused. */
     const made = versesOfFlow(lines).length;
@@ -175,6 +211,12 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
                 lines: { type: 'array', items: { type: 'string' }, description: 'Typed lines.' },
                 witness: str('A witness id, with at.'),
                 at: str('Its lines: "12-13".'),
+                spaced: {
+                  type: 'array', items: { type: 'string' },
+                  description: 'The same lines in IAST with his word breaks: a space between words, a hyphen where a word\'s last consonant '
+                    + 'joins the next word\'s vowel ("devya-dite", "agnima-nnādam"), an apostrophe where two vowels merged ("variṇā\'ntarikṣam"). '
+                    + 'Every letter and svara must be the source\'s own — the program checks, and refuses any change.',
+                },
                 translation: str('Its translation, in English: a line for each of its lines.'),
                 note: str('A line above the verse, when it has one: "Also in maitrāyaṇī saṁhitā 1.7.1.1", "optional", its metre, its ṛṣi.'),
                 numbered: { type: 'boolean', description: 'false for a verse he leaves unnumbered: the closing śānti, an optional verse.' },

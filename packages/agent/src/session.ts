@@ -96,6 +96,7 @@ export class Session {
   async ask(text: string): Promise<TurnResult> {
     const o = this.opts;
     this.halted = false;
+    this.ws.newRequest();
     this.messages = compact(this.messages, o.keep ?? 160_000);
     const ctx: ToolContext = { ws: this.ws, host: o.host, review: (task) => this.review(task) };
     return runTurn({

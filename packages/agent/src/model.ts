@@ -15,6 +15,7 @@
  * browser's in the Word panel and the app, Node's on the server — so this
  * module touches nothing a host may lack.
  */
+import { callsInText } from './dsml.js';
 
 /** A JSON Schema, as the providers take it for a tool's parameters. */
 export type JsonSchema = { readonly [k: string]: unknown };
@@ -34,7 +35,9 @@ export interface ToolCall {
 
 export type Message =
   | { readonly role: 'system'; readonly content: string }
-  | { readonly role: 'user'; readonly content: string }
+  /** `images`: pictures shown with it, as `data:` URLs — DeepSeek takes an
+   *  image in a user message only (api-docs.deepseek.com/guides/vision). */
+  | { readonly role: 'user'; readonly content: string; readonly images?: readonly string[] }
   | {
     readonly role: 'assistant';
     readonly content: string | null;
@@ -137,9 +140,10 @@ export class ModelError extends Error {
 /* ── the wire format ───────────────────────────────────────────────────── */
 
 interface WireToolCall { id: string; type: 'function'; function: { name: string; arguments: string } }
+type WirePart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string; detail: 'high' } };
 interface WireMessage {
   role: string;
-  content: string | null;
+  content: string | null | WirePart[];
   tool_calls?: WireToolCall[];
   tool_call_id?: string;
   reasoning_content?: string;
@@ -157,6 +161,12 @@ interface WireMessage {
 export function toWire(messages: readonly Message[], withTools = true): WireMessage[] {
   return messages.map((m): WireMessage => {
     if (m.role === 'tool') return { role: 'tool', content: m.content, tool_call_id: m.toolCallId };
+    if (m.role === 'user' && m.images !== undefined && m.images.length > 0) {
+      return {
+        role: 'user',
+        content: [{ type: 'text', text: m.content }, ...m.images.map((url) => ({ type: 'image_url' as const, image_url: { url, detail: 'high' as const } }))],
+      };
+    }
     if (m.role !== 'assistant') return { role: m.role, content: m.content };
     return {
       role: 'assistant',
@@ -251,15 +261,23 @@ function replyOf(json: Record<string, unknown>): Reply {
   const choice = ((json.choices as unknown[] | undefined) ?? [])[0] as Record<string, unknown> | undefined;
   if (choice === undefined) throw new ModelError(200, 'the model answered with no choice');
   const m = (choice.message ?? {}) as WireMessage;
-  const calls = (m.tool_calls ?? []).map((c): ToolCall => ({ id: c.id, name: c.function.name, arguments: c.function.arguments ?? '{}' }));
+  let calls = (m.tool_calls ?? []).map((c): ToolCall => ({ id: c.id, name: c.function.name, arguments: c.function.arguments ?? '{}' }));
+  /* An answer is text; parts are what WE send, never what comes back. */
+  let content = typeof m.content === 'string' ? m.content : null;
+  /* A call it wrote into its message instead of making it (`dsml.ts`). */
+  const written = calls.length === 0 && content !== null ? callsInText(content) : null;
+  if (written !== null) {
+    calls = written.calls.map((c, i) => ({ id: `text-call-${i + 1}`, ...c }));
+    content = written.rest === '' ? null : written.rest;
+  }
   return {
     message: {
       role: 'assistant',
-      content: m.content ?? null,
+      content,
       ...(calls.length === 0 ? {} : { toolCalls: calls }),
       ...(typeof m.reasoning_content === 'string' && m.reasoning_content !== '' ? { reasoning: m.reasoning_content } : {}),
     },
     usage: usageOf(json.usage),
-    finish: typeof choice.finish_reason === 'string' ? choice.finish_reason : 'stop',
+    finish: written !== null ? 'tool_calls' : typeof choice.finish_reason === 'string' ? choice.finish_reason : 'stop',
   };
 }

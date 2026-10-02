@@ -14,7 +14,7 @@
  */
 import { toIast } from '@siksamitra/engine';
 import { fold } from '../library.js';
-import { outlineOf, versesOf, type Witness } from '../workspace.js';
+import { outlineOf, versesOf, type Witness, type Workspace } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
 
 const DEVA = /[ऀ-ॿ]/u;
@@ -72,6 +72,20 @@ export function findLines(w: Witness, query: string, max = 12): number[] {
   return out;
 }
 
+/**
+ * HOW MUCH ONE REQUEST MAY READ OF THE WEB. The prompt asks for the best two
+ * independent sources; a real run read eleven pages after seven searches and
+ * never delivered. So the tools themselves say when it is enough — and what
+ * there is to build from.
+ */
+export const RESEARCH = { searches: 4, pages: 5 } as const;
+
+const enough = (ws: Workspace, what: 'searches' | 'pages'): string => {
+  const kept = [...ws.witnesses.values()].map((w) => `${w.id} "${w.title}"`).join(', ');
+  return `enough ${what} for this request (${what === 'pages' ? RESEARCH.pages : RESEARCH.searches}): `
+    + (kept === '' ? 'tell the person what you could not find.' : `build from what you have read — ${kept} — or tell the person what is missing.`);
+};
+
 export const SOURCE_TOOLS: readonly Tool[] = [
   {
     writes: false,
@@ -127,7 +141,9 @@ export const SOURCE_TOOLS: readonly Tool[] = [
       description: 'Search the web. For a Vedic or purāṇic text prefer scholarly and traditional sources: sanskritdocuments.org, GRETIL, TITUS, vedavid.org, a printed edition.',
       parameters: params({ query: str('What to look for.') }, ['query']),
     },
-    async run(args, { host }) {
+    async run(args, { ws, host }) {
+      if (ws.spent.searches >= RESEARCH.searches) return enough(ws, 'searches');
+      ws.spent.searches += 1;
       const hits = await host.research!.search(arg<string>(args, 'query', 'string'));
       if (hits.length === 0) return 'no results';
       return hits.slice(0, 8).map((h, i) => `${i + 1}. ${h.title}\n   ${h.url}\n   ${h.snippet.slice(0, 160)}`).join('\n');
@@ -142,6 +158,8 @@ export const SOURCE_TOOLS: readonly Tool[] = [
       parameters: params({ url: str('The page.') }, ['url']),
     },
     async run(args, { ws, host }) {
+      if (ws.spent.pages >= RESEARCH.pages) return enough(ws, 'pages');
+      ws.spent.pages += 1;
       const url = arg<string>(args, 'url', 'string');
       const page = await host.research!.fetch(url);
       const lines = page.text.split(/\r?\n/);
