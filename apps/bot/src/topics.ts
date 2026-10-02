@@ -38,7 +38,54 @@ export function hasTopics(api: Api): Promise<boolean> {
 
 /** What the person sees when a new task is opened for them. */
 export const NEW_TOPIC = 'New task';
-export const OPENED = 'A fresh conversation — what do you need? Your earlier topics stay as they were; go back to one to carry on there.';
+export const OPENED = 'New task — what would you like?';
+
+/**
+ * A TOPIC'S ICON SAYS WHERE ITS TASK STANDS — the one picture in Telegram's
+ * list of threads, from Telegram's own topic icons (any bot may set them;
+ * `getForumTopicIconStickers`). The owner (2026-10-02): "custom thread icons
+ * are possible, for the actions". Data: a state, and the icon for it.
+ */
+export const TOPIC_ICON = { working: '✍️', yours: '💬', delivered: '✅', failed: '❗️' } as const;
+export type TaskState = keyof typeof TOPIC_ICON;
+
+/** An emoji as Telegram may give it back: with or without its presentation selector. */
+const bare = (e: string): string => e.replace(/\uFE0F/gu, '');
+
+/** Telegram's ids for its topic icons, by emoji — asked once a bot. */
+const iconIds = new WeakMap<Api, Promise<ReadonlyMap<string, string>>>();
+function iconsOf(api: Api): Promise<ReadonlyMap<string, string>> {
+  const was = iconIds.get(api);
+  if (was !== undefined) return was;
+  /* Without icons a task goes on without them — the lookup never stops one. */
+  const now = Promise.resolve().then(() => api.getForumTopicIconStickers())
+    .then((all) => new Map(all.flatMap((s) => (s.emoji === undefined || s.custom_emoji_id === undefined ? [] : [[bare(s.emoji), s.custom_emoji_id] as const]))))
+    .catch(() => new Map<string, string>());
+  iconIds.set(api, now);
+  return now;
+}
+
+/** The id of a state's icon, or nothing when Telegram does not offer it. */
+export async function iconFor(api: Api, state: TaskState): Promise<string | undefined> {
+  return (await iconsOf(api)).get(bare(TOPIC_ICON[state]));
+}
+
+/** Set the icon of the topic this message is in to its task's state. */
+export async function markTask(ctx: Context, state: TaskState): Promise<void> {
+  const thread = threadOf(ctx);
+  if (thread === undefined || ctx.chat === undefined) return;
+  const id = await iconFor(ctx.api, state);
+  if (id === undefined) return;
+  await ctx.api.editForumTopic(ctx.chat.id, thread, { icon_custom_emoji_id: id }).catch(() => undefined);
+}
+
+/** A delivered document names its topic: "nīla sūktam", not the request that asked for it. */
+export async function nameDelivered(ctx: Context, file: string): Promise<void> {
+  const thread = threadOf(ctx);
+  const name = shortName(file.replace(/\.[a-z0-9]{2,6}$/iu, ''));
+  if (thread === undefined || ctx.chat === undefined || name === '') return;
+  await ctx.api.editForumTopic(ctx.chat.id, thread, { name }).catch(() => undefined);
+}
 
 /** How long a topic's name is let be: a line in Telegram's list of topics. */
 const NAME_MAX = 48;
@@ -55,11 +102,16 @@ export function shortName(request: string): string {
 /** Topics this bot opened and nobody has asked anything in yet. */
 const unnamed = new Set<string>();
 
-/** Open a new topic for a new task, and say so in it. Answers whether it could. */
+/**
+ * Open a new topic for a new task, and say so in it. Answers whether it could.
+ * The person's own `/new` is taken away by the caller: left where it was
+ * typed, it sat in the old thread with its answer in the new one (2026-10-02).
+ */
 export async function openTask(ctx: Context): Promise<boolean> {
   if (ctx.chat?.type !== 'private' || !(await hasTopics(ctx.api))) return false;
   try {
-    const topic = await ctx.api.createForumTopic(ctx.chat.id, NEW_TOPIC);
+    const icon = await iconFor(ctx.api, 'yours');
+    const topic = await ctx.api.createForumTopic(ctx.chat.id, NEW_TOPIC, icon === undefined ? {} : { icon_custom_emoji_id: icon });
     unnamed.add(`${ctx.chat.id}:${topic.message_thread_id}`);
     await ctx.api.sendMessage(ctx.chat.id, OPENED, { message_thread_id: topic.message_thread_id });
     return true;

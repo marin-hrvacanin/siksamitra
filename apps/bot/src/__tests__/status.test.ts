@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { STATUS_BUDGET, StatusLog } from '../status.js';
 
 describe('the status of a request', () => {
-  it('says each step with its own detail, its kind’s icon, and how it ended', () => {
+  it('says each step with its own detail, its kind’s mark, and how it ended', () => {
     const log = new StatusLog();
     log.started('web_search', 'Searching the web for “gāyatrī mantra”');
     log.finished('web_search', '5 result(s)', false);
@@ -15,16 +15,16 @@ describe('the status of a request', () => {
     log.finished('fetch_page', 'no Sanskrit text on it', false);
     log.started('check', 'Checking every letter against the source and every mark against the rules');
     const text = log.text();
-    expect(text).toContain('✅ 🔎 Searching the web for “gāyatrī mantra” — 5 result(s)');
-    expect(text).toContain('⚠️ 📖 Reading sanskritdocuments.org — no Sanskrit text on it');
-    expect(text).toContain('⏳ 🔬 Checking every letter');
+    expect(text).toContain('✓ ⌕ Searching the web for “gāyatrī mantra” — 5 result(s)');
+    expect(text).toContain('! ≡ Reading sanskritdocuments.org — no Sanskrit text on it');
+    expect(text).toContain('› ◎ Checking every letter');
   });
 
   it('a failed step is marked so', () => {
     const log = new StatusLog();
     log.started('fetch_page', 'Reading a page');
     log.finished('fetch_page', 'did not work', true);
-    expect(log.text()).toContain('❌ 📖 Reading a page — did not work');
+    expect(log.text()).toContain('✕ ≡ Reading a page — did not work');
   });
 
   it('shows what the agent says it is about to do, and the reviewer’s steps under it', () => {
@@ -33,8 +33,8 @@ describe('the status of a request', () => {
     log.started('review', 'A second look: is this the Gāyatrī itself?');
     log.started('read_witness', 'Reading lines 10–20 of w2', 'reviewer');
     const text = log.text();
-    expect(text).toContain('💭 I will look for an accented Taittirīya source of the Gāyatrī.');
-    expect(text).toContain('    ↳ ⏳ 📖 Reading lines 10–20 of w2…');
+    expect(text).toContain('· I will look for an accented Taittirīya source of the Gāyatrī.');
+    expect(text).toContain('    ↳ › ≡ Reading lines 10–20 of w2…');
   });
 
   it('never names /stop, and tells the person they may write while it works', () => {
@@ -61,11 +61,11 @@ describe('the status of a request', () => {
     log.finished('deliver', 'ready', false);
     log.end('answered', 72_000);
     const text = log.text();
-    expect(text).toContain('✅ 📄 Preparing the PDF — ready');
-    expect(text).toContain('✅ Done in 1 min 12 s.');
+    expect(text).toContain('✓ ⇩ Preparing the PDF — ready');
+    expect(text).toContain('✓ Done in 1 min 12 s.');
     expect(text).not.toContain('You can write to me');
     const stopped = new StatusLog();
     stopped.end('stopped', 4_000);
-    expect(stopped.text()).toContain('⏹️ Stopped, as you asked, after 4 s.');
+    expect(stopped.text()).toContain('⯀ Stopped, as you asked, after 4 s.');
   });
 });

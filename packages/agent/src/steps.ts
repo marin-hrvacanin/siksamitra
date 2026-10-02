@@ -28,22 +28,30 @@ const gist = (s: unknown, n = 80): string => {
   return first.length > n ? `${first.slice(0, n)}…` : first;
 };
 
-/** The kind of work a tool does, as the icon that stands for it. */
+/*
+ * THE MARKS — typographic, never emoji. The owner (2026-10-02): "I don't like
+ * how you are using emojis everywhere, gives the look of AI slop... use
+ * something like ASCII symbols/characters instead for consistency and cleaner
+ * look". Each mark is a text character with no emoji form, so it is drawn in
+ * the line's own face, one colour, the same on every device.
+ */
+
+/** The kind of work a tool does, as the mark that stands for it. */
 const KIND: Readonly<Record<string, string>> = {
-  find_text: '📚', open_text: '📚',
-  web_search: '🔎',
-  fetch_page: '📖', read_witness: '📖', find_in_witness: '📖', outline: '📖', read_verses: '📖',
-  build_document: '✍️', set_field: '✍️', replace_text: '✍️', add_verse: '✍️', remove_verse: '✍️',
-  set_source: '🖋️', auto_mark: '🖋️',
-  check: '🔬', review: '🧐',
-  deliver: '📄', offer_choices: '❓',
+  find_text: '▤', open_text: '▤',
+  web_search: '⌕',
+  fetch_page: '≡', read_witness: '≡', find_in_witness: '≡', outline: '≡', read_verses: '≡',
+  build_document: '✎', set_field: '✎', replace_text: '✎', add_verse: '✎', remove_verse: '✎',
+  set_source: '◇', auto_mark: '◇',
+  check: '◎', review: '◎',
+  deliver: '⇩', offer_choices: '?',
 };
 
-/** The icon for a kind of step: the same for every step of its kind. */
-export const stepIcon = (name: string): string => KIND[name] ?? '⚙️';
+/** The mark for a kind of step: the same for every step of its kind. */
+export const stepIcon = (name: string): string => KIND[name] ?? '·';
 
-/** How a step ended. */
-export const OUTCOME_ICON = { done: '✅', attention: '⚠️', failed: '❌' } as const;
+/** How a step stands: under way, done, worth a look, failed. */
+export const OUTCOME_ICON = { running: '›', done: '✓', attention: '!', failed: '✕' } as const;
 
 /** The step as it starts — from its own arguments. */
 export function stepStarted(name: string, argsJson: string): string {

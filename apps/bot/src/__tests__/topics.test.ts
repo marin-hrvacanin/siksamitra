@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { Api, Context } from 'grammy';
-import { NEW_TOPIC, OPENED, conversationOf, hasTopics, nameTask, openTask, threadOf } from '../topics.js';
+import { NEW_TOPIC, OPENED, TOPIC_ICON, conversationOf, hasTopics, markTask, nameDelivered, nameTask, openTask, threadOf } from '../topics.js';
 
 const ctxOf = (o: { thread?: number; topics?: boolean; type?: string; sent?: unknown[]; chat?: number; under?: string; opens?: number }): Context => {
   const sent = o.sent ?? [];
@@ -69,5 +69,54 @@ describe('a new task', () => {
     const api = { getMe: async () => { asked += 1; return { has_topics_enabled: true }; } } as unknown as Api;
     await hasTopics(api); await hasTopics(api);
     expect(asked).toBe(1);
+  });
+});
+
+describe('a topic’s icon, which says where its task stands', () => {
+  const STICKERS = [
+    { emoji: '✍️', custom_emoji_id: 'id-working' }, { emoji: '💬', custom_emoji_id: 'id-yours' },
+    { emoji: '✅', custom_emoji_id: 'id-delivered' }, { emoji: '❗', custom_emoji_id: 'id-failed' },
+  ];
+  const iconCtx = (thread: number | undefined, sent: unknown[]): Context => ({
+    chat: { id: 42, type: 'private' },
+    msg: thread === undefined ? {} : { is_topic_message: true, message_thread_id: thread },
+    api: {
+      getMe: async () => ({ has_topics_enabled: true }),
+      getForumTopicIconStickers: async () => STICKERS,
+      createForumTopic: async (_c: number, name: string, other: unknown) => { sent.push(['topic', name, other]); return { message_thread_id: 77, name }; },
+      sendMessage: async () => ({}),
+      editForumTopic: async (_c: number, thread: number, other: unknown) => { sent.push(['edit', thread, other]); return true; },
+    },
+  } as unknown as Context);
+
+  it('a new task opens with the icon that says it is the person’s turn', async () => {
+    const sent: unknown[] = [];
+    expect(await openTask(iconCtx(5, sent))).toBe(true);
+    expect(sent[0]).toEqual(['topic', NEW_TOPIC, { icon_custom_emoji_id: 'id-yours' }]);
+  });
+
+  it('each state sets its own icon — Telegram’s emoji found with or without its selector', async () => {
+    for (const [state, id] of [['working', 'id-working'], ['delivered', 'id-delivered'], ['failed', 'id-failed']] as const) {
+      const sent: unknown[] = [];
+      await markTask(iconCtx(5, sent), state);
+      expect(sent).toEqual([['edit', 5, { icon_custom_emoji_id: id }]]);
+    }
+  });
+
+  it('a chat with no topic is left alone', async () => {
+    const sent: unknown[] = [];
+    await markTask(iconCtx(undefined, sent), 'working');
+    expect(sent).toEqual([]);
+  });
+
+  it('a delivered document names its topic for the text, not the request', async () => {
+    const sent: unknown[] = [];
+    await nameDelivered(iconCtx(5, sent), 'nīla sūktam.pdf');
+    expect(sent).toEqual([['edit', 5, { name: 'nīla sūktam' }]]);
+  });
+
+  it('one icon a state, and four states', () => {
+    expect(Object.keys(TOPIC_ICON)).toEqual(['working', 'yours', 'delivered', 'failed']);
+    expect(new Set(Object.values(TOPIC_ICON)).size).toBe(4);
   });
 });

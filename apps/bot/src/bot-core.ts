@@ -77,7 +77,7 @@ export interface BotReply {
 }
 
 /** The greeting, on /start and /help. */
-export const WELCOME = 'Namaste 🙏 I am Śrutidhara, your śikṣāmitra companion.\n\n'
+export const WELCOME = 'Namaste. I am Śrutidhara, your śikṣāmitra companion.\n\n'
   + 'Ask me for a text in your own words — for example “the Puruṣa Sūktam, as the Taittirīya has it” '
   + 'or “Durgā Sūktam as a Word file”. I find it in authentic sources, mark it by the śikṣā rules, check it '
   + 'and send it back: as a PDF, or as a Word file (.docx), a śikṣāmitra file (.smdoc) or the VedaUnion '
@@ -89,7 +89,7 @@ export function notListed(contact?: string): string {
   const write = contact === undefined || contact === ''
     ? 'ask the person who told you about me to add you'
     : `write to ${contact} with your Telegram username`;
-  return 'Namaste 🙏 I am Śrutidhara, the śikṣāmitra assistant: I find Vedic texts in authentic sources, '
+  return 'Namaste. I am Śrutidhara, the śikṣāmitra assistant: I find Vedic texts in authentic sources, '
     + 'mark them by the śikṣā rules and send them back as a PDF.\n\n'
     + `For now I answer only the people who have been added. To be added, ${write} `
     + '(if you have none yet, set one in Telegram’s Settings → Username). '

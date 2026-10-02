@@ -24,7 +24,7 @@ import { join } from 'node:path';
 import { Bot, GrammyError, InlineKeyboard, InputFile, type Context } from 'grammy';
 import { ROOT, loadConfig } from './config.js';
 import { botCore, listed, type BotReply, type Who } from './bot-core.js';
-import { COMMANDS, conversationOf, nameTask, openTask } from './topics.js';
+import { COMMANDS, conversationOf, markTask, nameDelivered, nameTask, openTask } from './topics.js';
 import { StatusLog, type Ending } from './status.js';
 import { nodeHost } from './host.js';
 import { fileLedger, fileSessions } from './store.js';
@@ -65,8 +65,9 @@ const core = botCore({
  * as the record of what was done.
  */
 /* The way to stop a request, under its status while it runs — a button, as
-   Telegram's own bots have it, rather than a command to remember. */
-const STOP = new InlineKeyboard().text('⏹ Stop', 'stop');
+   Telegram's own bots have it, rather than a command to remember. Its colour
+   is Telegram's own `danger` style, its mark a character, never an emoji. */
+const STOP = new InlineKeyboard().text('⯀ Stop', 'stop').danger();
 
 class Status {
   private message: Promise<number | null> | null = null;
@@ -177,10 +178,17 @@ async function answer(ctx: Context, reply: BotReply): Promise<void> {
     offered.set(conversationOf(ctx), reply.choices.options);
   } else if (reply.files.length > 0) {
     /* A document delivered: the next thing may be a new task — one press. */
-    keyboard = new InlineKeyboard().text('🆕 New task', 'new');
+    keyboard = new InlineKeyboard().text('+ New task', 'new').primary();
   }
   for (let i = 0; i < pieces.length; i += 1) {
     await sendPiece(ctx, pieces[i]!, i === pieces.length - 1 ? keyboard : undefined);
+  }
+  /* The topic says where its task stands, and is named for what it made. */
+  if (reply.files.length > 0) {
+    await markTask(ctx, 'delivered');
+    await nameDelivered(ctx, reply.files[0]!.name);
+  } else {
+    await markTask(ctx, 'yours');
   }
 }
 
@@ -201,12 +209,14 @@ function work(ctx: Context, who: Who, text: string): void {
   void ctx.replyWithChatAction('typing').catch(() => undefined);
   const status = new Status(ctx);
   statuses.set(chat, status);
+  void markTask(ctx, 'working');
   const job: Promise<void> = core.handle(chat, who, text)
     .then(async (reply) => { await status.done(reply.stopped === true ? 'stopped' : 'answered'); await answer(ctx, reply); })
     .catch(async (e: unknown) => {
       /* The fault is the server's log's; the person is told only that it failed. */
       console.error(e);
       await status.done('failed');
+      await markTask(ctx, 'failed');
       await ctx.reply('Something went wrong on my side — please try again, or send /new.').catch(() => undefined);
     })
     .finally(() => {
@@ -230,7 +240,11 @@ bot.on('message:text', (ctx) => {
     const who = whoOf(ctx);
     const text = ctx.message.text;
     /* A new task is a new topic, where the chat has topics (`topics.ts`). */
-    if (text.trim() === '/new' && listed(config.allowed, who) && await openTask(ctx)) return;
+    if (text.trim() === '/new' && listed(config.allowed, who) && await openTask(ctx)) {
+      /* The command goes with the thread it opened: left behind, it sat in the old one. */
+      await ctx.deleteMessage().catch(() => undefined);
+      return;
+    }
     if (listed(config.allowed, who)) void nameTask(ctx, text);
     work(ctx, who, text);
   })();

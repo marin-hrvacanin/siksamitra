@@ -6,7 +6,8 @@
  *   - "don't delete … just update the message, append the newest status" —
  *     the message stays when the answer comes, and says how it ended;
  *   - "the icon should depend on what he's doing … consistently … also
- *     success and failure" — `stepIcon` and `OUTCOME_ICON` in the agent;
+ *     success and failure" — `stepIcon` and `OUTCOME_ICON` in the agent,
+ *     typographic marks, never emoji ("gives the look of AI slop");
  *   - "the message should be able to get a lot longer before the compaction
  *     of the top" — every step stays until the message nears Telegram's
  *     limit, and only then do the oldest give way;
@@ -25,7 +26,7 @@ interface Line {
   readonly text: string;
   readonly by: 'agent' | 'reviewer';
   outcome?: string;
-  state: 'running' | 'done' | 'attention' | 'failed';
+  state: 'running' | 'done' | 'attention' | 'failed' | 'noted';
 }
 
 export type Ending = 'answered' | 'stopped' | 'failed';
@@ -55,7 +56,7 @@ export class StatusLog {
 
   /** The person wrote while it worked. */
   noted(what: string): void {
-    this.lines.push({ icon: '↪️', text: `your note: ${what.length > 120 ? `${what.slice(0, 120)}…` : what}`, by: 'agent', state: 'done' });
+    this.lines.push({ icon: '»', text: `your note: ${what.length > 120 ? `${what.slice(0, 120)}…` : what}`, by: 'agent', state: 'noted' });
   }
 
   /** A minute with no step: the model is taking its time. */
@@ -66,26 +67,27 @@ export class StatusLog {
 
   private lineText(l: Line): string {
     const indent = l.by === 'reviewer' ? '    ↳ ' : '';
-    if (l.state === 'running') return `${indent}⏳ ${l.icon} ${l.text}…`;
+    if (l.state === 'running') return `${indent}${OUTCOME_ICON.running} ${l.icon} ${l.text}…`;
+    if (l.state === 'noted') return `${indent}${l.icon} ${l.text}`;
     const mark = l.state === 'failed' ? OUTCOME_ICON.failed : l.state === 'attention' ? OUTCOME_ICON.attention : OUTCOME_ICON.done;
     return `${indent}${mark} ${l.icon} ${l.text}${l.outcome === undefined || l.outcome === '' ? '' : ` — ${l.outcome}`}`;
   }
 
   /** The message as it stands. */
   text(): string {
-    const head = this.ending === null ? '🕉️ Working on it' : null;
+    const head = this.ending === null ? 'Working on it' : null;
     const tail: string[] = [];
     if (this.ending === null) {
-      if (this.intent !== null) tail.push(`💭 ${this.intent}`);
-      if (this.slow) tail.push('🐢 The model is slow just now — still working.');
+      if (this.intent !== null) tail.push(`· ${this.intent}`);
+      if (this.slow) tail.push('· The model is slow just now — still working.');
       tail.push('', 'You can write to me while I work, and I will take it into account.');
     } else {
       const took = this.ending.ms < 60_000
         ? `${Math.max(1, Math.round(this.ending.ms / 1000))} s`
         : `${Math.floor(this.ending.ms / 60_000)} min ${Math.round((this.ending.ms % 60_000) / 1000)} s`;
-      tail.push('', this.ending.how === 'answered' ? `✅ Done in ${took}.`
-        : this.ending.how === 'stopped' ? `⏹️ Stopped, as you asked, after ${took}.`
-          : `❌ Something went wrong after ${took}.`);
+      tail.push('', this.ending.how === 'answered' ? `${OUTCOME_ICON.done} Done in ${took}.`
+        : this.ending.how === 'stopped' ? `⯀ Stopped, as you asked, after ${took}.`
+          : `${OUTCOME_ICON.failed} Something went wrong after ${took}.`);
     }
     const body = this.lines.map((l) => this.lineText(l));
     /* Every step stays until the message nears the limit; then the oldest go.
