@@ -27,6 +27,30 @@ export { assertFresh };
 export const APP_URL = process.env.URL ?? 'http://localhost:5273/';
 
 /**
+ * WHAT WENT WRONG ON A PAGE, BY ITS ADDRESS — a gate's console and network
+ * errors, gathered into `errors`. Chrome's console says only "Failed to load
+ * resource: 404"; the failed request itself says which, so that is what is
+ * kept. CI was red for days on that one line with nothing to go on.
+ *
+ * ONE failure is expected and is no fault: a recitation's clips are not in the
+ * repository (`apps/web/src/shell/media.ts`), and the audio dock asks for the
+ * first one to learn whether the recording is there (`useHeard`), so on a host
+ * without them — CI, the desktop app — that request fails, by design. Every
+ * other failure still fails the gate.
+ */
+export const RECITATION = /\/tests\/[^/]+\/audio\//;
+export function watchErrors(page, errors) {
+  const expected = (url) => RECITATION.test(new URL(url).pathname);
+  page.on('console', (m) => { if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) errors.push(m.text()); });
+  page.on('pageerror', (e) => errors.push(String(e)));
+  page.on('response', (r) => { if (r.status() >= 400 && !expected(r.url())) errors.push(`${r.status()} ${r.url()}`); });
+  page.on('requestfailed', (r) => {
+    const why = r.failure()?.errorText ?? '';
+    if (why !== 'net::ERR_ABORTED' && !expected(r.url())) errors.push(`${why} ${r.url()}`);
+  });
+}
+
+/**
  * Open the app, and refuse to drive a build that is not the source on disk.
  *
  * The freshness check belongs here rather than in each tool, because a check a

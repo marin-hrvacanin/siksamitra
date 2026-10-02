@@ -17,7 +17,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { browserPath } from './_browser.mjs';
-import { APP_URL, mark, openApp, openTab, setMode, setView  } from './_ui.mjs';
+import { watchErrors, APP_URL, mark, openApp, openTab, setMode, setView  } from './_ui.mjs';
 
 const out = process.argv.includes('--out')
   ? process.argv[process.argv.indexOf('--out') + 1]
@@ -31,8 +31,8 @@ const browser = await puppeteer.launch({
 });
 const page = await browser.newPage();
 const errors = [];
-page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-page.on('pageerror', (e) => errors.push(String(e)));
+/* Console and network errors, by address, the one expected miss allowed (`watchErrors`). */
+watchErrors(page, errors);
 
 const notes = [];
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));

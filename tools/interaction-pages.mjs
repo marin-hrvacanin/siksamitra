@@ -46,7 +46,7 @@
  */
 import puppeteer from 'puppeteer-core';
 import { browserPath } from './_browser.mjs';
-import { openApp, setView } from './_ui.mjs';
+import { watchErrors, openApp, setView } from './_ui.mjs';
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -63,8 +63,8 @@ const browser = await puppeteer.launch({
 });
 const page = await browser.newPage();
 const errors = [];
-page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-page.on('pageerror', (e) => errors.push(String(e)));
+/* Console and network errors, by address, the one expected miss allowed (`watchErrors`). */
+watchErrors(page, errors);
 await page.setViewport({ width: 1400, height: 950, deviceScaleFactor: 1 });
 await openApp(page);
 await setView(page, 'Pages');
