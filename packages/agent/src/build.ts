@@ -149,19 +149,29 @@ export function versesOfFlow(flow: readonly string[]): OutlineVerse[] {
 export function paragraphsOf(o: Outline): WordParagraph[] {
   const out: WordParagraph[] = [para('Heading2', [wordRun(o.title)])];
   if (o.subtitle !== undefined && o.subtitle.trim() !== '') out.push(para('Heading3', [wordRun(o.subtitle.trim())]));
-  /* A remark is a body paragraph in his comment style, where a source is a mantra line's. */
-  for (const line of (o.remark ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== '')) {
-    out.push(para(null, [wordRun(line, 'Comment')]));
-  }
+  /* A remark is a body paragraph in his comment style, where a source is a
+     mantra line's — written AFTER the first section's source line: before it,
+     with a subtitle over both, the reader began a section at the source and
+     left the first one empty, and a real run was told "5 verse(s) given, 0
+     made" (nīla sūktam, 2026-10-02). */
+  const remark = (): void => {
+    for (const line of (o.remark ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== '')) {
+      out.push(para(null, [wordRun(line, 'Comment')]));
+    }
+  };
   let n = 0;
   const counted = (v: OutlineVerse): boolean => v.numbered !== false;
   const total = o.sections.reduce((k, s) => k + [...versesOfFlow(s.flow ?? []), ...s.verses].filter(counted).length, 0);
   o.sections.forEach((s, si) => {
-    if (s.title !== undefined && s.title.trim() !== '') out.push(para('Heading4', [wordRun(s.title.trim())]));
+    const headed = s.title !== undefined && s.title.trim() !== '';
+    /* Over a headed first section the remark is the text's, above its heading. */
+    if (si === 0 && headed) remark();
+    if (headed) out.push(para('Heading4', [wordRun(s.title!.trim())]));
     const cite = s.cite ?? (si === 0 ? o.locus : undefined);
     for (const line of (cite ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== '')) {
       out.push(para('Source', [wordRun(line, 'Comment')]));
     }
+    if (si === 0 && !headed) remark();
     for (const v of [...versesOfFlow(s.flow ?? []), ...s.verses]) {
       const kept = v.lines.map((l, i) => ({ line: cleanLine(l), note: (v.lineNotes?.[i] ?? '').trim() }))
         .filter((x) => x.line !== '');

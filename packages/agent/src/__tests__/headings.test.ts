@@ -53,3 +53,22 @@ describe('his own shape', () => {
     expect(headingFault({ title: 'nīla sūktam', sections: [{ title: 'Introduction', verses: [verse] }] })).toBeUndefined();
   });
 });
+
+describe('a remark under his subtitle', () => {
+  const v = (s: string) => ({ lines: [`${s} ghṛ̱tava̍tī savita̱rā-dhi̍patyaiḥ ।`, 'paya̍svatī̱ ranti̱rāśā̍ no astu ॥'] });
+  it('leaves every verse in the one section — it once left the first empty ("5 verse(s) given, 0 made")', () => {
+    const doc = documentOf({
+      title: 'nīla sūktam', subtitle: 'kṛṣṇa yajurvedīya', remark: 'The mantras to viṣṇupatnī.',
+      locus: 'taittirīya saṁhitā 4.4.12', sections: [{ verses: [v('a'), v('b')] }],
+    });
+    expect(doc.sections.map((s) => s.verses.length)).toEqual([2]);
+    expect(doc.sections[0]!.source).toBe('taittirīya saṁhitā 4.4.12');
+  });
+  it('and over a headed first section it is the text’s, above the heading', () => {
+    const doc = documentOf({
+      title: 'nīla sūktam', subtitle: 'kṛṣṇa yajurvedīya', remark: 'The mantras to viṣṇupatnī.',
+      sections: [{ title: 'dhyānam', verses: [v('a')] }, { title: 'mantrāḥ', verses: [v('b')] }],
+    });
+    expect(doc.sections.filter((s) => s.verses.length > 0).map((s) => s.title)).toEqual(['dhyānam', 'mantrāḥ']);
+  });
+});
