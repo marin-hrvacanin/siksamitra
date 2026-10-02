@@ -27,6 +27,17 @@ describe('a svara set after the visarga or the anusvāra', () => {
   });
 });
 
+describe('the y, v or l an anusvāra nasalises, spelt out', () => {
+  it('is the anusvāra alone, as his texts write it', () => {
+    expect(read('म॒हीन्दे॒वीं-विँष्णु॑पत्नी')).toBe('ma̱hīnde̱vīṁ-viṣṇu̍patnī');
+    expect(read('श्लोकं॒-यँज॑मानाय')).toBe('śloka̱ṁ-yaja̍mānāya');
+    expect(read('ल॒क्ष्मीं-लँ॒क्ष्मीः')).toContain('ṁ-la̱');
+  });
+  it('but a candrabindu after anything else is the letter it is', () => {
+    expect(read('सँ')).toBe('saṁ');
+  });
+});
+
 describe('the visarga spelt as it is said', () => {
   it('the upadhmānīya before p, and the jihvāmūlīya before k, are the visarga', () => {
     expect(read('क्रु॒द्धᳶ प॑रो॒वप॑')).toBe('kru̱ddhaḥ pa̍ro̱vapa̍');
