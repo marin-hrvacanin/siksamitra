@@ -121,7 +121,7 @@ describe('a document the agent builds', () => {
   });
 
   it('several sections with neither a title nor a source line are refused — they would run together', () => {
-    expect(() => documentOf({ title: 'x', sections: [{ verses: [{ lines: ['a'] }] }, { verses: [{ lines: ['b'] }] }] }))
+    expect(() => documentOf({ title: 'x', sections: [{ verses: [{ lines: ['a b'] }] }, { verses: [{ lines: ['c d'] }] }] }))
       .toThrow(/needs a title or a source line/);
   });
 

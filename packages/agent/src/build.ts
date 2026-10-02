@@ -271,6 +271,27 @@ export function headingFault(o: Outline): string | undefined {
     }
   }
   for (const v of o.sections.flatMap((s) => s.verses)) {
+    /* A VERSE OF ONE WORD is the sentence that opens the verse after it or
+       closes the one before: the bot made `गृणाहि` a verse of the nīla sūktam
+       (2026-10-02), where TITUS opens TS 4.4.12.5 with it, and sanskritdocuments'
+       `३७` before it counts fifty words, not verses. */
+    const words = v.lines.join(' ').replace(/[।॥|0-9०-९()]/gu, ' ').split(/\s+/u).filter((w) => w !== '');
+    if (words.length === 1 && !/^(?:o[mṁṃ]|ओ[ंम्]|ॐ)$/u.test(words[0]!.normalize('NFC').replace(/\p{M}/gu, ''))) {
+      return `a verse of one word ("${words[0]}") is the sentence that opens the verse after it or closes the one before — put it with its verse, as the edition's own verse numbers divide them; an edition's running count (sanskritdocuments' ३७, fifty words a pañcāśat) is no verse boundary`;
+    }
+    /* NO DIGIT, NO DASH IN A MANTRA LINE — its anukramaṇī's too. The bot set
+       a modern edition's list as one (`chandaḥ — 1 virāḍjagatī ।2 triṣṭup ।3।6
+       …`, the manyu sūktam, 2026-10-02); his anukramaṇī says it in Sanskrit.
+       A kampa's numeral, after its vowel, is a svara, not a digit. */
+    for (const line of v.lines) {
+      /* A verse's own number at its end is the builder's to renumber (`numbered`)… */
+      const bare = cleanLine(line).replace(/[aāiīuūṛṝeo][\u0300-\u036f]*[13१३]/gu, '')
+        /* …and a source's reference after it, `॥ १०।०८३।०१`: the end's daṇḍas, digits and dots. */
+        .replace(/[।॥|][\s0-9०-९।॥|.]*$/u, '');
+      if (/[—–]|[0-9०-९]/u.test(bare)) {
+        return `"${line.slice(0, 50)}…": a mantra line — its anukramaṇī's too — has no digits and no dashes. His anukramaṇī says a changing metre in Sanskrit: "prathamā dvitīyā caturthīnām ṛcām anuṣṭup । tṛtīyāyāś ca triṣṭup chandasī ॥" (his samāna sūktam); the program numbers the verses`;
+      }
+    }
     if (v.optional === true && !/[0-9]/u.test(v.note ?? '')) {
       return `an optional verse names where it is from in its note, as his prastāvanā does ("TS 1.8.22. ṚV 5.43.11 - bhaumo'trirṛṣiḥ, viśve devā devatāḥ, triṣṭup chandaḥ") — or it is left out`;
     }

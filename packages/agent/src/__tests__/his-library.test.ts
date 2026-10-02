@@ -91,7 +91,7 @@ describe('a text of his, read as an example', () => {
     expect(ws.opened).toBeNull();
   });
   it('at most eight verses at a time', async () => {
-    const many = documentOf({ title: 'x', sections: [{ verses: Array.from({ length: 20 }, (_, i) => ({ lines: [`ve̍rse ${i + 1} ।`] })) }] });
+    const many = documentOf({ title: 'x', sections: [{ verses: Array.from({ length: 20 }, (_, i) => ({ lines: [`ve̍rse a̱nyat ॥ ${i + 1}॥`] })) }] });
     const host: Host = { library: { find: async () => [], load: async () => ({ doc: many, kind: 'reference' }) } };
     const said = await run(host, new Workspace(), 'read_example', { id: 'x', verses: '3-19' });
     expect(said).toMatch(/verses 3-10 of 20/);

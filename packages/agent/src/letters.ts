@@ -8,7 +8,7 @@
  * allowed to change. Kept apart from the tools so it can be read, and tested,
  * as one rule.
  */
-import { normalize, toIast } from '@siksamitra/engine';
+import { KAMPA_MARKS, normalize, toIast } from '@siksamitra/engine';
 
 /* Its letters: an IAST line has daṇḍas and digits of the block too. */
 const DEVANAGARI = /[\u0900-\u0963\u0970-\u097F]/u;
@@ -59,9 +59,12 @@ const folded = (s: string, folds: readonly (readonly [RegExp, string])[]): strin
 export const asIast = (line: string): string =>
   normalize(DEVANAGARI.test(line) ? toIast(line, 'deva').iast : line).text.normalize('NFC');
 
+/* Brackets are his, not the source's letters: what the authentic editions
+   have both with and without he sets in them — `(atha)`, `(parameśvara)`, a
+   whole verse `( … ॥ )` — his sādhanā throughout (2026-10-02). */
 function lettersOf(line: string): string {
   const iast = asIast(line);
-  return folded(iast.replace(/[\s\-'’ʼˎ।॥|0-9०-९]/gu, ''), IN_A_LINE);
+  return folded(iast.replace(/[\s\-'’ʼˎ।॥|0-9०-९()[\]]/gu, ''), IN_A_LINE);
 }
 
 /** One line's letters, as `spaced` is compared by: every fold applied. */
@@ -279,4 +282,16 @@ export function withSourceDandas(lines: readonly string[], spaced: readonly stri
     next += 1;
   }
   return out.split('\n');
+}
+
+/**
+ * A ṚGVEDA KAMPA THE SOURCE LEFT BARE — `ivānavabravo३'smākaṁ`, its numeral
+ * with no accent on it (the manyu sūktam, 2026-10-02), so it printed as a
+ * plain `3`. In a Ṛgveda text a numeral straight after a vowel, inside its
+ * word, is the kampa, and his śikṣā writes it whole: `3̱̍`, `1̱̍`. Called for
+ * the Ṛgveda only — elsewhere such a numeral may be a pluta.
+ */
+export function withWholeKampas(line: string): string {
+  return line.replace(/([aāiīuūṛṝeo][\u0300-\u036f]*)([13१३])[\u0331\u0952\u030d\u0951]*/gu,
+    (_, vowel: string, digit: string) => `${vowel}${digit === '1' || digit === '१' ? '1' : '3'}${KAMPA_MARKS}`);
 }

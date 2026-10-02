@@ -17,7 +17,7 @@ import { CHANT_PROFILE_KEYS, type ChantProfileKey } from '@siksamitra/format';
 import { STAGES } from '@siksamitra/engine';
 import { documentOf, versesOfFlow, type OutlineSection, type OutlineVerse } from '../build.js';
 import { hisJunctions } from '../junctions.js';
-import { letterChange, withSourceDandas, withSourceSvaras } from '../letters.js';
+import { letterChange, withSourceDandas, withSourceSvaras, withWholeKampas } from '../letters.js';
 import type { VerseLayout } from '../lines.js';
 import { outlineOf, type Workspace } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
@@ -93,7 +93,7 @@ function pageNote(note: string, where: string): string {
 }
 
 /** One section of `build_document`, its letters taken from where it says — and, per verse, from where. */
-function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; from?: From; verseFrom: (From | undefined)[] } {
+function sectionOf(ws: Workspace, s: SectionArg, source?: ChantProfileKey): { section: OutlineSection; from?: From; verseFrom: (From | undefined)[] } {
   const title = typeof s.title === 'string' && s.title.trim() !== '' ? { title: s.title } : {};
   if (s.witness !== undefined && s.lines !== undefined) {
     /* The source's own lines, grouped into verses by its own numbering
@@ -108,7 +108,9 @@ function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; fro
   const given = s.verses ?? [];
   const verses: OutlineVerse[] = given.map((v) => {
     const taken = v.witness !== undefined && v.at !== undefined ? linesOf(ws, v.witness, v.at) : (v.lines ?? []);
-    const lines = spacedOf(taken, v.spaced, `section "${s.title ?? ''}"`);
+    const spaced = spacedOf(taken, v.spaced, `section "${s.title ?? ''}"`);
+    /* A Ṛgveda source's bare kampa, written whole (`withWholeKampas`). */
+    const lines = source === 'rigveda' ? spaced.map(withWholeKampas) : spaced;
     /* A verse given is ONE verse: lines that the source's own numbering makes
        two (a line inside ends with a daṇḍa and a number) are refused. */
     const made = versesOfFlow(lines).length;
@@ -254,7 +256,7 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
       const remark = opt<string>(args, 'remark', 'string');
       const source = arg<ChantProfileKey>(args, 'source', 'string');
       if (!CHANT_PROFILE_KEYS.includes(source)) throw new Error(`source must be one of ${CHANT_PROFILE_KEYS.join(', ')}`);
-      const built = arg<SectionArg[]>(args, 'sections', 'array').map((s) => sectionOf(ws, s));
+      const built = arg<SectionArg[]>(args, 'sections', 'array').map((s) => sectionOf(ws, s, source));
       ws.open(documentOf({
         title, ...(subtitle === undefined ? {} : { subtitle }), ...(locus === undefined ? {} : { locus }),
         ...(description === undefined ? {} : { description }),
