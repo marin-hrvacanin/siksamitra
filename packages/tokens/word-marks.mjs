@@ -151,7 +151,7 @@ ${at} .u__long::after {
   color: #${WORD_MARKS.dirgha.color};
 }
 ${at} .u--virama {
-  font-family: 'Arimo', sans-serif;
+  font-family: '${WORD_MARKS.virama.face}', 'Arimo', sans-serif;
   font-size: ${viramaEm}em;
   line-height: 0;
 }
@@ -176,7 +176,7 @@ ${at} .danda {
   padding: 0;
   text-indent: 0;
   color: var(--doc-verse-color);
-  font-family: '${WORD_DANDA_FACE}', 'Noto Serif Devanagari', serif;
+  font-family: 'Mangal', '${WORD_DANDA_FACE}', 'Noto Serif Devanagari', serif;
 }
 `;
 }

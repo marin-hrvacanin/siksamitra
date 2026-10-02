@@ -12,3 +12,4 @@ Library
 .venv
 apps/desktop/src-tauri/target
 *.log
+fonts

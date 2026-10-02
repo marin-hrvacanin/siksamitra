@@ -1680,7 +1680,7 @@
   --doc-title-indent: 1.6542rem;
   --doc-title-hanging: 0px;
   --doc-title-right: 0px;
-  --doc-title-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-title-face: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-title-style: normal;
   --doc-title-weight: 400;
   --doc-title-color: var(--doc-ink);
@@ -1691,7 +1691,7 @@
   --doc-part-indent: 0px;
   --doc-part-hanging: 0px;
   --doc-part-right: 0px;
-  --doc-part-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-part-face: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-part-style: normal;
   --doc-part-weight: 400;
   --doc-part-color: var(--doc-ink);
@@ -1702,7 +1702,7 @@
   --doc-section-indent: 1.6542rem;
   --doc-section-hanging: 0px;
   --doc-section-right: 0px;
-  --doc-section-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-section-face: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-section-style: normal;
   --doc-section-weight: 400;
   --doc-section-color: #7f7f7f;
@@ -1713,7 +1713,7 @@
   --doc-step-indent: 2.3625rem;
   --doc-step-hanging: 0px;
   --doc-step-right: 0px;
-  --doc-step-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-step-face: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-step-style: normal;
   --doc-step-weight: 400;
   --doc-step-color: #7f7f7f;
@@ -1724,7 +1724,7 @@
   --doc-verse-indent: 1.1833rem;
   --doc-verse-hanging: 1.1833rem;
   --doc-verse-right: -1.1833rem;
-  --doc-verse-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-verse-face: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-verse-style: normal;
   --doc-verse-weight: 400;
   --doc-verse-color: var(--doc-ink);
@@ -1735,7 +1735,7 @@
   --doc-translation-indent: 1.1833rem;
   --doc-translation-hanging: 1.1833rem;
   --doc-translation-right: 1.1833rem;
-  --doc-translation-face: 'Tinos', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
+  --doc-translation-face: 'Times New Roman', 'Tinos', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
   --doc-translation-style: italic;
   --doc-translation-weight: 400;
   --doc-translation-color: #808080;
@@ -1746,7 +1746,7 @@
   --doc-body-indent: 0px;
   --doc-body-hanging: 0px;
   --doc-body-right: 0px;
-  --doc-body-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-body-face: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-body-style: normal;
   --doc-body-weight: 400;
   --doc-body-color: var(--doc-ink);
@@ -1757,7 +1757,7 @@
   --doc-comment-indent: 0px;
   --doc-comment-hanging: 0px;
   --doc-comment-right: 0px;
-  --doc-comment-face: 'Tinos', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
+  --doc-comment-face: 'Times New Roman', 'Tinos', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: #808080;
@@ -1768,7 +1768,7 @@
   --doc-head-indent: 0px;
   --doc-head-hanging: 0px;
   --doc-head-right: 0px;
-  --doc-head-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-head-face: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-head-style: normal;
   --doc-head-weight: 400;
   --doc-head-color: var(--doc-ink);
@@ -1779,7 +1779,7 @@
   --doc-small-indent: 0px;
   --doc-small-hanging: 0px;
   --doc-small-right: 0px;
-  --doc-small-face: 'Tinos', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
+  --doc-small-face: 'Times New Roman', 'Tinos', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
   --doc-small-style: normal;
   --doc-small-weight: 400;
   --doc-small-color: var(--doc-ink);
@@ -2504,8 +2504,8 @@
   --doc-size: 1.3333333333333333rem;
   --doc-leading: 1.5;
   --doc-soft: color-mix(in srgb, #000000 74%, #ffffff);
-  --font-body: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
-  --font-display: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --font-body: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --font-display: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --color-hold: #538135;
   --color-hold-long: #538135;
   --color-svara: #943634;
@@ -2563,8 +2563,8 @@
   --doc-size: 1.3333333333333333rem;
   --doc-leading: 1.5;
   --doc-soft: color-mix(in srgb, #000000 74%, #ffffff);
-  --font-body: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
-  --font-display: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --font-body: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --font-display: 'Arial', 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --color-hold: #538135;
   --color-hold-long: #538135;
   --color-svara: #943634;
@@ -2841,7 +2841,7 @@
   color: #4472C4;
 }
 [data-doc="word"] .doc .u--virama {
-  font-family: 'Arimo', sans-serif;
+  font-family: 'Arial', 'Arimo', sans-serif;
   font-size: 1.1250em;
   line-height: 0;
 }
@@ -2866,6 +2866,6 @@
   padding: 0;
   text-indent: 0;
   color: var(--doc-verse-color);
-  font-family: 'Siksamitra Danda', 'Noto Serif Devanagari', serif;
+  font-family: 'Mangal', 'Siksamitra Danda', 'Noto Serif Devanagari', serif;
 }
 

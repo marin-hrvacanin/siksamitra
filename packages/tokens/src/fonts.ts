@@ -39,7 +39,7 @@ export const TEXT_FACES = {
    * his Arial. This is the only text face that is not a reading choice — it is
    * a fidelity requirement. See `WORD_FACES` for why Arial itself is not named.
    */
-  wordSans: `'Arimo', ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
+  wordSans: `'Arial', 'Arimo', ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
 } as const;
 
 /** Chrome faces a chrome theme may name. */
@@ -52,27 +52,32 @@ export const UI_FACES = {
 export const MONO_FACE = "'IBM Plex Mono', Consolas, monospace";
 
 /**
- * The Veda Union Word document's faces — metric-compatible substitutes.
+ * The Veda Union Word document's faces — HIS, then their metric-compatible
+ * substitutes.
  *
- * The metric-compatible face, and NOT his original after it. It was named
- * second — "on a machine that has Arial the page is literally identical" —
- * and that is not what a browser does with a stack: it takes a face for each
- * glyph the first one lacks, so on his machine a letter carrying a Ṛgvedic
- * overline, which Arimo has no glyph for, printed WHOLE in Arial and on the
- * bot's server in Gentium. Measured on his sādhanā: 40 letters in Arial, one
- * arrow in Times. A page must be the same page on every machine, so a glyph
- * missing from the first face goes to faces this program ships.
+ * His own faces first, now that he has them licensed (2026-10-02: "the
+ * translation font is not the same as that in our PDFs"): `fonts/` at the
+ * repository's root, on his machine and the bot's server (`tools/_browser.mjs`
+ * points the printer at it). Where they are not, Arimo, Tinos and Carlito
+ * stand in with the same advance widths, so the lines break where his do.
+ *
+ * Once named second and then not at all, because a browser takes each glyph
+ * the first face lacks from the next: a letter carrying the Ṛgvedic overline
+ * printed WHOLE in another face. The overline is drawn from the stylesheet
+ * now, as the svaras are (`word-marks.mjs`), so no letter goes elsewhere for
+ * it, and his faces cover every IAST letter (Arial 7.06, Times New Roman
+ * 7.12, Calibri 6.27 — measured).
  *
  * The Indic faces and the text backstop follow, because a VU page still has to
  * write Devanāgarī and the Vedic candrabindu (see above).
  */
 export const WORD_FACES = {
   /** `Translit` — the mantra line. Arial 16 pt. */
-  sans: `'Arimo', ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
+  sans: `'Arial', 'Arimo', ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
   /** `Prijevod` — the translation. Times New Roman, italic. */
-  serif: `'Tinos', ${TEXT_BACKSTOP}, ${INDIC_STACK}, serif`,
+  serif: `'Times New Roman', 'Tinos', ${TEXT_BACKSTOP}, ${INDIC_STACK}, serif`,
   /** Headings and body. Calibri. */
-  ui: `'Carlito', ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
+  ui: `'Calibri', 'Carlito', ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
 } as const;
 
 export type TextFace = keyof typeof TEXT_FACES;

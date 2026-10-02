@@ -18,7 +18,10 @@
  * browser gate is to already know the variable's name, which is exactly the
  * knowledge a new machine — or a new person — does not have.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
 
 /** Where a browser usually is, in the order worth looking. */
@@ -57,9 +60,29 @@ export function browserPath() {
   return found;
 }
 
-/** Launch one, with the flags every tool here wants. */
+/**
+ * HIS OWN FONTS — `fonts/` at the repository's root: Arial, Times New Roman,
+ * Calibri and Calibri Light, Mangal, URW Palladio ITU, licensed by him and
+ * never committed, because the repository is public. Where the folder is —
+ * his machine; the bot's server, mounted read-only — the browser that prints
+ * the PDFs is pointed at it, so a page is set in his faces, which the stacks
+ * name first; where it is not, the faces named after them stand in, with the
+ * same widths. Windows has them already and does not read fontconfig.
+ */
+const FONTS = fileURLToPath(new URL('../fonts/', import.meta.url));
+function fontEnv() {
+  if (!existsSync(FONTS)) return {};
+  const conf = join(tmpdir(), 'siksamitra-fonts.conf');
+  writeFileSync(conf, '<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n<fontconfig>\n'
+    + '  <include ignore_missing="yes">/etc/fonts/fonts.conf</include>\n'
+    + `  <dir>${FONTS}</dir>\n  <cachedir>${join(tmpdir(), 'siksamitra-fontconfig')}</cachedir>\n</fontconfig>\n`);
+  return { FONTCONFIG_FILE: conf };
+}
+
+/** Launch one, with the flags every tool here wants — and his fonts, where they are. */
 export const launch = (opts = {}) => puppeteer.launch({
-  executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'], ...opts,
+  executablePath: browserPath(), headless: 'shell', args: ['--no-sandbox'],
+  env: { ...process.env, ...fontEnv() }, ...opts,
 });
 
 /** Open a browser once and hand it to `fn`, closing it whatever happens. */

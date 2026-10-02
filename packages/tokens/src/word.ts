@@ -179,8 +179,8 @@ export const wordColor = (hex: string): string => `#${hex.toLowerCase()}`;
  * Arimo, Tinos and Carlito are the Croscore faces: same advance widths as
  * Arial, Times New Roman and Calibri at the same point size, and OFL, so they
  * can travel inside the installer. The full CSS stacks are in `fonts.ts`, and
- * they name the original second — on a machine that has Arial, the page is
- * literally identical rather than merely metrically so.
+ * they name his original FIRST — `fonts/`, licensed by him, where the page is
+ * printed — so there the page is literally his, and elsewhere metrically so.
  */
 export const WORD_SUBSTITUTES = {
   sans: { of: 'Arial', use: 'Arimo' },

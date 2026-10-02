@@ -156,7 +156,9 @@ await withBrowser(async (browser) => {
 
   near('mantra size', seen.first?.size, line.size);
   near('mantra leading', seen.first?.lead, line.leading / line.size, 0.01);
-  is('mantra face', seen.first?.family, 'Arimo');
+  /* The face his `Translit` names, first; Arimo, with its widths, follows it
+     for a machine without his fonts (`word-fidelity.test.ts`). */
+  is('mantra face', seen.first?.family, 'Arial');
   is('mantra bold', seen.first?.bold, false);
   /* His `Translit` is `w:left="284" w:hanging="284"`: the first line comes out
      to the margin and the continuations sit in. */

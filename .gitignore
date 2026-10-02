@@ -122,3 +122,9 @@ dist-types/
 .env
 .env.*
 !.env.example
+
+# His licensed fonts (Arial, Times New Roman, Calibri, Mangal, URW Palladio
+# ITU) — on his machine and the bot's server only: the repository is public,
+# and a font licence does not allow giving the files away. tools/_browser.mjs
+# points the PDF printer at this folder wherever it is.
+/fonts/

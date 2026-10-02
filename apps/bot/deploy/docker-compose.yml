@@ -16,6 +16,7 @@ services:
     env_file: [.env]            # DEEPSEEK_API_KEY, TELEGRAM_BOT_TOKEN, BOT_ALLOWED_USERS, BOT_OWNERS, limits
     volumes:
       - ./data:/data            # the spending ledger and each chat's session
+      - ./fonts:/app/fonts:ro   # his fonts, which the PDF printer reads (never in the image or the repository)
     read_only: true
     tmpfs: [/tmp]
     shm_size: 256m
