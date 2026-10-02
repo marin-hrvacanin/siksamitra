@@ -20,7 +20,7 @@ export { documentOf, paragraphsOf, runsOf } from './build.js';
 export type { Outline, OutlineSection, OutlineVerse } from './build.js';
 export { Workspace, marksSummary, outlineOf, verseLetters, versesOf } from './workspace.js';
 export type { BuiltFrom, Origin, Witness } from './workspace.js';
-export { RUNAWAY, runTurn, capped, withoutPaths } from './loop.js';
+export { CUT_OFF, RUNAWAY, runTurn, capped, withoutPaths } from './loop.js';
 export type { AgentEvent, TurnOptions, TurnResult } from './loop.js';
 export { TOOL_LABELS, systemFor, toolsFor } from './modes.js';
 export { OUTCOME_ICON, stepAttention, stepIcon, stepResult, stepStarted } from './steps.js';

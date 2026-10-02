@@ -39,11 +39,23 @@ describe('a verse given with his word breaks', () => {
     await expect(run(ws, { spaced: wrong })).rejects.toThrow(/line 1: spaced changes a letter at .*mahī/);
   });
 
-  it('a svara moved is a letter changed', async () => {
+  it('a svara moved, or left out, is put back where the source has it — the svaras are the source’s', async () => {
+    /* A real run retyping a mantra dropped five svaras, a build each (2026-10-02). */
     const ws = new Workspace();
     ws.keep('https://sanskritdocuments.org/x', 'bhū sūktam', SOURCE);
-    const moved = [HIS[0]!.replace('bhūmi̍r', 'bhū̍mir'), HIS[1]!];
-    await expect(run(ws, { spaced: moved })).rejects.toThrow(/spaced changes a letter/);
+    const SVARAS = new RegExp(`[${String.fromCharCode(0x30d, 0x331, 0x30e)}]`, 'gu');
+    const moved = [HIS[0]!.replace('bhūmi̍r', 'bhū̍mir'), HIS[1]!.replace(SVARAS, '')];
+    await run(ws, { spaced: moved });
+    const text = verseLetters(ws.need().sections[0]!.verses[0]!);
+    expect(text).toContain('bhūmi̍r bhū̱mnā');
+    expect(text).toContain('u̱pasthe̍ te devya-dite̱');
+    expect(checkDocument(ws).filter((f) => f.severity === 'error')).toEqual([]);
+  });
+
+  it('but a vowel changed is still a letter changed', async () => {
+    const ws = new Workspace();
+    ws.keep('https://sanskritdocuments.org/x', 'bhū sūktam', SOURCE);
+    await expect(run(ws, { spaced: [HIS[0]!.replace('dyaur', 'dyāur'), HIS[1]!] })).rejects.toThrow(/spaced changes a letter/);
   });
 
   it('his spellings of a source’s junctions build, and check clean — vignanam’s second verse', async () => {
@@ -59,6 +71,17 @@ describe('a verse given with his word breaks', () => {
     ws.keep('https://vignanam.org/samskritam/bhu-suktam.html', 'bhū sūktam', ['ओम् ॥ ओ-म्भूमि॑र्भू॒म्ना द्यौर्व॑रि॒णा-ऽन्तरि॑क्ष-म्महि॒त्वा ।', 'उ॒पस्थे॑ ते देव्यदिते॒-ऽग्निम॑न्ना॒द-म॒न्नाद्या॒याद॑धे ॥']);
     await run(ws, { spaced: ["bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣaṁ mahi̱tvā ।", "u̱pasthe̍ te devya-dite̱'gnima̍-nnā̱dama̱-nnādyā̱yā''da̍dhe ॥"] });
     expect(verseLetters(ws.need().sections[0]!.verses[0]!)).toMatch(/^bhūmi̍r/);
+    expect(checkDocument(ws).filter((f) => f.severity === 'error')).toEqual([]);
+  });
+
+  it('the words apart and no svaras at all: built as his page has the verse — vignanam’s first, against his', async () => {
+    const ws = new Workspace();
+    ws.keep('https://vignanam.org/samskritam/bhu-suktam.html', 'bhū sūktam', ['ओम् ॥ ओ-म्भूमि॑र्भू॒म्ना द्यौर्व॑रि॒णा-ऽन्तरि॑क्ष-म्महि॒त्वा ।', 'उ॒पस्थे॑ ते देव्यदिते॒-ऽग्निम॑न्ना॒द-म॒न्नाद्या॒याद॑धे ॥']);
+    await run(ws, { spaced: ["bhūmir bhūmnā dyaur variṇā'ntarikṣam mahitvā", "upasthe te devy adite'gnim annādam annādyāyā''dadhe"] });
+    const lines = verseLetters(ws.need().sections[0]!.verses[0]!).split('\n');
+    /* His lines, out of his bhū sūktam v1.1. */
+    expect(lines[0]).toBe("bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣaṁ mahi̱tvā ।".normalize('NFC'));
+    expect(lines[1]!.startsWith("u̱pasthe̍ te devya-dite̱'gnima̍-nnā̱dama̱-nnādyā̱yā''da̍dhe ॥".normalize('NFC'))).toBe(true);
     expect(checkDocument(ws).filter((f) => f.severity === 'error')).toEqual([]);
   });
 

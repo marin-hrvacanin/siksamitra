@@ -37,12 +37,14 @@ interface Fold {
  * Ordered. The Vedic-anusvāra fold must run before anything that reads an
  * anusvāra, which is why it is not left to the caller.
  */
-/** The Taittirīya gum written out as letters — `gm̐`, `ggm̐`, `gṁ`, and `gg`
- *  alone before the sibilant it comes before (`पुण्य॒ग्ग्॒ श्लोकं`, vignanam's
- *  bhū sūktam) — which a source means as the anusvāra the gum rule makes it
- *  from. One pattern, for the fold below and for anything else that takes a
- *  source's line in. */
-export const WRITTEN_GUM = /g{1,2}(?:m̐|ṁ)|gg(?=\p{M}*\s*[śṣs])/gu;
+/** The Taittirīya gum written out as letters — `gm̐`, `ggm̐`, `gṁ`, the svara
+ *  it bears between them (`tri̠g̠ṃśad`, vignanam's English), and `gg` alone
+ *  before the sibilant it comes before (`पुण्य॒ग्ग्॒ श्लोकं`, vignanam's
+ *  Devanāgarī) — which a source means as the anusvāra the gum rule makes it
+ *  from. A svara it bears is kept, after the anusvāra (`$1`): his
+ *  `tri̱ṁ̱śad`. One pattern, for the fold below and for anything else that
+ *  takes a source's line in. */
+export const WRITTEN_GUM = /g{1,2}(\p{M}*)(?:m̐|ṁ)|gg(?=\p{M}*\s*[śṣs])/gu;
 
 const FOLDS: readonly Fold[] = [
   // Devanāgarī accent signs → the IAST combining marks (sanskrit_rules.js ~L293).
@@ -51,6 +53,8 @@ const FOLDS: readonly Fold[] = [
   { rule: 'svara.dirgha-sign', from: /[᳚́]/g, to: '̎', label: '᳚ → ◌̎' },
   // One anusvāra spelling.
   { rule: 'anusvara.mm', from: /ṃ/g, to: ANU, label: 'ṃ → ṁ' },
+  // The Vedic visarga signs, copied into IAST as they stand (`vedic-signs.ts`).
+  { rule: 'visarga.vedic-sign', from: /[\u1CF5\u1CF6]/g, to: 'ḥ', label: 'ᳵ / ᳶ → ḥ' },
   /**
    * THE TRAP. Accented Devanāgarī writes the gum as U+A8F3 `ꣳ` (sometimes
    * `ँ`). Transliterated straight it yields a pre-formed `m̐`, which the gum
@@ -77,7 +81,7 @@ const FOLDS: readonly Fold[] = [
   {
     rule: 'anusvara.written-gum',
     from: WRITTEN_GUM,
-    to: ANU,
+    to: `${ANU}$1`,
     label: 'gm̐ / gṁ → ṁ',
     note: 'the gum, written out, is folded to the ṁ it stands for so the gum rule derives it once',
   },
@@ -106,6 +110,30 @@ const FOLDS: readonly Fold[] = [
  * the recitation witnesses, and importing from the ligature lost all six.
  */
 const OM_LIGATURE = /ॐ/g;
+
+/** The folds that change how a letter is WRITTEN, never which letter it is. */
+const SPELLING: ReadonlySet<string> = new Set([
+  'svara.udatta-sign', 'svara.anudatta-sign', 'svara.dirgha-sign', 'anusvara.mm', 'visarga.vedic-sign',
+  'anusvara.vedic-sign', 'anusvara.written-gum', 'vowel.o-macron', 'vowel.e-macron',
+]);
+
+/**
+ * AN IAST LINE FROM A SOURCE, SPELT AS HIS TEXTS SPELL IT — the folds above
+ * that change how a letter is written and never what it is (the accent
+ * signs, one anusvāra, the gum written out, the Vedic visarga signs, Dravidian
+ * long e and o, the praṇava ligature), without the authoring conventions
+ * (`.` for a daṇḍa, `_` and `+` for the conjunct controls) or the casing,
+ * which in a web page's line are only its punctuation. vignanam's IAST bhū
+ * sūktam wrote `dē̠vī … pra̍sō̠darī̎` and `gauᳶ` where his has `de̱vī …
+ * pra̍so̱darī̎` and `gauḥ` (2026-10-02). IAST only: in Devanāgarī `ँ` is a
+ * letter of its own, and the script's own reading takes its signs
+ * (`vedicSignsIn`).
+ */
+export function spelling(line: string): string {
+  let text = line.normalize('NFC').replace(OM_LIGATURE, 'oṁ');
+  for (const f of FOLDS) if (SPELLING.has(f.rule)) text = text.replace(f.from, f.to);
+  return text.normalize('NFC');
+}
 
 /**
  * Fold input to canonical IAST, reporting every change.

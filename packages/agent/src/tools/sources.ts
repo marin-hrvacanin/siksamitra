@@ -13,11 +13,14 @@
  * for the menus on every later call of the turn is what this avoids.
  */
 import { toIast } from '@siksamitra/engine';
+import { asIast } from '../letters.js';
 import { fold } from '../library.js';
 import { outlineOf, versesOf, type Witness, type Workspace } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
 
-const DEVA = /[ऀ-ॿ]/u;
+/* Devanāgarī LETTERS — not the daṇḍas and digits an IAST line has too: a
+   romanised page with daṇḍas was reported to the model as Devanāgarī. */
+const DEVA = /[\u0900-\u0963\u0970-\u097F]/u;
 const IAST = /[āīūṛṝḷṁṃḥśṣṇṭḍñṅ]/u;
 
 /** A stretch of a page's lines in one script. */
@@ -70,6 +73,22 @@ export function findLines(w: Witness, query: string, max = 12): number[] {
     if (at !== -1 && at < keys[i]!.length) out.push(i + 1);
   }
   return out;
+}
+
+/**
+ * A ROMANISATION OF ITS OWN, said when the page is read. vignanam's "English"
+ * pages write ch for c — its `rōcha̠nā` is IAST `rocanā` — and no fold can
+ * undo that, because ch is an IAST letter too (छ): a real run built from one
+ * had its `ca` refused against the page's `cha`, twice (2026-10-02). Said, so
+ * that a Devanāgarī witness is built from instead.
+ */
+function ownRomanisation(lines: readonly string[], blocks: readonly Block[]): string {
+  const text = blocks.filter((b) => b.script === 'IAST').flatMap((b) => lines.slice(b.from - 1, b.to)).join(' ').normalize('NFC');
+  const ch = (text.match(/ch/gu) ?? []).length;
+  const c = (text.match(/c(?!h)/gu) ?? []).length;
+  if (ch === 0 || c > 0) return '';
+  const also = /[ēō]/u.test(text) ? ', and ē, ō for e, o' : '';
+  return `\nits romanisation is its own, not IAST (ch for c${also}): build from a Devanāgarī witness, read with iast: true`;
 }
 
 /**
@@ -168,10 +187,11 @@ export const SOURCE_TOOLS: readonly Tool[] = [
       const lines = page.text.split(/\r?\n/);
       const w = ws.keep(url, page.title, lines);
       const blocks = blocksOf(lines);
+      const own = ownRomanisation(lines, blocks);
       const where = blocks.length === 0
         ? 'no Devanāgarī or IAST text found on it'
         : blocks.slice(0, 20).map((b) => `lines ${b.from}-${b.to}: ${b.script} (${b.to - b.from + 1}) — ${b.start}`).join('\n');
-      return `${w.id}: "${page.title}", ${lines.length} lines\n${where}`;
+      return `${w.id}: "${page.title}", ${lines.length} lines\n${where}${own}`;
     },
   },
   {
@@ -195,16 +215,25 @@ export const SOURCE_TOOLS: readonly Tool[] = [
     spec: {
       name: 'read_witness',
       description: `Read lines of a witness, numbered. At most ${MAX_LINES} at a time.`,
-      parameters: params({ witness: str('Its id: w1…'), from: { type: 'number' }, to: { type: 'number' } }, ['witness']),
+      parameters: params({
+        witness: str('Its id: w1…'), from: { type: 'number' }, to: { type: 'number' },
+        iast: { type: 'boolean', description: 'Show Devanāgarī lines in IAST, svaras and all, as the program reads them — copy these letters into "spaced" rather than transliterating by hand.' },
+      }, ['witness']),
     },
     async run(args, { ws }) {
       const w = ws.witnesses.get(arg<string>(args, 'witness', 'string'));
       if (w === undefined) throw new Error('no such witness');
       const from = Math.max(1, Math.floor(opt<number>(args, 'from', 'number') ?? 1));
       const to = Math.min(w.lines.length, Math.floor(opt<number>(args, 'to', 'number') ?? from + 59), from + MAX_LINES - 1);
+      /* A model that transliterates a mantra by hand drops a svara now and then,
+         and each one costs a build: a real run dropped two (2026-10-02). */
+      const iast = args.iast === true;
       const out = [];
-      for (let i = from; i <= to; i += 1) out.push(`${i}| ${w.lines[i - 1]}`);
-      return `${w.id} lines ${from}-${to} of ${w.lines.length}\n${out.join('\n')}`;
+      for (let i = from; i <= to; i += 1) {
+        const line = w.lines[i - 1]!;
+        out.push(`${i}| ${iast && DEVA.test(line) ? asIast(line) : line}`);
+      }
+      return `${w.id} lines ${from}-${to} of ${w.lines.length}${iast ? ' (Devanāgarī shown in IAST)' : ''}\n${out.join('\n')}`;
     },
   },
 ];

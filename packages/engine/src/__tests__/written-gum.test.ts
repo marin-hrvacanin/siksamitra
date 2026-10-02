@@ -25,6 +25,8 @@ describe('a gum written out in the source', () => {
   it('written as gg alone, before the sibilant it comes before — vignanam’s bhū sūktam, `पुण्य॒ग्ग्॒ श्लोकं`', () => {
     expect(normalize('puṇya̱gg̱ śloka̱ṁ').text).toContain('puṇya̱ṁ̱ śloka̱ṁ');
     expect('puṇya̱gg̱ śloka̱ṁ'.replace(WRITTEN_GUM, 'ṁ')).toBe('puṇya̱ṁ̱ śloka̱ṁ');
+    /* With the svara it bears between its letters, kept on the anusvāra — his `tri̱ṁ̱śad`. */
+    expect(normalize('tri̠g̠ṃśaddhāma̠').text).toBe('tri̱ṁ̱śaddhāma̱');
     /* gg before anything else is the letters they are. */
     expect(normalize('sagga').text).toBe('sagga');
     expect(normalize('dig-gaja').text).toBe('dig-gaja');

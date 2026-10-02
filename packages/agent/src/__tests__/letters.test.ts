@@ -32,6 +32,9 @@ describe('one sound, two spellings — equal', () => {
     same('श्लोकं॒-यँज॑मानाय', 'śloka̱ṁ yaja̍mānāya');
     same('म॒हीन्दे॒वीं-विँष्णु॑पत्नी', 'ma̱hīṁ de̱vīṁ viṣṇu̍patnī');
   });
+  it('the n a ś before it makes palatal, spelt so, is the n — vishvasa against his', () => {
+    same('आऽयङ्गौᳶ पृश्ञि॑रक्रमी॒दस॑नन्मा॒तर॒म्पुनः॑ ।', "ā'yaṁ gauḥ pṛśni̍ra-kramī̱da-sa̍nan mā̱tara̱ṁ puna̍ḥ ।");
+  });
   it('the gum written as gg is the anusvāra it stands for', () => {
     same('पुण्य॒ग्ग्॒ श्लोकं॒', 'puṇya̱ṁ̱ śloka̱ṁ');
   });

@@ -124,11 +124,19 @@ export class Workspace {
  * another; at one position the substitution goes first, so a svara written at
  * the end of a vowel lands before the letter that follows.
  */
-export function verseLetters(v: ChantVerse): string {
+export function verseLetters(v: ChantVerse, o: { prose?: boolean } = {}): string {
   const tm = toTextAndMarks(v);
+  /* `prose: false` — the MANTRA's letters: without the prose a line carries in
+     his Comment face (a `plain` marking: "p.b. pṛśni̍r"), which is no
+     source's. A real run's check read such a note as letters of the verse and
+     called the verse wrong (2026-10-02). Taken out first at its place, so a
+     svara that ends the vowel before it still lands there. */
+  const prose = o.prose === false ? tm.marks.filter((m) => m.k === 'plain') : [];
+  const inProse = (from: number, to: number): boolean => prose.some((p) => from >= p.from && to <= p.to && to > p.from);
   const edits = [
-    ...tm.marks.filter((m) => m.k === 'was').map((m) => ({ at: m.from, end: m.to, put: m.v ?? '', order: 0 })),
-    ...tm.marks.filter((m) => m.k === 'svara' && m.v !== undefined)
+    ...prose.map((m) => ({ at: m.from, end: m.to, put: '', order: -1 })),
+    ...tm.marks.filter((m) => m.k === 'was' && !inProse(m.from, m.to)).map((m) => ({ at: m.from, end: m.to, put: m.v ?? '', order: 0 })),
+    ...tm.marks.filter((m) => m.k === 'svara' && m.v !== undefined && !inProse(m.to - 1, m.to))
       .map((m) => ({ at: m.to, end: m.to, put: SVARA_CHAR.get(m.v as never) ?? '', order: 1 })),
   ].sort((a, b) => b.at - a.at || a.order - b.order);
   let text = tm.text;

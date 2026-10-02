@@ -108,6 +108,43 @@ not contain). So:
   Desktop): a plan the person can see, sub-agents, compaction, tool
   permissions — with no shell and no file system.
 
+### Where the bot stands (2026-10-02, measured on real requests)
+
+Six real bhū sūktam requests, each read through to the PDF. What each broke,
+and what was built so that it cannot again:
+
+- A step that wrote for longer than 120 s was dropped as if the provider were
+  stuck → replies are streamed, and a try is given up only on silence
+  (`packages/agent/src/stream.ts`). A step that thought until the length limit
+  and did nothing is taken back and the model told to act; a call cut off
+  half-written is answered with why, and how to send it in parts.
+- The model deliberated 166 000 characters over an opening oṁ, and placed his
+  junction hyphens by hand, wrongly → `spaced` is now only WHERE the words
+  part. The program writes his junctions (`junctions.ts`: every one of his 312
+  hyphens has a vowel before and a consonant after), his anusvāra and visarga
+  as typed, the source's svaras vowel by vowel and its half-line daṇḍas
+  (`letters.ts`), and an opening oṁ may be left out, never added.
+- `spaced` and `check` disagreed, and `check` named no place → one comparison
+  for both, built from vignanam's and vishvasa's spellings against his (a nasal
+  before a consonant, a sibilant a visarga became, the y/v a ṁ nasalises, a
+  doubled final n, the palatal ñ after ś); a difference is said exactly; a
+  comment on a mantra line is not read as its letters.
+- A source's spelling reached the page (`dē̠vī`, `gauᳶ`, `trigṁ̐`) → the engine
+  reads the Vedic visarga signs, a svara written after ḥ or ṁ, and the gum in
+  every written form; an IAST line is spelt as his before it is built.
+- A romanisation of its own (vignanam's "English": ch for c) was built from as
+  IAST, and reported as Devanāgarī because of its daṇḍas → said when it is
+  read, with the Devanāgarī pointed to.
+
+The last request (run 6): 32 steps, $0.29, checked clean, reviewed, looked at,
+delivered — and its first verses are his letter for letter, marks included
+(`devya-dite'gnima-nnādama-nnādyāyā''dadhe`, `pṛśnira-kramīda-sanan mātaram
+punaḥ`). What still differs is not the program's to settle: which recension
+(his: the whole of TS 1.5.3, mahīṁ devīm, the gāyatrī; vignanam's adds khila
+verses), where a semivowel's junction parts (`pānat yantaś`), and a source's
+reading against his. Those need his own documents in the bot's library — his
+decision, not yet asked.
+
 ### The bot's interface, after the page (his words, 2026-10-02)
 
 > "Once this is all done and perfected, I want you to build a proper GUI.

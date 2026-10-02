@@ -16,7 +16,8 @@ import { addVerseCommand, removeVerseCommand, setTextCommand, splitLines } from 
 import { CHANT_PROFILE_KEYS, type ChantProfileKey } from '@siksamitra/format';
 import { STAGES } from '@siksamitra/engine';
 import { documentOf, versesOfFlow, type OutlineSection, type OutlineVerse } from '../build.js';
-import { letterChange } from '../letters.js';
+import { hisJunctions } from '../junctions.js';
+import { letterChange, withSourceDandas, withSourceSvaras } from '../letters.js';
 import type { VerseLayout } from '../lines.js';
 import { outlineOf, type Workspace } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
@@ -66,9 +67,14 @@ type From = { witness: string; at: string };
  */
 function spacedOf(lines: readonly string[], spaced: readonly string[] | undefined, where: string): readonly string[] {
   if (spaced === undefined || spaced.length === 0) return lines;
-  const changed = letterChange(lines, spaced);
+  /* His junctions written out (`junctions.ts`), then the source's svaras and
+     its half-line daṇḍas carried onto them (`letters.ts`) — and then held to
+     the source's letters. */
+  const joined = spaced.map(hisJunctions);
+  const marked = withSourceDandas(lines, withSourceSvaras(lines, joined) ?? joined);
+  const changed = letterChange(lines, marked);
   if (changed !== null) throw new Error(`${where}, ${changed}`);
-  return spaced;
+  return marked;
 }
 
 /** One section of `build_document`, its letters taken from where it says — and, per verse, from where. */

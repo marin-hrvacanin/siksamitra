@@ -8,7 +8,7 @@
  * told to act; twice, and then the person is told in words.
  */
 import { describe, expect, it } from 'vitest';
-import { RUNAWAY, memoryLedger, runTurn, type Message, type Model, type Reply } from '../index.js';
+import { CUT_OFF, RUNAWAY, memoryLedger, runTurn, type Message, type Model, type Reply } from '../index.js';
 
 const usage = { input: 1, cached: 0, output: 1 };
 const cutOff: Reply = { usage, finish: 'length', message: { role: 'assistant', content: null, reasoning: 'Hmm. '.repeat(50) } };
@@ -53,6 +53,21 @@ describe('a step cut off with nothing done', () => {
     const done = await turn(scripted([cutOff, cutOff, cutOff, answer], seen), []);
     expect(seen).toHaveLength(3);
     expect(done.text).toMatch(/got stuck/);
+  });
+
+  it('a call the limit cut off half-written is said as that, with what to do instead', async () => {
+    const seen: Message[][] = [];
+    const half: Reply = { usage, finish: 'length', message: { role: 'assistant', content: null, toolCalls: [{ id: 'c1', name: 'build_document', arguments: '{"title": "bhū sūktam", "sections": [{"verses' }] } };
+    const tools = [{ spec: { name: 'build_document', description: 'd', parameters: { type: 'object' } }, writes: true, run: async () => 'built' }];
+    const done = await runTurn({
+      model: scripted([half, answer], seen), price: { input: 0, cached: 0, output: 0 }, tools, system: 's', messages: [],
+      ctx: { ws: undefined as never, host: {}, review: async () => '' }, ledger: memoryLedger(),
+      limits: { global: 9, session: 9, turn: 9 }, session: 't',
+    }, 'the bhū sūktam, please');
+    expect(done.text).toBe('Here it is.');
+    const told = seen[1]!.find((m) => m.role === 'tool');
+    expect(told?.content).toBe(CUT_OFF);
+    expect(CUT_OFF).toMatch(/cut off at its length limit.*add_verse/);
   });
 
   it('a reply that simply ends is the answer, as before', async () => {

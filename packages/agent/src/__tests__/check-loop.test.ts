@@ -37,6 +37,9 @@ describe('the check', () => {
     await tool('auto_mark').run({}, ctx);
     const found = checkDocument(ws);
     expect(found).toEqual([expect.objectContaining({ severity: 'error', where: 's-1-v2', what: expect.stringMatching(/^differs from w1/) })]);
+    /* Said EXACTLY where: a check that printed the first ninety letters of
+       each side, which agreed, sent a real run round its build eleven times. */
+    expect(found[0]!.what).toMatch(/^differs from w1, verse 2, (?:line \d+|its lines): has "[^"]+" where the source has "[^"]+"$/);
     /* And nothing is delivered from it. */
     expect(await tool('deliver').run({}, ctx)).toMatch(/^not delivered/);
   });

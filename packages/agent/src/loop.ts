@@ -85,6 +85,10 @@ export function capped(text: string, max: number): string {
 /** What the model is told after a step that thought until it was cut off. */
 export const RUNAWAY = '(from the program: your last step thought until it was cut off, and did nothing. Do not deliberate further — make the call you were weighing now. The tools check what you send and say exactly what is wrong: trying costs less than thinking it through.)';
 
+/** What a call is answered with when the reply was cut off before it was written out. */
+export const CUT_OFF = 'error: the reply was cut off at its length limit before this call was written out. Think less before it, and send it again — '
+  + 'or in parts: build the first verses, then add_verse the rest.';
+
 /** Base64 without Node's `Buffer`: the loop runs in the app and the add-in too. */
 function base64Of(bytes: Uint8Array): string {
   let s = '';
@@ -190,7 +194,11 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
         text = await tool.run(args, ctx);
       } catch (e) {
         failed = true;
-        text = `error: ${withoutPaths(e instanceof Error ? e.message : String(e))}`;
+        /* A call the length limit cut off half-written is said as that, and
+           what to do: a real run was told only "Unterminated string in JSON",
+           after thinking 60 000 tokens, and did it again (2026-10-02). */
+        text = reply.finish === 'length' && e instanceof SyntaxError ? CUT_OFF
+          : `error: ${withoutPaths(e instanceof Error ? e.message : String(e))}`;
       }
       opts.onEvent?.({ kind: 'result', name: call.name, text, failed });
       opts.messages.push({ role: 'tool', toolCallId: call.id, content: capped(text, maxResult) });

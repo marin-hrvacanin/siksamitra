@@ -19,7 +19,10 @@
  * do not place it (`docs/authoring/MARKING-RULES.md`, "Virāma").
  */
 
-import { WRITTEN_GUM } from '@siksamitra/engine';
+import { spelling } from '@siksamitra/engine';
+
+/** A line in Devanāgarī — its LETTERS, not the daṇḍas and digits IAST lines use too: its script's own reading takes its signs. */
+const DEVANAGARI_LETTER = /[\u0900-\u0963\u0970-\u097F]/u;
 
 const DIGIT = '[0-9०-९]';
 /** A reference: two or more numbers, each closed by a daṇḍa or a bar. */
@@ -61,13 +64,14 @@ export function numbersIn(lines: readonly string[]): string[] {
 }
 
 /**
- * A source's line with its apparatus taken off — and the Taittirīya gum, when
- * the source writes it out (`pratīcīmenāgm̐`), back to the anusvāra the rules
- * make it from (`WRITTEN_GUM`): kept as letters, it was marked bare once and
- * with its reading aid the next time.
+ * A source's line with its apparatus taken off — and, in IAST, spelt as his
+ * texts spell (`spelling`): the Taittirīya gum the source writes out
+ * (`pratīcīmenāgm̐`) back to the anusvāra the rules make it from — kept as
+ * letters, it was marked bare once and with its reading aid the next time —
+ * and its accent signs, long e and o and Vedic visarga signs as his.
  */
 export function cleanLine(line: string): string {
-  let l = line.trim().replace(WRITTEN_GUM, 'ṁ');
+  let l = DEVANAGARI_LETTER.test(line) ? line.trim() : spelling(line.trim());
   const hadReference = REFERENCE.test(l);
   l = l.replace(REFERENCE, '').replace(LEADING_NUMBER, '').trim();
   /* A reference closed the verse; the closing stays — numbered below. */

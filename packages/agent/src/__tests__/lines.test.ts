@@ -12,6 +12,11 @@ describe('a source line, cleaned', () => {
   it('takes off a reference of two or more numbers at the end, and keeps the verse closed', () => {
     expect(cleanLine('ओमापो॒ ज्योती॒ रसो॒ऽमृतं॒ ब्रह्म॒ भूर्भुव॒स्सुव॒रोम् ॥ ०। १०। ३५। ५३॥ ॥ ३५॥')).toBe('ओमापो॒ ज्योती॒ रसो॒ऽमृतं॒ ब्रह्म॒ भूर्भुव॒स्सुव॒रोम् ॥');
     expect(cleanLine('tarase namaḥ || 0| 10| 2| 1|| || 2||')).toBe('tarase namaḥ ॥');
+    /* An IAST source's spelling, as his — vignanam's bhū sūktam (2026-10-02). */
+    expect(cleanLine('dē̠vī hi̍raṇyaga̠rbhiṇī̍ dē̠vī pra̍sō̠darī̎ ।')).toBe('de̱vī hi̍raṇyaga̱rbhiṇī̍ de̱vī pra̍so̱darī̎ ।');
+    expect(cleanLine("ā'yaṅ gauᳶ pṛśni̍r")).toBe("ā'yaṅ gauḥ pṛśni̍r");
+    /* A Devanāgarī line is its script's to read: its candrabindu is a letter. */
+    expect(cleanLine('श्लोकं॒-यँज॑मानाय')).toBe('श्लोकं॒-यँज॑मानाय');
     expect(cleanLine('śaradyatropadṛśyate ॥ ०। १। ४। १२॥')).toBe('śaradyatropadṛśyate ॥');
   });
 

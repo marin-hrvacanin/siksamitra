@@ -26,7 +26,7 @@ import { toTextAndMarks, type ChantDoc, type ChantVerse } from '@siksamitra/form
 import { documentOf } from '../build.js';
 import { Workspace, verseLetters } from '../workspace.js';
 import { describeDocument } from '../describe.js';
-import { letterChange } from '../letters.js';
+import { letterDifference } from '../letters.js';
 import { numbersIn } from '../lines.js';
 import { markAll } from './document.js';
 import { DELIVERY_FORMATS, arg, opt, params, str, type DeliveryFormat, type Tool } from './types.js';
@@ -50,25 +50,15 @@ const settledKey = (v: ChantVerse): string => {
 };
 
 /**
- * Letters compared as a reader sees them: the rules may widen a space for a
- * pause, and daṇḍas and numbers are not letters — the builder numbers a verse
- * as he does (`॥ 3॥`), where the source closed it its own way and carried its
- * own references (`lines.ts`).
+ * Where a verse and its source differ in a letter, said exactly — the same
+ * answer `spaced` is held to (`letters.ts`): his word breaks and his spellings
+ * of one sound are not differences, and nor is an opening oṁ left out of a
+ * first verse.
  */
-/* Letters only. His word breaks — a space, a junction's hyphen or apostrophe —
-   are not a source's to have, and the agent may add them (`spaced` in
-   `document.ts`); every letter and svara must still be the source's. */
-const spaced = (s: string): string => s.replace(/[।॥|]+|[0-9०-९]+/gu, ' ')
-  .replace(/[ \t \-'’ʼˎ]+/gu, '').replace(/\n+/g, '\n').trim();
-const cut = (s: string, n = 90): string => (s.length > n ? `${s.slice(0, n)}…` : s);
-
-/**
- * Do a verse and its source differ in a letter? The same answer `spaced` is
- * held to (`letters.ts`): his word breaks and his spellings of one sound are
- * not differences, and nor is an opening oṁ left out of a first verse.
- */
-const differ = (want: string, have: string, first = true): boolean =>
-  letterChange(want.split('\n'), have.split('\n'), first) !== null;
+function difference(want: string, have: string, first = true): string | null {
+  const d = letterDifference(want.split('\n'), have.split('\n'), first);
+  return d === null ? null : `${d.where}: has "${d.have}" where the source has "${d.source}"`;
+}
 
 /**
  * The source's lines as the document would have them: built by the same
@@ -103,9 +93,10 @@ export function checkDocument(ws: Workspace): Finding[] {
       if (vf === undefined || vw === undefined) continue;
       const lines = vw.lines.slice(vf.from - 1, vf.to);
       const again = asMarked({ title: '_', sections: [{ verses: [{ lines }] }] }, doc);
-      const want = again.map((x) => verseLetters(x)).join('\n');
-      const have = verseLetters(v);
-      if (differ(want, have)) out.push({ severity: 'error', where: v.id, what: `differs from ${vw.id} lines ${vf.from}-${vf.to}: has "${cut(spaced(have))}", the source "${cut(spaced(want))}"` });
+      const want = again.map((x) => verseLetters(x, { prose: false })).join('\n');
+      const have = verseLetters(v, { prose: false });
+      const d = difference(want, have);
+      if (d !== null) out.push({ severity: 'error', where: v.id, what: `differs from ${vw.id} lines ${vf.from}-${vf.to}, ${d}` });
     }
     /* THE LETTERS, against the witness the section was built from. */
     const from = ws.builtFrom.get(s.id);
@@ -113,15 +104,16 @@ export function checkDocument(ws: Workspace): Finding[] {
     if (from !== undefined && w !== undefined) {
       const flow = w.lines.slice(from.from - 1, from.to);
       const again = asMarked({ title: '_', sections: [{ verses: [], flow }] }, doc);
-      const want = again.map((v) => verseLetters(v));
-      const have = s.verses.map((v) => verseLetters(v));
+      const want = again.map((v) => verseLetters(v, { prose: false }));
+      const have = s.verses.map((v) => verseLetters(v, { prose: false }));
       if (want.length !== have.length) {
         out.push({ severity: 'error', where: s.id, what: `${have.length} verse(s), but ${w.id} lines ${from.from}-${from.to} make ${want.length}` });
       }
       const n = Math.min(want.length, have.length);
       for (let i = 0; i < n; i += 1) {
-        if (differ(want[i]!, have[i]!, i === 0)) {
-          out.push({ severity: 'error', where: s.verses[i]!.id, what: `differs from ${w.id}: has "${cut(spaced(have[i]!))}", the source "${cut(spaced(want[i]!))}"` });
+        const d = difference(want[i]!, have[i]!, i === 0);
+        if (d !== null) {
+          out.push({ severity: 'error', where: s.verses[i]!.id, what: `differs from ${w.id}, verse ${i + 1}, ${d}` });
           break;
         }
       }
