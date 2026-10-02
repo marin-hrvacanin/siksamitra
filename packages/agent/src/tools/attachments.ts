@@ -21,7 +21,8 @@ import { openDocumentFile } from '@siksamitra/interop';
 import { kindOf } from '../attachments.js';
 import { letterDifference } from '../letters.js';
 import { Workspace, outlineOf } from '../workspace.js';
-import { markAll } from './document.js';
+import { markAll } from './marking.js';
+import { proofFindings } from './check.js';
 import { arg, opt, params, str, type Tool } from './types.js';
 
 /** A text file's lines: its HTML taken off, if it had any. */
@@ -158,6 +159,10 @@ export const ATTACHMENT_TOOLS: readonly Tool[] = [
       const said = [out.length === 0
         ? `its marks: all ${verses} verse(s) as the rules make them`
         : `its marks: ${out.length} of ${verses} verse(s) where the rules would mark otherwise —\n${out.slice(0, 30).join('\n')}${out.length > 30 ? `\n… and ${out.length - 30} more` : ''}`];
+      /* Its page, as a proofreader reads it: a draft's half-done letters, a
+         verse's end inside another, a half-verse outside its metre. */
+      const page = proofFindings(ws);
+      if (page.length > 0) said.push(`its page, as a proofreader reads it —\n${page.slice(0, 20).map((f) => `${f.where}: ${f.what}`).join('\n')}`);
       const wid = opt<string>(args, 'witness', 'string');
       if (wid !== undefined) {
         const w = ws.witnesses.get(wid);

@@ -43,7 +43,8 @@ const KIND: Readonly<Record<string, string>> = {
   fetch_page: '≡', read_witness: '≡', find_in_witness: '≡', outline: '≡', read_verses: '≡',
   build_document: '✎', set_field: '✎', replace_text: '✎', add_verse: '✎', remove_verse: '✎',
   set_source: '◇', auto_mark: '◇',
-  check: '◎', review: '◎',
+  check: '◎', review: '◎', proof: '◎',
+  house_style: '≡', read_example: '≡', read_guide: '≡',
   deliver: '⇩', offer_choices: '?',
 };
 
@@ -76,6 +77,9 @@ export function stepStarted(name: string, argsJson: string): string {
     case 'add_verse': return `Adding a verse to ${String(a.section ?? 'the text')}`;
     case 'remove_verse': return `Removing ${String(a.verse ?? 'a verse')}`;
     case 'check': return 'Checking every letter against the source and every mark against the rules';
+    case 'proof': return 'Reading the whole document as it will print';
+    case 'house_style': return 'Reading how his pages set such a text';
+    case 'read_example': return `Reading his ${quoted(a.id, 50)} as an example`;
     case 'review': return a.focus === undefined ? 'A second look, by another reader' : `A second look: ${gist(a.focus)}`;
     case 'deliver': return a.format === undefined || a.format === 'pdf' ? 'Preparing the PDF' : `Preparing the ${String(a.format)}`;
     case 'offer_choices': return `Asking you: ${quoted(a.question, 70)}`;
@@ -121,7 +125,11 @@ export function stepResult(name: string, text: string, failed: boolean): string 
       const errors = text.split('\n').filter((l) => l.startsWith('ERROR')).length;
       return errors === 0 ? 'a warning to look at' : `${errors} thing(s) to fix`;
     }
-    case 'review': return /no problems found/i.test(text) ? 'no problems' : 'it raised points to answer';
+    case 'review': return /VERDICT:\s*clean/iu.test(text) || (!/VERDICT:/iu.test(text) && /no problems found/iu.test(text)) ? 'no problems' : 'it raised points to answer';
+    case 'proof': {
+      const n = text.split('\n').filter((l) => /^ERROR /u.test(l)).length;
+      return n === 0 ? 'read' : `${n} thing(s) to fix`;
+    }
     case 'deliver': return /^delivered|^put into|^opened in/.test(first) ? 'ready' : 'not yet';
     default: return '';
   }

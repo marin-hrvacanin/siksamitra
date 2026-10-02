@@ -7,9 +7,9 @@
  *   npm run agent -- "the Puruṣa Sūktam, Taittirīya, as a PDF"
  *   npm run agent -- --mode document --open purusha-suktam "set the title to …"
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Session, type AgentEvent, type Mode } from '@siksamitra/agent';
+import { Session, type AgentEvent, type Mode, type SessionState } from '@siksamitra/agent';
 import { ROOT, loadConfig } from './config.js';
 import { nodeHost } from './host.js';
 import { fileLedger } from './store.js';
@@ -24,6 +24,8 @@ const flag = (name: string): string | undefined => {
 };
 const mode = (flag('mode') ?? 'deliver') as Mode;
 const open = flag('open');
+/* `--resume <file>`: the conversation a run saved, gone on with — the person's next message. */
+const resume = flag('resume');
 const request = args.join(' ').trim();
 if (request === '') {
   console.error('usage: npm run agent -- [--mode deliver|document] [--open <library id>] "<request>"');
@@ -44,14 +46,19 @@ const ledger = fileLedger(join(config.dataDir, 'ledger.jsonl'));
 
 const show = (e: AgentEvent): void => {
   if (e.kind === 'tool') console.log(`  · ${e.name} ${e.args.length > 160 ? `${e.args.slice(0, 160)}…` : e.args}`);
-  if (e.kind === 'result') console.log(`    ${e.failed ? '✗' : '✓'} ${e.text.split('\n')[0]!.slice(0, 150)}`);
+  if (e.kind === 'result') {
+    console.log(`    ${e.failed ? '✗' : '✓'} ${e.text.split('\n')[0]!.slice(0, 150)}`);
+    /* Saved after every step, so a run stopped halfway can still be read, call for call. */
+    writeFileSync(join(out, 'last-session.json'), JSON.stringify(session.save(), null, 1));
+  }
   if (e.kind === 'usage') console.log(`    $${e.cost.toFixed(5)} — ${e.usage.input} in (${e.usage.cached} cached), ${e.usage.output} out`);
 };
 
+const state = resume === undefined ? undefined : JSON.parse(readFileSync(resume, 'utf8')) as SessionState;
 const session = new Session({
-  id: `cli-${Date.now()}`, user: 'terminal', mode, model: config.model, price: config.price, host, ledger,
-  limits: config.limits, onEvent: show,
-});
+  id: state?.id ?? `cli-${Date.now()}`, user: 'terminal', mode, model: config.model, price: config.price, host, ledger,
+  limits: config.limits, onEvent: show, ...(config.reviewer === undefined ? {} : { reviewer: config.reviewer }),
+}, state);
 try {
   if (open !== undefined) session.ws.open((await host.library.load(open)).doc, 'author');
   const done = await session.ask(request);

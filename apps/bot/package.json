@@ -6,6 +6,7 @@
   "description": "The śikṣāmitra agent on a server: a Telegram bot, and the same host for a terminal run.",
   "scripts": {},
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@siksamitra/agent": "2.0.0-alpha.0",
     "@siksamitra/engine": "2.0.0-alpha.0",
     "@siksamitra/format": "2.0.0-alpha.0",

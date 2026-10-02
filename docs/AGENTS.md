@@ -219,6 +219,13 @@ state.doc;        // the result
 | `@siksamitra/interop` | Word, PDF, `.smdoc`, `.vuchant` |
 | `@siksamitra/render` | drawing a marked text |
 | `@siksamitra/tokens` | every design value, so none is buried in a stylesheet |
+| `@siksamitra/agent` | the agent's tools — sources, the builder, the proof, the check, the second reader, his house style — and the loop the bot runs |
+
+## From another harness, over MCP
+
+An agent that is not ours — Claude Code, opencode, his marincode — gets the
+bot's own tools, with the bot's order of work and the bot's gates, from
+`npm run --silent mcp`. See [`MCP.md`](MCP.md).
 
 ## The editing surface
 

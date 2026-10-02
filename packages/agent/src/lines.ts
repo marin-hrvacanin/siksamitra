@@ -28,7 +28,11 @@ const DIGIT = '[0-9०-९]';
 /** A reference: two or more numbers, each closed by a daṇḍa or a bar. */
 const REFERENCE = new RegExp(`(?:\\s*[।॥|]{0,2}\\s*${DIGIT}+(?:\\s*[।|.]\\s*${DIGIT}+)+\\s*[।॥|]{1,2})+(?:\\s*[॥|]{1,2}\\s*${DIGIT}+\\s*[॥|]{1,2})?\\s*$`, 'u');
 /** A running number opening a line: `५३ ओजो…`, `22 ānuśravika…`. */
-const LEADING_NUMBER = new RegExp(`^${DIGIT}+\\s+(?=\\S)`, 'u');
+/* A number before a line, and an edition's label of its line: GRETIL's and
+   the Bombay Mahābhārata's `03,003.018a` / `03003018a`, a pāda's letter after
+   it, a passage-star's `*0016_01`, an appendix's `@001_0064`. A real run built
+   from the critical text and was refused its every line (2026-10-02). */
+export const LEADING_NUMBER = new RegExp(`^(?:${DIGIT}+[,.]?)+[a-f]?(?:\\*${DIGIT}+(?:_${DIGIT}+)?)?(?:@${DIGIT}+(?:_${DIGIT}+)?)?\\s+(?=\\S)`, 'u');
 /** The end of a verse as the source wrote it: daṇḍas, maybe a number between. */
 const ENDING = new RegExp(`\\s*(?:[।॥|]{1,2}\\s*${DIGIT}*\\s*[।॥|]{0,2})\\s*$`, 'u');
 /** A word's last consonant, right before a daṇḍa — an accent of his on it

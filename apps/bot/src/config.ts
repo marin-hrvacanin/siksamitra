@@ -14,6 +14,8 @@ export const ROOT = resolve(import.meta.dirname, '../../..');
 export interface BotConfig {
   readonly model: Model;
   readonly price: Price;
+  /** The second reader's model — `AGENT_REVIEW_MODEL`, DeepSeek's pro by default; `same` for the builder's own. */
+  readonly reviewer?: { readonly model: Model; readonly price: Price };
   readonly limits: Limits;
   readonly telegramToken?: string;
   /** Who may use the bot: `@usernames` or numeric Telegram ids. Empty: nobody. */
@@ -59,11 +61,20 @@ export function loadConfig(): BotConfig {
   if (!Number.isFinite(price.input) || !Number.isFinite(price.output)) {
     throw new Error(`no price for ${modelId}: set AGENT_PRICE_INPUT, AGENT_PRICE_CACHED and AGENT_PRICE_OUTPUT (USD per million tokens)`);
   }
+  /* The reviewer: the provider's stronger model, at its own price. */
+  const reviewId = e.AGENT_REVIEW_MODEL?.trim() || (base.includes('deepseek.com') ? 'deepseek-v4-pro' : 'same');
+  const reviewer = reviewId === 'same' || reviewId === modelId ? undefined : {
+    model: base.includes('deepseek.com')
+      ? deepseek({ apiKey: key, model: reviewId, thinking, baseUrl: base, timeoutMs, retries })
+      : chatCompletions({ baseUrl: base, apiKey: key, model: reviewId, timeoutMs, retries }),
+    price: PRICES[reviewId] ?? price,
+  };
   const token = e.TELEGRAM_BOT_TOKEN?.trim();
   const contact = e.BOT_CONTACT?.trim();
   return {
     model,
     price,
+    ...(reviewer === undefined ? {} : { reviewer }),
     limits: {
       global: num(e.BOT_GLOBAL_LIMIT_USD, 5),
       session: num(e.BOT_SESSION_LIMIT_USD, 1),

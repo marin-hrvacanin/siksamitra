@@ -115,14 +115,21 @@ function evenly(items: readonly string[], fit: LineFit): string[] {
  * times the size, a combining mark nothing, a letter the table lacks its
  * `fallback`.
  */
+/** The raised digits, in their order. */
+const RAISED = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+
+/** `raised`: the share of a digit's width a raised one is drawn at — the tokens' `supScale`. */
 export function advanceWidth(
-  advance: ReadonlyMap<string, number>, fallback: number, size: number,
+  advance: ReadonlyMap<string, number>, fallback: number, size: number, raised = 1,
 ): (text: string) => number {
   return (text) => {
     let em = 0;
     for (const ch of text.normalize('NFC')) {
       if (/\p{M}/u.test(ch)) continue;
-      em += advance.get(ch) ?? fallback;
+      /* A raised digit — a name's number — is drawn at about two thirds of
+         the size, the way a raised reading aid is: its digit's width, scaled. */
+      const digit = RAISED.indexOf(ch);
+      em += digit < 0 ? advance.get(ch) ?? fallback : (advance.get(String(digit)) ?? fallback) * raised;
     }
     return em * size;
   };

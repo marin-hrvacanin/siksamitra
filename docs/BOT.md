@@ -57,8 +57,33 @@ See `.env.example`. The ones that matter:
 | `BOT_SESSION_LIMIT_USD` / `BOT_TURN_LIMIT_USD` | per conversation / per request (1 / 0.5) |
 | `AGENT_TIMEOUT_S` | how long DeepSeek may say *nothing* before a try is given up (120) |
 | `AGENT_VISION` | `0` stops the agent looking at its page; `1` lets another provider's model look |
+| `AGENT_REVIEW_MODEL` | the second reader's model — `deepseek-v4-pro` by default; `same` for the builder's own |
 
 After changing it: `cd /srv/apps/siksamitra-bot && docker compose up -d`.
+
+## How a text is made, and what holds it
+
+The order of work is the prompt's (`packages/agent/src/modes.ts`), and each
+step that matters is held by the program rather than asked of the model:
+
+1. **the request** — which text, which parts; choices name only what was asked;
+2. **the library** — his own documents first; a section of a larger one
+   opens as a document of its own, with none of the book's front pages;
+3. **his style** — `house_style` (his pages, part by part, in his own lines)
+   and `read_example` (the structure of his nearest document, a part in full);
+4. **the source** — read whole; a page's invisible hints are taken off when it
+   is kept, and an ITRANS `.itx` is read into IAST by the engine;
+5. **the build** — every letter held to its witness; whole words that are no
+   part of the text may be left out, and are listed;
+6. **the proof** — the whole document as it will print, and what a
+   proofreader finds: another script in a verse, a half-verse outside its
+   metre, a verse's end inside another, names numbered out of order;
+7. **the review** — by the stronger model, handed the proof; `deliver` waits
+   for it, and for an answer to what it found (three readings at most, and
+   then what is still open is said to the person);
+8. **the file**.
+
+The same tools are served over MCP for any harness — see [`MCP.md`](MCP.md).
 
 ## His own documents in its library
 

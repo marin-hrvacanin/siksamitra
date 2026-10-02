@@ -165,6 +165,44 @@ describe('the conjunct boundary (01 §2.5)', () => {
   });
 });
 
+describe('a joiner that is no conjunct\'s', () => {
+  /* sanskritdocuments' श‍ृ (śa, ZWJ, ṛ's sign) is a hint to the font: read
+     sign by sign it came out `śa‍ृ` in a delivered PDF (2026-10-02). */
+  it('is passed over, and the consonant takes its sign', () => {
+    expect(toIast(`श${ZWJ}ृणुष्वावहितो`, 'deva').iast).toBe('śṛṇuṣvāvahito');
+    expect(toIast(`श${ZWNJ}ृ`, 'deva').iast).toBe('śṛ');
+    expect(toIast(`क${ZWJ}`, 'deva').iast).toBe('ka');
+  });
+
+  it('after a virāma it is still the conjunct control', () => {
+    expect(toIast(`क्${ZWNJ}त्य`, 'deva').iast).toBe(`k${ZWNJ}tya`);
+    expect(toIast(`क्${ZWJ}त्य`, 'deva').iast).toBe(`k${ZWJ}tya`);
+  });
+});
+
+describe('ITRANS as sanskritdocuments writes it — read, never written', () => {
+  /* Its `.itx` files are the source of every page it publishes, and a real run
+     could not build from one (2026-10-02). */
+  const read = (s: string): string => toIast(s, 'itrans' as Parameters<typeof toIast>[1]).iast;
+
+  it('its other spellings of the long vowels, ṛ, ṣ, the nasals and kṣ', () => {
+    expect(read('asya shrIsUryAShTottarashatanAmastotramahAmantrasya, brahmA RRiShiH,'))
+      .toBe('asya śrīsūryāṣṭottaraśatanāmastotramahāmantrasya, brahmā ṛṣiḥ,');
+    expect(read('shR^iNuShvAvahito rAjan shuchirbhUtvA samAhitaH |')).toBe('śṛṇuṣvāvahito rājan śucirbhūtvā samāhitaḥ ।');
+    expect(read('sa.nvatsarakaro.ashvatthaH')).toBe("saṁvatsarakaro'śvatthaḥ");
+    expect(read('a~NguShThAbhyAM pa~nchapUjAM lakShmI xetra')).toBe('aṅguṣṭhābhyāṁ pañcapūjāṁ lakṣmī kṣetra');
+  });
+
+  it('its oṁ, its virāma and separator marks, its daṇḍas', () => {
+    expect(read('OM sUryo.aryamA bhagastvaShTA ||')).toBe("oṁ sūryo'ryamā bhagastvaṣṭā ॥");
+    expect(read('prasAdasid.hdhyarthe a{}i')).toBe('prasādasiddhyarthe ai');
+  });
+
+  it('its Vedic accents, as his IAST marks them', () => {
+    expect(read("a\\_gnimI\\'Le")).toBe('a\u{0331}gnimī\u{030D}ḻe');
+  });
+});
+
 describe('script detection', () => {
   it('names the script, or says mixed', () => {
     expect(detectScript('पुरुष')).toBe('deva');

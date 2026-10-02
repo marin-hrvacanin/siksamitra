@@ -97,6 +97,8 @@ describe('delivery mode, end to end', () => {
     const steps = (format: string) => scripted([
       { calls: [{ name: 'fetch_page', args: { url: 'https://x' } }] },
       { calls: [{ name: 'build_document', args: { title: 'puruṣa sūktam', source: 'taittiriya', sections: [{ witness: 'w1', lines: '5-8' }] } }] },
+      { calls: [{ name: 'review', args: { focus: 'puruṣa sūktam' } }] },
+      { say: 'Compared s-1 with w1 lines 5-8.\nVERDICT: clean' },
       { calls: [{ name: 'deliver', args: { format } }] },
       { say: 'done' },
     ]);

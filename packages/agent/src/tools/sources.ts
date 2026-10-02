@@ -12,9 +12,11 @@
  * a few hundred lines of menus and notes around fifty of mantra, and paying
  * for the menus on every later call of the turn is what this avoids.
  */
+import type { ChantDoc } from '@siksamitra/format';
 import { toIast } from '@siksamitra/engine';
 import { asIast } from '../letters.js';
 import { KIND_SAID, kindOfPage, passageOf } from '../pages.js';
+import { isItransPage, readItrans } from '../itrans-page.js';
 import { fold } from '../library.js';
 import { outlineOf, verseLetters, versesOf, type Witness, type Workspace } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
@@ -109,6 +111,28 @@ const enough = (ws: Workspace, what: 'searches' | 'pages'): string => {
     + (kept === '' ? 'tell the person what you could not find.' : `build now from what you have read — ${kept} — or tell the person what is missing.`);
 };
 
+/**
+ * A DOCUMENT OF HIS, AS ITS SHAPE: each part and heading, its source line,
+ * how many verses and whether they are numbered, the first line of each part.
+ * What a real run never saw (2026-10-02): it read four verses of an example
+ * and set a stotra's viniyoga, nyāsa and dhyāna as numbered verses of one
+ * section, where his are each a part under its heading, unnumbered.
+ */
+export function structureOf(doc: ChantDoc, sections = 40): string {
+  const out = [`AN EXAMPLE, not the document — the structure of "${doc.title}"${doc.subtitle === undefined ? '' : ` · ${doc.subtitle}`}${typeof doc.source === 'string' ? ` · ${doc.source}` : ''}:`];
+  for (const s of doc.sections.slice(0, sections)) {
+    const head = [s.part, s.title].filter((x) => typeof x === 'string' && x.trim() !== '').join(' › ') || '(no heading)';
+    const numbered = s.verses.filter((v) => /॥\s*[0-9.]+\s*॥\s*$/u.test(verseLetters(v, { prose: false }).trim().split('\n').at(-1)?.trim() ?? '')).length;
+    const first = s.verses[0] === undefined ? '' : verseLetters(s.verses[0], { prose: false, names: true }).split('\n')[0]!.slice(0, 70);
+    out.push(`${s.id} ${head}${typeof s.source === 'string' && s.source.trim() !== '' ? ` · ${s.source.split('\n')[0]!.slice(0, 80)}` : ''}`
+      + ` — ${s.verses.length} verse(s), ${numbered === 0 ? 'unnumbered' : numbered === s.verses.length ? 'numbered' : `${numbered} numbered`}`
+      + `${first === '' ? '' : `: “${first}…”`}`);
+  }
+  if (doc.sections.length > sections) out.push(`… and ${doc.sections.length - sections} more section(s)`);
+  out.push('read_example with section: "s-9" to read a part in full, or verses: "1-4".');
+  return out.join('\n');
+}
+
 export const SOURCE_TOOLS: readonly Tool[] = [
   {
     writes: false,
@@ -164,11 +188,14 @@ export const SOURCE_TOOLS: readonly Tool[] = [
     needs: 'library',
     spec: {
       name: 'read_example',
-      description: 'Read a library text — one of his own documents best — as an EXAMPLE of how he sets such a text: his word breaks and junctions, his lines and layout, his sources and translations. '
-        + 'It is NOT opened as the document, and nothing of it is delivered.',
+      description: 'Read a library text — one of his own documents best — as an EXAMPLE of how he sets such a text. Without verses: its WHOLE '
+        + 'STRUCTURE — each part and heading, its source line, how many verses, whether they are numbered, the first line of each — to set '
+        + 'yours the same way. With section: that part of it in full (its id from the structure: "s-9"). With verses: those verses in full, '
+        + 'his word breaks, lines and translations. It is NOT opened as the document, and nothing of it is delivered.',
       parameters: params({
         id: str('Its id from find_text.'),
-        verses: str('Which of its verses, as 1-4 — at most eight. The first four when left out.'),
+        section: str('One of its sections, by the id its structure gives ("s-9"): read in full, at most eight verses.'),
+        verses: str('Which of its verses, as 1-4 — at most eight. Left out, with no section: its structure.'),
       }, ['id']),
     },
     async run(args, { host }) {
@@ -179,8 +206,16 @@ export const SOURCE_TOOLS: readonly Tool[] = [
       const { doc } = await host.library!.load(arg<string>(args, 'id', 'string'));
       const all = doc.sections.flatMap((s) => s.verses.map((v) => ({ s, v })));
       if (all.length === 0) return 'it has no verses to show';
+      const asked = opt<string>(args, 'verses', 'string');
+      const part = opt<string>(args, 'section', 'string');
+      if (part !== undefined) {
+        const at = all.findIndex((x) => x.s.id === part);
+        if (at < 0) throw new Error(`no section "${part}" in it — its structure (read_example without section) names them`);
+      }
+      if (asked === undefined && part === undefined) return structureOf(doc);
       /* As much of the range as the text has: an example is read, not cited. */
-      const spec = opt<string>(args, 'verses', 'string') ?? '1-4';
+      const first = part === undefined ? undefined : all.findIndex((x) => x.s.id === part) + 1;
+      const spec = asked ?? `${first}-${first! + all.filter((x) => x.s.id === part).length - 1}`;
       const m = /^\s*(\d+)\s*(?:-\s*(\d+))?\s*$/u.exec(spec);
       if (m === null) throw new Error(`"${spec}" is not a range of verses like 1-4`);
       const a = Math.min(Math.max(1, Number(m[1])), all.length);
@@ -240,7 +275,10 @@ export const SOURCE_TOOLS: readonly Tool[] = [
       /* Counted when a page comes back: one that fails — a PDF, a 404 — cost nothing but its step. */
       const page = await host.research!.fetch(url, find === undefined ? undefined : { large: true });
       ws.spent.pages += 1;
-      let lines: readonly string[] = page.text.split(/\r?\n/);
+      /* An ITRANS file — sanskritdocuments' `.itx`, the source of its pages — read into IAST, a line for a line. */
+      const raw = page.text.split(/\r?\n/);
+      const itrans = isItransPage(url, raw.slice(0, 40));
+      let lines: readonly string[] = itrans ? readItrans(raw) : raw;
       let around = '';
       if (find !== undefined) {
         const p = passageOf(lines, find);
@@ -255,7 +293,8 @@ export const SOURCE_TOOLS: readonly Tool[] = [
       const where = blocks.length === 0
         ? 'no Devanāgarī or IAST text found on it'
         : blocks.slice(0, 20).map((b) => `lines ${b.from}-${b.to}: ${b.script} (${b.to - b.from + 1}) — ${b.start}`).join('\n');
-      return `${w.id}: "${page.title}"${around}, ${lines.length} lines — ${KIND_SAID[kindOfPage(url, lines)]}\n${where}${own}`;
+      const read = itrans ? '\nan ITRANS file, read into IAST by the program a line for a line: build from these lines, with spaced in IAST' : '';
+      return `${w.id}: "${page.title}"${around}, ${lines.length} lines — ${KIND_SAID[kindOfPage(url, lines)]}${read}\n${where}${itrans ? '' : own}`;
     },
   },
   {

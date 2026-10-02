@@ -6,7 +6,7 @@
  * `tests/integration/line-fit.test.ts` against his own lines.
  */
 import { describe, expect, it } from 'vitest';
-import { fitLine, piecesOf } from '../line-fit.js';
+import { advanceWidth, fitLine, piecesOf } from '../line-fit.js';
 
 const letters = { widthOf: (t: string): number => [...t].length, limit: 20 };
 
@@ -67,5 +67,20 @@ describe('his brackets, round an optional verse', () => {
       expect(l).not.toMatch(/\($/u);
       expect(l).not.toMatch(/^\)/u);
     }
+  });
+});
+
+describe('a name’s raised number, measured', () => {
+  /* His Lalitā numbers its names `śrī mā̍tā¹ śrī̍ mahā̱rājñī²`: drawn at about
+     two thirds of the line's size, it must not be measured as a whole letter,
+     or a line of names is divided that his page sets whole. */
+  const advance = new Map([['a', 0.5], ['1', 0.5], ['2', 0.5]]);
+  it('at its digit’s width times the raised share', () => {
+    const width = advanceWidth(advance, 1, 10, 0.668);
+    expect(width('a¹')).toBeCloseTo(5 + 5 * 0.668);
+    expect(width('a²')).toBeCloseTo(width('a¹'));
+  });
+  it('and a host that does not say measures it as its digit', () => {
+    expect(advanceWidth(advance, 1, 10)('a¹')).toBeCloseTo(10);
   });
 });

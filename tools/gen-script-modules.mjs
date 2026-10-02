@@ -47,6 +47,16 @@ const SCRIPTS = [
     qualifiers: '²³⁴',
     note: 'Tamil Sanskrit, printed the way it is printed.\n *\n * Native Tamil orthography has one letter per stop position — `ப` stands for\n * pa, pha, ba and bha alike — so Sanskrit in Tamil script marks the series with\n * SUPERSCRIPT DIGITS. It is the convention of Ramakrishna Math, Giri and most\n * stotra publishing, and Telugu and Kannada Sanskrit use the same device:\n *\n *     க ka  க² kha  க³ ga  க⁴ gha\n *     த ta  த² tha  த³ da  த⁴ dha\n *     ப pa  ப² pha  ப³ ba  ப⁴ bha\n *\n * The digit is written at the END of the akṣara — `கீ³தா`, not\n * `க³ீதா` — which is what `qualifiers` is for.\n *\n * With the series marked, Tamil is no longer ambiguous: over the corpus it\n * collides on 30 syllables, exactly as Devanāgarī and Telugu do, and every one\n * of those is the virāma tick rather than a letter. So it is `reversible` and\n * `verified` like them.\n *\n * The eleven shipped documents used none of it and collided 215 ways — `ba`,\n * `bha`, `pa` and `pha` all bare `ப`, 24, 140, 302 and 7 times. What they\n * carry is recorded in `corpus/transliteration-reference.json`.' },
   { id: 'itrans', name: 'ITRANS', kind: 'romanisation', reversible: false, verified: false,
+    /* ITRANS as sanskritdocuments writes it (its .itx files, the source of
+       every page it publishes): ITRANS 5.3's other spellings, its Vedic
+       accents, its markup. Read, never written. */
+    readAlso: {
+      'ā': ['A'], 'ī': ['I'], 'ū': ['U'], 'ṛ': ['RRi'], 'ṝ': ['RRI'], 'ḷ': ['LLi'], 'ḹ': ['LLI'],
+      'ṅ': ['~N'], 'ñ': ['JN'], 'ch': ['chh'], 'ṣ': ['S', 'shh'], 'v': ['w'], 'ḻ': ['L'],
+      'ṁ': ['.n', '.m'], 'm̐': ['.N'], 'kṣ': ['x'], 'jñ': ['GY'], 'oṁ': ['OM', 'AUM'],
+      '\u030D': ["\\'"], '\u0331': ['\\_'], '\u030E': ['\\"'],
+      '': ['{}', '.h'],
+    },
     note: 'ASCII transliteration. Present in v1 tables and unrepresentable in v1\n * documents, because the old format had no field for it.\n *\n * READ-ONLY, and that is measured rather than assumed. Its ambiguity is at the\n * SEQUENCE level, which glyph-collision analysis cannot see: "sh" is both the\n * form of one phoneme and the pair s+h; "aa" is both one vowel and a+a. It was\n * briefly registered reversible, which offered it as an authoring surface that\n * silently corrupts: "sahasra" round-trips to "sahasara", "sha" to a single\n * palatal sibilant.' },
 ];
 
@@ -63,6 +73,9 @@ const q = (s) => {
   if (s === undefined) throw new Error('undefined reached the emitter — stale input table');
   return JSON.stringify(s);
 };
+
+/** A key that is a combining mark alone, written as its escape — invisible otherwise. */
+const markKey = (id) => (/^\p{M}$/u.test(id) ? `"\\u${id.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}"` : q(id));
 
 /** IAST spelling doubles as the phoneme identifier. Named honestly. */
 const idOf = (row) => row.iast;
@@ -178,7 +191,11 @@ ${signs}
      A gap is DATA here, never a named branch in shared code. */
   approximations: {
 ${approx.join('\n')}
-  },` : ''}
+  },` : ''}${s.readAlso === undefined ? '' : `
+  /* Spellings a reader meets besides the table's — read, never written. */
+  readAlso: {
+${Object.entries(s.readAlso).map(([id, forms]) => `    ${markKey(id)}: [${forms.map(q).join(', ')}],`).join('\n')}
+  },`}
 };
 `);
   console.log(`  ${s.id.padEnd(7)} ${String(PHONEMES.length).padStart(3)} letters, ` +

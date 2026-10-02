@@ -28,16 +28,28 @@ import { Workspace, verseLetters } from '../workspace.js';
 import { describeDocument } from '../describe.js';
 import { letterDifference } from '../letters.js';
 import { numbersIn } from '../lines.js';
-import { markAll } from './document.js';
+import { proofOf, proofread, type Finding } from '../proof.js';
+import { markAll } from './marking.js';
 import { DELIVERY_FORMATS, arg, opt, params, str, type DeliveryFormat, type Tool } from './types.js';
 
-export interface Finding {
-  readonly severity: 'error' | 'warn';
-  readonly where: string;
-  readonly what: string;
-}
+export type { Finding } from '../proof.js';
+
+/**
+ * HOW MANY SECOND READINGS A DOCUMENT GETS before it may go with the points
+ * still open said to the person. A review is binding — `deliver` waits for
+ * one, and for an answer to what it found — but a reviewer can be wrong, and
+ * an agent that disagrees has no other way out than this.
+ */
+export const REVIEWS = 3;
+
+/** Whether a reviewer's answer found nothing: its verdict line, or the words of an older one. */
+export const reviewClean = (said: string): boolean =>
+  /VERDICT:\s*clean/iu.test(said) || (!/VERDICT:/iu.test(said) && /no problems found/iu.test(said));
 
 const VEDIC = new Set(['taittiriya', 'rigveda', 'sukla-yajurveda']);
+
+/** A text without its svara signs. */
+const withoutSvaras = (s: string): string => s.normalize('NFD').replace(/[\u{0305}\u{030D}\u{030E}\u{0331}\u{0332}]/gu, '').normalize('NFC');
 
 /**
  * What a verse IS, for "did the rules change it": its text and each marking's
@@ -78,6 +90,19 @@ function asMarked(o: Parameters<typeof documentOf>[0], doc: ChantDoc): ChantVers
   return copy.need().sections[0]?.verses ?? [];
 }
 
+/**
+ * What the proofreader finds on the open document (`proof.ts`): its metre
+ * held strictly in a section of ślokas — the smārta register's — and a verse
+ * the agent says its edition has irregular not held to it.
+ */
+export function proofFindings(ws: Workspace): Finding[] {
+  const doc = ws.need();
+  return proofread(doc, {
+    irregular: (id) => ws.builtFrom.get(id)?.irregular === true,
+    strictMetre: (s) => (s.profile?.preset ?? doc.profile?.preset) === 'smarta',
+  });
+}
+
 export function checkDocument(ws: Workspace): Finding[] {
   const doc = ws.need();
   const out: Finding[] = [];
@@ -86,6 +111,13 @@ export function checkDocument(ws: Workspace): Finding[] {
 
   for (const s of doc.sections) {
     if (s.verses.length === 0) out.push({ severity: 'error', where: s.id, what: 'the section has no verses' });
+    /* A smārta text's svaras are the RULES', not its source's — and the
+       rules place a śloka's by its verse among the others, so a verse marked
+       again on its own carries other ones. Compared as letters, they called a
+       stotra's verse wrong that no letter of differed, in two real runs
+       (2026-10-02); whether its marks are the rules' is asked below. */
+    const ruled = ((s.profile?.preset ?? doc.profile?.preset) as string | undefined) === 'smarta';
+    const lettersOf = (x: ChantVerse): string => (ruled ? withoutSvaras(verseLetters(x, { prose: false })) : verseLetters(x, { prose: false }));
     /* THE LETTERS of each verse built from a witness's lines on its own. */
     for (const v of s.verses) {
       const vf = ws.builtFrom.get(v.id);
@@ -93,10 +125,15 @@ export function checkDocument(ws: Workspace): Finding[] {
       if (vf === undefined || vw === undefined) continue;
       const lines = vf.input ?? vw.lines.slice(vf.from - 1, vf.to);
       const again = asMarked({ title: '_', sections: [{ verses: [{ lines }] }] }, doc);
-      const want = again.map((x) => verseLetters(x, { prose: false })).join('\n');
-      const have = verseLetters(v, { prose: false });
+      const want = again.map(lettersOf).join('\n');
+      const have = lettersOf(v);
       const d = difference(want, have);
-      if (d !== null) out.push({ severity: 'error', where: v.id, what: `differs from ${vw.id} lines ${vf.from}-${vf.to}, ${d}` });
+      if (d !== null) {
+        out.push({
+          severity: 'error', where: v.id,
+          what: `differs from ${vw.id} lines ${vf.from}-${vf.to}, ${d} — take it from a witness (replace_text with witness + at), or, only if the person asked for these words, replace_text with asked: true`,
+        });
+      }
     }
     /* THE LETTERS, against the witness the section was built from. */
     const from = ws.builtFrom.get(s.id);
@@ -104,8 +141,8 @@ export function checkDocument(ws: Workspace): Finding[] {
     if (from !== undefined && w !== undefined) {
       const flow = w.lines.slice(from.from - 1, from.to);
       const again = asMarked({ title: '_', sections: [{ verses: [], flow }] }, doc);
-      const want = again.map((v) => verseLetters(v, { prose: false }));
-      const have = s.verses.map((v) => verseLetters(v, { prose: false }));
+      const want = again.map(lettersOf);
+      const have = s.verses.map(lettersOf);
       if (want.length !== have.length) {
         out.push({ severity: 'error', where: s.id, what: `${have.length} verse(s), but ${w.id} lines ${from.from}-${from.to} make ${want.length}` });
       }
@@ -152,8 +189,11 @@ export function checkDocument(ws: Workspace): Finding[] {
   });
 
   /* THE MARKS: the rules once more, over a copy, change nothing — for a
-     document the rules marked. An author's text is not theirs to judge. */
+     document the rules marked. An author's text is not theirs to judge, nor
+     the proofreader's. */
   if (ws.origin === 'author') return out;
+  /* THE PAGE, as a proofreader reads it (`proof.ts`). */
+  out.push(...proofFindings(ws));
   const copy = new Workspace();
   copy.open(doc);
   markAll(copy, 'keep-hand');
@@ -185,26 +225,37 @@ const MIME: Readonly<Record<DeliveryFormat, string>> = {
   vedaunion: 'application/zip',
 };
 
+/**
+ * A DOCUMENT BUILT HERE IS READ BY A SECOND READER BEFORE IT GOES, and what
+ * the reader found is answered. A real run's reviewer found eight faults —
+ * a name from another edition, two variants inside verses, a saṅkalpa no one
+ * asked for, a misplaced ṛ — and the agent sent the PDF anyway, because the
+ * review was advice and the check was the only gate (2026-10-02). So: no
+ * review, no file; a review that found something, and nothing changed since,
+ * no file; changed since, read again. After `REVIEWS` readings the file
+ * goes, with what is still open said to the person. An author's own text,
+ * opened from the library, is his, and goes as it is.
+ */
+function unreviewed(ws: Workspace): string | null {
+  if (ws.origin === 'author') return null;
+  const last = ws.reviews.at(-1);
+  if (last === undefined) return 'not delivered — a document built here is read by a second reader first: run review, with what the person asked for as its focus';
+  if (ws.reviews.length >= REVIEWS) return null;
+  if (!last.clean && last.at === ws.revision) {
+    return 'not delivered — the review found problems and nothing has changed since: fix each one it names (a verse taken again from a witness, '
+      + 'a word left out of spaced, a heading); where you are sure the reviewer is wrong, run review again and say why in its focus';
+  }
+  if (last.at !== ws.revision) return 'not delivered — the document changed after the last review: run review again, saying what you changed';
+  return null;
+}
+
+/** What is still open after the last review, for the person — said when the file goes anyway. */
+export function openPoints(ws: Workspace): string | null {
+  const last = ws.reviews.at(-1);
+  return ws.origin === 'author' || last === undefined || last.clean ? null : last.said;
+}
+
 export const CHECK_TOOLS: readonly Tool[] = [
-  {
-    writes: false,
-    needs: 'choose',
-    spec: {
-      name: 'offer_choices',
-      description: 'Ask the person to decide between a few options — which recension, which of the texts found, which '
-        + 'format — shown to them as buttons. Then end your turn with one short line; their choice is their next message.',
-      parameters: params({
-        question: str('The question, short.'),
-        options: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 8, description: 'Each a few words.' },
-      }, ['question', 'options']),
-    },
-    async run(args, { host }) {
-      const options = arg<unknown[]>(args, 'options', 'array').map(String).map((o) => o.trim()).filter((o) => o !== '');
-      if (options.length < 2) throw new Error('give at least two options');
-      host.choose!(arg<string>(args, 'question', 'string'), options.slice(0, 8));
-      return 'shown as buttons — end your turn now with one short line; the choice comes as the person\'s next message';
-    },
-  },
   {
     writes: false,
     spec: {
@@ -222,15 +273,25 @@ export const CHECK_TOOLS: readonly Tool[] = [
       parameters: params({ focus: str('What to look at hardest, and what the person asked for.') }, ['focus']),
     },
     async run(args, { ws, review }) {
-      /* What the reviewer cannot see: where each part was taken from. Handed
-         over, so it spends its calls comparing rather than finding out. */
-      const sources = [...ws.builtFrom.entries()].map(([k, f]) => `${k} ← ${f.witness} lines ${f.from}-${f.to}`);
+      /* What the reviewer cannot see: where each part was taken from, what it
+         left out, and the page itself. Handed over, so it spends its calls
+         comparing rather than finding out. */
+      const doc = ws.need();
+      const sources = [...ws.builtFrom.entries()].map(([k, f]) => `${k} ← ${f.witness} lines ${f.from}-${f.to}`
+        + `${f.left === undefined ? '' : `, leaving out ${f.left.map((w) => `“${w}”`).join(' ')}`}${f.irregular === true ? ', said to be irregular by its edition' : ''}`
+        + `${f.readings === undefined ? '' : `, reading ${f.readings.map((r) => `“${r.read}” with ${r.witness} for “${r.source}”`).join(', ')}`}`);
       const witnesses = [...ws.witnesses.values()].map((w) => `${w.id}: ${w.origin} — "${w.title}", ${w.lines.length} lines`);
-      return review([
-        arg<string>(args, 'focus', 'string'),
+      const findings = checkDocument(ws);
+      const at = ws.revision;
+      const said = await review([
+        `What the person asked for, and what to look at hardest: ${arg<string>(args, 'focus', 'string')}`,
+        `The document as it will print:\n${proofOf(doc)}`,
+        findings.length === 0 ? 'The check finds nothing.' : `The check finds:\n${findings.map((f) => `${f.severity === 'error' ? 'ERROR' : 'warn'} ${f.where}: ${f.what}`).join('\n')}`,
         sources.length === 0 ? 'Nothing in it was taken from a witness by line.' : `Built from:\n${sources.join('\n')}`,
         witnesses.length === 0 ? 'No witnesses were fetched.' : `Witnesses:\n${witnesses.join('\n')}`,
       ].join('\n\n'));
+      ws.reviews.push({ at, clean: reviewClean(said), said });
+      return said;
     },
   },
   {
@@ -272,6 +333,8 @@ export const CHECK_TOOLS: readonly Tool[] = [
       const found = checkDocument(ws);
       const errors = found.filter((f) => f.severity === 'error');
       if (errors.length > 0) return `not delivered — the check finds:\n${said(ws, doc, errors)}`;
+      const unread = unreviewed(ws);
+      if (unread !== null) return unread;
       const warnings = found.filter((f) => f.severity === 'warn');
       const checked = warnings.length === 0
         ? 'Checked: every letter is the source’s, every mark the rules’.'
@@ -280,7 +343,8 @@ export const CHECK_TOOLS: readonly Tool[] = [
       const asked = opt<string>(args, 'format', 'string') ?? (host.place !== undefined && host.exporters?.pdf === undefined ? 'here' : 'pdf');
       if (asked === 'here') {
         if (host.place === undefined) return 'this host has no open document to put it in — deliver a file';
-        return host.place(doc);
+        const open = openPoints(ws);
+        return `${await host.place(doc)}${open === null ? '' : `\n\nthe last review still raises — tell the person:\n${open}`}`;
       }
       const format = asked as DeliveryFormat;
       const make = host.exporters?.[format];
@@ -299,7 +363,9 @@ export const CHECK_TOOLS: readonly Tool[] = [
       const file = await make(doc, stem);
       if (host.deliver === undefined) return `made ${file.name} (${Math.round(file.bytes.length / 1024)} KB), but this host cannot hand it over`;
       await host.deliver({ ...file, mime: file.mime || MIME[format], summary });
-      return `delivered ${file.name} (${Math.round(file.bytes.length / 1024)} KB)`;
+      const open = openPoints(ws);
+      return `delivered ${file.name} (${Math.round(file.bytes.length / 1024)} KB)`
+        + `${open === null ? '' : `\n\nthe last review still raises what follows — tell the person, in a line or two, which of it you left as it is and why:\n${open}`}`;
     },
   },
 ];

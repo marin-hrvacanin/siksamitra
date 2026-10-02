@@ -35,6 +35,14 @@ describe('one sound, two spellings — equal', () => {
   it('the n a ś before it makes palatal, spelt so, is the n — vishvasa against his', () => {
     same('आऽयङ्गौᳶ पृश्ञि॑रक्रमी॒दस॑नन्मा॒तर॒म्पुनः॑ ।', "ā'yaṁ gauḥ pṛśni̍ra-kramī̱da-sa̍nan mā̱tara̱ṁ puna̍ḥ ।");
   });
+  it('a source’s punctuation is no letter', () => {
+    same('सुरगणपितृयक्षसेवितं; ह्यसुरनिशाचरसिद्धवन्दितम्', 'suragaṇapitṛyakṣasevitaṁ hyasuraniśācarasiddhavanditam');
+    same('ब्रह्मा ऋषिः, अनुष्टुप्छन्दः,', 'brahmā ṛṣiḥ anuṣṭup chandaḥ');
+  });
+  it('a ch doubled where two words meet is the ch his page parts them with', () => {
+    same('अनुष्टुप्च्छन्दः', 'anuṣṭup chandaḥ');
+    same('शतं तच्छृणु भूपते', 'śataṁ tac chṛṇu bhūpate');
+  });
   it('the gum written as gg is the anusvāra it stands for', () => {
     same('पुण्य॒ग्ग्॒ श्लोकं॒', 'puṇya̱ṁ̱ śloka̱ṁ');
   });

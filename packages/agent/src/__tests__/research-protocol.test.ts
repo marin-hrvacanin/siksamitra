@@ -68,12 +68,15 @@ describe('a whole edition, read for one passage', () => {
 describe('his authoring guides', () => {
   const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
   const host: Host = { guides: async (file) => readFileSync(join(ROOT, 'docs', 'authoring', file), 'utf8') };
-  const read = (args: Record<string, unknown>) => toolsFor('deliver', host).find((t) => t.spec.name === 'read_guide')!
+  const read = (args: Record<string, unknown>) => toolsFor('document', host).find((t) => t.spec.name === 'read_guide')!
     .run(args, { ws: new Workspace(), host, review: async () => '' });
 
-  it('are offered to a host that has them, and to no other', () => {
-    expect(toolsFor('deliver', host).some((t) => t.spec.name === 'read_guide')).toBe(true);
-    expect(toolsFor('deliver', {}).some((t) => t.spec.name === 'read_guide')).toBe(false);
+  it('are offered to a host that has them, and to no other — for the questions a document raises, not while a text is built', () => {
+    expect(toolsFor('document', host).some((t) => t.spec.name === 'read_guide')).toBe(true);
+    expect(toolsFor('document', {}).some((t) => t.spec.name === 'read_guide')).toBe(false);
+    /* Building, his house style is the guide: the old ones are the platform's generators. */
+    expect(toolsFor('deliver', host).some((t) => t.spec.name === 'read_guide')).toBe(false);
+    expect(toolsFor('deliver', host).some((t) => t.spec.name === 'house_style')).toBe(true);
   });
   it('a section by its number — the protected readings, the rules read first', async () => {
     expect(await read({ guide: 'chants', section: '5G' })).toMatch(/Protected readings[\s\S]*do not "correct" these/);

@@ -29,6 +29,8 @@ import type { SessionStore } from './store.js';
 export interface BotDeps {
   readonly model: Model;
   readonly price: Price;
+  /** The second reader's model, when it is not the builder's. */
+  readonly reviewer?: { readonly model: Model; readonly price: Price };
   readonly limits: Limits;
   readonly ledger: Ledger;
   readonly sessions: SessionStore;
@@ -169,6 +171,7 @@ export function botCore(deps: BotDeps) {
         let choices: BotReply['choices'];
         const session = new Session({
           id: chat, user, mode: 'deliver', model: deps.model, price: deps.price, limits: deps.limits, ledger: deps.ledger,
+          ...(deps.reviewer === undefined ? {} : { reviewer: deps.reviewer }),
           host: { ...deps.host(async (f) => { files.push(f); }), choose: (question, options) => { choices = { question, options }; } },
           ...(deps.progress === undefined ? {} : {
             onEvent: (e) => {

@@ -41,6 +41,7 @@ const objects = fileAttachments(join(config.dataDir, 'objects'));
 const core = botCore({
   model: config.model,
   price: config.price,
+  ...(config.reviewer === undefined ? {} : { reviewer: config.reviewer }),
   limits: config.limits,
   ledger: fileLedger(join(config.dataDir, 'ledger.jsonl')),
   sessions: fileSessions(join(config.dataDir, 'sessions')),

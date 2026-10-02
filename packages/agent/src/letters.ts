@@ -9,6 +9,7 @@
  * as one rule.
  */
 import { KAMPA_MARKS, normalize, toIast } from '@siksamitra/engine';
+import { LEADING_NUMBER } from './lines.js';
 
 /* Its letters: an IAST line has daṇḍas and digits of the block too. */
 const DEVANAGARI = /[\u0900-\u0963\u0970-\u097F]/u;
@@ -43,6 +44,10 @@ const AT_A_JUNCTION: readonly (readonly [RegExp, string])[] = [
   [/[ṅñṇnm](?=[kgcjṭḍtdpbmnyrlvśṣsh])/gu, 'ṁ'],
   [/([śṣs])(?=\p{M}*\1)/gu, 'ḥ'],
   [/ś(?=\p{M}*ch?)/gu, 'ḥ'],
+  /* A ch a source doubles where two words meet, `अनुष्टुप्च्छन्दः`, which
+     his pages part as `anuṣṭu̍p cha̱ndaḥ` (his Lalitā's nyāsa); a run that set
+     it so was told it had dropped a letter (2026-10-02). */
+  [/c(?=\p{M}*ch)/gu, ''],
 ];
 
 const folded = (s: string, folds: readonly (readonly [RegExp, string])[]): string =>
@@ -63,8 +68,13 @@ export const asIast = (line: string): string =>
    have both with and without he sets in them — `(atha)`, `(parameśvara)`, a
    whole verse `( … ॥ )` — his sādhanā throughout (2026-10-02). */
 function lettersOf(line: string): string {
-  const iast = asIast(line);
-  return folded(iast.replace(/[\s\-'’ʼˎ।॥|0-9०-९()[\]]/gu, ''), IN_A_LINE);
+  /* A line's number or its edition's label (`03003018a`) is no letter of it —
+     counted, its pāda letter `a` was (2026-10-02). */
+  const iast = asIast(line.replace(LEADING_NUMBER, ''));
+  /* A source's own punctuation — `सेवितं; ह्यसुर…`, a comma after a viniyoga's
+     part — is no letter either: counted, it made a word left as his page has
+     it "a changed letter" (2026-10-02). */
+  return folded(iast.replace(/[\s\-'’ʼˎ।॥|0-9०-९()[\]⁰¹²³⁴⁵⁶⁷⁸⁹,;:.!?"“”‘]/gu, ''), IN_A_LINE);
 }
 
 /** One line's letters, as `spaced` is compared by: every fold applied. */
@@ -100,7 +110,8 @@ function dropsOpeningOm(want: string, got: string): boolean {
 export function letterChange(lines: readonly string[], spaced: readonly string[], first = true): string | null {
   const d = letterDifference(lines, spaced, first);
   return d === null ? null
-    : `${d.where}: spaced changes a letter at "${d.have}" where the source has "${d.source}" — add only spaces, hyphens, apostrophes and daṇḍas`;
+    : `${d.where}: spaced changes a letter at "${d.have}" where the source has "${d.source}" — add only spaces, hyphens, apostrophes and daṇḍas`
+      + ' (an anusvāra or a visarga as the source writes it: the program sets them as his page does)';
 }
 
 /** Where two texts' letters part: which line, and a few letters either side, on each. */
@@ -135,6 +146,60 @@ export function letterDifference(lines: readonly string[], spaced: readonly stri
     return { where, have: near(got), source: near(want) };
   }
   return null;
+}
+
+/* ── whole words of the source, left out ─────────────────────────────────── */
+
+/* For finding WHICH words went: the svaras off (spaced may leave them to the
+   program) and a junction's spellings of one sound as one, so a word left out
+   between two others is found whatever the junction it leaves behind. The
+   letters are then held to the source's EXACTLY, the left-out words taken
+   off it, by `letterChange` — this only chooses what was taken off. */
+const findingKey = (s: string): string => s.normalize('NFC').replace(/[̱̲̀́̅̍̎]/gu, '')
+  .replace(/[ṅñṇnmṁ]/gu, 'N').replace(/[ḥśṣs]/gu, 'S');
+
+/**
+ * WORDS OF THE SOURCE THAT ARE NOT THE TEXT. A source prints beside a verse
+ * what is no part of it — another edition's name after a half-verse
+ * (`…tamonudaḥ । kālādhyakṣaḥ`), a variant after the verse's number
+ * (`॥ ११॥ सर्वभूतनिषेवितः`) — and sets two lists as the columns of one table
+ * (`…अङ्गुष्ठाभ्यां नमः - हृदयायनमः`, the karanyāsa beside the hṛdayanyāsa,
+ * which his pages set as two). So `spaced` may leave out WHOLE WORDS of the
+ * source, as the source writes its words, in their order — and nothing else:
+ * this says which, and gives the source's lines without them, for every
+ * other rule to run over unchanged. Null when `spaced` is not the source's
+ * words with some left out. A real run could do neither, and printed both
+ * (sūryāṣṭottaraśatanāma stotram, 2026-10-02).
+ */
+export function wordsLeftOut(lines: readonly string[], spaced: readonly string[]): { kept: string[]; left: string[] } | null {
+  const words = lines.flatMap((line, l) => line.split(/\s+/u).filter((w) => w !== '').map((w) => ({ w, l, key: findingKey(lettersOf(w)) })));
+  const want = findingKey(spaced.map(lettersOf).join(''));
+  if (want === '') return null;
+  const memo = new Map<number, boolean>();
+  /* Whether the words from i on can make the rest of `want` from j on. */
+  const go = (i: number, j: number): boolean => {
+    if (i === words.length) return j === want.length;
+    const at = i * (want.length + 1) + j;
+    const was = memo.get(at);
+    if (was !== undefined) return was;
+    const { key } = words[i]!;
+    const ok = ((key === '' || want.startsWith(key, j)) && go(i + 1, j + key.length)) || (key !== '' && go(i + 1, j));
+    memo.set(at, ok);
+    return ok;
+  };
+  if (!go(0, 0)) return null;
+  /* The way through that keeps a word wherever it can: a word is left out only where keeping it cannot work. */
+  const keep: boolean[] = [];
+  for (let i = 0, j = 0; i < words.length; i += 1) {
+    const { key } = words[i]!;
+    const kept = (key === '' || want.startsWith(key, j)) && go(i + 1, j + key.length);
+    keep.push(kept);
+    if (kept) j += key.length;
+  }
+  const left = words.filter((_, i) => !keep[i] && words[i]!.key !== '').map((x) => x.w);
+  if (left.length === 0) return null;
+  const kept = lines.map((_, l) => words.filter((x, i) => x.l === l && keep[i]).map((x) => x.w).join(' '));
+  return { kept: kept.filter((k) => k.trim() !== ''), left };
 }
 
 /* ── the svaras, carried from the source ─────────────────────────────────── */

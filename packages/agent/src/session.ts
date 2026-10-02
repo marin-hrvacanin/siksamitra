@@ -23,7 +23,7 @@ import { runTurn, type AgentEvent, type TurnResult } from './loop.js';
 import type { Message, Model } from './model.js';
 import { systemFor, toolsFor, type Mode } from './modes.js';
 import type { Host, Tool, ToolContext } from './tools/types.js';
-import { Workspace, type BuiltFrom, type Origin, type Witness } from './workspace.js';
+import { Workspace, type BuiltFrom, type Origin, type Review, type Witness } from './workspace.js';
 import { blocksOf } from './tools/sources.js';
 
 export interface SessionOptions {
@@ -32,6 +32,14 @@ export interface SessionOptions {
   readonly mode: Mode;
   readonly model: Model;
   readonly price: Price;
+  /**
+   * WHO READS IT SECOND — a stronger model than the one that builds, where
+   * the host has one. The second reading is the one that must think hardest:
+   * is this the text asked for, is every part of it what was asked, is every
+   * verse the edition's. A cheap model that builds and a careful one that
+   * reads is what a person with a deadline does. Absent: the same model.
+   */
+  readonly reviewer?: { readonly model: Model; readonly price: Price };
   readonly host: Host;
   readonly ledger: Ledger;
   readonly limits: Limits;
@@ -53,6 +61,9 @@ export interface SessionState {
   readonly origin?: Origin;
   readonly witnesses: readonly Witness[];
   readonly builtFrom: readonly (readonly [string, BuiltFrom])[];
+  /** What the second readers said, and of which state of the document — the review a later turn's delivery is held to. */
+  readonly reviews?: readonly Review[];
+  readonly revision?: number;
 }
 
 const ELIDED = '[an earlier answer, left out to keep the conversation short — call the tool again if you need it]';
@@ -89,12 +100,17 @@ export class Session {
   constructor(private readonly opts: SessionOptions, state?: SessionState) {
     if (state === undefined) return;
     this.messages = [...state.messages];
-    for (const w of state.witnesses) this.ws.witnesses.set(w.id, w);
+    /* Its witnesses kept under their ids, and the next one numbered after
+       them: numbered from w1 again, a later turn's first page took the id of
+       the first turn's, and the model read one source as another (2026-10-02). */
+    this.ws.restoreWitnesses(state.witnesses);
     if (state.doc !== undefined) {
       const read = readChantFile(state.doc);
       if (read.ok) this.ws.open(openChantDoc(read.doc), state.origin ?? 'built');
     }
     for (const [k, v] of state.builtFrom) this.ws.builtFrom.set(k, v);
+    if (state.revision !== undefined) this.ws.revision = state.revision;
+    this.ws.reviews.push(...(state.reviews ?? []));
   }
 
   get conversation(): readonly Message[] { return this.messages; }
@@ -110,7 +126,10 @@ export class Session {
       model: o.model, price: o.price, tools: [...toolsFor(o.mode, host), ...(o.tools ?? [])], system: systemFor(o.mode, host),
       messages: this.messages, ctx, ledger: o.ledger, limits: o.limits, session: o.id,
       ...(o.user === undefined ? {} : { user: o.user }),
-      ...(o.maxSteps === undefined ? {} : { maxSteps: o.maxSteps }),
+      /* A text built and read twice — its sources, his style, the build, the
+         proof, the check, a review and its answer — takes more steps than a
+         change to an open document. */
+      maxSteps: o.maxSteps ?? (o.mode === 'deliver' ? 60 : 40),
       ...(o.onEvent === undefined ? {} : { onEvent: o.onEvent }),
       steers: this.takeNotes,
       stopped: () => this.halted,
@@ -132,12 +151,20 @@ export class Session {
     return `${text}\n\n[kept as witness ${w.id}: ${where} — build from it by line number]`;
   }
 
+  /**
+   * THE SECOND READER, on this session's workspace: the review prompt, the
+   * tools that read, the reviewer's model. The session's own `review` tool
+   * calls it; so does a host that drives the tools itself (the MCP server).
+   */
+  async secondReading(task: string): Promise<string> { return this.review(task); }
+
   private async review(task: string): Promise<string> {
     const o = this.opts;
     const host = this.host;
     const ctx: ToolContext = { ws: this.ws, host, review: async () => 'a reviewer does not ask for a review' };
     const done = await runTurn({
-      model: o.model, price: o.price, tools: toolsFor('review', host), system: systemFor('review', host),
+      model: o.reviewer?.model ?? o.model, price: o.reviewer?.price ?? o.price,
+      tools: toolsFor('review', host), system: systemFor('review', host),
       messages: [], ctx, ledger: o.ledger, limits: o.limits, session: o.id, maxSteps: 14,
       ...(o.user === undefined ? {} : { user: o.user }),
       /* Its steps are shown too, as the reviewer's. */
@@ -161,6 +188,8 @@ export class Session {
       ...(doc === null ? {} : { doc: writeChantFile(doc), origin: this.ws.origin ?? 'built' }),
       witnesses: [...this.ws.witnesses.values()],
       builtFrom: [...this.ws.builtFrom.entries()],
+      reviews: [...this.ws.reviews],
+      revision: this.ws.revision,
     };
   }
 }

@@ -84,11 +84,24 @@ describe('a text of his, read as an example', () => {
   it('is shown as an example, and is not opened', async () => {
     const host = hostWith([]);
     const ws = new Workspace();
-    const said = await run(host, ws, 'read_example', { id: 'his:bhu-suktam-v1-1' });
+    const said = await run(host, ws, 'read_example', { id: 'his:bhu-suktam-v1-1', verses: '1' });
     expect(said).toMatch(/^AN EXAMPLE, not the document: "bhū sūktam" — verses 1-1 of 1/);
     expect(said).toContain('bhūmi̍r bhū̱mnā dyaur');
     expect(ws.doc).toBeNull();
     expect(ws.opened).toBeNull();
+  });
+  it('asked for no verses, it is shown whole as its shape: each part, how many verses, numbered or not', async () => {
+    const host = hostWith([]);
+    const said = await run(host, new Workspace(), 'read_example', { id: 'his:bhu-suktam-v1-1' });
+    expect(said).toMatch(/^AN EXAMPLE, not the document — the structure of "bhū sūktam"/);
+    expect(said).toMatch(/s-1 \(no heading\) — 1 verse\(s\), (?:un)?numbered: “bhūmi̍r bhū̱mnā dyaur/u);
+  });
+  it('one part of it in full, by the id its structure gives', async () => {
+    const host = hostWith([]);
+    const said = await run(host, new Workspace(), 'read_example', { id: 'his:bhu-suktam-v1-1', section: 's-1' });
+    expect(said).toMatch(/^AN EXAMPLE, not the document: "bhū sūktam" — verses 1-1 of 1/);
+    expect(said).toContain('bhūmi̍r bhū̱mnā dyaur');
+    await expect(run(host, new Workspace(), 'read_example', { id: 'his:bhu-suktam-v1-1', section: 's-9' })).rejects.toThrow(/no section "s-9"/);
   });
   it('at most eight verses at a time', async () => {
     const many = documentOf({ title: 'x', sections: [{ verses: Array.from({ length: 20 }, (_, i) => ({ lines: [`ve̍rse a̱nyat ॥ ${i + 1}॥`] })) }] });

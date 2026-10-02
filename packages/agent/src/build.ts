@@ -48,6 +48,7 @@ import { advanceWidth, fitLine, type LineFit } from '@siksamitra/layout';
 import {
   MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK, MANTRA_LINE_FILL, WORD_PAGE, WORD_PARAGRAPHS,
 } from '@siksamitra/tokens/word';
+import { MARK_GEOMETRY } from '@siksamitra/tokens/source';
 import { cleanLine, groupedBy, layoutOf, numbered, pairedPadas, paragraphsIn, unnumbered, type VerseLayout } from './lines.js';
 
 /*
@@ -58,7 +59,7 @@ import { cleanLine, groupedBy, layoutOf, numbered, pairedPadas, paragraphsIn, un
  */
 const VERSE = WORD_PARAGRAPHS.find((p) => p.role === 'verse-line')!;
 const MANTRA_FIT: LineFit = {
-  widthOf: advanceWidth(MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK, VERSE.size),
+  widthOf: advanceWidth(MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK, VERSE.size, MARK_GEOMETRY.supScale),
   limit: MANTRA_LINE_FILL * (WORD_PAGE.widthPt - 2 * WORD_PAGE.marginPt - VERSE.indent - VERSE.right),
 };
 
@@ -120,8 +121,30 @@ export interface Outline {
   readonly sections: readonly OutlineSection[];
 }
 
-/** A line's runs: the letters plain, and each svara character in `Svara`. */
+/*
+ * A NAME'S NUMBER, RAISED AFTER IT — his Lalitā sahasranāma counts its names
+ * so, `śrī mā̍tā¹ śrī̍ mahā̱rājñī²`, in a stotra whose verses are ślokas. The
+ * model writes it as a superscript digit after the name, and it goes in as his
+ * marker run (`Reference`), which the reader makes the raised `sup` on the
+ * name's last letter: never a letter of the mantra.
+ */
+const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+const NAME_NUMBER_IN_LINE = /([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/u;
+const plainDigits = (s: string): string => [...s].map((c) => String(SUPERSCRIPT.indexOf(c))).join('');
+
+/** A line's runs: the letters plain, each svara character in `Svara`, a name's number in `Reference`. */
 export function runsOf(line: string): WordRun[] {
+  const runs: WordRun[] = [];
+  for (const piece of line.split(NAME_NUMBER_IN_LINE)) {
+    if (piece === '') continue;
+    if (NAME_NUMBER_IN_LINE.test(piece)) runs.push(wordRun(plainDigits(piece), 'Reference'));
+    else runs.push(...lettersRuns(piece));
+  }
+  return runs;
+}
+
+/** A piece of a line without numbers: the letters plain, and each svara character in `Svara`. */
+function lettersRuns(line: string): WordRun[] {
   const runs: WordRun[] = [];
   let plain = '';
   /* A kampa — `३̱̍` as a Devanāgarī source gives it, `3̱̍` as his IAST writes

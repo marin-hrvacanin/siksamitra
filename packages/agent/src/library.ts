@@ -47,16 +47,38 @@ export function indexEntries(id: string, raw: RawDoc): LibraryEntry[] {
   ];
 }
 
-/** A document with one of its sections only — what opening `<doc>#<section>` gives. */
+/**
+ * A SECTION TAKEN OUT IS A TEXT OF ITS OWN — what opening `<doc>#<section>` gives.
+ *
+ * Its heading becomes the document's name, and nothing of the larger
+ * document comes with it: not the book's title page, not its table of
+ * contents, not the part it stood in, not the book's own description or its
+ * directions for the whole rite. Asked for the gāyatrī, the bot opened it out
+ * of his sādhanā and sent a PDF whose first two pages were the sādhanā's
+ * "Veda Union / sādhanā" and its contents (2026-10-02): "I asked just for
+ * gayatri! Why those 2 pages?"
+ *
+ * The section keeps its source line, and loses its heading, which is now the
+ * title: his single documents name a text once.
+ */
 export function sectionDoc(doc: ChantDoc, sectionId: string): ChantDoc {
   const section = doc.sections.find((s) => s.id === sectionId);
   if (section === undefined) throw new Error(`no section "${sectionId}" in "${doc.title}"`);
-  const { part: _part, ...alone } = section;
+  const { part: _part, sub: _sub, title: heading, label: _label, n: _n, groupId, ...alone } = section;
+  const {
+    book: _book, cover: _cover, contents: _contents, instructions: _instructions, subtitle: _subtitle, groups, ...whole
+  } = doc;
+  const title = heading?.trim() || doc.title;
+  /* A group it is a member of goes with it only as far as it is that group's. */
+  const group = groupId === undefined ? undefined : groups?.find((g) => g.id === groupId);
+  const own = group === undefined ? undefined : { ...group, members: group.members.filter((m) => m === section.id) };
   return {
-    ...doc,
-    title: section.title ?? doc.title,
-    ...(section.source === undefined ? {} : { source: section.source }),
-    sections: [withVerses(alone, section.verses)],
+    ...whole,
+    title,
+    titleForms: { iast: title },
+    ...(typeof section.source === 'string' && section.source.trim() !== '' ? { source: section.source } : {}),
+    ...(own === undefined ? {} : { groups: [own] }),
+    sections: [withVerses({ ...alone, ...(own === undefined ? {} : { groupId: own.id }) }, section.verses)],
   };
 }
 

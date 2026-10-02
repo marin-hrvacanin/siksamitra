@@ -69,10 +69,13 @@ export function romanisationLossless(
  * `reversible: false`.
  */
 export function romanisationToIast(text: string, module: ScriptModule): ToIastResult {
-  const forms = PHONEME_INVENTORY
-    .map((p) => ({ id: p.id, form: formOf(module, p.id)?.form }))
-    .filter((e): e is { id: string; form: string } => e.form !== undefined && e.form !== '')
-    .sort((a, b) => b.form.length - a.form.length);
+  const forms = [
+    ...PHONEME_INVENTORY
+      .map((p) => ({ id: p.id, form: formOf(module, p.id)?.form }))
+      .filter((e): e is { id: string; form: string } => e.form !== undefined && e.form !== ''),
+    /* The spellings a reader meets besides the table's (`readAlso`). */
+    ...Object.entries(module.readAlso ?? {}).flatMap(([id, spellings]) => spellings.map((form) => ({ id, form }))),
+  ].sort((a, b) => b.form.length - a.form.length);
 
   let out = '';
   let i = 0;

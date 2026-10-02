@@ -23,6 +23,8 @@ function memorySessions(): SessionStore & { all: Map<string, SessionState> } {
 const deliverSteps = () => [
   { calls: [{ name: 'fetch_page', args: { url: 'https://sanskritdocuments.org/x' } }] },
   { calls: [{ name: 'build_document', args: { title: 'puruṣa sūktam', source: 'taittiriya', sections: [{ witness: 'w1', lines: '5-8' }] } }] },
+  { calls: [{ name: 'review', args: { focus: 'puruṣa sūktam' } }] },
+  { say: 'Compared s-1 with w1 lines 5-8.\nVERDICT: clean' },
   { calls: [{ name: 'deliver', args: {} }] },
   { say: 'Here it is, as a PDF.' },
 ];
@@ -123,7 +125,7 @@ describe('the log', () => {
       host: (deliver) => ({ ...testHost(), deliver }), log: (l) => lines.push(l),
     });
     await core.handle('chat-777', { id: 'person-5150' }, 'the Puruṣa Sūktam, Taittirīya, please');
-    expect(lines).toEqual([expect.objectContaining({ steps: 4, files: ['pdf'], outcome: 'answered' })]);
+    expect(lines).toEqual([expect.objectContaining({ steps: 5, files: ['pdf'], outcome: 'answered' })]);
     /* A name nothing else in a log line could spell: the line also says how
        many ms the request took, and with an id of 42 it failed whenever that
        was 42. */

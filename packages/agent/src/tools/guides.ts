@@ -10,6 +10,7 @@
  * translated and sourced, the protected readings, one recension faithfully.
  * Read by section or by a word in them; the host says where they are.
  */
+import { HOUSE_STYLE } from '../house-style.js';
 import { arg, opt, params, str, type Tool } from './types.js';
 
 /** Each guide, by the name the tool takes. */
@@ -29,6 +30,16 @@ const headingOf = (line: string): { level: number; title: string } | null => {
 };
 
 export const GUIDE_TOOLS: readonly Tool[] = [
+  {
+    writes: false,
+    spec: {
+      name: 'house_style',
+      description: 'How his pages set a text — what is asked for, each part under its heading, the viniyoga and the nyāsas, the dhyāna, '
+        + 'a text of names, the close, his notes, and what his page never has — in his own lines. Read it whole before you build.',
+      parameters: params({}),
+    },
+    async run() { return HOUSE_STYLE; },
+  },
   {
     writes: false,
     needs: 'guides',

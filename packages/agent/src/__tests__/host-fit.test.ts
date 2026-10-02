@@ -48,6 +48,31 @@ describe('the deliver tool, as each host has it', () => {
     expect(word).not.toContain('There is no document open here');
   });
 
+  it('his house style and the proof are on every host — the bot, the app, the Word panel — and the reviewer’s too', () => {
+    const hosts: Host[] = [
+      { where: 'a Telegram chat', exporters: { pdf: file }, guides: async () => '' },
+      { place: async () => 'opened', exporters: { pdf: file } },
+      { where: "the Word add-in's panel", place: async () => 'placed' },
+    ];
+    for (const host of hosts) {
+      for (const mode of ['deliver', 'document', 'review'] as const) {
+        const names = toolsFor(mode, host).map((t) => t.spec.name);
+        expect(names, mode).toContain('house_style');
+        expect(names, mode).toContain('proof');
+      }
+    }
+  });
+
+  it('the order of work is said: his style, the source read whole, the proof, the review', () => {
+    const prompt = systemFor('deliver', { exporters: { pdf: file } });
+    const at = (s: string): number => prompt.indexOf(s);
+    expect(at('house_style, whole')).toBeGreaterThan(0);
+    expect(at('READ THE WHOLE PASSAGE')).toBeGreaterThan(at('house_style, whole'));
+    expect(at('6. PROOF')).toBeGreaterThan(at('READ THE WHOLE PASSAGE'));
+    expect(at('7. REVIEW')).toBeGreaterThan(at('6. PROOF'));
+    expect(systemFor('review')).toMatch(/end with ONE line: "VERDICT: clean"/);
+  });
+
   it('the reviewer, on any host, can deliver nothing', () => {
     const bot: Host = { exporters: { pdf: file }, place: async () => 'x' };
     expect(toolsFor('review', bot).map((t) => t.spec.name)).not.toContain('deliver');

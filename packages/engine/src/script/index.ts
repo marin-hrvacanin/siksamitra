@@ -281,6 +281,17 @@ export function toIast(
       pendingConsonant = false;
       continue;
     }
+    /* A JOINER THAT IS NO CONJUNCT'S is a hint to the font, and no letter.
+       sanskritdocuments writes श‍ृ — śa, a ZWJ, ṛ's sign — for the glyph it
+       wants, and read sign by sign it came out `śa‍ृ`, the vowel sign
+       stranded and the inherent a not taken off (sūryāṣṭottaraśatanāma
+       stotram, 2026-10-02). Only after a virāma do ZWNJ and ZWJ say something
+       — the conjunct control, above — so anywhere else they are passed over,
+       and a consonant before one still waits for its sign. */
+    if (text[i] === ZWJ || text[i] === ZWNJ) {
+      i += 1;
+      continue;
+    }
     const sign = signEntries.find((e) => text.startsWith(e.glyph, i));
     if (sign !== undefined && pendingConsonant) {
       out += sign.iast;

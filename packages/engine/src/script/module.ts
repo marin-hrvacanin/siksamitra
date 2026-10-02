@@ -75,6 +75,15 @@ export interface ScriptModule {
    */
   readonly approximations?: Readonly<Record<PhonemeId, string>>;
   /**
+   * OTHER SPELLINGS A READER OF THIS SCRIPT MEETS, read and never written: the
+   * IAST each stands for, and its spellings. A romanisation is written many
+   * ways — sanskritdocuments' ITRANS files spell ā `A` where the scheme's
+   * table has `aa`, ṛ `RRi`, the anusvāra `.n`, kṣ `x`, a svarita `\'` — and
+   * a source the program cannot read is one a model reads by hand. The
+   * writer never uses them, so the lossless round trip is untouched.
+   */
+  readonly readAlso?: Readonly<Record<string, readonly string[]>>;
+  /**
    * Characters that QUALIFY the letter they follow and are written after the
    * whole akṣara, not after the bare consonant.
    *

@@ -40,6 +40,7 @@
     "typecheck": "tsc -b --pretty",
     "check:bot": "tsc -p apps/bot/tsconfig.json",
     "agent": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs apps/bot/src/cli.ts",
+    "mcp": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs apps/bot/src/mcp.ts",
     "bot": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs apps/bot/src/telegram.ts",
     "test": "vitest run",
     "test:watch": "vitest --project unit --project component",

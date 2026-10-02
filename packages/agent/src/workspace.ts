@@ -25,6 +25,23 @@ import {
 import { CHANT_PROFILE_NOTES, toTextAndMarks, type ChantDoc, type ChantProfileKey, type ChantVerse } from '@siksamitra/format';
 import { SVARA_CHAR } from '@siksamitra/interop';
 
+/* Every Indic virāma: after one, a ZWNJ or ZWJ is the conjunct control. */
+const VIRAMA = '्্੍્୍்్್്';
+const HINT = new RegExp(`(?<![${VIRAMA}])[\\u200C\\u200D]|[\\u00AD\\u200B\\u2060\\uFEFF]`, 'gu');
+
+/**
+ * A SOURCE'S LINE AS LETTERS. A page carries characters that are no letter:
+ * a joiner it sets for the glyph it wants (sanskritdocuments' श‍ृ), a soft
+ * hyphen, a zero-width space, a byte-order mark, a no-break space. Kept, the
+ * letter check held a delivered PDF to the page's `śa‍ृṇuṣva` — a vowel sign
+ * stranded — and the bot shipped it because "the check requires the source's
+ * own letters" (2026-10-02). So they go when a witness is kept, before
+ * anything reads it; a joiner after a virāma stays, as the conjunct choice.
+ */
+export function cleanWitnessLine(line: string): string {
+  return line.normalize('NFC').replace(HINT, '').replace(/ /gu, ' ');
+}
+
 export interface Witness {
   readonly id: string;
   /** Where it came from: a URL, or `library:<id>`. */
@@ -46,6 +63,21 @@ export interface BuiltFrom {
    * marked, though no letter differs (manyu sūktam, 2026-10-02).
    */
   readonly input?: readonly string[];
+  /** Whole words of those lines the verse leaves out — a variant, a table's other column (`wordsLeftOut`). */
+  readonly left?: readonly string[];
+  /** The edition has the verse outside its metre, by the agent's word: the proofreader's metre finding is not made. */
+  readonly irregular?: true;
+  /** Words the base edition has wrong, read as another witness has them (`readings.ts`). */
+  readonly readings?: readonly { readonly source: string; readonly read: string; readonly witness: string }[];
+}
+
+/** What a second reader said, and of which state of the document. */
+export interface Review {
+  /** `Workspace.revision` when it was asked. */
+  readonly at: number;
+  /** It found nothing wrong. */
+  readonly clean: boolean;
+  readonly said: string;
 }
 
 /**
@@ -74,6 +106,14 @@ export class Workspace {
 
   /** Each page read, by its address and what was found on it — so asking again is free. */
   readonly fetched = new Map<string, string>();
+  /**
+   * HOW MANY TIMES ITS LETTERS, VERSES OR MARKS HAVE CHANGED — a document
+   * opened, a command run. A title or a note set (`setField`) is not counted:
+   * what a review read is still what it read.
+   */
+  revision = 0;
+  /** The second readers' answers, in order — what `deliver` holds the agent to. */
+  readonly reviews: Review[] = [];
 
   /** A request begins: its research budget is whole again. */
   newRequest(): void { this.spent.searches = 0; this.spent.pages = 0; }
@@ -94,6 +134,7 @@ export class Workspace {
   opened: { readonly id: string; readonly doc: ChantDoc } | null = null;
 
   open(doc: ChantDoc, origin: Origin = 'built'): void {
+    this.revision += 1;
     this.state = newState(doc);
     this.history = emptyHistory();
     this.builtFrom.clear();
@@ -101,12 +142,21 @@ export class Workspace {
     this.opened = null;
   }
 
-  /** A witness kept, under a fresh id. */
+  /** A witness kept, under a fresh id — its lines as letters, the page's invisible hints taken off (`cleanWitnessLine`). */
   keep(origin: string, title: string, lines: readonly string[]): Witness {
     this.seq += 1;
-    const w: Witness = { id: `w${this.seq}`, origin, title, lines };
+    const w: Witness = { id: `w${this.seq}`, origin, title, lines: lines.map(cleanWitnessLine) };
     this.witnesses.set(w.id, w);
     return w;
+  }
+
+  /** Witnesses a saved session kept, under their own ids — the next one kept is numbered after them. */
+  restoreWitnesses(witnesses: readonly Witness[]): void {
+    for (const w of witnesses) {
+      this.witnesses.set(w.id, w);
+      const n = /^w(\d+)$/u.exec(w.id);
+      if (n !== null) this.seq = Math.max(this.seq, Number(n[1]));
+    }
   }
 
   /** One command through `apply`, and what it did in a line or two. */
@@ -114,6 +164,7 @@ export class Workspace {
     if (this.state === null) this.need();
     const { state, history } = apply(this.state as EditState, this.history, command);
     const changed = state.doc !== this.state!.doc;
+    if (changed) this.revision += 1;
     this.state = state;
     this.history = history;
     const said: string[] = [];
@@ -143,7 +194,7 @@ export class Workspace {
  * another; at one position the substitution goes first, so a svara written at
  * the end of a vowel lands before the letter that follows.
  */
-export function verseLetters(v: ChantVerse, o: { prose?: boolean } = {}): string {
+export function verseLetters(v: ChantVerse, o: { prose?: boolean; names?: boolean } = {}): string {
   const tm = toTextAndMarks(v);
   /* `prose: false` — the MANTRA's letters: without the prose a line carries in
      his Comment face (a `plain` marking: "p.b. pṛśni̍r"), which is no
@@ -157,6 +208,10 @@ export function verseLetters(v: ChantVerse, o: { prose?: boolean } = {}): string
     ...tm.marks.filter((m) => m.k === 'was' && !inProse(m.from, m.to)).map((m) => ({ at: m.from, end: m.to, put: m.v ?? '', order: 0 })),
     ...tm.marks.filter((m) => m.k === 'svara' && m.v !== undefined && !inProse(m.to - 1, m.to))
       .map((m) => ({ at: m.to, end: m.to, put: SVARA_CHAR.get(m.v as never) ?? '', order: 1 })),
+    /* `names`: a name's number, raised after it — as the model writes it:
+       after the vowel's svara, before a letter the rules replaced. */
+    ...(o.names === true ? tm.marks.filter((m) => m.k === 'sup' && /^[0-9]+$/u.test(m.v ?? ''))
+      .map((m) => ({ at: m.to, end: m.to, put: [...m.v!].map((d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)]).join(''), order: 0.5 })) : []),
   ].sort((a, b) => b.at - a.at || a.order - b.order);
   let text = tm.text;
   for (const e of edits) text = text.slice(0, e.at) + e.put + text.slice(e.end);
