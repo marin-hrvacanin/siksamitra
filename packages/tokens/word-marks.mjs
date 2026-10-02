@@ -138,10 +138,14 @@ ${at} .u.u--gum::before {
   font-size: var(--doc-verse-size);
   color: var(--c-change);
 }
-/* The Ṛgvedic overline: his \`Long\` style, a glyph at no width after its
-   letter like a svara, in his blue — Calibri Light's, set here in Carlito. */
-${at} .u__long {
-  font-family: 'Carlito', 'Gentium Book Plus', serif;
+/* The Ṛgvedic overline: his \`Long\` style, Calibri Light in his blue — a
+   glyph at no width after its letter, like a svara, and drawn as the svaras
+   are, from the stylesheet. Carlito, named here before, has no overline:
+   the letter and its overline went to the first face that had both. Gentium
+   has it, until his own Calibri Light is where the page is printed. */
+${at} .u__long::after {
+  content: "\\305";
+  font-family: 'Calibri Light', 'Gentium Book Plus', serif;
   font-size: ${(WORD_MARKS.dirgha.size / verse).toFixed(4)}em;
   line-height: 0;
   color: #${WORD_MARKS.dirgha.color};

@@ -145,7 +145,7 @@ export async function buildExportPage(
      would be two documents. */
   const { text: textStack, ui: uiStack } = styleStacks(style);
   /* And the faces its MARKS are drawn in, which no text node shows. */
-  const marks = markFaces(theme, textStack);
+  const marks = markFaces(theme, textStack, { overline: view.includes('u__long') });
   const stacks = [...facesNeeded(theme, textStack, typeScaleOf(theme), uiStack), ...marks.stacks];
   const { chosen, uncovered } = chooseFaces(
     parseFaceCss(await io.faceCss()), stacks, new Set([...codepointsIn(view), ...marks.codepoints]),

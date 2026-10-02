@@ -127,8 +127,14 @@ export function letterDifference(lines: readonly string[], spaced: readonly stri
 
 /* ── the svaras, carried from the source ─────────────────────────────────── */
 
-/** The svara signs, as his IAST writes them: udātta, anudātta, dīrgha svarita. */
-const SVARA_SIGN = /[\u030D\u0331\u030E]/u;
+/** The svara signs, as his IAST writes them — udātta, anudātta, dīrgha svarita
+ *  — with the overline the Ṛgveda's rules draw and a low line, which a model
+ *  copying a marked page may bring along. */
+const SVARA_SIGN = /[\u0305\u030D\u030E\u0331\u0332]/u;
+/** A pluta's numeral: the vowel it lengthens, its svaras after it too, are one
+ *  bearer — vignanam's `वो॒३॒॑ऽ`, `vo̱३̱̍'`. A real run was refused ten builds
+ *  because the svaras after the ३ were nobody's (2026-10-02). */
+const PLUTA = /[३3]/u;
 const VOWEL = /[aāiīuūṛṝḷḹeo]/u;
 
 /** Each vowel of a text with the svaras on it, and each gum that bears one. */
@@ -143,7 +149,12 @@ function walk(text: string, put?: (bearer: 'vowel' | 'gum', at: number, own: str
   const gums: { after: number; marks: string }[] = [];
   let out = '';
   let i = 0;
-  const marksFrom = (j: number): string => { let m = ''; while (j < text.length && SVARA_SIGN.test(text[j]!)) m += text[j++]!; return m; };
+  const marksFrom = (j: number): string => {
+    let m = '';
+    while (j < text.length && SVARA_SIGN.test(text[j]!)) m += text[j++]!;
+    if (j < text.length && PLUTA.test(text[j]!)) { m += text[j++]!; while (j < text.length && SVARA_SIGN.test(text[j]!)) m += text[j++]!; }
+    return m;
+  };
   while (i < text.length) {
     const two = text.slice(i, i + 2);
     const len = two === 'ai' || two === 'au' ? 2 : VOWEL.test(text[i]!) ? 1 : 0;

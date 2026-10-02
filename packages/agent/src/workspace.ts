@@ -38,6 +38,14 @@ export interface BuiltFrom {
   readonly witness: string;
   readonly from: number;
   readonly to: number;
+  /**
+   * The verse's lines as they went in — his word breaks, the source's svaras
+   * — already held to the witness's letters when it was built (`spaced`).
+   * `check` marks THESE beside the verse: the Ṛgveda's svara rules see where a
+   * word ends, so the source's run-together line, marked, is not the verse
+   * marked, though no letter differs (manyu sūktam, 2026-10-02).
+   */
+  readonly input?: readonly string[];
 }
 
 /**

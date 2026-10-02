@@ -14,6 +14,7 @@
  */
 import { toIast } from '@siksamitra/engine';
 import { asIast } from '../letters.js';
+import { KIND_SAID, kindOfPage, passageOf } from '../pages.js';
 import { fold } from '../library.js';
 import { outlineOf, verseLetters, versesOf, type Witness, type Workspace } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
@@ -220,22 +221,34 @@ export const SOURCE_TOOLS: readonly Tool[] = [
     needs: 'research',
     spec: {
       name: 'fetch_page',
-      description: 'Fetch a page and keep it as a witness. Answers its id, and where on it the Devanāgarī and IAST text is — read those lines with read_witness.',
-      parameters: params({ url: str('The page.') }, ['url']),
+      description: 'Fetch a page and keep it as a witness. Answers its id, WHAT KIND of page it is — a scholarly edition, a collection, a devotional compilation, '
+        + 'machine-written commentary — and where on it the Devanāgarī and IAST text is; read those lines with read_witness.',
+      parameters: params({
+        url: str('The page.'),
+        find: str('For a WHOLE EDITION (a saṁhitā, brāhmaṇa or āraṇyaka of many MB): the passage\'s first words, in any script — the whole of it is read, and only the lines around them are kept.'),
+      }, ['url']),
     },
     async run(args, { ws, host }) {
       if (ws.spent.pages >= RESEARCH.pages) return enough(ws, 'pages');
       ws.spent.pages += 1;
       const url = arg<string>(args, 'url', 'string');
-      const page = await host.research!.fetch(url);
-      const lines = page.text.split(/\r?\n/);
-      const w = ws.keep(url, page.title, lines);
+      const find = opt<string>(args, 'find', 'string');
+      const page = await host.research!.fetch(url, find === undefined ? undefined : { large: true });
+      let lines: readonly string[] = page.text.split(/\r?\n/);
+      let around = '';
+      if (find !== undefined) {
+        const p = passageOf(lines, find);
+        if (p === null) return `"${find}" is not in ${url} (${lines.length} lines) — nothing kept`;
+        around = ` — the passage around "${find}", lines ${p.from}-${p.from + p.lines.length - 1} of its ${p.total}`;
+        lines = p.lines;
+      }
+      const w = ws.keep(url, page.title, [...lines]);
       const blocks = blocksOf(lines);
       const own = ownRomanisation(lines, blocks);
       const where = blocks.length === 0
         ? 'no Devanāgarī or IAST text found on it'
         : blocks.slice(0, 20).map((b) => `lines ${b.from}-${b.to}: ${b.script} (${b.to - b.from + 1}) — ${b.start}`).join('\n');
-      return `${w.id}: "${page.title}", ${lines.length} lines\n${where}${own}`;
+      return `${w.id}: "${page.title}"${around}, ${lines.length} lines — ${KIND_SAID[kindOfPage(url, lines)]}\n${where}${own}`;
     },
   },
   {

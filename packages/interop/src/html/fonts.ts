@@ -141,7 +141,11 @@ export function facesNeeded(
  * printed every svara in whatever face the machine had. Named here so the
  * file carries his `Svara` face, URW Palladio ITU, wherever it is opened.
  */
-export function markFaces(theme: DocumentTheme, textStack?: string): { stacks: FaceStack[]; codepoints: number[] } {
+export function markFaces(
+  theme: DocumentTheme, textStack?: string,
+  /** What the page draws besides: the Ṛgvedic overline, which only its texts have. */
+  drawn: { readonly overline?: boolean } = {},
+): { stacks: FaceStack[]; codepoints: number[] } {
   if (theme.scale !== 'word') return { stacks: [], codepoints: [] };
   /* The marks with no face of their own are set in the mantra's, slanted. */
   const slanted = WORD_MARKS.change.italic || WORD_MARKS.pause.italic;
@@ -152,8 +156,10 @@ export function markFaces(theme: DocumentTheme, textStack?: string): { stacks: F
       /* His daṇḍas, in our face of Mangal's bars. */
       { families: [WORD_DANDA_FACE], style: 'normal' },
       ...(slanted && textStack !== undefined ? [{ families: familiesIn(textStack), style: 'italic' as const }] : []),
+      /* His `Long` overline: Calibri Light, and the backstop that has it. */
+      ...(drawn.overline === true ? [{ families: [WORD_MARKS.dirgha.face, FONT_BACKSTOP], style: 'normal' as const }] : []),
     ],
-    codepoints: [...SVARA_GLYPHS],
+    codepoints: [...SVARA_GLYPHS, ...(drawn.overline === true ? [0x0305] : [])],
   };
 }
 

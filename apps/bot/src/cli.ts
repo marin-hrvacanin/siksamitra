@@ -34,10 +34,12 @@ const config = loadConfig();
 /* `AGENT_OUT` for a run where the checkout is read-only — inside the bot's container, `/tmp`. */
 const out = process.env.AGENT_OUT ?? join(ROOT, 'out/agent');
 mkdirSync(out, { recursive: true });
+/* `AGENT_HIDE`: library texts it must not find, for the self-test (`tools/fidelity/agent-eval.ts`). */
+const hide = (process.env.AGENT_HIDE ?? '').split(',').map((s) => s.trim()).filter((s) => s !== '');
 const host = nodeHost(ROOT, async (file) => {
   writeFileSync(join(out, file.name), file.bytes);
   console.log(`\n  → ${join('out/agent', file.name)} (${Math.round(file.bytes.length / 1024)} KB, ${file.format})`);
-});
+}, undefined, hide);
 const ledger = fileLedger(join(config.dataDir, 'ledger.jsonl'));
 
 const show = (e: AgentEvent): void => {

@@ -43,8 +43,12 @@ export interface SearchHit { readonly title: string; readonly url: string; reado
 
 export interface Research {
   search(query: string): Promise<readonly SearchHit[]>;
-  /** A page's text, its markup removed, line by line as the page has it. */
-  fetch(url: string): Promise<{ readonly title: string; readonly text: string }>;
+  /**
+   * A page's text, its markup removed, line by line as the page has it.
+   * `large`: a whole edition is asked for — a saṁhitā of many megabytes — and
+   * the caller keeps only the passage it wants (`passageOf`).
+   */
+  fetch(url: string, opts?: { readonly large?: boolean }): Promise<{ readonly title: string; readonly text: string }>;
 }
 
 export type DeliveryFormat = 'pdf' | 'docx' | 'smdoc' | 'vedaunion';
@@ -93,6 +97,12 @@ export interface Host {
    * model that does not take images, leaves it out and the tool is not offered.
    */
   readonly look?: (doc: ChantDoc, page: number) => Promise<Shot>;
+  /**
+   * HIS AUTHORING GUIDES, by file name — `docs/authoring/`: the rules he gave
+   * the agents that wrote his documents with him. `read_guide` reads them. A
+   * host that cannot reach them leaves it out, and the tool is not offered.
+   */
+  readonly guides?: (file: string) => Promise<string | null>;
 }
 
 /** One page of the document, as the person will see it. */

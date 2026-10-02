@@ -28,9 +28,11 @@ describe('built verse by verse', () => {
   it('each verse records the lines it came from, and the document checks clean', async () => {
     const { ws } = await verseByVerse();
     expect([...ws.builtFrom.entries()]).toEqual([
-      ['s-1-v1', { witness: 'w1', from: 5, to: 6 }],
-      ['s-1-v2', { witness: 'w1', from: 7, to: 8 }],
+      ['s-1-v1', expect.objectContaining({ witness: 'w1', from: 5, to: 6 })],
+      ['s-1-v2', expect.objectContaining({ witness: 'w1', from: 7, to: 8 })],
     ]);
+    /* And the lines as they went in — what `check` marks beside the verse. */
+    expect(ws.builtFrom.get('s-1-v1')!.input).toHaveLength(2);
     expect(checkDocument(ws)).toEqual([]);
   });
 

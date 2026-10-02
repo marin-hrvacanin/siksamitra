@@ -143,7 +143,10 @@ export function renderUnit(
         {...(o.unitOffset === undefined ? {} : { 'data-u': o.unitOffset + local })}
       >
         {glyph}
-        {long ? <span className="u__long">{OVERLINE_MARK}</span> : null}
+        {/* Drawn by the stylesheet (`::after`), as the svaras are: as a letter
+            of the line, the browser set it — and its letter with it — in the
+            first face that had both, DejaVu on the bot's server (2026-10-02). */}
+        {long ? <span className="u__long" aria-hidden="true" /> : null}
       </span>
       {withSup && u.sup ? <sup className="u__sup">{u.sup}</sup> : null}
     </Fragment>

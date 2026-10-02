@@ -18,6 +18,7 @@ import { CHECK_TOOLS } from './tools/check.js';
 import { DOCUMENT_TOOLS } from './tools/document.js';
 import { SOURCE_TOOLS } from './tools/sources.js';
 import { LOOK_TOOLS } from './tools/look.js';
+import { GUIDE_TOOLS } from './tools/guides.js';
 import type { Host, Tool } from './tools/types.js';
 
 export type Mode = 'deliver' | 'document';
@@ -43,13 +44,19 @@ const DELIVER = `${CORE}
 
 Delivering a text — in this order:
 1. find_text in the library — the verified texts and his own documents; a text may be a section of a larger one. A library text is delivered only when it IS the text asked for: the same name, the same tradition, and the whole of it — hold its first words against the request. Not a namesake from another tradition, not a text that merely contains it, not one section of a larger document unless that section is exactly what was asked. When it is: open_text it, check it, and deliver it exactly as it is, with no web search — never auto_mark or set_source it unless the person asks for it to be re-marked; his own document asked for in the format he made it goes out as his own file. When it is not, or you are not sure, build the text from its sources — and first read_example the nearest text of his (the same tradition, the same kind), and set yours as he sets his.
-2. Otherwise web_search, preferring sanskritdocuments.org, wisdomlib.org, GRETIL, TITUS, vedavid.org. fetch_page the best two independent sources; on a long page, find_in_witness the text's first words rather than reading at guessed lines; read_witness around what it finds; compare the sources where they differ, and take the more reliable.
+2. Otherwise find its PRIMARY text — research as a scholar does, never naively. Know first where the text is: which saṁhitā, brāhmaṇa, āraṇyaka, upaniṣad or purāṇa, and where in it. Then:
+   - its locus and its letters from a scholarly edition of that text: TITUS (titus.uni-frankfurt.de) or GRETIL — fetch_page the whole edition with find: the passage's first words; its numbering is the locus you cite, and nothing else is;
+   - its svaras from an accented text in his notation (anudātta below, svarita above), compared with the edition: sanskritdocuments' saṁhitā, brāhmaṇa and āraṇyaka files are the usual one — TITUS and GRETIL mark the udātta instead, so compare their letters, not their accents;
+   - fetch_page says what each page is: a devotional compilation shows a text's extent and how it is recited, never its letters, its accents or its locus; machine-written commentary is no source at all;
+   - where witnesses differ, follow ONE base edition; depart from it only where another witness corroborates the reading and no accent moves; a recension's own form is not a typo of another's. Never print the comparison.
+   His guides hold the rest — read_guide chants (sections 0, 5G, 5K) before a text you have not built before.
+   On a long page, find_in_witness the text's first words rather than reading at guessed lines; read_witness around what it finds.
 3. build_document from the witness's lines, with the requested source, laid out as his documents are:
    - title: the name in lower-case IAST ("bhū sūktam");
    - subtitle: its tradition ("kṛṣṇa yajurvedīya", "śukla yajurvedīya", "ṛgvedīya", "atharvavedīya") or its well-known other name ("saṁnyāsa sūktam");
    - locus: where it is from, lower-case IAST, as the source numbers it ("taittirīya saṁhitā 1.5.3");
-   - a verse's note, when it has one: where else it is ("Also in maitrāyaṇī saṁhitā 1.7.1.1"); for a ṛk, its ṛṣi, devatā and chandas when the source gives them ("ṚV 3.62.10. - gāthino viśvāmitraḥ ṛṣiḥ, savitā devatā, gāyatrī chandaḥ"); "optional" over a verse that is;
-   - where the second source you compared reads a line differently, a lineNotes entry at that line's end: "p.b. sūryā̍d (with svarita)";
+   - a verse's note, when it has one: where else it is ("Also in maitrāyaṇī saṁhitā 1.7.1.1"); "optional" over a verse that is; for a single ṛk taken out of its sūkta, its locus, ṛṣi, devatā and chandas ("ṚV 3.62.10. - gāthino viśvāmitraḥ ṛṣiḥ, savitā devatā, gāyatrī chandaḥ"). A whole sūkta of the Ṛgveda says its ṛṣi, devatā and chandas ONCE, before its first verse, as his agnimīḻe sūktam opens — an unnumbered verse with no translation: "agnimīḻe | iti navarcasyāsya sūktasya |", "madhucchandā vaiśvāmitra | ṛṣiḥ |", "agnirdevatā |", "gāyatrī chandaḥ ||" — never a note on each verse;
+   - his pages state ONE source and print no comparison between sources: no note names a website or a witness, and nothing of your working — what you compared, what you doubted, how you built it — is ever printed;
    - verses from another source, with no heading of their own: a section with only its cite ("taittirīya brāhmaṇam 3.1.2.6");
    - numbered: false for the closing śānti and for an optional verse; every other verse is numbered by the program;
    - every verse with its translation: faithful English, a line for each of the verse's lines.
@@ -119,7 +126,7 @@ export const TOOL_LABELS: Readonly<Record<string, string>> = {
   offer_choices: 'Asking you to choose',
 };
 
-const ALL: readonly Tool[] = [...SOURCE_TOOLS, ...DOCUMENT_TOOLS, ...CHECK_TOOLS, ...LOOK_TOOLS];
+const ALL: readonly Tool[] = [...SOURCE_TOOLS, ...DOCUMENT_TOOLS, ...CHECK_TOOLS, ...LOOK_TOOLS, ...GUIDE_TOOLS];
 
 /** The tools of a mode that this host can run, in a fixed order. */
 export function toolsFor(mode: Mode | 'review', host: Host): Tool[] {

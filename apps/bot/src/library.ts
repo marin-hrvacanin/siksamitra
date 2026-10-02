@@ -41,7 +41,12 @@ export interface HisDocument {
   readonly sections: readonly { readonly id: string; readonly title: string; readonly first: string; readonly verses: number }[];
 }
 
-export function diskLibrary(root: string, his = join(root, 'Library', 'bot-library')): Library {
+/**
+ * `hide`: texts it must not find — a whole text by its id, with its sections.
+ * The self-test asks the agent for a text of his with that text hidden, so it
+ * must build it, and holds its page against his (`tools/fidelity/agent-eval.ts`).
+ */
+export function diskLibrary(root: string, his = join(root, 'Library', 'bot-library'), hide: readonly string[] = []): Library {
   const entries: Entry[] = [];
   const corpus = join(root, 'corpus/chants');
   if (existsSync(corpus)) {
@@ -64,6 +69,8 @@ export function diskLibrary(root: string, his = join(root, 'Library', 'bot-libra
       entries.push({ id: `${h.id}#${s.id}`, title: `${s.title} — in ${named}`, kind: 'reference', path, first: s.first, note: `a section of his document, ${s.verses} verse(s)` });
     }
   }
+  const hidden = (id: string): boolean => hide.includes(id) || hide.includes(id.split('#')[0]!);
+  for (let i = entries.length - 1; i >= 0; i -= 1) if (hidden(entries[i]!.id)) entries.splice(i, 1);
   return {
     async find(query) {
       return findIn(entries, query).map(({ id, title, kind, source, note, first }) => ({

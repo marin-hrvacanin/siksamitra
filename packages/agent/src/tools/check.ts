@@ -91,7 +91,7 @@ export function checkDocument(ws: Workspace): Finding[] {
       const vf = ws.builtFrom.get(v.id);
       const vw = vf === undefined ? undefined : ws.witnesses.get(vf.witness);
       if (vf === undefined || vw === undefined) continue;
-      const lines = vw.lines.slice(vf.from - 1, vf.to);
+      const lines = vf.input ?? vw.lines.slice(vf.from - 1, vf.to);
       const again = asMarked({ title: '_', sections: [{ verses: [{ lines }] }] }, doc);
       const want = again.map((x) => verseLetters(x, { prose: false })).join('\n');
       const have = verseLetters(v, { prose: false });

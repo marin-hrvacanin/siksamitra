@@ -68,6 +68,8 @@ const defaultResolve = async (host: string): Promise<string[]> => (await lookup(
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
 const MAX_BYTES = 3_000_000;
+/** A whole edition, read for one passage of it (`fetch_page` with `find`). */
+const MAX_EDITION_BYTES = 30_000_000;
 
 const decode = (s: string): string => s
   .replace(/<[^>]+>/g, '')
@@ -235,7 +237,7 @@ export function webResearch(
       }
       return [];
     },
-    async fetch(url) {
+    async fetch(url, opts) {
       /* Redirects are followed here, one by one, so each is checked as the first was. */
       let at = await publicUrl(url);
       let res: Response | undefined;
@@ -250,7 +252,10 @@ export function webResearch(
       const type = res.headers.get('content-type') ?? '';
       if (!/text\/|html|xml|json/.test(type)) throw new Error(`${url} is ${type || 'not text'}, not a page to read`);
       const buf = new Uint8Array(await res.arrayBuffer());
-      if (buf.length > MAX_BYTES) throw new Error(`${url} is ${Math.round(buf.length / 1e6)} MB — too large to be a witness`);
+      const most = opts?.large === true ? MAX_EDITION_BYTES : MAX_BYTES;
+      if (buf.length > most) {
+        throw new Error(`${url} is ${Math.round(buf.length / 1e6)} MB — ${opts?.large === true ? 'too large even as an edition' : 'too large as a page: if it is a whole edition, fetch it with find: the passage\'s first words'}`);
+      }
       const raw = new TextDecoder('utf-8').decode(buf);
       if (!/html/.test(type)) return { title: url, text: raw };
       const title = decode(/<title[^>]*>([\s\S]*?)<\/title>/i.exec(raw)?.[1] ?? url);

@@ -494,8 +494,7 @@
 }
 .no-marks .u::before, .no-marks .u::after,
 .no-marks .syl--aksara::before, .no-marks .syl--aksara::after { display: none !important; }
-.no-marks .hold-short, .no-marks .hold-long { box-shadow: none; }
-.no-marks .hold-short, .no-marks .hold-long { margin: 0; }
+.no-marks .hold-short, .no-marks .hold-long { box-shadow: none; margin: 0; }
 
 .pada-br { display: block; height: 0; content: ""; }
 
@@ -522,6 +521,7 @@
 .u--virama { color: var(--c-svara); }
 .no-marks .u--virama { color: inherit; }
 .u__sup { font-size: .64em; line-height: 0; vertical-align: .26em; color: var(--c-change); font-weight: 600; font-style: normal; margin: 0 .03em 0 .04em; }
+.u__long::after { content: "\305"; } /* the Ṛgvedic overline, generated as the export draws it (word-marks.mjs) */
 .no-marks .u.is-change, .no-marks .syl--aksara.is-change { color: inherit; }
 
 /* svarabhakti — a bold, font-independent filled circle (the "·" glyph was too

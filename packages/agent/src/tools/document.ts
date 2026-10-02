@@ -77,6 +77,21 @@ function spacedOf(lines: readonly string[], spaced: readonly string[] | undefine
   return marked;
 }
 
+/**
+ * A NOTE IS HIS PAGE'S, NEVER THE WORK'S. His pages state their one source and
+ * print no apparatus (AUTHORING-CHANTS §5G: "the comparisons live in the
+ * generator … and nowhere else"); a real run printed "vignanam: abhī̎hi (with
+ * dīrgha svarita)" over a pāda of the manyu sūktam (2026-10-02). A note that
+ * names a website or a witness is refused, so the page cannot carry one.
+ */
+const WORKING_NOTE = /\b(?:vignanam|sanskritdocuments|vishvasa|wikisource|wisdomlib|gretil|titus|vedavid|witness|witnesses|website|the page|the source has|https?|www)\b|\.(?:org|com|net|in)\b/iu;
+function pageNote(note: string, where: string): string {
+  if (WORKING_NOTE.test(note)) {
+    throw new Error(`${where}: "${note.slice(0, 60)}" names a website or a witness — his pages state their one source and print no comparison between sources; leave it out`);
+  }
+  return note;
+}
+
 /** One section of `build_document`, its letters taken from where it says — and, per verse, from where. */
 function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; from?: From; verseFrom: (From | undefined)[] } {
   const title = typeof s.title === 'string' && s.title.trim() !== '' ? { title: s.title } : {};
@@ -103,10 +118,10 @@ function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; fro
     return {
       lines,
       ...(v.translation === undefined ? {} : { translation: v.translation }),
-      ...(v.note === undefined || v.note.trim() === '' ? {} : { note: v.note }),
+      ...(v.note === undefined || v.note.trim() === '' ? {} : { note: pageNote(v.note, `section "${s.title ?? ''}"`) }),
       ...(v.numbered === false ? { numbered: false } : {}),
       ...(v.layout === undefined ? {} : { layout: v.layout }),
-      ...(v.lineNotes === undefined || v.lineNotes.every((x) => x.trim() === '') ? {} : { lineNotes: v.lineNotes }),
+      ...(v.lineNotes === undefined || v.lineNotes.every((x) => x.trim() === '') ? {} : { lineNotes: v.lineNotes.map((n) => pageNote(n, `section "${s.title ?? ''}"`)) }),
       ...(v.paragraphs === undefined ? {} : { paragraphs: v.paragraphs }),
       ...(v.translationParagraphs === undefined ? {} : { translationParagraphs: v.translationParagraphs }),
     };
@@ -133,7 +148,8 @@ function recordSources(ws: Workspace, built: ReturnType<typeof sectionOf>[]): vo
     }
     s.verses.forEach((v, j) => {
       const f = b.verseFrom[j];
-      if (f !== undefined) ws.builtFrom.set(v.id, span(f));
+      const input = b.section.verses[j]?.lines;
+      if (f !== undefined) ws.builtFrom.set(v.id, { ...span(f), ...(input === undefined ? {} : { input }) });
     });
   });
 }

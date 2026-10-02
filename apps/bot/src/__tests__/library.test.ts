@@ -95,3 +95,12 @@ describe('his own documents, out of the folder tools/bot-library.ts writes', () 
     expect((await lib.find('bhu suktam')).some((h) => h.id.startsWith('his:'))).toBe(false);
   });
 });
+
+describe('a text hidden, for the self-test', () => {
+  it('is not found, nor any section of it, nor given', async () => {
+    const lib = diskLibrary(ROOT, join(tmpdir(), 'no-library'), ['puja-vidhi']);
+    expect((await lib.find('gayatri mantra')).some((h) => h.id.startsWith('puja-vidhi'))).toBe(false);
+    await expect(lib.load('puja-vidhi#upa-14a-gayatri')).rejects.toThrow(/no library text/);
+    expect((await lib.find('purusha suktam'))[0]!.id).toBe('purusha-suktam');
+  });
+});

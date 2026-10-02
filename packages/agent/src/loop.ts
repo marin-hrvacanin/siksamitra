@@ -109,6 +109,8 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
   let usage: Usage = { input: 0, cached: 0, output: 0 };
   /* Steps that thought until they were cut off — see where a reply is read. */
   let runaways = 0;
+  /* What `deliver` handed over in this turn, said when the steps run out. */
+  const delivered: string[] = [];
 
   /* What `look` showed this step, for the next request only (`tools/look.ts`):
      the picture goes with that request and is not kept in the conversation. */
@@ -159,7 +161,16 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
     opts.onEvent?.({ kind: 'usage', usage: reply.usage, cost: c });
     opts.messages.push(reply.message);
 
-    const calls = reply.message.toolCalls ?? [];
+    /* The last step is offered no tools, and a call it writes anyway is not
+       run: a real one was, and the person got their PDF and then "Stopped
+       after 40 steps without finishing" (2026-10-02). */
+    const calls = last ? [] : reply.message.toolCalls ?? [];
+    if (last && (reply.message.toolCalls ?? []).length > 0 && (reply.message.content ?? '').trim() === '') {
+      const text = ending(max, delivered);
+      opts.messages.push({ role: 'assistant', content: text });
+      opts.onEvent?.({ kind: 'reply', text });
+      return { text, cost, steps: step, usage };
+    }
     if (calls.length === 0) {
       const text = reply.message.content ?? '';
       /* A step that thought until the provider cut it off, and did nothing: a
@@ -201,6 +212,7 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
           : `error: ${withoutPaths(e instanceof Error ? e.message : String(e))}`;
       }
       opts.onEvent?.({ kind: 'result', name: call.name, text, failed });
+      if (call.name === 'deliver' && !failed && text.startsWith('delivered')) delivered.push(text);
       opts.messages.push({ role: 'tool', toolCallId: call.id, content: capped(text, maxResult) });
     }
     const pictures = asked as { caption: string; images: string[] } | null;
@@ -210,7 +222,14 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
       asked = null;
     }
   }
-  const text = `Stopped after ${max} steps without finishing. Say how to go on, or ask for less at once.`;
+  const text = ending(max, delivered);
   opts.messages.push({ role: 'assistant', content: text });
   return { text, cost, steps: max, usage };
+}
+
+/** How a turn that used every step ends — saying what it did deliver, if it did. */
+function ending(max: number, delivered: readonly string[]): string {
+  if (delivered.length === 0) return `Stopped after ${max} steps without finishing. Say how to go on, or ask for less at once.`;
+  const files = delivered.map((d) => d.replace(/^delivered (?:his own file, )?/u, '').replace(/ \(.*$/u, ''));
+  return `Sent: ${[...new Set(files)].join(', ')}. That took every step this request had — say if anything should be looked at again.`;
 }
