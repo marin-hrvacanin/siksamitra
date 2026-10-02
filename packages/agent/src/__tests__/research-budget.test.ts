@@ -40,3 +40,37 @@ describe('the research a request may do', () => {
     expect(await call(ws, 'web_search', { query: 'next request' })).toMatch(/^1\. about/);
   });
 });
+
+describe('what a page costs — a real run spent its five on a frame page read three times and a PDF (nīla sūktam, 2026-10-02)', () => {
+  const failing: Host = {
+    research: {
+      search: async () => [],
+      fetch: async (url: string) => {
+        if (url.endsWith('.pdf')) throw new Error(`${url} is application/pdf, not a page to read`);
+        return { title: url, text: 'bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā ।' };
+      },
+    },
+  } as unknown as Host;
+  const run = (ws: Workspace, args: Record<string, unknown>) =>
+    toolsFor('deliver', failing).find((t) => t.spec.name === 'fetch_page')!.run(args, { ws, host: failing, review: async () => '' });
+
+  it('a page asked for again is the one already read, and costs nothing', async () => {
+    const ws = new Workspace();
+    expect(await run(ws, { url: 'https://example.org/ts.htm' })).toMatch(/^w1:/);
+    expect(await run(ws, { url: 'https://example.org/ts.htm' })).toMatch(/^w1 is that page, already read/);
+    expect(ws.spent.pages).toBe(1);
+  });
+
+  it('but the same edition with another passage is another page', async () => {
+    const ws = new Workspace();
+    await run(ws, { url: 'https://example.org/ts.htm', find: 'bhūmir' });
+    await run(ws, { url: 'https://example.org/ts.htm', find: 'dyaur' });
+    expect(ws.spent.pages).toBe(2);
+  });
+
+  it('a fetch that fails costs nothing but its step', async () => {
+    const ws = new Workspace();
+    await expect(run(ws, { url: 'https://example.org/hymn.pdf' })).rejects.toThrow(/not a page to read/);
+    expect(ws.spent.pages).toBe(0);
+  });
+});

@@ -87,3 +87,23 @@ describe('a search page', () => {
     expect(parseResults(html)).toEqual([{ title: 'Purusha Suktam', url: 'https://sanskritdocuments.org/doc_veda/purusha.html', snippet: 'the "accented" text' }]);
   });
 });
+
+describe('a frameset', () => {
+  it('is read as the text of its first frame — TITUS sets its texts in frames', async () => {
+    const pages: Record<string, string> = {
+      'https://93.184.216.34/ts/ts.htm': '<html><head><title>TITUS: Frame</title></head><frameset cols="*, 20%"><frame src="ts001.htm" name="etatext"><frame src="/texte/textex.htm"></frameset></html>',
+      'https://93.184.216.34/ts/ts001.htm': '<html><head><title>TITUS: Taittiriya-Samhita 1.1</title></head><body><p>iṣé tvā ūrjé tvā</p></body></html>',
+    };
+    const asked: string[] = [];
+    const f = (async (to: string | URL) => {
+      const u = String(to);
+      asked.push(u);
+      const body = pages[u];
+      return body === undefined ? new Response('', { status: 404 }) : new Response(body, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
+    }) as unknown as typeof fetch;
+    const page = await webResearch(f, '', '').fetch('https://93.184.216.34/ts/ts.htm');
+    expect(page.text).toContain('iṣé tvā ūrjé tvā');
+    expect(page.title).toMatch(/Taittiriya-Samhita 1\.1 — the text of .*ts\.htm's frame, ts001\.htm/);
+    expect(asked).toEqual(['https://93.184.216.34/ts/ts.htm', 'https://93.184.216.34/ts/ts001.htm']);
+  });
+});

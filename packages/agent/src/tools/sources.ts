@@ -229,11 +229,17 @@ export const SOURCE_TOOLS: readonly Tool[] = [
       }, ['url']),
     },
     async run(args, { ws, host }) {
-      if (ws.spent.pages >= RESEARCH.pages) return enough(ws, 'pages');
-      ws.spent.pages += 1;
       const url = arg<string>(args, 'url', 'string');
       const find = opt<string>(args, 'find', 'string');
+      /* A page asked for again is the one already read, and costs nothing: a
+         real run read a TITUS frame page three times, and its budget with it. */
+      const asked = `${url}#${find ?? ''}`;
+      const again = ws.fetched.get(asked);
+      if (again !== undefined && ws.witnesses.has(again)) return `${again} is that page, already read — read_witness or find_in_witness it`;
+      if (ws.spent.pages >= RESEARCH.pages) return enough(ws, 'pages');
+      /* Counted when a page comes back: one that fails — a PDF, a 404 — cost nothing but its step. */
       const page = await host.research!.fetch(url, find === undefined ? undefined : { large: true });
+      ws.spent.pages += 1;
       let lines: readonly string[] = page.text.split(/\r?\n/);
       let around = '';
       if (find !== undefined) {
@@ -243,6 +249,7 @@ export const SOURCE_TOOLS: readonly Tool[] = [
         lines = p.lines;
       }
       const w = ws.keep(url, page.title, [...lines]);
+      ws.fetched.set(asked, w.id);
       const blocks = blocksOf(lines);
       const own = ownRomanisation(lines, blocks);
       const where = blocks.length === 0

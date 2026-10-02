@@ -237,7 +237,10 @@ export function webResearch(
       }
       return [];
     },
-    async fetch(url, opts) {
+    fetch: (url, opts) => get(url, opts, false),
+  };
+
+  async function get(url: string, opts: { readonly large?: boolean } | undefined, framed: boolean): Promise<{ title: string; text: string }> {
       /* Redirects are followed here, one by one, so each is checked as the first was. */
       let at = await publicUrl(url);
       let res: Response | undefined;
@@ -258,6 +261,14 @@ export function webResearch(
       }
       const raw = new TextDecoder('utf-8').decode(buf);
       if (!/html/.test(type)) return { title: url, text: raw };
+      /* A FRAMESET has no text of its own: TITUS sets its texts in frames, and a
+         real run read one's frame page three times for nothing (nīla sūktam,
+         2026-10-02). Its first frame is the text, and is read instead — once. */
+      const frame = /<frame\s[^>]*src="([^"]+)"/i.exec(raw)?.[1];
+      if (!framed && frame !== undefined && /<frameset/i.test(raw)) {
+        const inner = await get(new URL(frame, at).toString(), opts, true);
+        return { title: `${inner.title} — the text of ${url}'s frame, ${frame}`, text: inner.text };
+      }
       const title = decode(/<title[^>]*>([\s\S]*?)<\/title>/i.exec(raw)?.[1] ?? url);
       const text = convert(raw, {
         wordwrap: false,
@@ -270,6 +281,5 @@ export function webResearch(
         ],
       });
       return { title, text };
-    },
-  };
+  }
 }

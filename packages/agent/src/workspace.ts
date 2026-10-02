@@ -72,6 +72,9 @@ export class Workspace {
    */
   readonly spent = { searches: 0, pages: 0 };
 
+  /** Each page read, by its address and what was found on it — so asking again is free. */
+  readonly fetched = new Map<string, string>();
+
   /** A request begins: its research budget is whole again. */
   newRequest(): void { this.spent.searches = 0; this.spent.pages = 0; }
 

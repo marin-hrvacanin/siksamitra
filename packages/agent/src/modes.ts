@@ -14,6 +14,7 @@
  * mode, so the provider caches it. What changes — the person's words, the
  * tools' answers — comes after it.
  */
+import { editionsSaid } from './editions.js';
 import { CHECK_TOOLS } from './tools/check.js';
 import { DOCUMENT_TOOLS } from './tools/document.js';
 import { SOURCE_TOOLS } from './tools/sources.js';
@@ -47,6 +48,8 @@ Delivering a text — in this order:
 2. Otherwise find its PRIMARY text — research as a scholar does, never naively. Know first where the text is: which saṁhitā, brāhmaṇa, āraṇyaka, upaniṣad or purāṇa, and where in it. Then:
    - its locus and its letters from a scholarly edition of that text: TITUS (titus.uni-frankfurt.de) or GRETIL — fetch_page the whole edition with find: the passage's first words; its numbering is the locus you cite, and nothing else is;
    - its svaras from an accented text in his notation (anudātta below, svarita above), compared with the edition: sanskritdocuments' saṁhitā, brāhmaṇa and āraṇyaka files are the usual one — TITUS and GRETIL mark the udātta instead, so compare their letters, not their accents;
+   - the editions most asked for are here, each verified — fetch_page them with find (the passage's first words, any script) rather than searching:
+${editionsSaid()}
    - fetch_page says what each page is: a devotional compilation shows a text's extent and how it is recited, never its letters, its accents or its locus; machine-written commentary is no source at all;
    - where witnesses differ, follow ONE base edition; depart from it only where another witness corroborates the reading and no accent moves; a recension's own form is not a typo of another's. Never print the comparison.
    His guides hold the rest — read_guide chants (sections 0, 5G, 5K) before a text you have not built before.
