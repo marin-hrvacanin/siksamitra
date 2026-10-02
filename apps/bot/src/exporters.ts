@@ -12,8 +12,8 @@
  * Every one in the Veda Union style, and nothing here lays out a page.
  */
 import type { ChantDoc } from '@siksamitra/format';
-import { exportWord, pack, packDocument } from '@siksamitra/interop';
-import { exportStyle, styleStacks } from '@siksamitra/tokens/export-styles';
+import { exportWord, pack, packDocument, pageSlice } from '@siksamitra/interop';
+import { DEFAULT_EXPORT_STYLE, exportStyle, styleStacks } from '@siksamitra/tokens/export-styles';
 import type { Delivered, Exporters, Shot } from '@siksamitra/agent';
 import { pageGeometry, px } from '@siksamitra/layout';
 /* The PDF path is the export tools' own, run under their render config. */
@@ -25,7 +25,7 @@ import { buildPage } from '../../../tools/export/page.mjs';
 import { launch } from '../../../tools/_browser.mjs';
 
 const ENGINE = 'siksamitra-agent';
-const STYLE = 'veda-union';
+const STYLE = DEFAULT_EXPORT_STYLE;
 
 type Shooter = {
   setViewport(v: { width: number; height: number; deviceScaleFactor: number }): Promise<void>;
@@ -85,10 +85,9 @@ export function nodeExporters(): NodeExporters {
         await p.evaluate(() => document.fonts.ready);
         await p.emulateMediaType('print');
         const total = await p.evaluate(() => document.documentElement.scrollHeight);
-        const pages = Math.max(1, Math.ceil(total / height));
-        const n = Math.min(Math.max(1, page), pages);
-        const png = await p.screenshot({ type: 'png', clip: { x: 0, y: (n - 1) * height, width, height } });
-        return { png: new Uint8Array(png), page: n, pages };
+        const s = pageSlice(total, height, page);
+        const png = await p.screenshot({ type: 'png', clip: { x: 0, y: s.y, width, height: s.height } });
+        return { png: new Uint8Array(png), page: s.page, pages: s.pages };
       } finally {
         await p.close();
       }

@@ -58,11 +58,11 @@ export type { DocumentFile, DocumentManifest, SaveOptions } from './document.js'
 export {
   CLIP_SELECTOR, FONT_BACKSTOP, HTML_FORMAT, HTML_SLOTS, HTML_VERSION, HtmlError,
   RASTER_ATTR, chooseFaces, codepointsIn, exportHtml, faceRule, facesNeeded, markFaces,
-  fromBase64, importHtml, isSiksamitraHtml, parseFaceCss, svgDocument, toBase64,
+  fromBase64, importHtml, isSiksamitraHtml, pageSlice, parseFaceCss, svgDocument, toBase64,
 } from './html/index.js';
 export type {
   DeclaredFace, FaceChoice, FaceStack, HtmlExportInput, HtmlImport, HtmlManifest,
-  SvgParts,
+  PageSlice, SvgParts,
 } from './html/index.js';
 
 /*

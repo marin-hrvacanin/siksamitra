@@ -13,8 +13,6 @@ export const ROOT = resolve(import.meta.dirname, '../../..');
 
 export interface BotConfig {
   readonly model: Model;
-  /** The model takes images, so the agent may look at its page. */
-  readonly vision: boolean;
   readonly price: Price;
   readonly limits: Limits;
   readonly telegramToken?: string;
@@ -48,9 +46,13 @@ export function loadConfig(): BotConfig {
      then the person is told the provider is busy. */
   const timeoutMs = num(e.AGENT_TIMEOUT_S, 120) * 1000;
   const retries = num(e.AGENT_RETRIES, 1);
-  const model = base.includes('deepseek.com')
+  const made = base.includes('deepseek.com')
     ? deepseek({ apiKey: key, model: modelId, thinking, baseUrl: base, timeoutMs, retries })
     : chatCompletions({ baseUrl: base, apiKey: key, model: modelId, timeoutMs, retries });
+  /* Whether it takes pictures is the agent's to know (`SEEING`); AGENT_VISION
+     says so for another provider's model, or 0 turns it off. */
+  const vision = e.AGENT_VISION?.trim() ?? '';
+  const model: Model = vision === '' ? made : { ...made, sees: vision !== '0' };
   const price = PRICES[modelId] ?? {
     input: num(e.AGENT_PRICE_INPUT, NaN), cached: num(e.AGENT_PRICE_CACHED, NaN), output: num(e.AGENT_PRICE_OUTPUT, NaN),
   };
@@ -59,14 +61,8 @@ export function loadConfig(): BotConfig {
   }
   const token = e.TELEGRAM_BOT_TOKEN?.trim();
   const contact = e.BOT_CONTACT?.trim();
-  /* DeepSeek V4.1 Flash takes images (api-docs.deepseek.com/guides/vision);
-     AGENT_VISION says so for another, or 0 turns it off. */
-  const vision = e.AGENT_VISION === undefined || e.AGENT_VISION.trim() === ''
-    ? base.includes('deepseek.com') && modelId === 'deepseek-flash'
-    : e.AGENT_VISION.trim() !== '0';
   return {
     model,
-    vision,
     price,
     limits: {
       global: num(e.BOT_GLOBAL_LIMIT_USD, 5),

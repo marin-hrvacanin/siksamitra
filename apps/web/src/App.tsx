@@ -341,7 +341,7 @@ export function App() {
         ))}
         {doc !== null && <EditorSurface session={session} scroller={scroller} />}
       </div>
-      {askOpen && <AskPane adopt={file.adopt} onClose={() => setAskOpen(false)} />}
+      {askOpen && <AskPane adopt={file.adopt} paper={state.page.id} onClose={() => setAskOpen(false)} />}
       </div>
 
       {/*

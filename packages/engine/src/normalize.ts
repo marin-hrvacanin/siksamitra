@@ -37,10 +37,12 @@ interface Fold {
  * Ordered. The Vedic-anusvāra fold must run before anything that reads an
  * anusvāra, which is why it is not left to the caller.
  */
-/** The Taittirīya gum written out as letters — `gm̐`, `ggm̐`, `gṁ` — which a
- *  source means as the anusvāra the gum rule makes it from. One pattern, for
- *  the fold below and for anything else that takes a source's line in. */
-export const WRITTEN_GUM = /g{1,2}(?:m̐|ṁ)/g;
+/** The Taittirīya gum written out as letters — `gm̐`, `ggm̐`, `gṁ`, and `gg`
+ *  alone before the sibilant it comes before (`पुण्य॒ग्ग्॒ श्लोकं`, vignanam's
+ *  bhū sūktam) — which a source means as the anusvāra the gum rule makes it
+ *  from. One pattern, for the fold below and for anything else that takes a
+ *  source's line in. */
+export const WRITTEN_GUM = /g{1,2}(?:m̐|ṁ)|gg(?=\p{M}*\s*[śṣs])/gu;
 
 const FOLDS: readonly Fold[] = [
   // Devanāgarī accent signs → the IAST combining marks (sanskrit_rules.js ~L293).

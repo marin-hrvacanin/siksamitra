@@ -91,7 +91,7 @@ describe('the bot', () => {
     const { core, sessions } = bot();
     await core.handle('c1', { id: '42' }, 'the Puruṣa Sūktam');
     expect((await core.handle('c1', { id: '42' }, '/spent')).text).not.toMatch(/Spent/);
-    expect((await core.handle('c1', { id: '5', username: 'Marin_H' }, '/spent')).text).toMatch(/^Spent: \$0\.\d{4} in this chat, \$0\.\d{4} in all of \$5\.00\./);
+    expect((await core.handle('c1', { id: '5', username: 'Marin_H' }, '/spent')).text).toMatch(/^Spent: \$0\.\d{4} in this conversation, \$0\.\d{4} in all of \$5\.00\./);
     await core.handle('c1', { id: '42' }, '/new');
     expect(sessions.all.has('c1')).toBe(false);
   });
@@ -119,13 +119,16 @@ describe('the log', () => {
     const lines: unknown[] = [];
     const model = scripted(deliverSteps());
     const core = botCore({
-      model, price: PRICE, limits: { global: 5 }, ledger: memoryLedger(), sessions: memorySessions(), allowed: new Set(['42']),
+      model, price: PRICE, limits: { global: 5 }, ledger: memoryLedger(), sessions: memorySessions(), allowed: new Set(['person-5150']),
       host: (deliver) => ({ ...testHost(), deliver }), log: (l) => lines.push(l),
     });
-    await core.handle('chat-777', { id: '42' }, 'the Puruṣa Sūktam, Taittirīya, please');
+    await core.handle('chat-777', { id: 'person-5150' }, 'the Puruṣa Sūktam, Taittirīya, please');
     expect(lines).toEqual([expect.objectContaining({ steps: 4, files: ['pdf'], outcome: 'answered' })]);
+    /* A name nothing else in a log line could spell: the line also says how
+       many ms the request took, and with an id of 42 it failed whenever that
+       was 42. */
     const said = JSON.stringify(lines);
-    expect(said).not.toMatch(/Puruṣa|Here it is|chat-777|42/);
+    expect(said).not.toMatch(/Puruṣa|Here it is|chat-777|person-5150/);
   });
 });
 

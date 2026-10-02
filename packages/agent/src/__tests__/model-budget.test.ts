@@ -98,7 +98,7 @@ describe('the wire', () => {
     expect(sent).toHaveLength(2);
     expect(sent[1]!.url).toBe('https://api.deepseek.com/chat/completions');
     expect(sent[1]!.auth).toBe('Bearer sk-test');
-    expect(sent[1]!.body).toMatchObject({ model: 'deepseek-chat', temperature: 0, stream: false, tools: [{ type: 'function', function: { name: 'outline' } }] });
+    expect(sent[1]!.body).toMatchObject({ model: 'deepseek-chat', temperature: 0, stream: true, tools: [{ type: 'function', function: { name: 'outline' } }] });
     expect(reply.message.toolCalls).toEqual([{ id: 't1', name: 'outline', arguments: '{}' }]);
     expect(reply.usage).toEqual({ input: 50, cached: 0, output: 5 });
   });
@@ -115,7 +115,7 @@ describe('a provider that does not answer', () => {
     let calls = 0;
     const fetch: FetchLike = () => { calls += 1; return new Promise(() => undefined); };
     const model = chatCompletions({ baseUrl: 'https://x', apiKey: 'k', model: 'm', fetch, timeoutMs: 20, retries: 1 });
-    await expect(model.complete({ messages: [], tools: [] })).rejects.toThrow(/did not answer within/);
+    await expect(model.complete({ messages: [], tools: [] })).rejects.toThrow(/said nothing for/);
     expect(calls).toBe(2);
   });
 });

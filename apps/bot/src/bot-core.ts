@@ -160,7 +160,7 @@ export function botCore(deps: BotDeps) {
         if (deps.owners === undefined || !listed(deps.owners, who)) return { text: WELCOME, files: [] };
         const all = await deps.ledger.spent();
         const mine = await deps.ledger.spent(chat);
-        return { text: `Spent: $${mine.toFixed(4)} in this chat, $${all.toFixed(4)} in all${deps.limits.global === undefined ? '' : ` of $${deps.limits.global.toFixed(2)}`}.`, files: [] };
+        return { text: `Spent: $${mine.toFixed(4)} in this conversation, $${all.toFixed(4)} in all${deps.limits.global === undefined ? '' : ` of $${deps.limits.global.toFixed(2)}`}.`, files: [] };
       }
       return serially(chat, async () => {
         const files: Delivered[] = [];

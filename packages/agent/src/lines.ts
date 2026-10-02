@@ -36,6 +36,30 @@ export const VIRAMA_TICK = 'ˎ';
 /** Each word-final consonant before a daṇḍa, clipped with the tick. */
 export const clipped = (line: string): string => line.replace(FINAL_STOP, `$1$2${VIRAMA_TICK}`);
 
+/** One reference of a source's: two or more numbers between daṇḍas. */
+const MARKER = new RegExp(`[।॥|]{0,2}\\s*(${DIGIT}+(?:\\s*[।|.]\\s*${DIGIT}+)+)\\s*[।॥|]{1,2}`, 'gu');
+const ASCII = (d: string): string => d.replace(/[०-९]/gu, (c) => String(c.charCodeAt(0) - 0x0966));
+
+/**
+ * HOW A SOURCE NUMBERS ITS OWN LINES — the references `cleanLine` takes off,
+ * read: sanskritdocuments' Āraṇyaka ends a passage `॥ ०। १। ११। ४९॥`, which
+ * is 1.11.49 (the first number, nought, is no part of it). So a cited locus
+ * can be held against the witness's own numbering of the very lines a verse
+ * was built from: the bot cited taittirīya āraṇyaka 10.35 for a passage that
+ * is not there (2026-10-02, the owner).
+ */
+export function numbersIn(lines: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const line of lines) {
+    for (const m of line.matchAll(MARKER)) {
+      const parts = ASCII(m[1]!).split(/\s*[।|.]\s*/u).map((n) => String(Number(n)));
+      while (parts.length > 2 && parts[0] === '0') parts.shift();
+      out.push(parts.join('.'));
+    }
+  }
+  return [...new Set(out)];
+}
+
 /**
  * A source's line with its apparatus taken off — and the Taittirīya gum, when
  * the source writes it out (`pratīcīmenāgm̐`), back to the anusvāra the rules

@@ -22,6 +22,14 @@ describe('a gum written out in the source', () => {
     expect('puṇyaggm̐ śloka̱m'.replace(WRITTEN_GUM, 'ṁ')).toBe('puṇyaṁ śloka̱m');
   });
 
+  it('written as gg alone, before the sibilant it comes before — vignanam’s bhū sūktam, `पुण्य॒ग्ग्॒ श्लोकं`', () => {
+    expect(normalize('puṇya̱gg̱ śloka̱ṁ').text).toContain('puṇya̱ṁ̱ śloka̱ṁ');
+    expect('puṇya̱gg̱ śloka̱ṁ'.replace(WRITTEN_GUM, 'ṁ')).toBe('puṇya̱ṁ̱ śloka̱ṁ');
+    /* gg before anything else is the letters they are. */
+    expect(normalize('sagga').text).toBe('sagga');
+    expect(normalize('dig-gaja').text).toBe('dig-gaja');
+  });
+
   it('and, folded, is derived as the gum with its reading aid', () => {
     const units = derive({ lines: [normalize('pra̱tīcī̍menāgm̐ ha̱viṣā̍ yajāmaḥ').text] }, TS, { trace: false }).tokens
       .flatMap((t) => (t.t === 'syl' ? t.units : []));

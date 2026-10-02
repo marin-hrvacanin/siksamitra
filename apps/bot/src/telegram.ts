@@ -23,7 +23,8 @@
 import { join } from 'node:path';
 import { Bot, GrammyError, InlineKeyboard, InputFile, type Context } from 'grammy';
 import { ROOT, loadConfig } from './config.js';
-import { botCore, type BotReply, type Who } from './bot-core.js';
+import { botCore, listed, type BotReply, type Who } from './bot-core.js';
+import { COMMANDS, conversationOf, nameTask, openTask } from './topics.js';
 import { StatusLog, type Ending } from './status.js';
 import { nodeHost } from './host.js';
 import { fileLedger, fileSessions } from './store.js';
@@ -40,7 +41,7 @@ const core = botCore({
   limits: config.limits,
   ledger: fileLedger(join(config.dataDir, 'ledger.jsonl')),
   sessions: fileSessions(join(config.dataDir, 'sessions')),
-  host: (deliver) => nodeHost(ROOT, deliver, config.vision),
+  host: (deliver) => nodeHost(ROOT, deliver),
   allowed: config.allowed,
   ...(config.contact === undefined ? {} : { contact: config.contact }),
   owners: config.owners,
@@ -63,6 +64,10 @@ const core = botCore({
  * edited one last time to say how the request ended, and stays in the chat
  * as the record of what was done.
  */
+/* The way to stop a request, under its status while it runs — a button, as
+   Telegram's own bots have it, rather than a command to remember. */
+const STOP = new InlineKeyboard().text('⏹ Stop', 'stop');
+
 class Status {
   private message: Promise<number | null> | null = null;
   private readonly log = new StatusLog();
@@ -104,12 +109,12 @@ class Status {
     clearTimeout(this.pending);
     if (this.message === null) return;
     this.log.end(how, Date.now() - this.began);
-    await this.edit(this.log.text());
+    await this.edit(this.log.text(), true);
   }
 
   private show(): void {
     if (this.message !== null || this.closed) return;
-    this.message = this.ctx.reply(this.log.text()).then((m) => m.message_id, () => null);
+    this.message = this.ctx.reply(this.log.text(), { reply_markup: STOP }).then((m) => m.message_id, () => null);
   }
 
   /* An edit at most every two seconds; the last one always goes. */
@@ -129,17 +134,20 @@ class Status {
     this.quiet = setTimeout(() => { this.log.quiet(); this.show(); this.render(); }, 60_000);
   }
 
-  private async edit(text: string): Promise<void> {
+  /** Every edit keeps the Stop button, but the last, which takes it away. */
+  private async edit(text: string, last = false): Promise<void> {
     const id = await this.message;
-    if (id != null) await this.ctx.api.editMessageText(this.ctx.chat!.id, id, text).catch(() => undefined);
+    if (id == null) return;
+    await this.ctx.api.editMessageText(this.ctx.chat!.id, id, text, { reply_markup: last ? { inline_keyboard: [] } : STOP })
+      .catch(() => undefined);
   }
 }
 
 /** The status line of each chat's request in progress. */
 const statuses = new Map<string, Status>();
 
-/** The choices last offered in each chat, by the button's number. */
-const offered = new Map<number, readonly string[]>();
+/** The choices last offered in each conversation, by the button's number. */
+const offered = new Map<string, readonly string[]>();
 /** Requests being worked on — what a stop waits for. */
 const inflight = new Set<Promise<void>>();
 let stopping = false;
@@ -166,7 +174,10 @@ async function answer(ctx: Context, reply: BotReply): Promise<void> {
     const board = new InlineKeyboard();
     reply.choices.options.forEach((o, i) => { board.text(o.slice(0, 60), `choice:${i}`).row(); });
     keyboard = board;
-    offered.set(ctx.chat.id, reply.choices.options);
+    offered.set(conversationOf(ctx), reply.choices.options);
+  } else if (reply.files.length > 0) {
+    /* A document delivered: the next thing may be a new task — one press. */
+    keyboard = new InlineKeyboard().text('🆕 New task', 'new');
   }
   for (let i = 0; i < pieces.length; i += 1) {
     await sendPiece(ctx, pieces[i]!, i === pieces.length - 1 ? keyboard : undefined);
@@ -175,7 +186,7 @@ async function answer(ctx: Context, reply: BotReply): Promise<void> {
 
 /** A request worked on by itself, tracked so a stop can wait for it. */
 function work(ctx: Context, who: Who, text: string): void {
-  const chat = String(ctx.chat!.id);
+  const chat = conversationOf(ctx);
   /* A request is running here: this message is a note to it, answered at
      once and shown in its checklist — not a second request. */
   const running = statuses.get(chat);
@@ -215,12 +226,35 @@ bot.on('message:text', (ctx) => {
   /* Private chats only: in a group every member would see what one asked
      for, and the allowed list is of people, not of rooms. */
   if (ctx.chat.type !== 'private' || stopping) return;
-  work(ctx, whoOf(ctx), ctx.message.text);
+  void (async () => {
+    const who = whoOf(ctx);
+    const text = ctx.message.text;
+    /* A new task is a new topic, where the chat has topics (`topics.ts`). */
+    if (text.trim() === '/new' && listed(config.allowed, who) && await openTask(ctx)) return;
+    if (listed(config.allowed, who)) void nameTask(ctx, text);
+    work(ctx, who, text);
+  })();
 });
 
 bot.on('callback_query:data', async (ctx) => {
+  if (ctx.callbackQuery.data === 'stop') {
+    const running = ctx.chat === undefined ? undefined : statuses.get(conversationOf(ctx));
+    await ctx.answerCallbackQuery(running === undefined ? {} : { text: 'Stopping at the next step.' }).catch(() => undefined);
+    if (running === undefined || ctx.chat?.type !== 'private' || !listed(config.allowed, whoOf(ctx))) return;
+    await core.handle(conversationOf(ctx), whoOf(ctx), '/stop').catch((e: unknown) => { console.error(e); });
+    return;
+  }
+  if (ctx.callbackQuery.data === 'new') {
+    await ctx.answerCallbackQuery().catch(() => undefined);
+    if (ctx.chat?.type !== 'private' || stopping || !listed(config.allowed, whoOf(ctx))) return;
+    await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => undefined);
+    if (await openTask(ctx)) return;
+    const reply = await core.handle(conversationOf(ctx), whoOf(ctx), '/new');
+    await ctx.reply(reply.text).catch(() => undefined);
+    return;
+  }
   const m = /^choice:(\d+)$/.exec(ctx.callbackQuery.data);
-  const options = ctx.chat === undefined ? undefined : offered.get(ctx.chat.id);
+  const options = ctx.chat === undefined ? undefined : offered.get(conversationOf(ctx));
   const picked = m === null || options === undefined ? undefined : options[Number(m[1])];
   await ctx.answerCallbackQuery().catch(() => undefined);
   if (ctx.chat?.type !== 'private' || stopping) return;
@@ -228,7 +262,7 @@ bot.on('callback_query:data', async (ctx) => {
     await ctx.reply('Those choices are from before — please ask again.').catch(() => undefined);
     return;
   }
-  offered.delete(ctx.chat.id);
+  offered.delete(conversationOf(ctx));
   /* The buttons go, and the choice is said, so the chat reads as it went. */
   await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => undefined);
   await ctx.reply(`→ ${picked}`).catch(() => undefined);
@@ -248,5 +282,7 @@ async function stop(signal: string): Promise<void> {
 process.once('SIGTERM', () => { void stop('SIGTERM'); });
 process.once('SIGINT', () => { void stop('SIGINT'); });
 
+/* The commands in Telegram's menu, so nobody has to remember them. */
+await bot.api.setMyCommands([...COMMANDS]).catch((e: unknown) => { console.error('setMyCommands:', e); });
 console.log(`śikṣāmitra bot: ${config.model.id}, global limit $${config.limits.global?.toFixed(2)}, ${config.allowed.size} allowed user(s)`);
 await bot.start({ drop_pending_updates: false });

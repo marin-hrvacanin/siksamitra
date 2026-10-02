@@ -10,6 +10,9 @@
  *             import takes, so unsaved work is asked about first;
  *   no web    the app's pages may not read other sites; a person pastes a
  *             text instead, and it is built from as it is.
+ *   look      the page it made, on the person's paper, photographed the way
+ *             the PNG export is (`lookAtPage`) — shown only to a model that
+ *             takes pictures; the session decides that, for every host.
  *
  * Each person's own key, kept on this computer (`localSettings`).
  */
@@ -21,8 +24,10 @@ import { AgentPanel, Icon, localSettings } from '@siksamitra/ui';
 export const ASK_INTRO = 'Namaste! Ask me for a sūkta, a stotra or a śloka — I find it in the library, mark it by the '
   + 'śikṣā rules, check it, and open it here. Or paste a text, and I mark it.';
 
-export function AskPane({ adopt, onClose }: {
+export function AskPane({ adopt, paper, onClose }: {
   adopt: (doc: ChantDoc, name: string) => void;
+  /** The paper the person is working on — what `look` shows a page of. */
+  paper: string;
   onClose: () => void;
 }): ReactNode {
   const host = useMemo<Host>(() => ({
@@ -32,7 +37,11 @@ export function AskPane({ adopt, onClose }: {
       adopt(doc, `${doc.title}.smdoc`);
       return `opened in the app: "${doc.title}"`;
     },
-  }), [adopt]);
+    async look(doc, page) {
+      const { lookAtPage } = await import('./export-doc.js');
+      return lookAtPage(doc, { page: paper }, page);
+    },
+  }), [adopt, paper]);
   const store = useMemo(() => localSettings('siksamitra.agent'), []);
   return (
     <aside className="ask" aria-label="Ask">

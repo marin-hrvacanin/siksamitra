@@ -8,7 +8,10 @@
  * cannot see, is never offered the tool.
  */
 import { describe, expect, it } from 'vitest';
-import { Workspace, documentOf, memoryLedger, runTurn, toWire, toolsFor, type Host, type Message, type Model } from '../index.js';
+import {
+  Session, Workspace, chatCompletions, deepseek, documentOf, memoryLedger, runTurn, toWire, toolsFor,
+  type Host, type Message, type Model,
+} from '../index.js';
 
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
 const host: Host = { look: async (_doc, page) => ({ png: PNG, page, pages: 3 }) };
@@ -49,8 +52,13 @@ describe('look, in a turn', () => {
     }, 'how does page 2 look?');
     expect(done.text).toBe('The page looks right.');
     const withImage = (ms: Message[]) => ms.filter((m) => m.role === 'user' && (m as { images?: string[] }).images !== undefined);
-    /* The request right after the look carries the picture … */
+    /* The request right after the look carries the picture — AFTER the call's
+       result, as the API requires: a real run sent it between the two and was
+       refused (400). */
     expect(withImage(seen[1]!)).toHaveLength(1);
+    const order = seen[1]!.map((m) => (m.role === 'user' && (m as { images?: string[] }).images ? 'picture' : m.role));
+    const call = order.lastIndexOf('assistant');
+    expect(order.slice(call)).toEqual(['assistant', 'tool', 'picture']);
     expect((withImage(seen[1]!)[0] as { images: string[] }).images[0]).toMatch(/^data:image\/png;base64,/);
     /* … the one after it does not, and the conversation keeps only the caption. */
     expect(withImage(seen[2]!)).toHaveLength(0);
@@ -65,5 +73,29 @@ describe('who is offered look', () => {
   });
   it('and no other — the Word panel, or a model that does not see', () => {
     expect(toolsFor('deliver', {}).some((t) => t.spec.name === 'look')).toBe(false);
+  });
+  it('and only for a model that sees: the session asks the model, for every host alike', async () => {
+    const offered = async (sees: boolean | undefined): Promise<boolean> => {
+      let names: string[] = [];
+      const model: Model = {
+        id: 'm', ...(sees === undefined ? {} : { sees }),
+        complete: async ({ tools }) => {
+          names = tools.map((t) => t.name);
+          return { usage: { input: 0, cached: 0, output: 0 }, finish: 'stop', message: { role: 'assistant', content: 'ok' } };
+        },
+      };
+      const s = new Session({ id: 's', mode: 'deliver', model, price: { input: 0, cached: 0, output: 0 }, host, ledger: memoryLedger(), limits: { session: 1 } });
+      await s.ask('hi');
+      return names.includes('look');
+    };
+    expect(await offered(true)).toBe(true);
+    expect(await offered(false)).toBe(false);
+    expect(await offered(undefined)).toBe(false);
+  });
+  it('DeepSeek V4.1 Flash sees; a model nobody said sees does not', () => {
+    expect(deepseek({ apiKey: 'k' }).sees).toBe(true);
+    expect(deepseek({ apiKey: 'k', model: 'deepseek-chat' }).sees).toBeUndefined();
+    expect(chatCompletions({ baseUrl: 'https://x', apiKey: 'k', model: 'm' }).sees).toBeUndefined();
+    expect(chatCompletions({ baseUrl: 'https://x', apiKey: 'k', model: 'm', sees: true }).sees).toBe(true);
   });
 });

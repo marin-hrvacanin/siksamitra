@@ -100,3 +100,27 @@ export function svgDocument(p: SvgParts): string {
     + `<div data-doc="${p.doc}">${p.body}</div>`
     + '</div></foreignObject></svg>\n';
 }
+
+/** Where page `n` lies on the exported sheet, in its CSS pixels. */
+export interface PageSlice {
+  /** The page shown — `n`, held inside the document. */
+  readonly page: number;
+  readonly pages: number;
+  readonly y: number;
+  readonly height: number;
+}
+
+/**
+ * PAGE `n` OF THE SHEET — what the agent's `look` is shown, by both hosts.
+ *
+ * The exported sheet is one column; a page of it is the column cut at the
+ * paper's height. Not the printer's own breaks, which only the printer knows:
+ * what the model looks at is the type, the marks and the layout. The last page
+ * is as long as what is on it — nothing is drawn that the sheet does not have.
+ */
+export function pageSlice(total: number, height: number, n: number): PageSlice {
+  const pages = Math.max(1, Math.ceil(total / height));
+  const page = Math.min(Math.max(1, Math.round(Number.isFinite(n) ? n : 1)), pages);
+  const y = (page - 1) * height;
+  return { page, pages, y, height: Math.max(1, Math.min(height, total - y)) };
+}

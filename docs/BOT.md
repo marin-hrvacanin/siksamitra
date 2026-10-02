@@ -55,8 +55,29 @@ See `.env.example`. The ones that matter:
 | `BOT_CONTACT` | whom someone not on the list is told to write to, to be added — they get one fixed message, never the model |
 | `BOT_GLOBAL_LIMIT_USD` | the whole allowance, every chat together (default 5) |
 | `BOT_SESSION_LIMIT_USD` / `BOT_TURN_LIMIT_USD` | per conversation / per request (1 / 0.5) |
+| `AGENT_TIMEOUT_S` | how long DeepSeek may say *nothing* before a try is given up (120) |
+| `AGENT_VISION` | `0` stops the agent looking at its page; `1` lets another provider's model look |
 
 After changing it: `cd /srv/apps/siksamitra-bot && docker compose up -d`.
+
+## Conversations, and a new task
+
+Each chat is one conversation, kept between messages, and `/new` starts it
+over. With **Threaded Mode** on — BotFather → the bot → Bot Settings →
+Threads Settings — a private chat has topics, and each topic is a conversation
+of its own: `/new`, or the **🆕 New task** button under a delivered file,
+opens a new topic, named after the first thing asked in it, and the old ones
+stay as they were to go back to (`apps/bot/src/topics.ts`). The commands are
+in Telegram's menu (`/new`, `/stop`, `/help`).
+
+## It looks at its page
+
+DeepSeek V4.1 Flash takes pictures, so before it delivers, the agent may look
+at the first page it made — the export the PDF is printed from, photographed
+(`look`, `apps/bot/src/exporters.ts`) — once, and only with the request that
+follows; the conversation keeps the caption, not the picture. Whether a model
+sees is the agent's to say (`SEEING` in `packages/agent/src/model.ts`), for
+the bot and the app alike.
 
 ## What cannot get out
 
@@ -89,6 +110,10 @@ docker exec siksamitra-bot cat /data/ledger.jsonl | wc -l
 
 `/spent` in Telegram (an owner only) says what has been spent.
 
-When DeepSeek is degraded (status.deepseek.com) a request waits up to three
-minutes per try, three tries, then the person is told it failed and to try
-again; nothing hangs.
+Replies are streamed, so a model that is writing — its thinking included — is
+never cut off: a try is given up only when DeepSeek says nothing for
+`AGENT_TIMEOUT_S` (its keep-alives, sent while a request waits in its queue,
+are not an answer), tried once more, and then the person is told; nothing
+hangs (`packages/agent/src/stream.ts`). A step that thinks until DeepSeek's
+length limit and does nothing is taken back and the model told to act — twice
+— and then the person is told in words.

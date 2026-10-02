@@ -367,6 +367,7 @@ CHROME=<path> npm run check:document    # the page against his .docx, in points
 CHROME=<path> npm run check:responsive  # 15 widths x 3 tabs: nothing clipped
 CHROME=<path> npm run check:themes      # 84 theme combinations resolve
 CHROME=<path> npm run check:edit        # gestures, views, typing, zoom, no reflow
+CHROME=<path> npm run check:look        # what the agent sees: the app's page and the bot's, alike
 CHROME=<path> node tools/walkthrough.mjs   # 24 screenshots, to LOOK at
 CHROME=<path> node tools/shot-marking.mjs  # mark five letters and look at the box
 ```

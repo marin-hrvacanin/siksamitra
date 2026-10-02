@@ -23,6 +23,7 @@
     "@siksamitra/engine": "2.0.0-alpha.0",
     "@siksamitra/format": "2.0.0-alpha.0",
     "@siksamitra/interop": "2.0.0-alpha.0",
+    "eventsource-parser": "^3.1.1",
     "marked": "^18.0.14"
   },
   "devDependencies": {

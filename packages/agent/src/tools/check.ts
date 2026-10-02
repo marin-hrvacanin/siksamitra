@@ -26,6 +26,8 @@ import { toTextAndMarks, type ChantDoc, type ChantVerse } from '@siksamitra/form
 import { documentOf } from '../build.js';
 import { Workspace, verseLetters } from '../workspace.js';
 import { describeDocument } from '../describe.js';
+import { letterChange } from '../letters.js';
+import { numbersIn } from '../lines.js';
 import { markAll } from './document.js';
 import { DELIVERY_FORMATS, arg, opt, params, str, type DeliveryFormat, type Tool } from './types.js';
 
@@ -61,6 +63,14 @@ const spaced = (s: string): string => s.replace(/[।॥|]+|[0-9०-९]+/gu, ' 
 const cut = (s: string, n = 90): string => (s.length > n ? `${s.slice(0, n)}…` : s);
 
 /**
+ * Do a verse and its source differ in a letter? The same answer `spaced` is
+ * held to (`letters.ts`): his word breaks and his spellings of one sound are
+ * not differences, and nor is an opening oṁ left out of a first verse.
+ */
+const differ = (want: string, have: string, first = true): boolean =>
+  letterChange(want.split('\n'), have.split('\n'), first) !== null;
+
+/**
  * The source's lines as the document would have them: built by the same
  * builder and marked by the same rules in the same register. The rules
  * TRANSFORM the accents — the Ṛgveda lengthens a svarita and draws its
@@ -93,9 +103,9 @@ export function checkDocument(ws: Workspace): Finding[] {
       if (vf === undefined || vw === undefined) continue;
       const lines = vw.lines.slice(vf.from - 1, vf.to);
       const again = asMarked({ title: '_', sections: [{ verses: [{ lines }] }] }, doc);
-      const want = again.map((x) => spaced(verseLetters(x))).join('\n');
-      const have = spaced(verseLetters(v));
-      if (want !== have) out.push({ severity: 'error', where: v.id, what: `differs from ${vw.id} lines ${vf.from}-${vf.to}: has "${cut(have)}", the source "${cut(want)}"` });
+      const want = again.map((x) => verseLetters(x)).join('\n');
+      const have = verseLetters(v);
+      if (differ(want, have)) out.push({ severity: 'error', where: v.id, what: `differs from ${vw.id} lines ${vf.from}-${vf.to}: has "${cut(spaced(have))}", the source "${cut(spaced(want))}"` });
     }
     /* THE LETTERS, against the witness the section was built from. */
     const from = ws.builtFrom.get(s.id);
@@ -103,15 +113,15 @@ export function checkDocument(ws: Workspace): Finding[] {
     if (from !== undefined && w !== undefined) {
       const flow = w.lines.slice(from.from - 1, from.to);
       const again = asMarked({ title: '_', sections: [{ verses: [], flow }] }, doc);
-      const want = again.map((v) => spaced(verseLetters(v)));
-      const have = s.verses.map((v) => spaced(verseLetters(v)));
+      const want = again.map((v) => verseLetters(v));
+      const have = s.verses.map((v) => verseLetters(v));
       if (want.length !== have.length) {
         out.push({ severity: 'error', where: s.id, what: `${have.length} verse(s), but ${w.id} lines ${from.from}-${from.to} make ${want.length}` });
       }
       const n = Math.min(want.length, have.length);
       for (let i = 0; i < n; i += 1) {
-        if (want[i] !== have[i]) {
-          out.push({ severity: 'error', where: s.verses[i]!.id, what: `differs from ${w.id}: has "${cut(have[i]!)}", the source "${cut(want[i]!)}"` });
+        if (differ(want[i]!, have[i]!, i === 0)) {
+          out.push({ severity: 'error', where: s.verses[i]!.id, what: `differs from ${w.id}: has "${cut(spaced(have[i]!))}", the source "${cut(spaced(want[i]!))}"` });
           break;
         }
       }
@@ -129,6 +139,25 @@ export function checkDocument(ws: Workspace): Finding[] {
       out.push({ severity: 'warn', where: s.id, what: 'a Vedic text with no svaras: its source was unaccented — find an accented one' });
     }
   }
+
+  /* THE LOCUS, against how the witness numbers the lines the text was built
+     from — a reference the source prints at a passage's end, read (`numbersIn`).
+     Said when none of the numbers cited is how the witness numbers them. */
+  doc.sections.forEach((s, si) => {
+    const cite = s.source ?? (si === 0 ? doc.source : undefined);
+    const cited = [...(cite ?? '').matchAll(/\d+(?:\.\d+)+/gu)].map((m) => m[0]);
+    if (cited.length === 0) return;
+    const spans = [ws.builtFrom.get(s.id), ...s.verses.map((v) => ws.builtFrom.get(v.id))].filter((b) => b !== undefined);
+    for (const b of spans) {
+      const w = ws.witnesses.get(b!.witness);
+      if (w === undefined) continue;
+      const markers = numbersIn(w.lines.slice(b!.from - 1, b!.to + 1));
+      if (markers.length === 0) continue;
+      if (cited.some((c) => markers.some((m) => m === c || m.startsWith(`${c}.`)))) continue;
+      out.push({ severity: 'warn', where: s.id, what: `the locus "${cite}" is not how ${w.id} numbers these lines: it prints ${markers.slice(0, 3).join(', ')} — cite what the source says, or say why not` });
+      return;
+    }
+  });
 
   /* THE MARKS: the rules once more, over a copy, change nothing — for a
      document the rules marked. An author's text is not theirs to judge. */

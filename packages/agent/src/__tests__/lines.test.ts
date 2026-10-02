@@ -6,7 +6,7 @@
  * Taittirīya Āraṇyaka with `॥ ०। १०। ३५। ५३॥ ॥ ३५॥` still in the verse.
  */
 import { describe, expect, it } from 'vitest';
-import { cleanLine, clipped, layoutOf, numbered, paragraphsIn, syllablesOf, unnumbered } from '../lines.js';
+import { cleanLine, clipped, layoutOf, numbered, numbersIn, paragraphsIn, syllablesOf, unnumbered } from '../lines.js';
 
 describe('a source line, cleaned', () => {
   it('takes off a reference of two or more numbers at the end, and keeps the verse closed', () => {
@@ -116,5 +116,14 @@ describe('a gum the source writes out', () => {
   it('goes back to the anusvāra the rules make it from', () => {
     expect(cleanLine('pra̱tīcī̍menāgm̐ ha̱viṣā̍ yajāmaḥ ।')).toBe('pra̱tīcī̍menāṁ ha̱viṣā̍ yajāmaḥ ।');
     expect(cleanLine('sa de̱vām̐ eha va̍kṣati ।')).toBe('sa de̱vām̐ eha va̍kṣati ।');
+  });
+});
+
+describe('how a source numbers its own lines', () => {
+  it('reads its references — Devanāgarī or ASCII digits, the leading nought dropped', () => {
+    expect(numbersIn(['भर्गो॑ दे॒वस्य॑ धीमहि ॥ ०। १। ११। ४९॥'])).toEqual(['1.11.49']);
+    expect(numbersIn(['… ॥ ०। १०। ३५। ५३॥ ॥ ३५॥'])).toEqual(['10.35.53']);
+    expect(numbersIn(['tarase namaḥ || 0| 10| 2| 1|| || 2||'])).toEqual(['10.2.1']);
+    expect(numbersIn(['bhūmir bhūmnā ॥ 1॥'])).toEqual([]);
   });
 });

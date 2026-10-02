@@ -16,10 +16,10 @@ import {
   normalizeChantDoc, parseChantSelect, sliceChantDoc,
   type ChantDoc, type ChantScriptKey,
 } from '@siksamitra/format';
-import { CLIP_SELECTOR, RASTER_ATTR, svgDocument, toBase64 } from '@siksamitra/interop';
-import { pageGeometry } from '@siksamitra/layout';
+import { CLIP_SELECTOR, RASTER_ATTR, pageSlice, svgDocument, toBase64 } from '@siksamitra/interop';
+import { pageGeometry, px } from '@siksamitra/layout';
 import {
-  exportStyle, styleStacks, type ExportStyle,
+  DEFAULT_EXPORT_STYLE, exportStyle, styleStacks, type ExportStyle,
 } from '@siksamitra/tokens/export-styles';
 import {
   buildExportPage, type ExportIo, type ExportedPage,
@@ -190,7 +190,30 @@ async function inFrame<T>(html: string, fn: (doc: Document) => Promise<T>): Prom
 export async function exportDocumentPng(
   html: string, style: ExportStyle, scale = 2,
 ): Promise<{ blob: Blob; width: number; height: number }> {
-  const svg = await inFrame(html, async (doc) => {
+  const svg = await framed(html, style);
+  return painted(svg, scale, { y: 0, height: svg.height });
+}
+
+/**
+ * ONE PAGE OF THE PAPER, for the agent's `look` — what the Ask pane's model is
+ * shown when it asks to see its work: the document exported as it would be
+ * printed (the default style, the person's paper), photographed as above, and
+ * cut at the paper's height (`pageSlice`, the bot's answer too).
+ */
+export async function lookAtPage(
+  doc: ChantDoc, options: { page: string }, n: number, scale = 1.4,
+): Promise<{ png: Uint8Array; page: number; pages: number }> {
+  const exported = await exportDocumentHtml(doc, { style: DEFAULT_EXPORT_STYLE, page: options.page });
+  const svg = await framed(exported.html, exported.style);
+  const sheet = px(pageGeometry(options.page).height, 1);
+  const slice = pageSlice(svg.height, sheet, n);
+  const shot = await painted(svg, scale, slice);
+  return { png: new Uint8Array(await shot.blob.arrayBuffer()), page: slice.page, pages: slice.pages };
+}
+
+/** The frame's element as one SVG, and how big it is. */
+function framed(html: string, style: ExportStyle): Promise<{ text: string; width: number; height: number }> {
+  return inFrame(html, async (doc) => {
     const el = doc.querySelector(CLIP_SELECTOR[style.frame]);
     if (el === null) throw new Error(`the ${style.frame} frame did not render`);
     const box = el.getBoundingClientRect();
@@ -210,7 +233,14 @@ export async function exportDocumentPng(
       height: Math.ceil(box.height),
     };
   });
+}
 
+/** The SVG drawn into a canvas — the band of it from `y`, `height` tall — as a PNG. */
+async function painted(
+  svg: { text: string; width: number },
+  scale: number,
+  band: { y: number; height: number },
+): Promise<{ blob: Blob; width: number; height: number }> {
   /* A `data:` URI keeps the canvas untainted, which a blob URL from this
      document does not: `getImageData` and `toBlob` both refuse a tainted one. */
   const uri = `data:image/svg+xml;base64,${toBase64(new TextEncoder().encode(svg.text))}`;
@@ -220,11 +250,11 @@ export async function exportDocumentPng(
 
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(svg.width * scale);
-  canvas.height = Math.round(svg.height * scale);
+  canvas.height = Math.round(band.height * scale);
   const ctx = canvas.getContext('2d');
   if (ctx === null) throw new Error('this browser will not give a 2D canvas');
   ctx.scale(scale, scale);
-  ctx.drawImage(image, 0, 0);
+  ctx.drawImage(image, 0, -band.y);
 
   const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/png'));
   if (blob === null) throw new Error('the picture could not be encoded');

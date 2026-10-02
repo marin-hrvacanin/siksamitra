@@ -16,10 +16,10 @@ export interface NodeHost extends Host {
 }
 
 /**
- * `vision`: the model takes images, so the agent may `look` at the page it made
- * (DeepSeek V4.1 Flash does — `config.ts`).
+ * `look`: the page it made, as a picture — given to the agent only when its
+ * model takes pictures (`Model.sees`; the session decides, for every host).
  */
-export function nodeHost(root: string, deliver: (file: Delivered) => Promise<void>, vision = false): NodeHost {
+export function nodeHost(root: string, deliver: (file: Delivered) => Promise<void>): NodeHost {
   const exporters = nodeExporters();
   return {
     where: 'a Telegram chat: what you deliver is sent into the chat as a file',
@@ -27,6 +27,6 @@ export function nodeHost(root: string, deliver: (file: Delivered) => Promise<voi
     research: webResearch(),
     exporters,
     deliver,
-    ...(vision ? { look: (doc: ChantDoc, page: number) => exporters.look(doc, page) } : {}),
+    look: (doc: ChantDoc, page: number) => exporters.look(doc, page),
   };
 }

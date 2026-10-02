@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { Workspace, checkDocument, toolsFor, verseLetters, type Host } from '../index.js';
-import { strictLetters } from '../tools/document.js';
+import { strictLetters } from '../letters.js';
 
 const host: Host = { exporters: {} as never };
 const build = toolsFor('deliver', host).find((t) => t.spec.name === 'build_document')!;
@@ -44,6 +44,22 @@ describe('a verse given with his word breaks', () => {
     ws.keep('https://sanskritdocuments.org/x', 'bhū sūktam', SOURCE);
     const moved = [HIS[0]!.replace('bhūmi̍r', 'bhū̍mir'), HIS[1]!];
     await expect(run(ws, { spaced: moved })).rejects.toThrow(/spaced changes a letter/);
+  });
+
+  it('his spellings of a source’s junctions build, and check clean — vignanam’s second verse', async () => {
+    const ws = new Workspace();
+    ws.keep('https://vignanam.org/samskritam/bhu-suktam.html', 'bhū sūktam', ['आ-ऽयङ्गौः पृश्नि॑रक्रमी॒-दस॑नन्मा॒तर॒-म्पुनः॑ ।', 'पि॒तर॑-ञ्च प्र॒यन्-थ्सुवः॑ ॥']);
+    await run(ws, { spaced: ["ā'yaṁ gauḥ pṛśni̍ra-kramī̱da-sa̍nan mā̱tara̱ṁ puna̍ḥ ।", 'pi̱tara̍ṁ ca pra̱yanth suva̍ḥ ॥'] });
+    expect(verseLetters(ws.need().sections[0]!.verses[0]!)).toContain("ā'yaṁ gauḥ");
+    expect(checkDocument(ws).filter((f) => f.severity === 'error')).toEqual([]);
+  });
+
+  it('an opening oṁ of the source left out, as his page does, builds and checks clean', async () => {
+    const ws = new Workspace();
+    ws.keep('https://vignanam.org/samskritam/bhu-suktam.html', 'bhū sūktam', ['ओम् ॥ ओ-म्भूमि॑र्भू॒म्ना द्यौर्व॑रि॒णा-ऽन्तरि॑क्ष-म्महि॒त्वा ।', 'उ॒पस्थे॑ ते देव्यदिते॒-ऽग्निम॑न्ना॒द-म॒न्नाद्या॒याद॑धे ॥']);
+    await run(ws, { spaced: ["bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣaṁ mahi̱tvā ।", "u̱pasthe̍ te devya-dite̱'gnima̍-nnā̱dama̱-nnādyā̱yā''da̍dhe ॥"] });
+    expect(verseLetters(ws.need().sections[0]!.verses[0]!)).toMatch(/^bhūmi̍r/);
+    expect(checkDocument(ws).filter((f) => f.severity === 'error')).toEqual([]);
   });
 
   it('a Devanāgarī source is compared in IAST', () => {

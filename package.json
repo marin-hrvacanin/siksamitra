@@ -119,6 +119,7 @@
     "check:word:ui": "tsx --conditions=development tools/word-ui.ts",
     "check:word:live:reference": "tsx --conditions=development tools/word-live-reference.ts",
     "check:word:pane": "tsx tools/word-pane.mjs",
+    "check:look": "tsx --tsconfig tools/export/tsconfig.render.json --import ./tools/export/no-css.mjs tools/interaction-look.mjs",
     "word-addin:store": "node scripts/word-store.mjs",
     "check:site": "node tools/site-check.mjs",
     "check:reference": "tsx --conditions=development packages/cli/src/gates/reference.ts",

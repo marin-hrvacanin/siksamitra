@@ -80,10 +80,13 @@ export function findLines(w: Witness, query: string, max = 12): number[] {
  */
 export const RESEARCH = { searches: 4, pages: 5 } as const;
 
+/* Said so that it is not asked again: a real run, told once, fetched three
+   more pages and was told three more times (2026-10-02). */
 const enough = (ws: Workspace, what: 'searches' | 'pages'): string => {
   const kept = [...ws.witnesses.values()].map((w) => `${w.id} "${w.title}"`).join(', ');
-  return `enough ${what} for this request (${what === 'pages' ? RESEARCH.pages : RESEARCH.searches}): `
-    + (kept === '' ? 'tell the person what you could not find.' : `build from what you have read — ${kept} — or tell the person what is missing.`);
+  return `enough ${what} for this request (${what === 'pages' ? RESEARCH.pages : RESEARCH.searches}) — every further `
+    + `${what === 'pages' ? 'fetch_page' : 'web_search'} is refused, however it is asked: `
+    + (kept === '' ? 'tell the person what you could not find.' : `build now from what you have read — ${kept} — or tell the person what is missing.`);
 };
 
 export const SOURCE_TOOLS: readonly Tool[] = [

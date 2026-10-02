@@ -28,5 +28,5 @@ export {
 } from './fonts.js';
 export type { DeclaredFace, FaceChoice, FaceStack } from './fonts.js';
 
-export { CLIP_SELECTOR, RASTER_ATTR, svgDocument } from './frame.js';
-export type { SvgParts } from './frame.js';
+export { CLIP_SELECTOR, RASTER_ATTR, pageSlice, svgDocument } from './frame.js';
+export type { PageSlice, SvgParts } from './frame.js';

@@ -80,6 +80,12 @@ export class Session {
 
   private takeNotes = (): string[] => this.notes.splice(0);
 
+  /** The host as this model may use it: `look` only for a model that sees. */
+  private get host(): Host {
+    const { look, ...blind } = this.opts.host;
+    return look === undefined || this.opts.model.sees === true ? this.opts.host : blind;
+  }
+
   constructor(private readonly opts: SessionOptions, state?: SessionState) {
     if (state === undefined) return;
     this.messages = [...state.messages];
@@ -98,9 +104,10 @@ export class Session {
     this.halted = false;
     this.ws.newRequest();
     this.messages = compact(this.messages, o.keep ?? 160_000);
-    const ctx: ToolContext = { ws: this.ws, host: o.host, review: (task) => this.review(task) };
+    const host = this.host;
+    const ctx: ToolContext = { ws: this.ws, host, review: (task) => this.review(task) };
     return runTurn({
-      model: o.model, price: o.price, tools: [...toolsFor(o.mode, o.host), ...(o.tools ?? [])], system: systemFor(o.mode, o.host),
+      model: o.model, price: o.price, tools: [...toolsFor(o.mode, host), ...(o.tools ?? [])], system: systemFor(o.mode, host),
       messages: this.messages, ctx, ledger: o.ledger, limits: o.limits, session: o.id,
       ...(o.user === undefined ? {} : { user: o.user }),
       ...(o.maxSteps === undefined ? {} : { maxSteps: o.maxSteps }),
@@ -127,9 +134,10 @@ export class Session {
 
   private async review(task: string): Promise<string> {
     const o = this.opts;
-    const ctx: ToolContext = { ws: this.ws, host: o.host, review: async () => 'a reviewer does not ask for a review' };
+    const host = this.host;
+    const ctx: ToolContext = { ws: this.ws, host, review: async () => 'a reviewer does not ask for a review' };
     const done = await runTurn({
-      model: o.model, price: o.price, tools: toolsFor('review', o.host), system: systemFor('review', o.host),
+      model: o.model, price: o.price, tools: toolsFor('review', host), system: systemFor('review', host),
       messages: [], ctx, ledger: o.ledger, limits: o.limits, session: o.id, maxSteps: 14,
       ...(o.user === undefined ? {} : { user: o.user }),
       /* Its steps are shown too, as the reviewer's. */

@@ -28,6 +28,9 @@ describe('the research a request may do', () => {
     const refused = await call(ws, 'fetch_page', { url: 'https://example.org/more' });
     expect(refused).toMatch(/^enough pages/);
     expect(refused).toContain('w1');
+    /* Said so that it is not asked again — a real run asked three more times. */
+    expect(refused).toMatch(/every further fetch_page is refused/);
+    expect(await call(ws, 'web_search', { query: 'and another' })).toMatch(/every further web_search is refused/);
   });
 
   it('and is whole again when the next request begins', async () => {

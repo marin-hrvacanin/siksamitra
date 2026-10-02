@@ -82,6 +82,9 @@ export function capped(text: string, max: number): string {
   return `${text.slice(0, max)}\n… (${text.length - max} more characters — ask for a narrower range)`;
 }
 
+/** What the model is told after a step that thought until it was cut off. */
+export const RUNAWAY = '(from the program: your last step thought until it was cut off, and did nothing. Do not deliberate further — make the call you were weighing now. The tools check what you send and say exactly what is wrong: trying costs less than thinking it through.)';
+
 /** Base64 without Node's `Buffer`: the loop runs in the app and the add-in too. */
 function base64Of(bytes: Uint8Array): string {
   let s = '';
@@ -100,20 +103,23 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
   opts.messages.push({ role: 'user', content: userText });
   let cost = 0;
   let usage: Usage = { input: 0, cached: 0, output: 0 };
+  /* Steps that thought until they were cut off — see where a reply is read. */
+  let runaways = 0;
 
   /* What `look` showed this step, for the next request only (`tools/look.ts`):
      the picture goes with that request and is not kept in the conversation. */
   let shown: { at: number; images: string[] } | null = null;
+  /* Pictures asked for while this step's tools run. They go in AFTER every
+     result of the step: an answer between a call and its result is refused
+     ("an assistant message with tool_calls must be followed by tool
+     messages") — which a real run found the first time it looked. */
+  let asked: { caption: string; images: string[] } | null = null;
   const ctx: ToolContext = {
     ...opts.ctx,
     show: (png, caption) => {
       const url = `data:image/png;base64,${base64Of(png)}`;
-      if (shown === null) {
-        opts.messages.push({ role: 'user', content: caption });
-        shown = { at: opts.messages.length - 1, images: [url] };
-      } else {
-        shown.images.push(url);
-      }
+      if (asked === null) asked = { caption, images: [url] };
+      else asked.images.push(url);
     },
   };
 
@@ -152,6 +158,22 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
     const calls = reply.message.toolCalls ?? [];
     if (calls.length === 0) {
       const text = reply.message.content ?? '';
+      /* A step that thought until the provider cut it off, and did nothing: a
+         real request thought 166 000 characters over one letter and ended the
+         turn with nothing to show (2026-10-02). It is taken back, and the
+         model told to act — twice at most; then the person is told. */
+      if (reply.finish === 'length' && text.trim() === '' && !last) {
+        opts.messages.pop();
+        if (runaways < 2) {
+          runaways += 1;
+          opts.messages.push({ role: 'user', content: RUNAWAY });
+          continue;
+        }
+        const stuck = 'I got stuck working this one out — tell me how to go on, or ask for less at once.';
+        opts.messages.push({ role: 'assistant', content: stuck });
+        opts.onEvent?.({ kind: 'reply', text: stuck });
+        return { text: stuck, cost, steps: step, usage };
+      }
       opts.onEvent?.({ kind: 'reply', text });
       return { text, cost, steps: step, usage };
     }
@@ -172,6 +194,12 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
       }
       opts.onEvent?.({ kind: 'result', name: call.name, text, failed });
       opts.messages.push({ role: 'tool', toolCallId: call.id, content: capped(text, maxResult) });
+    }
+    const pictures = asked as { caption: string; images: string[] } | null;
+    if (pictures !== null) {
+      opts.messages.push({ role: 'user', content: pictures.caption });
+      shown = { at: opts.messages.length - 1, images: pictures.images };
+      asked = null;
     }
   }
   const text = `Stopped after ${max} steps without finishing. Say how to go on, or ask for less at once.`;

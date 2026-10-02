@@ -16,6 +16,7 @@
  * module touches nothing a host may lack.
  */
 import { callsInText } from './dsml.js';
+import { BrokeOff, TimedOut, readReply, within, type ByteStream } from './stream.js';
 
 /** A JSON Schema, as the providers take it for a tool's parameters. */
 export type JsonSchema = { readonly [k: string]: unknown };
@@ -73,8 +74,17 @@ export interface CompleteRequest {
 export interface Model {
   /** The provider's name for it — what a price is looked up by. */
   readonly id: string;
+  /** It takes pictures, in a user message: the agent may `look` at its page. */
+  readonly sees?: boolean;
   complete(req: CompleteRequest): Promise<Reply>;
 }
+
+/**
+ * DeepSeek's models that take pictures — V4.1 Flash does, at most 1024 tokens
+ * an image (api-docs.deepseek.com/guides/vision). One list, read by every
+ * host: the bot's and the app's panel ask the same question here.
+ */
+export const SEEING: ReadonlySet<string> = new Set(['deepseek-flash']);
 
 /** The part of `fetch` this module uses, so no host has to have more. */
 export type FetchLike = (url: string, init: {
@@ -83,7 +93,7 @@ export type FetchLike = (url: string, init: {
   body?: string;
   /** An `AbortSignal` where the host has one: how a request that never answers is given up. */
   signal?: unknown;
-}) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
+}) => Promise<{ ok: boolean; status: number; text(): Promise<string>; body?: ByteStream | null }>;
 
 export interface ChatCompletionsOptions {
   /** e.g. `https://api.deepseek.com`. */
@@ -97,11 +107,14 @@ export interface ChatCompletionsOptions {
   readonly wait?: (ms: number) => Promise<void>;
   /** Fields of the provider's own, added to every request body — DeepSeek's `thinking`. */
   readonly extra?: Readonly<Record<string, unknown>>;
+  /** It takes pictures (`Model.sees`) — said by whoever knows the provider. */
+  readonly sees?: boolean;
   /**
-   * How long one request may take before it is given up and tried again.
-   * A provider under load can answer the headers and then hold the body open
-   * for minutes — DeepSeek did, on the evening this was written — and a bot
-   * waiting on it forever answers nobody.
+   * How long the provider may say NOTHING before the request is given up and
+   * tried again. A provider under load can answer the headers and then hold
+   * the body open for minutes — DeepSeek did, on the evening this was written
+   * — and a bot waiting on it forever answers nobody. A model that is writing
+   * is never cut off: every piece of its reply starts the time again.
    */
   readonly timeoutMs?: number;
 }
@@ -118,10 +131,12 @@ export function deepseek(o: {
   timeoutMs?: number; retries?: number;
 }): Model {
   const thinking = o.thinking ?? 'high';
+  const model = o.model ?? 'deepseek-flash';
   return chatCompletions({
     baseUrl: o.baseUrl ?? 'https://api.deepseek.com',
     apiKey: o.apiKey,
-    model: o.model ?? 'deepseek-flash',
+    model,
+    sees: SEEING.has(model),
     ...(o.fetch === undefined ? {} : { fetch: o.fetch }),
     ...(o.timeoutMs === undefined ? {} : { timeoutMs: o.timeoutMs }),
     ...(o.retries === undefined ? {} : { retries: o.retries }),
@@ -194,22 +209,11 @@ export function usageOf(raw: unknown): Usage {
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => { setTimeout(r, ms); });
 
-class TimedOut extends Error {}
-
-/** `work`, given up after `ms` — aborted where the host can abort a request. */
-async function withTimeout<T>(ms: number, work: (signal: unknown) => Promise<T>): Promise<T> {
+/** An `AbortController` where the host has one: how a request given up is ended. */
+const controller = (): { signal: unknown; abort(): void } | undefined => {
   const Abort = (globalThis as { AbortController?: new () => { signal: unknown; abort(): void } }).AbortController;
-  const control = Abort === undefined ? undefined : new Abort();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const late = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => { control?.abort(); reject(new TimedOut()); }, ms);
-  });
-  try {
-    return await Promise.race([work(control?.signal), late]);
-  } finally {
-    clearTimeout(timer);
-  }
-}
+  return Abort === undefined ? undefined : new Abort();
+};
 
 export function chatCompletions(opts: ChatCompletionsOptions): Model {
   const doFetch = opts.fetch ?? (globalThis as unknown as { fetch: FetchLike }).fetch;
@@ -217,6 +221,7 @@ export function chatCompletions(opts: ChatCompletionsOptions): Model {
   const url = `${opts.baseUrl.replace(/\/+$/, '')}/chat/completions`;
   return {
     id: opts.model,
+    ...(opts.sees === true ? { sees: true } : {}),
     async complete(req: CompleteRequest): Promise<Reply> {
       const body = JSON.stringify({
         model: opts.model,
@@ -226,32 +231,37 @@ export function chatCompletions(opts: ChatCompletionsOptions): Model {
         }),
         temperature: req.temperature ?? 0,
         ...(req.maxTokens === undefined ? {} : { max_tokens: req.maxTokens }),
-        stream: false,
+        /* Streamed, so a model that is writing is never mistaken for one
+           that is not (`stream.ts`); the usage comes in the last piece. */
+        stream: true,
+        stream_options: { include_usage: true },
         ...opts.extra,
       });
       const tries = (opts.retries ?? 2) + 1;
-      const limit = opts.timeoutMs ?? 180_000;
+      const silence = opts.timeoutMs ?? 180_000;
       for (let attempt = 1; ; attempt += 1) {
-        let text: string;
-        let res: { ok: boolean; status: number };
+        const control = controller();
         try {
-          ({ res, text } = await withTimeout(limit, (signal) => doFetch(url, {
+          const res = await within(silence, doFetch(url, {
             method: 'POST',
             headers: { 'content-type': 'application/json', authorization: `Bearer ${opts.apiKey}` },
             body,
-            ...(signal === undefined ? {} : { signal }),
-          }).then(async (r) => ({ res: r, text: await r.text() }))));
+            ...(control === undefined ? {} : { signal: control.signal }),
+          }));
+          if (!res.ok) {
+            const said = await within(silence, res.text()).catch(() => '');
+            const again = res.status === 429 || res.status >= 500;
+            if (again && attempt < tries) { await wait(1000 * 2 ** (attempt - 1)); continue; }
+            throw new ModelError(res.status, `the model answered ${res.status}: ${said.slice(0, 300)}`);
+          }
+          return replyOf(await readReply(res, silence, () => control?.abort()));
         } catch (e) {
-          if (e instanceof TimedOut && attempt < tries) continue;
-          if (e instanceof TimedOut) throw new ModelError(408, `the model did not answer within ${Math.round(limit / 1000)} s, ${tries} times`);
-          throw e;
+          if (!(e instanceof TimedOut) && !(e instanceof BrokeOff)) throw e;
+          control?.abort();
+          if (attempt < tries) { if (e instanceof BrokeOff) await wait(1000 * 2 ** (attempt - 1)); continue; }
+          if (e instanceof TimedOut) throw new ModelError(408, `the model said nothing for ${Math.round(silence / 1000)} s, ${tries} times`);
+          throw new ModelError(502, `${e.message}, ${tries} times`);
         }
-        if (!res.ok) {
-          const again = res.status === 429 || res.status >= 500;
-          if (again && attempt < tries) { await wait(1000 * 2 ** (attempt - 1)); continue; }
-          throw new ModelError(res.status, `the model answered ${res.status}: ${text.slice(0, 300)}`);
-        }
-        return replyOf(JSON.parse(text) as Record<string, unknown>);
       }
     },
   };

@@ -14,8 +14,9 @@
  */
 import { addVerseCommand, removeVerseCommand, setTextCommand, splitLines } from '@siksamitra/edit';
 import { CHANT_PROFILE_KEYS, type ChantProfileKey } from '@siksamitra/format';
-import { STAGES, normalize, toIast } from '@siksamitra/engine';
+import { STAGES } from '@siksamitra/engine';
 import { documentOf, versesOfFlow, type OutlineSection, type OutlineVerse } from '../build.js';
+import { letterChange } from '../letters.js';
 import type { VerseLayout } from '../lines.js';
 import { outlineOf, type Workspace } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
@@ -56,37 +57,17 @@ interface SectionArg {
 type From = { witness: string; at: string };
 
 /**
- * A LINE'S LETTERS, STRICTLY — every letter and every svara, in IAST; only
- * what his word breaks add set aside: spaces, hyphens, the apostrophe of a
- * vowel junction, the virāma tick. What `spaced` may differ from its source in.
- */
-const DEVANAGARI = /[\u0900-\u097F]/u;
-export const strictLetters = (line: string): string =>
-  /* The engine's own fold: Devanāgarī's accent signs to IAST's, ꣳ and a
-     written-out gum to ṁ — so a source in either script compares. */
-  normalize(DEVANAGARI.test(line) ? toIast(line, 'deva').iast : line).text.normalize('NFC')
-    .replace(/[\s\-'’ʼˎ।॥|0-9०-९]/gu, '');
-
-/**
  * HIS WORD BREAKS, OVER A SOURCE'S LETTERS. A web source runs words together
  * (`bhūmirbhūmnā dyaurvariṇā'ntarikṣam`) where his page separates them
  * (`bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣam`) and marks a junction
  * (`devya-dite`, `agnima-nnādam`). The model may give the lines so, in IAST —
- * and only if every letter and svara is the source's own, unchanged: the bot
- * never retypes a mantra (2026-10-02, the bot's own bhū sūktam).
+ * and only if every letter and svara is the source's own (`letters.ts` says
+ * what that means): the bot never retypes a mantra (2026-10-02).
  */
 function spacedOf(lines: readonly string[], spaced: readonly string[] | undefined, where: string): readonly string[] {
   if (spaced === undefined || spaced.length === 0) return lines;
-  if (spaced.length !== lines.length) throw new Error(`${where}: spaced has ${spaced.length} line(s), its source ${lines.length}`);
-  spaced.forEach((s, i) => {
-    const want = strictLetters(lines[i]!);
-    const got = strictLetters(s);
-    if (want === got) return;
-    let at = 0;
-    while (at < want.length && want[at] === got[at]) at += 1;
-    throw new Error(`${where}, line ${i + 1}: spaced changes a letter at "${got.slice(Math.max(0, at - 8), at + 8)}" `
-      + `where the source has "${want.slice(Math.max(0, at - 8), at + 8)}" — add only spaces, hyphens and apostrophes`);
-  });
+  const changed = letterChange(lines, spaced);
+  if (changed !== null) throw new Error(`${where}, ${changed}`);
   return spaced;
 }
 
