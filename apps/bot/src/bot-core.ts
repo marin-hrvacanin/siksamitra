@@ -82,6 +82,8 @@ export const WELCOME = 'Namaste. I am Śrutidhara, your śikṣāmitra companion
   + 'or “Durgā Sūktam as a Word file”. I find it in authentic sources, mark it by the śikṣā rules, check it '
   + 'and send it back: as a PDF, or as a Word file (.docx), a śikṣāmitra file (.smdoc) or the VedaUnion '
   + 'website upload if you ask for one.\n\n'
+  + 'You can also send me a file — your Word document, a PDF of ours, a text, a photo of a page: I open it, '
+  + 'check it against the rules and its source, mark it or send it back in another form.\n\n'
   + 'While I work, a message from you steers me and /stop stops me. /new starts over.';
 
 /** What someone not on the list is told — a fixed text, never the model's. */

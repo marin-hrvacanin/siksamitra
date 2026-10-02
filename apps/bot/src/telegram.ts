@@ -28,20 +28,23 @@ import { COMMANDS, conversationOf, markTask, nameDelivered, nameTask, openTask }
 import { StatusLog, type Ending } from './status.js';
 import { nodeHost } from './host.js';
 import { fileLedger, fileSessions } from './store.js';
-import { plainOf, telegramPieces } from '@siksamitra/agent';
+import { attachedNote, attachmentProblem, plainOf, telegramPieces } from '@siksamitra/agent';
+import { fileAttachments } from './objects.js';
 
 const config = loadConfig();
 if (config.telegramToken === undefined) throw new Error('no TELEGRAM_BOT_TOKEN in .env');
 if (config.allowed.size === 0) console.warn('BOT_ALLOWED_USERS is empty: the bot will answer nobody.');
 
 const bot = new Bot(config.telegramToken);
+/* What people send, kept on the server's volume (`objects.ts`). */
+const objects = fileAttachments(join(config.dataDir, 'objects'));
 const core = botCore({
   model: config.model,
   price: config.price,
   limits: config.limits,
   ledger: fileLedger(join(config.dataDir, 'ledger.jsonl')),
   sessions: fileSessions(join(config.dataDir, 'sessions')),
-  host: (deliver) => nodeHost(ROOT, deliver, join(config.dataDir, 'library')),
+  host: (deliver) => nodeHost(ROOT, deliver, join(config.dataDir, 'library'), [], objects),
   allowed: config.allowed,
   ...(config.contact === undefined ? {} : { contact: config.contact }),
   owners: config.owners,
@@ -248,6 +251,42 @@ bot.on('message:text', (ctx) => {
     if (listed(config.allowed, who)) void nameTask(ctx, text);
     work(ctx, who, text);
   })();
+});
+
+/**
+ * A FILE SENT — a document or a photograph. Kept in the object store and named
+ * to the agent in the message (`attachedNote`); the person's caption, if any,
+ * is what they ask of it. Too large a file is refused before it is fetched.
+ * The bot's token is in the address the file is fetched from, so a failure
+ * is logged by its kind and never by its address.
+ */
+async function received(ctx: Context, fileId: string, name: string, mime: string, size: number | undefined): Promise<void> {
+  const who = whoOf(ctx);
+  if (ctx.chat?.type !== 'private' || stopping || !listed(config.allowed, who)) return;
+  const problem = size === undefined ? null : attachmentProblem(name, size);
+  if (problem !== null) { await ctx.reply(problem).catch(() => undefined); return; }
+  try {
+    const file = await ctx.api.getFile(fileId);
+    const res = await fetch(`https://api.telegram.org/file/bot${config.telegramToken}/${file.file_path ?? ''}`);
+    if (!res.ok) throw new Error(`Telegram answered ${res.status}`);
+    const a = await objects.put(name, mime, new Uint8Array(await res.arrayBuffer()));
+    const asked = (ctx.msg?.caption ?? '').trim();
+    void nameTask(ctx, asked === '' ? name : asked);
+    work(ctx, who, `${asked === '' ? 'Here is a file.' : asked}\n${attachedNote(a)}`);
+  } catch (e) {
+    console.error('upload:', e instanceof GrammyError ? e.description : e instanceof Error && /^Telegram answered/u.test(e.message) ? e.message : 'the download failed');
+    await ctx.reply('That file could not be received — please send it again.').catch(() => undefined);
+  }
+}
+
+bot.on('message:document', (ctx) => {
+  const d = ctx.message.document;
+  void received(ctx, d.file_id, d.file_name ?? 'file', d.mime_type ?? 'application/octet-stream', d.file_size);
+});
+bot.on('message:photo', (ctx) => {
+  /* The largest of the sizes Telegram keeps. */
+  const p = ctx.message.photo[ctx.message.photo.length - 1]!;
+  void received(ctx, p.file_id, `photo-${p.file_unique_id}.jpg`, 'image/jpeg', p.file_size);
 });
 
 bot.on('callback_query:data', async (ctx) => {

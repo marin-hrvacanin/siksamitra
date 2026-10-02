@@ -122,8 +122,8 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
   let asked: { caption: string; images: string[] } | null = null;
   const ctx: ToolContext = {
     ...opts.ctx,
-    show: (png, caption) => {
-      const url = `data:image/png;base64,${base64Of(png)}`;
+    show: (image, caption, mime = 'image/png') => {
+      const url = `data:${mime};base64,${base64Of(image)}`;
       if (asked === null) asked = { caption, images: [url] };
       else asked.images.push(url);
     },

@@ -37,3 +37,10 @@ export { lineRange } from './tools/document.js';
 export type {
   Delivered, DeliveryFormat, Exporters, Host, Library, LibraryEntry, Research, SearchHit, Shot, Tool, ToolContext,
 } from './tools/types.js';
+
+/* What the person sends: one pipeline, every host (`attachments.ts`). */
+export {
+  ATTACHMENT_MAX, attachedNote, attachmentProblem, contentId, kindOf, memoryAttachments,
+  type Attachment, type AttachmentKind, type AttachmentStore,
+} from './attachments.js';
+export { ATTACHMENT_TOOLS } from './tools/attachments.js';

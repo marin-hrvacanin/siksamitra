@@ -12,6 +12,7 @@
  * way to hand the file to the person. A tool whose capability the host lacks
  * says so instead of pretending; the modes leave such tools out.
  */
+import type { AttachmentStore } from '../attachments.js';
 import type { ChantDoc } from '@siksamitra/format';
 import type { JsonSchema, ToolSpec } from '../model.js';
 import type { Workspace } from '../workspace.js';
@@ -103,6 +104,13 @@ export interface Host {
    * host that cannot reach them leaves it out, and the tool is not offered.
    */
   readonly guides?: (file: string) => Promise<string | null>;
+  /**
+   * WHAT THE PERSON SENDS — documents, texts, pictures — kept by the host and
+   * named in their message by id (`attachments.ts`). The bot keeps them in an
+   * object store on its server; the app and the add-in in memory. A host that
+   * takes no files leaves it out, and the tools are not offered.
+   */
+  readonly attachments?: AttachmentStore;
 }
 
 /** One page of the document, as the person will see it. */
@@ -118,8 +126,8 @@ export interface ToolContext {
   readonly host: Host;
   /** A second agent asked to find what is wrong — see `review` in `tools/check.ts`. */
   readonly review: (task: string) => Promise<string>;
-  /** Show the model a picture, with the next thing it reads (`look`). */
-  readonly show?: (png: Uint8Array, caption: string) => void;
+  /** Show the model a picture, with the next thing it reads (`look`, `view_attachment`). */
+  readonly show?: (image: Uint8Array, caption: string, mime?: string) => void;
 }
 
 export interface Tool {

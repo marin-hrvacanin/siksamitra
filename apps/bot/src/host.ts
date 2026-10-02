@@ -3,7 +3,7 @@
  * owner's: the library on disk, the web, every exporter. The Telegram bot and
  * a terminal run use this one host; only where a finished file goes differs.
  */
-import type { Delivered, Host, Library, Research } from '@siksamitra/agent';
+import type { Delivered, Host, Library, Research, AttachmentStore } from '@siksamitra/agent';
 import type { ChantDoc } from '@siksamitra/format';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
@@ -23,7 +23,11 @@ export interface NodeHost extends Host {
  * `own`: where his own documents are (`library.ts`) — the server's data
  * directory; on his machine, `Library/bot-library/` when it is left out.
  */
-export function nodeHost(root: string, deliver: (file: Delivered) => Promise<void>, own?: string, hide: readonly string[] = []): NodeHost {
+export function nodeHost(
+  root: string, deliver: (file: Delivered) => Promise<void>, own?: string, hide: readonly string[] = [],
+  /** What people send — the object store on the server's volume (`objects.ts`). */
+  attachments?: AttachmentStore,
+): NodeHost {
   const exporters = nodeExporters();
   return {
     where: 'a Telegram chat: what you deliver is sent into the chat as a file',
@@ -32,6 +36,7 @@ export function nodeHost(root: string, deliver: (file: Delivered) => Promise<voi
     exporters,
     deliver,
     look: (doc: ChantDoc, page: number) => exporters.look(doc, page),
+    ...(attachments === undefined ? {} : { attachments }),
     /* His authoring guides, which the image carries (`docs/authoring/`). */
     guides: async (file: string) => {
       const path = join(root, 'docs', 'authoring', basename(file));

@@ -18,7 +18,7 @@
  */
 import { useMemo, type ReactNode } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
-import { publishedLibrary, type Host } from '@siksamitra/agent';
+import { memoryAttachments, publishedLibrary, type Host } from '@siksamitra/agent';
 import { AgentPanel, Icon, localSettings } from '@siksamitra/ui';
 
 export const ASK_INTRO = 'Namaste! Ask me for a sūkta, a stotra or a śloka — I find it in the library, mark it by the '
@@ -33,6 +33,8 @@ export function AskPane({ adopt, paper, onClose }: {
   const host = useMemo<Host>(() => ({
     where: 'the śikṣāmitra app, beside the document the person has open',
     library: publishedLibrary(new URL('/', globalThis.location?.href ?? 'http://localhost/').toString()),
+    /* What the person adds to a message, kept for this conversation (`attachments.ts`). */
+    attachments: memoryAttachments(),
     async place(doc) {
       adopt(doc, `${doc.title}.smdoc`);
       return `opened in the app: "${doc.title}"`;

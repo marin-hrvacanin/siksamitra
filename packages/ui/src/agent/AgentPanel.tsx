@@ -9,9 +9,9 @@
  * The program around it is the host's business (`Host` in the agent): this
  * component knows nothing of Word or of the app.
  */
-import { useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { ChantDoc } from '@siksamitra/format';
-import { panelHtml, type Host, type Mode, type Model, type Thinking, type Tool } from '@siksamitra/agent';
+import { attachedNote, panelHtml, type Attachment, type Host, type Mode, type Model, type Thinking, type Tool } from '@siksamitra/agent';
 import { DEFAULT_SETTINGS, type AgentSettings, type SettingsStore } from './settings.js';
 import { useAgent } from './useAgent.js';
 
@@ -74,10 +74,26 @@ function Setup({ initial, onSave, onCancel }: {
   );
 }
 
+/** A chosen file's bytes — by `FileReader` where a browser's `File` has no `arrayBuffer`. */
+function bytesOf(f: File): Promise<Uint8Array> {
+  if (typeof f.arrayBuffer === 'function') return f.arrayBuffer().then((b) => new Uint8Array(b));
+  return new Promise((done, fail) => {
+    const r = new FileReader();
+    r.onload = () => done(new Uint8Array(r.result as ArrayBuffer));
+    r.onerror = () => fail(r.error ?? new Error(`“${f.name}” could not be read`));
+    r.readAsArrayBuffer(f);
+  });
+}
+
 export function AgentPanel(props: AgentPanelProps): ReactNode {
   const [settings, setSettings] = useState<AgentSettings | null>(() => props.store.load());
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  /* Files chosen for the next message — kept by the host (`host.attachments`),
+     named to the agent when it is sent, as the bot names what is sent to it. */
+  const [attached, setAttached] = useState<readonly Attachment[]>([]);
+  const [refused, setRefused] = useState<string | null>(null);
+  const picker = useRef<HTMLInputElement>(null);
   const agent = useAgent({
     settings, host: props.host, mode: props.mode,
     ...(props.model === undefined ? {} : { model: props.model }),
@@ -99,7 +115,26 @@ export function AgentPanel(props: AgentPanelProps): ReactNode {
     );
   }
 
-  const send = (): void => { void agent.ask(draft); setDraft(''); };
+  const send = (): void => {
+    const notes = attached.map(attachedNote);
+    const text = [draft.trim() === '' && notes.length > 0 ? 'Here is a file.' : draft, ...notes].join('\n');
+    void agent.ask(text);
+    setDraft('');
+    setAttached([]);
+  };
+  const store = props.host.attachments;
+  const attach = async (files: FileList | null): Promise<void> => {
+    if (store === undefined || files === null) return;
+    setRefused(null);
+    for (const f of [...files]) {
+      try {
+        const a = await store.put(f.name, f.type, await bytesOf(f));
+        setAttached((was) => (was.some((x) => x.id === a.id) ? was : [...was, a]));
+      } catch (e) {
+        setRefused(e instanceof Error ? e.message : String(e));
+      }
+    }
+  };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   };
@@ -129,6 +164,17 @@ export function AgentPanel(props: AgentPanelProps): ReactNode {
         )}
       </div>
       <div className="agent-ask">
+        {attached.length > 0 && (
+          <div className="agent-row agent-attached" aria-label="Files to send">
+            {attached.map((a) => (
+              <button type="button" key={a.id} className="agent-btn agent-btn--small" title="Take it away"
+                onClick={() => setAttached((was) => was.filter((x) => x.id !== a.id))}>
+                {a.name} ✕
+              </button>
+            ))}
+          </div>
+        )}
+        {refused !== null && <p className="agent-quiet" role="alert">{refused}</p>}
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -137,7 +183,18 @@ export function AgentPanel(props: AgentPanelProps): ReactNode {
           placeholder="Ask for a text, or paste one — Enter sends, Shift+Enter is a new line"
           disabled={agent.busy !== null}
         />
-        <button type="button" className="agent-btn agent-btn--main" onClick={send} disabled={agent.busy !== null || draft.trim() === ''}>Send</button>
+        <span className="agent-row">
+          {store !== undefined && (
+            <>
+              <input ref={picker} type="file" multiple hidden
+                accept=".docx,.smdoc,.vuchant,.pdf,.txt,.md,.html,.htm,.itx,.png,.jpg,.jpeg,.webp"
+                onChange={(e) => { void attach(e.target.files); e.target.value = ''; }} />
+              <button type="button" className="agent-btn" onClick={() => picker.current?.click()} disabled={agent.busy !== null}>+ File</button>
+            </>
+          )}
+          <button type="button" className="agent-btn agent-btn--main" onClick={send}
+            disabled={agent.busy !== null || (draft.trim() === '' && attached.length === 0)}>Send</button>
+        </span>
       </div>
     </div>
   );
