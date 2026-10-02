@@ -89,7 +89,11 @@ const measured = await page.evaluate(async ({ ids, fallback }) => {
       italic: cs.fontStyle === 'italic',
       bold: Number(cs.fontWeight) >= 600,
       color: cs.color,
-      indent: pt(cs.marginLeft),
+      /* Where the text starts: an indent is padding now, so a mark is painted
+         inside its line's box (`document.css`), and the first line of one of
+         his paragraphs outdents by `text-indent`, Word's own rule. */
+      indent: pt(cs.marginLeft) + pt(cs.paddingLeft),
+      start: pt(cs.marginLeft) + pt(cs.paddingLeft) + pt(cs.textIndent),
       right: pt(cs.marginRight),
       after: pt(cs.marginBottom),
       firstLine: pt(cs.textIndent),
@@ -107,6 +111,7 @@ const measured = await page.evaluate(async ({ ids, fallback }) => {
       cont: of('.flow__column .verse .pada[data-line="1"]'),
       heading: of('.flow__column .section__title'),
       translation: of('.flow__column .doc__translation'),
+      translations: of('.flow__column .doc__translations'),
       number: of('.flow__column .verse__n'),
       counts: {
         verses: document.querySelectorAll('.flow__column .verse').length,
@@ -142,10 +147,12 @@ else {
   const line = style('verse-line');
   near('word verse size', w.first?.size, line.size);
   near('word verse leading', w.first?.lead, line.leading / line.size, 0.01);
-  is('word verse face', w.first?.family, 'Arimo');
+  /* The faces his styles name, first; the metric-compatible ones follow for a
+     machine without them (`word-fidelity.test.ts`). */
+  is('word verse face', w.first?.family, 'Arial');
   is('word verse bold', w.first?.bold, false);
   /* The hanging indent: first line OUT at the margin, continuations IN. */
-  near('word verse first-line indent', w.first?.indent, line.indent - line.hanging);
+  near('word verse first-line indent', w.first?.start, line.indent - line.hanging);
   near('word verse continuation indent', w.cont?.indent, line.indent);
   near('word verse right indent', w.first?.right, line.right);
 
@@ -155,18 +162,18 @@ else {
   near('word heading size', w.heading?.size, h.size);
   near('word heading indent', w.heading?.indent, h.indent);
   near('word heading after', w.heading?.after, h.after);
-  /* Arial's stand-in: his headings are Arial in his current files — every
+  /* His headings are Arial in his current files — every
      heading Word renders of the Lalitā v9.3.1, the Śivopāsana v2 and the
      Kanakadhārā v1.3 is ArialMT (`word.ts`). Calibri was his old template's. */
-  is('word heading face', w.heading?.family, 'Arimo');
+  is('word heading face', w.heading?.family, 'Arial');
   is('word heading bold', w.heading?.bold, false);
   is('word heading colour', w.heading?.color, 'rgb(127, 127, 127)');
 
   const tr = style('translation');
   near('word translation size', w.translation?.size, tr.size);
-  /* `w:lineRule="auto"` — the FONT's leading, so `normal` is the assertion,
-     and the number it produces is checked against his PDF below. */
-  is('word translation auto leading', w.translation?.autoLead, tr.leading === null);
+  /* `w:lineRule="auto"` — the FONT's leading, which the scale writes out as
+     Times' own figure (`document-type.ts`), and which is held to his PDF. */
+  if (tr.leading === null) near('word translation leading (his PDF: 11pt on 12.6pt)', w.translation?.lead, 12.6 / 11, 0.01);
   if (w.translation !== null && (w.translation.lead < 1.1 || w.translation.lead > 1.2)) {
     problems.push(
       `word translation leading ${w.translation.lead} outside Times' own 1.10–1.20 `
@@ -176,8 +183,9 @@ else {
   near('word translation indent', w.translation?.indent, tr.indent);
   near('word translation first line', w.translation?.firstLine, -tr.hanging);
   near('word translation right', w.translation?.right, tr.right);
-  near('word translation after', w.translation?.after, tr.after);
-  is('word translation face', w.translation?.family, 'Tinos');
+  /* `contextualSpacing`: its space after once, under the last (`.doc__translations`). */
+  near('word translation after', w.translations?.after, tr.after);
+  is('word translation face', w.translation?.family, 'Times New Roman');
   is('word translation italic', w.translation?.italic, true);
   is('word translation colour', w.translation?.color, 'rgb(128, 128, 128)');
 
