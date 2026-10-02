@@ -74,6 +74,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The packages, compiled. The add-in's own config imports the app's
+      # corpus plugin, which reaches the agent and the engine, and Node
+      # resolves a package outside a bundle to its `dist/` — which a fresh
+      # runner does not have. `npm run check` builds it in its typecheck; this
+      # job does not run the checks, so it builds it here (2026-10-02, the
+      # first deploy after the Ask tab reached main).
+      - run: npx tsc -b
       - run: npm run -w @siksamitra/word-addin build
       - run: node scripts/word-publish.mjs --host pages --out site/word-extension --build ${{ github.run_number }}
 

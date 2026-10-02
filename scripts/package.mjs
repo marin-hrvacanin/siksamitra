@@ -66,7 +66,10 @@ if (skipChecks) {
   run('npm run check');
 }
 
-// 3. The fonts into the app, then the web bundle the shell wraps.
+// 3. The packages compiled — the web bundle's config imports the corpus
+//    plugin, which reaches the engine through its `dist/`, and `--skip-checks`
+//    skipped the typecheck that builds it — then the fonts, then the bundle.
+run('npx tsc -b');
 run('node scripts/copy-fonts.mjs');
 run('npm run build:web');
 
