@@ -54,6 +54,15 @@ export interface ChantInstruction {
    *  `each-verse` — also shown against every verse of the step ("take a sip of
    *  water after each mantra"; "offer a flower with each name"). */
   appliesTo?: 'step' | 'each-verse';
+  /**
+   * Written in his `Comment` face — the small grey italic of a source line —
+   * rather than as a direction in the body face, and ON WHICH LINE: `verse`
+   * on a mantra line (a `Translit` paragraph holding only a comment, as tall
+   * as a line of the mantra), `body` in a prose paragraph ("Place mṛgi mudrā
+   * assembled with both hands, …", "Not in Gita Press text"), where a line
+   * break in the text is his soft break and the lines after it hang in.
+   */
+  comment?: 'verse' | 'body';
 }
 
 /** WHICH SIDE a figure sits on. `aside` is a margin rail (>=1024 only);

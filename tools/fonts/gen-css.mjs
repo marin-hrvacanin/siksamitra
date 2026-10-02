@@ -22,7 +22,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  ADDIN_FAMILIES, DEFAULT_SUBSETS, FAMILIES, FULL_FILES, fileName, fullName,
+  ADDIN_FAMILIES, DEFAULT_SUBSETS, FAMILIES, FULL_FILES, LOCAL_FAMILIES, fileName, fullName, localName,
 } from './manifest.mjs';
 
 const OUT = 'assets/fonts';
@@ -59,6 +59,19 @@ for (const family of FAMILIES) {
           format: 'woff2',
         });
       }
+    }
+  }
+}
+
+/* His own faces, from their own files (`LOCAL_FAMILIES`), with the range
+   they serve so an export embeds them where a mark of theirs is drawn. */
+for (const family of LOCAL_FAMILIES) {
+  for (const weight of family.weights) {
+    for (const style of family.italics ? ['normal', 'italic'] : ['normal']) {
+      faces.push({
+        id: family.id, name: family.name, file: localName(family.id, weight, style),
+        weight, style, range: family.range, format: 'truetype',
+      });
     }
   }
 }

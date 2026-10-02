@@ -43,10 +43,17 @@ export interface BotDeps {
   /** Strings that must never appear in a reply: the key, the token. */
   readonly secrets?: readonly string[];
   /** Progress while a request is worked on: a step starting, or its outcome. */
-  readonly progress?: (chat: string, step: ({ readonly started: string } | { readonly outcome: string; readonly failed: boolean }) & { readonly by: 'agent' | 'reviewer' }) => void;
+  readonly progress?: (chat: string, step: Progress) => void;
   /** One line per request for the server's log: never what was asked or answered. */
   readonly log?: (line: TurnLog) => void;
 }
+
+/** A step of a request in progress, as the chat is shown it. */
+export type Progress = (
+  | { readonly started: string; readonly tool: string }
+  | { readonly outcome: string; readonly failed: boolean; readonly tool: string }
+  | { readonly intent: string }
+) & { readonly by: 'agent' | 'reviewer' };
 
 /** What the server's log keeps of a request: how it went, and nothing anyone said. */
 export interface TurnLog {
@@ -65,6 +72,8 @@ export interface BotReply {
   readonly choices?: { readonly question: string; readonly options: readonly string[] };
   /** A note to a request already running — answered at once, not after it. */
   readonly steered?: true;
+  /** The person stopped the request before it finished. */
+  readonly stopped?: true;
 }
 
 /** The greeting, on /start and /help. */
@@ -161,9 +170,10 @@ export function botCore(deps: BotDeps) {
           host: { ...deps.host(async (f) => { files.push(f); }), choose: (question, options) => { choices = { question, options }; } },
           ...(deps.progress === undefined ? {} : {
             onEvent: (e) => {
-              const by = (e.kind === 'tool' || e.kind === 'result') && e.sub === true ? 'reviewer' : 'agent';
-              if (e.kind === 'tool') deps.progress!(chat, { started: stepStarted(e.name, e.args), by });
-              if (e.kind === 'result') deps.progress!(chat, { outcome: stepResult(e.name, e.text, e.failed), failed: e.failed, by });
+              const by = (e.kind === 'tool' || e.kind === 'result' || e.kind === 'intent') && e.sub === true ? 'reviewer' : 'agent';
+              if (e.kind === 'tool') deps.progress!(chat, { started: stepStarted(e.name, e.args), tool: e.name, by });
+              if (e.kind === 'result') deps.progress!(chat, { outcome: stepResult(e.name, e.text, e.failed), failed: e.failed, tool: e.name, by });
+              if (e.kind === 'intent' && by === 'agent') deps.progress!(chat, { intent: e.text, by });
             },
           }),
         }, deps.sessions.load(chat));
@@ -175,7 +185,11 @@ export function botCore(deps: BotDeps) {
         try {
           const done = await session.ask(said);
           note('answered', done.steps, done.cost);
-          return { text: done.text || 'Done.', files, ...(choices === undefined ? {} : { choices }) };
+          return {
+            text: done.text || 'Done.', files,
+            ...(choices === undefined ? {} : { choices }),
+            ...(done.stopped === true ? { stopped: true as const } : {}),
+          };
         } catch (e) {
           note(e instanceof OverBudget ? 'over-budget' : 'failed');
           /* The provider's trouble, said as such — not "something went wrong". */

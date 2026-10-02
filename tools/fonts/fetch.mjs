@@ -25,7 +25,7 @@
 import { mkdirSync, existsSync, writeFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  DEFAULT_SUBSETS, FAMILIES, FULL_FILES, REQUIRED_LETTERS, cdnUrl, fileName,
+  DEFAULT_SUBSETS, FAMILIES, FULL_FILES, LOCAL_FAMILIES, REQUIRED_LETTERS, cdnUrl, fileName,
   fullName, fullUrl,
 } from './manifest.mjs';
 
@@ -159,6 +159,13 @@ ${families.map((f) => `- **${f.name}** (\`${f.id}\`) — ${f.role}\n  ${f.why}`)
 Full text: ${licence === 'OFL-1.1'
   ? 'https://openfontlicense.org/open-font-license-official-text/'
   : 'https://www.apache.org/licenses/LICENSE-2.0'}
+`).join('\n')}
+${LOCAL_FAMILIES.map((f) => `## ${f.licence}
+
+- **${f.name}** (\`${f.id}\`) — ${f.role}
+  ${f.why}
+
+${f.terms}
 `).join('\n')}
 `);
 }

@@ -136,7 +136,17 @@ export async function fidelity(browser, html) {
           lead: Math.round((pt(cs.lineHeight) / size) * 1000) / 1000,
           family: cs.fontFamily.split(',')[0].replace(/["']/g, ''),
           bold: Number(cs.fontWeight) >= 600,
-          indent: pt(cs.marginLeft),
+          /* WHERE ITS LETTERS BEGIN, from the verse's own edge — what a reader
+             sees, not a property that produces it. It read `margin-left`, and
+             reported the hanging indent gone when the indent moved into the
+             padding (so a first letter at the margin is not clipped) and the
+             letters stood exactly where they had. */
+          indent: (() => {
+            const letter = el.querySelector('.u, .syl');
+            const edge = el.closest('.verse') ?? el.parentElement;
+            return letter === null || edge === null ? pt(cs.marginLeft)
+              : pt(letter.getBoundingClientRect().left - edge.getBoundingClientRect().left);
+          })(),
           right: pt(cs.marginRight),
           italic: cs.fontStyle === 'italic',
         };

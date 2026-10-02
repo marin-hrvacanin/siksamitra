@@ -20,7 +20,8 @@
  */
 import type { Profile } from './profile.js';
 
-export type ConventionId = 'nasal-before-nasal' | 'visarga-before-velar' | 'puranic-svara' | 'vy-aid' | 'geminate-box';
+export type ConventionId =
+  | 'nasal-before-nasal' | 'visarga-before-velar' | 'puranic-svara' | 'vy-aid' | 'geminate-box' | 'pause-after-danda';
 
 /** A profile patch — the shape `resolveProfile` merges. */
 type Patch = Record<string, Record<string, unknown>>;
@@ -96,6 +97,15 @@ export const CONVENTIONS: readonly Convention[] = [
     on: { holdings: { geminate: 'whole' } },
     off: { holdings: { geminate: 'one' } },
     isOn: (p) => p.holdings.geminate === 'whole',
+  },
+  {
+    id: 'pause-after-danda',
+    label: 'oṁ right after a daṇḍa takes its pause before ś or h',
+    example: { typed: '॥ oṁ śāntiḥ śāntiḥ śāntiḥ ॥', marked: '॥ oṁ | śāntiś śāntiś śāntiḥ ॥ — off: ॥ oṁ śāntiś śāntiś śāntiḥ ॥' },
+    note: 'Off, the default, writes the closing śānti as his files do. A line that opens with oṁ, and ॥ oṁ | namo, keep the pause either way.',
+    on: { pauses: { afterDanda: true } },
+    off: { pauses: { afterDanda: false } },
+    isOn: (p) => p.pauses.afterDanda,
   },
 ];
 

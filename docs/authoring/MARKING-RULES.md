@@ -560,6 +560,21 @@ pipeline entirely as a result — the owner caught it on `vāyur vā apām`.
 | 2 | a **long** vowel, a word boundary, then a **short** vowel | **long** |
 | 3 | any other vowel + word boundary + vowel | **short** |
 
+Rule 1 has two exceptions in the engine: a bīja that **closes** its line takes
+no pause (`… suvar oṁ ||`), and — `pauses.afterDanda`, **off** by default — nor
+does one that follows a **daṇḍa on its own line, before ś or h**: the closing
+formula `॥ oṁ śāntiḥ śāntiḥ śāntiḥ ॥`. Measured on his files (2026-10-02): the
+sādhanā writes it without the pause in s-7, s-26, s-39 and `॥ oṁ hara hara …`,
+and keeps it before anything else (`॥ oṁ | namo bhagavate rudrāya ॥`, and the
+Pūjā Vidhi's `| oṁ | suvaḥ`); bhū sūktam v1.1 writes the śānti without. Only ś
+and h, because only they are in the evidence. A line that OPENS with the
+praṇava keeps it either way — 52 times of 53 in the sādhanā. The shipped
+Rudram records the other convention in its profile. Not settled by his files,
+and so left as it is: a bīja
+before another bīja (`oṁ śrīṁ hrīṁ klīṁ` in gaṇapati, `oṁ | aiṁ | hrīṁ |` in
+the navākṣarī) and `oṁ | śāntiḥ` at a line's start (seven times with the
+pause, once without).
+
 Rules 2 and 3 are **vowel hiatus**: two vowels meeting across a word join
 without coalescing. `vāyur vā apām` keeps `ā` and `a` apart, and because the
 first is long and the second short it takes the **long** pause; `ya evaṁ`

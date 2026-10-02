@@ -57,6 +57,7 @@ export const PARA_STYLE_OF: Readonly<Partial<Record<DocRole, string>>> = {
   translation: 'Prijevod',
   body: 'Normal',
   head: 'Header',
+  small: 'Insert',
   /*
    * A PICTURE'S CAPTION IS WORD'S OWN `Caption`, set from the `comment` role —
    * the same 11 pt italic grey the page draws it in, because a caption is
@@ -157,7 +158,10 @@ function rPr(
     + `<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>`;
 }
 
-function pPr(m: RoleMetric, keep = false): string {
+/** Which of Word's keeps a style carries: none, keep-with-next, or both keeps. */
+type Keep = 'none' | 'next' | 'whole';
+
+function pPr(m: RoleMetric, keep: Keep = 'none', contextual = false): string {
   /*
    * `lineRule="exact"` for a stated leading and `"auto"` for `'normal'`. The
    * distinction is his: `Translit` is `w:line="480" w:lineRule="exact"`, an
@@ -165,9 +169,11 @@ function pPr(m: RoleMetric, keep = false): string {
    * box, while `Prijevod` is `w:line="240" w:lineRule="auto"` — single spacing,
    * which is the FONT's own line height and only the font knows the number.
    */
-  const line = m.leading === 'normal'
-    ? 'w:line="240" w:lineRule="auto"'
-    : `w:line="${Math.round(m.size * m.leading * PT_PER_REM * 20)}" w:lineRule="exact"`;
+  const line = m.auto !== undefined
+    ? `w:line="${Math.round(m.auto * 240)}" w:lineRule="auto"`
+    : m.leading === 'normal'
+      ? 'w:line="240" w:lineRule="auto"'
+      : `w:line="${Math.round(m.size * m.leading * PT_PER_REM * 20)}" w:lineRule="exact"`;
   const ind = m.indent === 0 && m.hanging === 0 && m.right === 0
     ? ''
     : `<w:ind w:left="${twips(m.indent)}" w:right="${twips(m.right)}"`
@@ -175,8 +181,8 @@ function pPr(m: RoleMetric, keep = false): string {
   /* `keepNext` and `keepLines` come FIRST: `CT_PPrBase` is a sequence, and a
      `w:keepNext` written after `w:spacing` is a schema violation Word reports
      only as "the file appears to be corrupted". */
-  return `<w:pPr>${keep ? '<w:keepNext/><w:keepLines/>' : ''}`
-    + `<w:spacing w:after="${twips(m.after)}" ${line}/>${ind}</w:pPr>`;
+  return `<w:pPr>${keep === 'none' ? '' : keep === 'next' ? '<w:keepNext/>' : '<w:keepNext/><w:keepLines/>'}`
+    + `<w:spacing w:after="${twips(m.after)}" ${line}/>${ind}${contextual ? '<w:contextualSpacing/>' : ''}</w:pPr>`;
 }
 
 /**
@@ -196,19 +202,29 @@ function styleName(id: string): string {
 }
 
 /**
- * A VERSE AND ITS TRANSLATION ARE ONE BLOCK, in both media.
+ * WHERE A PAGE MAY BREAK, AS HIS STYLES SAY — read out of every one of his ten
+ * `.docx`: `Translit` carries `w:keepNext` and NOT `w:keepLines`, his headings
+ * carry both, `Prijevod` neither, and nothing turns widow control on.
  *
- * Measured against a real Word: with nothing said, Word's widow control moved a
- * four-line verse whole to the next page while Chrome split it two and two, so
- * the `.docx` broke after verse 5 and the PDF after verse 6 — the two files
- * disagreed about what is on page one. `keepLines` stops Word splitting a verse
- * and `keepNext` keeps it with the translation that follows, which is what his
- * own `Translit` style already does; the print block in `export.css` says the
- * same thing to the browser as `break-inside: avoid` on `.verse`.
- *
- * Headings keep with what they introduce, for the ordinary reason.
+ * So a verse's last line stays on the page with what follows it, and a verse
+ * may break between its own lines where it must: his sādhanā does it ten
+ * times inside a paragraph (the Rudram's long anuvākas), his sūryopaniṣat in
+ * its fifth verse. This file once wrote `keepLines` as well, "which is what his
+ * own style does" — it is not, and his pages are not paginated that way. The
+ * print block in `export.css` says the same to the browser, and the paged view
+ * the same to `paginate`.
  */
-const KEEP_WITH_NEXT: readonly DocRole[] = ['verse', 'title', 'part', 'section', 'step'];
+const KEEP_OF: Readonly<Partial<Record<DocRole, Keep>>> = {
+  verse: 'next', title: 'whole', part: 'whole', section: 'whole', step: 'whole',
+};
+
+/**
+ * His `Prijevod` is `w:contextualSpacing`: no space between two of its
+ * paragraphs, its space after once, under the last — as the page draws it.
+ * Without it, real Word put his sūryopaniṣat 4's three one-line paragraphs of
+ * translation 3 pt apart each, and page one lost its last line.
+ */
+const CONTEXTUAL: readonly DocRole[] = ['translation'];
 
 /** One `<w:style>` for a paragraph role. */
 function paraStyle(
@@ -221,14 +237,14 @@ function paraStyle(
 ): string {
   const m = scale[role];
   const isNormal = id === 'Normal';
-  const custom = id === 'Translit' || id === 'Prijevod';
+  const custom = id === 'Translit' || id === 'Prijevod' || id === SOURCE_STYLE;
   const outline = /^Heading(\d)$/.exec(id);
   return `<w:style w:type="paragraph"${custom ? ' w:customStyle="1"' : ''}`
     + `${isNormal ? ' w:default="1"' : ''} w:styleId="${id}">`
     + `<w:name w:val="${styleName(id)}"/>`
     + (isNormal ? '' : '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/>')
     + '<w:qFormat/>'
-    + pPr(m, KEEP_WITH_NEXT.includes(role))
+    + pPr(m, KEEP_OF[role] ?? 'none', CONTEXTUAL.includes(role))
       .replace('</w:pPr>', `${outline === null ? '' : `<w:outlineLvl w:val="${Number(outline[1]) - 1}"/>`}</w:pPr>`)
     + rPr(m, mode, families, inherited)
     + '</w:style>';
@@ -268,6 +284,15 @@ function titleStyle(): string {
 
 const W_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
 
+/**
+ * OURS, NOT HIS: the paragraph a SECTION's source line is written in — his
+ * `Translit` in every measure, so it looks exactly like his comment lines,
+ * and its own name, so reading the file back can tell the section's source
+ * from its first verse's. His own files write both as `Translit` lines, and
+ * a section with a source and a first verse with one came back as one source.
+ */
+export const SOURCE_STYLE = 'Source';
+
 export interface StyleSheetInput {
   theme: DocumentTheme;
   mode: 'light' | 'dark';
@@ -304,8 +329,11 @@ export function stylesXml(input: StyleSheetInput): string {
   /* What `docDefaults` sets, and therefore what every style inherits. */
   const inherited = roleColor(body.color, mode);
   const his = input.theme.id === 'word';
-  const paras = Object.entries(PARA_STYLE_OF)
-    .map(([role, id]) => paraStyle(id, role as DocRole, scale, mode, families, inherited))
+  const paras = [
+    ...Object.entries(PARA_STYLE_OF).map(([role, id]) => paraStyle(id, role as DocRole, scale, mode, families, inherited)),
+    /* A section's own source line: a mantra line in every measure (`SOURCE_STYLE`). */
+    paraStyle(SOURCE_STYLE, 'verse', scale, mode, families, inherited),
+  ]
     .map((xml) => (his ? asHis(xml) : xml))
     .join('') + (his ? titleStyle() : '');
   const used = input.usedStyles ?? new Set<string>();

@@ -40,6 +40,7 @@ import { registerOf } from '@siksamitra/edit';
 import { withParts, type Region } from './rule-parts.js';
 import { syllablesOf } from '../docx-syllables.js';
 import { figureDrawing, figurePlaceholderText, missingFigureText } from './drawing.js';
+import { blockWriter } from './body-blocks.js';
 
 export { bridging, styledParagraph, styledRun, type WordPictures } from './body-parts.js';
 
@@ -48,6 +49,8 @@ export function documentXml(
   doc: ChantDoc, tail = '', pictures?: WordPictures,
   /** The script the verses are written in. IAST unless said — see `script-runs.ts`. */
   script: ScriptKey = 'iast',
+  /** Tag the verses (`body-blocks.ts`) — false for a line written into his own file. */
+  tags = true,
 ): string {
   const paras: string[] = [];
   const p = styledParagraph;
@@ -57,9 +60,6 @@ export function documentXml(
      not a step — and a section with no part ends the run. `DocumentBlocks`
      makes the same two decisions in the same order. */
   let part: string | undefined;
-  const prose = (style: string | null, rStyle: string | null, text: string): void => {
-    if (text !== '') paras.push(p(style, run(text, rStyle)));
-  };
 
   /* The shared library, so a `ref` draws the picture it points at rather than
      nothing: the puja manual uses one anjali drawing at five steps. */
@@ -80,8 +80,9 @@ export function documentXml(
    * plate carrying the same words for the same reason: the alt text IS the
    * instruction, and a reader who cannot see the drawing still needs it.
    */
-  const picture = (fig: ChantFigure | undefined): void => {
-    if (fig === undefined) return;
+  const picture = (fig: ChantFigure | undefined): string[] => {
+    const paras: string[] = [];
+    if (fig === undefined) return paras;
     drawingId += 1;
     const at = fig.captionAt ?? FIGURE_DEFAULTS.captionAt;
     const caption = at === 'none' ? undefined : fig.caption?.en;
@@ -108,6 +109,7 @@ export function documentXml(
         + `<w:r>${drawing}</w:r></w:p>`);
     }
     if (at !== 'above') cap();
+    return paras;
   };
 
   /**
@@ -202,7 +204,8 @@ export function documentXml(
       if (t.t === 'bar') { runs += pauseRun(BAR_GLYPH, 'Pause'); return; }
       if (t.t === 'num') { runs += run(digitsIn(t.s, as), null); return; }
       if (t.t === 'danda') { runs += dandaRun(t.s); return; }
-      if (t.t === 'text') { runs += run(t.s, null); return; }
+      /* His note on the line is his `Comment` style; other prose is plain. */
+      if (t.t === 'text') { runs += run(t.s, t.note === true ? 'Comment' : null); return; }
       /* A SLOT IS ITS OWN LETTERS, written where it stands. It fell through to
          the `syl` test below and was skipped, so the deity's name of the Pūjā
          Vidhi — `śrī devan dhyāyāmi` — was `śrī  dhyāyāmi` on every page this
@@ -268,66 +271,22 @@ export function documentXml(
   };
 
   /* Where each section's paragraphs are, and which register marks it: a
-     section marked by other rules than the rest is a PART in Word. */
-  /* The document's own name, first, where the page draws it — and where his
-     own single documents put theirs, in Heading 2. */
-  if (doc.title.trim() !== '') paras.push(p(styleOf('doc__name'), run(doc.title, null)));
+     section marked by other rules than the rest is a PART in Word. Each thing
+     a section holds is written as his files write it — `body-blocks.ts`. */
+  const blocks = blockWriter({ p, run, verseRuns: (t) => verseRuns(t), picture, tags });
+  paras.push(...blocks.front(doc));
   const regions: Region[] = [];
   for (const s of doc.sections) {
     const from = paras.length;
-    if (s.part !== undefined && s.part !== part) {
-      paras.push(p(styleOf('doc__part'), run(s.part, null)));
-    }
+    paras.push(...blocks.section(doc, s, part, (item) => {
+      if (item.t !== 'figure') return null;
+      /* One resolution, in the format, and the miss is WRITTEN rather than
+         skipped: a `.docx` silently missing a step's picture is a document
+         somebody sends on. See `figureItem`. */
+      const read = figureItem(item, library);
+      return read.figure === undefined ? [p(null, run(missingFigureText(read.missingRef), 'Comment'))] : picture(read.figure);
+    }));
     part = s.part;
-    const title = s.title ?? s.label;
-    /* `${n}. ${title}` — the page's `headingOf`, not a middle dot. */
-    const head = title === undefined || title === ''
-      ? '' : s.n === undefined ? title : `${s.n}. ${title}`;
-    if (head !== '') paras.push(p(styleOf('section__title'), run(head, null)));
-    /* A SOURCE LINE GOES ABOVE WHAT IT NAMES, as in his files — the section's
-       under its heading, a verse's over the verse — and that is also where the
-       reader looks for it: one written under its verse came back as the NEXT
-       verse's. The page draws them under; a file keeps them where he does. */
-    if (s.source != null && s.source !== '') prose(null, 'Comment', s.source);
-
-    /* The section's own item list when it has one, its verses otherwise —
-       `itemsOf` in `DocumentBlocks`. */
-    const items = s.items !== undefined && s.items.length > 0
-      ? s.items
-      : s.verses.map((v) => ({ t: 'verse' as const, ...v }));
-
-    for (const item of items) {
-      if (item.t === 'instruction') {
-        prose(styleOf('doc__instruction'), null, item.instruction.text.en ?? '');
-        continue;
-      }
-      if (item.t === 'figure') {
-        /* One resolution, in the format, and the miss is WRITTEN rather than
-           skipped: a `.docx` silently missing a step's picture is a document
-           somebody sends on. See `figureItem`. */
-        const read = figureItem(item, library);
-        if (read.figure === undefined) paras.push(p(null, run(missingFigureText(read.missingRef), 'Comment')));
-        else picture(read.figure);
-        continue;
-      }
-      if (item.t !== 'verse') continue;
-      /* `Comment` is a CHARACTER style in his file, so a source line is an
-         ordinary paragraph with one styled run in it. */
-      if (item.source !== undefined) prose(null, 'Comment', item.source);
-      const runs = verseRuns(item.tokens);
-      if (runs !== '') paras.push(p(styleOf('pada'), runs));
-      for (const ins of item.instructions ?? []) {
-        prose(styleOf('doc__instruction'), null, ins.text.en ?? '');
-      }
-      for (const f of item.figures ?? []) picture(f);
-      if (item.translation?.en !== undefined) {
-        /* A paragraph per line, as his sādhanā and Kanakadhārā write them —
-           each line at the margin, a line too long for the column hanging in
-           as it wraps. (His Śivopāsana breaks one paragraph instead; the text
-           cannot tell the two apart, and this is the one his files use most.) */
-        for (const line of item.translation.en.split('\n')) prose(styleOf('doc__translation'), null, line);
-      }
-    }
     regions.push({ from, to: paras.length, register: registerOf(doc, s) });
   }
 

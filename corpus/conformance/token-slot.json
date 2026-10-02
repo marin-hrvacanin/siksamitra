@@ -676,6 +676,7 @@
           "vy": true
         },
         "holdings": {
+          "afterDanda": true,
           "noInitialBox": true
         },
         "sandhi": {

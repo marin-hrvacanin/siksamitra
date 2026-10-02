@@ -236,13 +236,14 @@ describe('a document from a Word that is not in English', () => {
   /* The fixture was captured before `Title` and `Visarga` joined the sheet,
      so those two ARE missing from it — and are the only ones. */
   it('reports nothing missing but the styles added since, because nothing is', () => {
-    expect(missingStyles(hr, sheet)).toEqual(['Title', 'Visarga']);
+    /* Added since his file was made: our `Source` and his `Insert` with them. */
+    expect(missingStyles(hr, sheet)).toEqual(['Insert', 'Source', 'Title', 'Visarga']);
   });
 
   it('the control: matched by id alone, six would be "missing"', () => {
     const have = new Set(styleIds(hr).map((s) => s.id));
     const byId = styleIds(sheet).map((s) => s.id)
-      .filter((id) => id !== 'Normal' && id !== 'Visarga' && id !== 'Title' && !have.has(id));
+      .filter((id) => !['Normal', 'Visarga', 'Title', 'Insert', 'Source'].includes(id) && !have.has(id));
     expect([...new Set(byId)].sort())
       .toEqual(['Caption', 'Header', 'Heading1', 'Heading2', 'Heading3', 'Heading4']);
   });

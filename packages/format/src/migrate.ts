@@ -179,7 +179,7 @@ export function toTextAndMarks(verse: ChantVerse): TextAndMarks {
           k: 'plain',
           from: at,
           to: text.length,
-          ...(t.fill === true ? { v: 'fill' } : {}),
+          ...(t.fill === true ? { v: 'fill' } : t.note === true ? { v: 'note' } : {}),
         }));
       }
     }

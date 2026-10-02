@@ -23,7 +23,7 @@ export {
 export type { HtmlManifest } from './manifest.js';
 
 export {
-  FONT_BACKSTOP, chooseFaces, codepointsIn, faceRule, facesNeeded, parseFaceCss,
+  FONT_BACKSTOP, chooseFaces, codepointsIn, faceRule, facesNeeded, markFaces, parseFaceCss,
   parseUnicodeRange,
 } from './fonts.js';
 export type { DeclaredFace, FaceChoice, FaceStack } from './fonts.js';

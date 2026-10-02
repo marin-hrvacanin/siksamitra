@@ -94,6 +94,15 @@ export interface ChantText {
    *  snapshot. `tokensToText` drops it, and every other reader of a token
    *  stream must do the same. */
   placeholder?: boolean;
+  /**
+   * A NOTE INSIDE A MANTRA LINE — his `Comment` style on a run of a `Translit`
+   * paragraph: `maheśvaraḥ । bramha`, `suvaḥ । required as per taittirīya
+   * āraṇyaka 2.11.`, `॥ 4॥ p.b. sūryād (with svarita)`. It is WRITTEN on the
+   * line, in the comment face, where he put it, and it is never recited: not
+   * part of `recitationText`, never marked, never transliterated. The importer
+   * used to report all 160 of the sādhanā's as unresolved and drop them.
+   */
+  note?: true;
 }
 
 /** A variable slot: renders `tokens` unless the host supplies a replacement for

@@ -18,7 +18,8 @@ import type {
 
 export interface BlockRef {
   readonly id: string;
-  readonly kind: 'name' | 'heading' | 'verse' | 'part' | 'instruction' | 'figure';
+  readonly kind: 'name' | 'heading' | 'verse' | 'part' | 'instruction' | 'figure'
+  | 'gap' | 'break' | 'cover' | 'contents';
   readonly sectionId: string;
   readonly verseId?: string;
 }
@@ -32,6 +33,12 @@ export interface BlockRef {
 export const blockId = {
   /** The document's own name, once, at the top. */
   name: (): string => 'n:doc',
+  /** A book's title page, and its table of contents. */
+  cover: (): string => 'cv:doc',
+  contents: (): string => 'tc:doc',
+  /** An empty line of one of his paragraphs, and a page break, by where they are. */
+  gap: (sectionId: string, at: number): string => `g:${sectionId}:${at}`,
+  pageBreak: (sectionId: string, at: number): string => `pb:${sectionId}:${at}`,
   part: (sectionId: string): string => `p:${sectionId}`,
   heading: (sectionId: string): string => `h:${sectionId}`,
   instruction: (sectionId: string, at: number): string => `i:${sectionId}:${at}`,
@@ -80,6 +87,9 @@ export function headingOf(section: ChantSection): string | undefined {
   return section.n === undefined ? title : `${section.n}. ${title}`;
 }
 
+/** A source or a comment, a line each: his files write each on a line of its own. */
+export const linesOf = (text: string): string[] => text.split('\n').filter((l) => l.trim() !== '');
+
 /** Where the section's words come from, if it says. */
 export function sourceOf(section: ChantSection): string | undefined {
   return section.source == null || section.source === '' ? undefined : section.source;
@@ -97,7 +107,12 @@ export function sourceOf(section: ChantSection): string | undefined {
 export function blockRefs(doc: ChantDoc): BlockRef[] {
   const out: BlockRef[] = [];
   let part: string | undefined;
-  if (doc.title.trim() !== '') out.push({ id: blockId.name(), kind: 'name', sectionId: doc.sections[0]?.id ?? '' });
+  const first = doc.sections[0]?.id ?? '';
+  /* A book is named on its title page; a single text over its first chant. */
+  if (doc.book === true) {
+    if (doc.cover !== undefined) out.push({ id: blockId.cover(), kind: 'cover', sectionId: first });
+    if (doc.contents !== undefined) out.push({ id: blockId.contents(), kind: 'contents', sectionId: first });
+  } else if (doc.title.trim() !== '') out.push({ id: blockId.name(), kind: 'name', sectionId: first });
   for (const section of doc.sections) {
     /* A section with no part ends the run — see `outlineOf`, which draws the
        same tree and must agree with this list. */
@@ -132,6 +147,10 @@ export function blockRefs(doc: ChantDoc): BlockRef[] {
           kind: 'figure',
           sectionId: section.id,
         });
+      } else if (item.t === 'gap') {
+        out.push({ id: blockId.gap(section.id, at), kind: 'gap', sectionId: section.id });
+      } else if (item.t === 'break') {
+        out.push({ id: blockId.pageBreak(section.id, at), kind: 'break', sectionId: section.id });
       }
     });
   }

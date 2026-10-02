@@ -164,6 +164,56 @@ export const FAMILIES = [
 export const DEFAULT_SUBSETS = ['latin', 'latin-ext'];
 
 /**
+ * HIS SVARA FACE — vendored from the file itself, not fetched, because no
+ * library of fonts carries it.
+ *
+ * His `Svara` style is URW Palladio ITU, bold, 18 pt: every svara mark he
+ * writes is a glyph of this face, set after its letter at no width (see
+ * `packages/tokens/word-marks.mjs`). A svara drawn in any other face sits a
+ * little elsewhere over its letter, and a svara a little elsewhere is a
+ * different svara — the owner: "it's crucial … it must be an exact match".
+ * His `VedicAnusvara` is the same face in italic.
+ *
+ * NOT OFL. URW++ and Hermann Zapf donated URW Palladio to Ulrich Stiehl,
+ * "granting him permission to adapt and to add diacritical characters … and
+ * to offer specialized URW Palladio diacritics fonts to Indologists free of
+ * charge" (http://www.sanskritweb.net/itrans/); URW Palladio ITU is that font.
+ * The terms travel with it in LICENSES.md. Its embedding flag (`fsType` 0) is
+ * unrestricted, so a PDF may carry it.
+ *
+ * Its range is the Latin and combining blocks it draws for us; the stacks
+ * that name it are the marks' alone, so nothing else is set in it.
+ */
+export const LOCAL_FAMILIES = [
+  {
+    id: 'urw-palladio-itu', name: 'URW Palladio ITU', role: 'word',
+    licence: 'URW Palladio ITU (free of charge, by permission of URW++ and Hermann Zapf)',
+    terms: 'URW++ Design & Development GmbH, Hamburg, and Prof. Hermann Zapf donated URW Palladio to '
+      + 'Ulrich Stiehl, Heidelberg, granting him permission to adapt and to add diacritical characters '
+      + 'and to offer specialized URW Palladio diacritics fonts to Indologists free of charge. '
+      + 'Copyright (c) by (URW)++ Design & Development, 1999. Designed by Hermann Zapf. Diacritics added '
+      + 'by Ulrich Stiehl. Source: http://www.sanskritweb.net/itrans/',
+    weights: [400, 700], italics: true,
+    /* And its private glyphs, which his `VedicAnusvara` writes: U+F141 is its m with a candrabindu. */
+    range: 'U+0000-024F,U+0300-036F,U+1E00-1EFF,U+2000-206F,U+F100-F1FF',
+    why: 'His Svara and VedicAnusvara styles: every svara mark is a glyph of this face.',
+  },
+  {
+    id: 'siksamitra-danda', name: 'Siksamitra Danda', role: 'word',
+    licence: 'SIL Open Font License 1.1 (this project’s own face)',
+    terms: 'Two glyphs, U+0964 and U+0965: bars drawn from the measured dimensions of the daṇḍas of '
+      + 'his Mangal by tools/fonts/danda.py. A rectangle is not a design anyone owns; the face is the '
+      + 'project’s own, under the SIL Open Font License 1.1 (https://openfontlicense.org).',
+    weights: [400], italics: false,
+    range: 'U+0964-0965',
+    why: 'His daṇḍas at Mangal’s width, height and weight on any machine — Mangal is Microsoft’s, and not on every one.',
+  },
+];
+
+/** A vendored family's file, by weight and style. */
+export const localName = (id, weight, style) => `${id}-${weight}-${style}.ttf`;
+
+/**
  * THE FACES THE WORD ADD-IN'S OWN PAGES DRAW IN — Settings and the dialogs.
  * The interface face; the verse face a palette key is drawn in, which for a
  * Word document is Arial's stand-in, Arimo (`document-themes.ts`); and the
@@ -172,7 +222,7 @@ export const DEFAULT_SUBSETS = ['latin', 'latin-ext'];
  * over the network by every Word that opens it, and the other seven families
  * would be nothing but weight.
  */
-export const ADDIN_FAMILIES = ['ibm-plex-sans', 'arimo', 'gentium-book-plus', 'noto-serif-devanagari'];
+export const ADDIN_FAMILIES = ['ibm-plex-sans', 'arimo', 'gentium-book-plus', 'noto-serif-devanagari', 'urw-palladio-itu'];
 
 /**
  * The face every text stack ends with.

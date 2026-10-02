@@ -37,22 +37,29 @@ export function pageContent(page: Page): PageContent {
 }
 
 /**
- * Whether a block may be split between its lines.
+ * Where a page may end inside a verse — his Word's answer, and the same one
+ * `export.css` gives a printing browser and `KEEP_OF` and `loose` give Word.
  *
- * THE ANSWER IS HIS OWN STYLE'S. `Translit` carries `w:keepLines`, so Word
- * moves a verse whole rather than splitting it, and the print block in
- * `export.css` says the same to the browser with `break-inside: avoid` on
- * `.verse`. The paged view promises to show "exactly how it will export" and
- * was the only one of the three that split a verse at all: on Śrī Rudram at A4
- * it broke 22 verses that the `.docx` and the printed page both keep whole.
- * Two files of one document, disagreeing about what is on the page — which is
- * the fault `styles.ts` records having already paid for once.
+ * His `Translit` keeps with the next paragraph and NOT its lines together;
+ * nothing of his turns widow control off. Measured in a real Word and on his
+ * pages: a paragraph never leaves one line alone at a page's foot or carries
+ * one alone to its head, so his sūryopaniṣat 7 (six lines) breaks four and
+ * two; a verse's earlier half-verses do not keep, so his bhū sūktam breaks
+ * verse 8 between its halves; and a verse's last line goes with its
+ * translation, which the view measures as part of that line. This once kept
+ * every verse whole, believing his style carries `keepLines`; it does not.
  *
- * So a verse is kept whole, EXCEPT when it cannot fit a page by itself: no
- * amount of keeping helps a block taller than the paper, and Word and Chrome
- * both split one too. That is the whole of the rule, and it is the reason the
- * splitting machinery in `paginate` stays — it is for the verse that has no
- * other option, not for tidying a page's foot.
+ * `starts[i]`: does line `i` begin one of his paragraphs (`.pada--para`)?
+ * The answer is, for each line but the last, whether a page may end after it.
  */
-export const mayBreak = (height: number, contentHeight: number): boolean =>
-  height > contentHeight;
+export function breaksAfter(starts: readonly boolean[]): boolean[] {
+  const n = starts.length;
+  const opens = (i: number): boolean => i === 0 || starts[i] === true;
+  const closes = (i: number): boolean => i === n - 1 || opens(i + 1);
+  const out: boolean[] = [];
+  for (let j = 0; j < n - 1; j += 1) {
+    /* Not after the first line of a paragraph of two or more, nor before its last. */
+    out.push(!(opens(j) && !closes(j)) && !(!opens(j + 1) && closes(j + 1)));
+  }
+  return out;
+}

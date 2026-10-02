@@ -17,9 +17,12 @@
  *      translation, heading, folio — in one of four face slots, and nothing
  *      else on the page chooses a family. A Veda Union export therefore
  *      carries Arimo, Tinos and Carlito and no Garamond.
- *   2. THE SLANT THAT ROLE IS SET IN. His translation is Times italic and
- *      nothing else on his page is, so Tinos ships with its italics and Arimo
- *      and Carlito do not: 390 KB off a Veda Union export.
+ *   2. THE SLANT THAT ROLE IS SET IN. His translation is Times italic, so
+ *      Tinos ships with its italics; Carlito does not. His MARKS are italic
+ *      too — a letter the rules replaced, both pause bars, a reading aid, all
+ *      Arial Italic — so the mantra's face ships in italic as well (`markFaces`):
+ *      without it the browser slanted Arimo itself, and his upright pause bar
+ *      came out leaning, at twice its width.
  *   3. THE CODEPOINTS ON THE PAGE, against each subset's `unicode-range`, and
  *      IN STACK ORDER — see `chooseFaces`.
  *
@@ -31,6 +34,7 @@
  */
 import type { DocumentTheme } from '@siksamitra/tokens/document-themes';
 import type { DocTypeScale } from '@siksamitra/tokens/document-type';
+import { WORD_DANDA_FACE, WORD_MARKS } from '@siksamitra/tokens/word';
 
 /** The complete, unranged face every text stack ends with. */
 export const FONT_BACKSTOP = 'Gentium Book Plus';
@@ -128,6 +132,37 @@ export function facesNeeded(
   }
   return [...seen.values()];
 }
+
+/**
+ * THE FACES A THEME'S MARKS ARE DRAWN IN, which the markup never shows: on
+ * his page a svara is a glyph set from the stylesheet (`::after`, see
+ * `packages/tokens/word-marks.mjs`), so its codepoint is in no text node and
+ * `codepointsIn` cannot see it — and an export that embedded only what it saw
+ * printed every svara in whatever face the machine had. Named here so the
+ * file carries his `Svara` face, URW Palladio ITU, wherever it is opened.
+ */
+export function markFaces(theme: DocumentTheme, textStack?: string): { stacks: FaceStack[]; codepoints: number[] } {
+  if (theme.scale !== 'word') return { stacks: [], codepoints: [] };
+  /* The marks with no face of their own are set in the mantra's, slanted. */
+  const slanted = WORD_MARKS.change.italic || WORD_MARKS.pause.italic;
+  return {
+    stacks: [
+      { families: [WORD_MARKS.svara.face, FONT_BACKSTOP], style: 'normal' },
+      { families: [WORD_MARKS.vedicChange.face], style: 'italic' },
+      /* His daṇḍas, in our face of Mangal's bars. */
+      { families: [WORD_DANDA_FACE], style: 'normal' },
+      ...(slanted && textStack !== undefined ? [{ families: familiesIn(textStack), style: 'italic' as const }] : []),
+    ],
+    codepoints: [...SVARA_GLYPHS],
+  };
+}
+
+/**
+ * What his `Svara` and `VedicAnusvara` styles write, drawn from the stylesheet:
+ * the svaras (U+030D, U+030E, U+0331), the svarabhakti dot (U+00B7) and his
+ * face's own m with a candrabindu (U+F141).
+ */
+export const SVARA_GLYPHS: readonly number[] = [0x030d, 0x030e, 0x0331, 0x00b7, 0xf141];
 
 /** Every codepoint in some rendered markup, tags and entities removed. */
 export function codepointsIn(html: string): Set<number> {

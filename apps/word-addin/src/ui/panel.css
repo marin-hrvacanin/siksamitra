@@ -57,7 +57,9 @@ body { background: var(--chrome-bg); }
 }
 .pnl-tab > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Word's narrowest panel: the icons alone, each tab still named (title, aria-label). */
-@media (max-width: 340px) { .pnl-tab > span { display: none; } }
+/* token-exempt: a media query cannot read a custom property, and this is the
+   narrowest panel Word opens at which a tab's label still fits beside its icon. */
+@media (max-width: 340px) { .pnl-tab > span { display: none; } } /* token-exempt: a media query cannot read a custom property */
 .pnl-tab:hover { color: var(--chrome-ink); background: var(--chrome-sunk); }
 .pnl-tab[aria-selected="true"] { color: var(--chrome-ink); border-bottom-color: var(--chrome-accent); }
 

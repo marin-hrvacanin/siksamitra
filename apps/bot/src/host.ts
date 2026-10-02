@@ -16,6 +16,7 @@ export interface NodeHost extends Host {
 
 export function nodeHost(root: string, deliver: (file: Delivered) => Promise<void>): NodeHost {
   return {
+    where: 'a Telegram chat: what you deliver is sent into the chat as a file',
     library: diskLibrary(root),
     research: webResearch(),
     exporters: nodeExporters(),

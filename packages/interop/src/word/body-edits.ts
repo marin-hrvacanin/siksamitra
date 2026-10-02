@@ -16,45 +16,41 @@
  * are found by aligning the two readings — the longest common run of verses —
  * so one inserted verse does not make every verse after it "edited".
  *
- * LINE BY LINE, as the writer writes: one mantra paragraph per verse, its
- * translation in the paragraphs after it. Not through `buildDocument`, whose
- * grouping of lines into verses is for his hand-made files, one pāda each.
+ * READ BY THE ONE READER, `buildDocument`: a verse is his paragraphs, as the
+ * writer writes them (`body-blocks.ts`) — a verse may be several, and where
+ * one begins is our `_smv` bookmark. Reading the page any other way than the
+ * importer does would call every verse of several paragraphs "edited".
  */
 import type { ChantDoc, ChantSection, ChantToken, ChantVerse } from '@siksamitra/format';
 import { toTextAndMarks, withVerses } from '@siksamitra/format';
 import type { ScriptKey } from '@siksamitra/engine';
-import { paraRoleOf } from '../word-styles.js';
-import { mergeRuns, readParagraphs, type WordParagraph } from '../docx-read.js';
+import { readParagraphs, type WordParagraph } from '../docx-read.js';
 import { reportFor } from '../docx-report.js';
-import { tokensFromRuns } from '../docx-runs.js';
+import { buildDocument } from '../build-document.js';
 import { documentXml } from './body.js';
-import { scriptOfLine } from './script-reader.js';
 
 interface PageVerse {
   tokens: ChantToken[];
-  translation?: string;
+  translation?: { en: string; paragraphs?: number[] };
+  paragraphs?: number[];
+  source?: string;
   /** How it reads: text, marks (who placed them aside), translation. */
   key: string;
 }
 
 /** The mantra lines of a page, each with the translation written after it. */
 function pageVerses(paragraphs: readonly WordParagraph[]): PageVerse[] {
-  const report = reportFor('docx', 0, [...paragraphs]);
-  const out: Omit<PageVerse, 'key'>[] = [];
-  for (const p of paragraphs) {
-    const role = paraRoleOf(p.pStyle);
-    const text = p.runs.map((r) => r.text).join('');
-    if (role === 'verse-line') {
-      out.push({ tokens: tokensFromRuns(mergeRuns(p.runs), report, `p-${out.length}`, scriptOfLine(text)) });
-    } else if (role === 'translation' && out.length > 0 && text.trim() !== '') {
-      const last = out[out.length - 1]!;
-      last.translation = last.translation === undefined ? text.trim() : `${last.translation}\n${text.trim()}`;
-    }
-  }
-  return out.map((v) => {
+  const read = buildDocument(paragraphs, { fallbackTitle: '', report: reportFor('docx', 0, [...paragraphs]) });
+  return read.sections.flatMap((s) => s.verses).map((v) => {
     const tm = toTextAndMarks({ id: 'v', tokens: v.tokens } as ChantVerse);
     const marks = tm.marks.map(({ by: _by, ...m }) => JSON.stringify(m)).sort();
-    return { ...v, key: JSON.stringify([tm.text, marks, v.translation ?? null]) };
+    return {
+      tokens: v.tokens,
+      ...(v.translation === undefined ? {} : { translation: v.translation }),
+      ...(v.paragraphs === undefined ? {} : { paragraphs: v.paragraphs }),
+      ...(v.source === undefined ? {} : { source: v.source }),
+      key: JSON.stringify([tm.text, marks, v.translation ?? null, v.paragraphs ?? null, v.source ?? null]),
+    };
   });
 }
 
@@ -90,10 +86,12 @@ export interface BodyEdits {
 
 /** A verse with the page's letters: what the letters were derived from is gone with them. */
 function edited(v: ChantVerse, w: PageVerse): ChantVerse {
-  const { text: _t, marks: _m, src: _s, ...rest } = v;
+  const { text: _t, marks: _m, src: _s, paragraphs: _p, source: _o, translation: _tr, ...rest } = v;
   return {
     ...rest, tokens: w.tokens,
-    ...(w.translation === undefined ? {} : { translation: { ...v.translation, en: w.translation } }),
+    ...(w.translation === undefined ? {} : { translation: w.translation }),
+    ...(w.paragraphs === undefined ? {} : { paragraphs: w.paragraphs }),
+    ...(w.source === undefined ? {} : { source: w.source }),
   };
 }
 
@@ -144,7 +142,12 @@ export function withBodyEdits(
       while (ids.has(id)) id += "'";
       ids.add(id);
       count.added += 1;
-      lists.get(into)!.push({ id, tokens: w.tokens, ...(w.translation === undefined ? {} : { translation: { en: w.translation } }) });
+      lists.get(into)!.push({
+        id, tokens: w.tokens,
+        ...(w.translation === undefined ? {} : { translation: w.translation }),
+        ...(w.paragraphs === undefined ? {} : { paragraphs: w.paragraphs }),
+        ...(w.source === undefined ? {} : { source: w.source }),
+      });
     }
   };
   add(-1);

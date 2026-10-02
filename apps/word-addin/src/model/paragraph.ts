@@ -37,7 +37,7 @@ import type { TextAndMarks, TokenHelp } from '@siksamitra/format';
 import type { ChantToken, ChantVerse } from '@siksamitra/format';
 import type { ImportReport, WordParagraph, WordRun } from '@siksamitra/interop';
 import {
-  documentXml, lineNotes, mergeRuns, paraRoleOf, readParagraphs, tokensFromRuns,
+  documentXml, isMantraLine, lineNotes, mergeRuns, readParagraphs, tokensFromRuns,
 } from '@siksamitra/interop';
 import { splitLetters, type ScriptKey } from '@siksamitra/engine';
 import { carriable } from './carry.js';
@@ -51,8 +51,9 @@ import { carriable } from './carry.js';
  * `<w:br/>` between the lines. A filter on the literal `Translit` would have
  * gone quietly empty.
  */
-export const isVerseParagraph = (p: WordParagraph): boolean =>
-  paraRoleOf(p.pStyle) === 'verse-line';
+/* A mantra line — and not his comment line on one (a source, a metre, a note),
+   which shares the style and is never marked: the one rule, in interop. */
+export const isVerseParagraph = (p: WordParagraph): boolean => isMantraLine(p);
 
 /**
  * What `toTokens` cannot know, supplied.
@@ -95,7 +96,8 @@ const writable = (tm: TextAndMarks): TextAndMarks =>
  */
 export function paragraphsXml(tm: TextAndMarks, script: ScriptKey = 'iast'): string {
   const doc = oneVerse(toTokens(writable(tm), TOKEN_HELP));
-  return BODY.exec(documentXml(doc, '', undefined, script))?.[1] ?? '';
+  /* A line written into HIS file carries no tag of ours: his file is his. */
+  return BODY.exec(documentXml(doc, '', undefined, script, false))?.[1] ?? '';
 }
 
 /**
@@ -144,7 +146,12 @@ export function blankReport(): ImportReport {
  * of his lines.
  */
 export function decodeRuns(runs: readonly WordRun[], script: ScriptKey = 'iast'): TextAndMarks {
-  const tokens = tokensFromRuns([...runs], blankReport(), 'l-0', script);
+  /* The notes that END its lines are put back run for run, raised parts and
+     all (`withLineNotes`), so the line is read without them; a note inside a
+     line is the line's own, read as one (`ChantText.note`) and written back
+     where it stands. */
+  const ending = new Set(lineNotes(runs).notes.flatMap((n) => n.runs));
+  const tokens = tokensFromRuns(runs.filter((r) => !ending.has(r)), blankReport(), 'l-0', script);
   return toTextAndMarks({ id: 'v', tokens } as ChantVerse);
 }
 

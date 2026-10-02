@@ -97,7 +97,16 @@ export interface ExportStyle {
   /** A `.docx` in this style carries his running head: the chant, the step and
    *  the page number over a rule, on every page. */
   readonly runningHead?: true;
+  /**
+   * HIS FOOTER, on every page — what his every file carries at the foot: a
+   * line of text and links, in his `Footer` style, the links in his
+   * `Hyperlink` blue. Data, so the PDF and the `.docx` write the same line.
+   */
+  readonly footer?: readonly FooterPiece[];
 }
+
+/** A piece of a footer line: words, or a link that shows its own address. */
+export type FooterPiece = { readonly text: string } | { readonly link: string };
 
 /**
  * The styles, in the order a menu should offer them.
@@ -116,6 +125,13 @@ export const EXPORT_STYLES: readonly ExportStyle[] = [
     mode: 'light',
     frame: 'page',
     runningHead: true,
+    /* As his files write it, with his two spaces before each link. */
+    footer: [
+      { text: 'About VedaUnion  ' },
+      { link: 'http://vedaunion.org/' },
+      { text: ' - videos at  ' },
+      { link: 'https://www.youtube.com/c/VedaUnion' },
+    ],
   },
   {
     id: 'veda-union-web',

@@ -35,9 +35,28 @@ export type PdfEvent =
 export interface PdfRow {
   page: number;
   baseline: number;
+  /** Where the row starts on the page, in points — the margin, or a hanging indent. */
+  x0?: number;
   cls: 'title' | 'subtitle' | 'shloka' | 'small' | 'body';
   events: PdfEvent[];
 }
+
+/**
+ * HOW HIS PAGE SAYS WHAT A ROW IS, besides its face — measured on bhū sūktam
+ * v1.1 and sūryopaniṣat v0:
+ *
+ *   - a row that starts at the paragraph's HANGING INDENT (14.2 pt in) is the
+ *     next line of the paragraph above, after a soft break; one at the margin
+ *     begins a paragraph. Read as a paragraph each, a verse of his came back
+ *     as many paragraphs and its translation the same;
+ *   - a small grey row a whole mantra line (24 pt) below the row above is a
+ *     COMMENT on a mantra line — "Also in maitrāyaṇī saṁhitā 1.7.1.1", a
+ *     source over the verses after it — where a translation's lines follow
+ *     their verse 15 pt down and each other 12.7. Read as translation, every
+ *     such comment was appended to the verse before it.
+ */
+const HANGING = 8;
+const COMMENT_GAP = 20;
 
 /** The character style a text event is written in, as his Word files write it. */
 function styleOf(e: Extract<PdfEvent, { kind: 'text' }>): string | null {
@@ -89,8 +108,33 @@ const plain = (events: readonly PdfEvent[]): string =>
 export function paragraphsOfRows(rows: readonly PdfRow[]): WordParagraph[] {
   const out: WordParagraph[] = [];
   let titled = false;
+  const lefts = rows.filter((r) => (r.cls === 'shloka' || r.cls === 'small') && r.x0 !== undefined).map((r) => r.x0!);
+  const margin = lefts.length === 0 ? undefined : Math.min(...lefts);
+  const hangs = (r: PdfRow): boolean => margin !== undefined && r.x0 !== undefined && r.x0 >= margin + HANGING;
+  /** The last paragraph, when it is the kind this row would continue. */
+  let open: { pStyle: string; para: WordParagraph } | null = null;
+  let prev: PdfRow | undefined;
   for (const row of rows) {
     const text = plain(row.events);
+    const gap = prev !== undefined && prev.page === row.page ? row.baseline - prev.baseline : undefined;
+    const last = prev;
+    prev = row;
+    if (row.cls === 'shloka' && open?.pStyle === 'Translit' && hangs(row)) {
+      open.para.runs.push(wordRun('\n'), ...runsOf(row.events));
+      continue;
+    }
+    if (row.cls === 'small') {
+      if (open?.pStyle === 'Prijevod' && hangs(row) && (gap === undefined || gap < COMMENT_GAP)) {
+        open.para.runs.push(wordRun(`\n${text}`));
+        continue;
+      }
+      const comment = gap === undefined ? last?.cls !== 'shloka' && open?.pStyle !== 'Prijevod' : gap >= COMMENT_GAP;
+      if (comment) {
+        out.push({ pStyle: 'Translit', runs: [wordRun(text, 'Comment')] });
+        open = null;
+        continue;
+      }
+    }
     switch (row.cls) {
       case 'title':
         out.push({ pStyle: titled ? 'Heading2' : 'Title', runs: [wordRun(text)] });
@@ -105,6 +149,8 @@ export function paragraphsOfRows(rows: readonly PdfRow[]): WordParagraph[] {
         out.push({ pStyle: null, runs: [wordRun(text)] });
         break;
     }
+    const made = out[out.length - 1];
+    open = made !== undefined && (row.cls === 'shloka' || row.cls === 'small') ? { pStyle: made.pStyle ?? '', para: made } : null;
   }
   return out;
 }

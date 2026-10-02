@@ -12,8 +12,7 @@
  * produce, and an importer that "fixed" one would be destroying a decision.
  *
  * TWO TRAPS, both of which have cost a defect and are closed here:
- *   - never sort runs by position. Sorting by x turns `suklā~m` into `sukām~`;
- *     document order is correct.
+ *   - never sort runs by position: by x, `suklā~m` is `sukām~`. Document order is right.
  *   - a space inside a STYLED run is still a space. See `space` below: this
  *     threw one away, and a holding that spans a space is written with the
  *     space inside it on purpose.
@@ -36,6 +35,14 @@ import { isBluePause, readPause, splitPauseBars } from './docx-pauses.js';
 import { syllablesOf } from './docx-syllables.js';
 import type { ImportReport } from './docx-report.js';
 
+/** A svara inside his note is the note's own letter (`p.b. sūryā̍d`): one note, not two and a stray svara. */
+const withNoteMarks = (runs: WordRun[]): WordRun[] => mergeRuns(runs.reduce<WordRun[]>((out, r) => {
+  const prev = out[out.length - 1];
+  if (prev !== undefined && roleOf(prev.rStyle) === 'comment' && /^\p{M}+$/u.test(r.text)) out[out.length - 1] = { ...prev, text: prev.text + r.text };
+  else out.push(r);
+  return out;
+}, []));
+
 export function tokensFromRuns(
   runs: WordRun[],
   report: ImportReport,
@@ -44,7 +51,7 @@ export function tokensFromRuns(
    *  as IAST first (`word/script-runs.ts`), then exactly as any other. */
   script: ScriptKey = 'iast',
 ): ChantToken[] {
-  const merged = (script === 'iast' ? mergeRuns(runs) : mergeRuns(iastRunsOf(mergeRuns(runs), script))).flatMap(splitPauseBars);
+  const merged = withNoteMarks(script === 'iast' ? mergeRuns(runs) : mergeRuns(iastRunsOf(mergeRuns(runs), script))).flatMap(splitPauseBars);
   const tokens: ChantToken[] = [];
   /** Letters of the current word, with their marks. */
   let word: ChantUnit[] = [];
@@ -209,10 +216,24 @@ export function tokensFromRuns(
     }
 
     if (role === 'comment') {
-      // An inline comment inside a mantra line is an annotation, never
-      // recitable text: it leaves the token stream entirely.
+      /* A NOTE ON THE LINE — `maheśvaraḥ । bramha`. Kept where he wrote it,
+         as text that is never recited (`ChantText.note`); it used to be
+         reported as unresolved and dropped, 160 of them in the sādhanā.
+         The space before it is the line's own and goes with the line; the
+         note itself is what the run holds. A line break inside it ends the
+         line, as anywhere else. */
+      flush();
       bump('comment');
-      report.unresolved.push({ at: where, what: 'inline comment', raw: run.text.trim() });
+      const pieces = run.text.split('\n');
+      pieces.forEach((piece, i) => {
+        if (i > 0) space('\n');
+        const lead = /^\s+/.exec(piece)?.[0] ?? '';
+        const body = piece.slice(lead.length).replace(/\s+$/, '');
+        const trail = piece.slice(lead.length + body.length);
+        if (lead !== '') space(lead);
+        if (body !== '') tokens.push({ t: 'text', s: body, note: true });
+        if (trail !== '') space(trail);
+      });
       continue;
     }
 

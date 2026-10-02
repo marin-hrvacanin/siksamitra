@@ -133,7 +133,10 @@ export class Session {
       ...(o.user === undefined ? {} : { user: o.user }),
       /* Its steps are shown too, as the reviewer's. */
       ...(o.onEvent === undefined ? {} : {
-        onEvent: (e: AgentEvent) => { if (e.kind === 'tool' || e.kind === 'result') o.onEvent!({ ...e, sub: true }); else if (e.kind === 'usage') o.onEvent!(e); },
+        onEvent: (e: AgentEvent) => {
+          if (e.kind === 'tool' || e.kind === 'result' || e.kind === 'intent') o.onEvent!({ ...e, sub: true });
+          else if (e.kind === 'usage') o.onEvent!(e);
+        },
       }),
       stopped: () => this.halted,
     }, task);

@@ -30,94 +30,49 @@
  */
 
 import { Fragment, memo, type MouseEvent, type ReactNode } from 'react';
-import type {
-  ChantDoc, ChantScriptKey, ChantToken, ChantVerse,
-} from '@siksamitra/format';
-import {
-  Figure, MissingFigure, holdJoins, renderToken, unitsBefore, type TokenContext,
-} from '@siksamitra/render';
-import { blockId, figureOf, headingOf, itemsOf, sourceOf } from './blocks.js';
+import type { ChantDoc, ChantInstruction, ChantScriptKey } from '@siksamitra/format';
+import { Figure, MissingFigure } from '@siksamitra/render';
+import { blockId, figureOf, headingOf, itemsOf, linesOf, sourceOf } from './blocks.js';
+import { paragraphStarts, VerseLines } from './VerseLines.js';
+import { BookFront } from './BookFront.js';
 import type { GrabPoint } from '../editor/figure-drag.js';
 
-const FONT_STACK = 'var(--doc-verse-face)';
-
 /**
- * One verse, split into lines at its `br` tokens.
- *
- * The lines matter for two reasons: pagination splits between them, and a
- * recitation line is a breath — so it is a real unit of the text and not a
- * consequence of the column width.
+ * A line of his comment face — a source, a metre, a direction. On a mantra
+ * line (`verse`) it is as tall as one; in a prose paragraph (`body`) its
+ * lines after a break hang in. Each line of a source is a paragraph of its own.
  */
-function VerseLines(
-  { verse, script, showMarks, addressable, number, range }: {
-    verse: ChantVerse; script: ChantScriptKey; showMarks: boolean; addressable: boolean;
-    /** The page's own verse number, drawn in the gutter of the FIRST line. */
-    number?: string;
-    /**
-     * Which lines this copy draws, `[first, last]` inclusive — the page map's
-     * `lineRange`, for a verse a page break runs through. Absent means all of
-     * them, which is every view but the paged one.
-     */
-    range?: readonly [number, number];
-  },
-): ReactNode {
-  // Split at `br`: a recitation line is a BREATH, so it is a real unit of the
-  // text and not a consequence of the column width. Pagination splits between
-  // these, never inside one.
-  const lines: ChantToken[][] = [[]];
-  for (const t of verse.tokens) {
-    if (t.t === 'br') lines.push([]);
-    else lines[lines.length - 1]!.push(t);
-  }
-  const ctx: TokenContext = {
-    script, showMarks, fontStack: FONT_STACK, ...(addressable ? { addressable } : {}),
-  };
+const Comment = ({ text, on, id }: { text: string; on: 'verse' | 'body'; id?: string }): ReactNode => (
+  on === 'verse'
+    ? (
+      <div className={`doc__comments${id === undefined ? '' : ' doc__comments--block'}`} {...(id === undefined ? {} : { 'data-block-id': id })}>
+        {linesOf(text).map((line, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <p className="doc__source doc__source--verse" key={i}>{line}</p>
+        ))}
+      </div>
+    )
+    : <p className="doc__source doc__source--body" {...(id === undefined ? {} : { 'data-block-id': id })}>{text}</p>
+);
 
-  /*
-   * The unit counter runs over the WHOLE verse, not per line: `SrcMap.units`
-   * is one entry per letter of the verse in token order, and a `br` contributes
-   * none. A per-line counter would address every letter after the first break
-   * to the wrong source offset — the mark would land a line early.
-   */
-  let offset = 0;
+/** A direction, a note, or a line in his comment face. */
+const Instruction = ({ ins, id }: { ins: ChantInstruction; id?: string }): ReactNode => (
+  ins.comment !== undefined
+    ? <Comment text={ins.text.en} on={ins.comment} {...(id === undefined ? {} : { id })} />
+    : <p className="doc__instruction" {...(id === undefined ? {} : { 'data-block-id': id })}>{ins.text.en}</p>
+);
+
+/** A translation, a `<p>` per paragraph of his, its lines after a break hanging in. */
+function Translation({ en, paragraphs }: { en: string; paragraphs?: readonly number[] }): ReactNode {
+  const lines = en.split('\n');
+  const starts = [...paragraphStarts(paragraphs, lines.length)].sort((a, b) => a - b);
   return (
-    <>
-      {lines.map((line, li) => {
-        const base = offset;
-        offset += unitsBefore(line, line.length);
-        /*
-         * A line outside this copy's range is skipped, but the unit counter
-         * above it is NOT — `base` is an offset into the whole verse, so the
-         * second half of a split verse must count the first half's letters
-         * even though it does not draw them. `data-line` likewise stays the
-         * line's index in the VERSE: a recording addresses a pāda by it
-         * (`useRecording`), and renumbering per page would play the wrong line.
-         */
-        if (range !== undefined && (li < range[0] || li > range[1])) return null;
-        return (
-          <div className="pada" data-line={li} key={li}>
-            {/*
-              INSIDE the first line, not floating beside the verse. Positioned
-              absolutely against the verse it sat on its own tiny line box, a
-              third of a line above the text it numbers — which reads as a
-              footnote marker. On the line, its baseline is the line's baseline,
-              because it is the same line.
-            */}
-            {li === 0 && number !== undefined && (
-              <span className="verse__n" aria-hidden>{number}</span>
-            )}
-            {(() => {
-              /* Which boxes run through a syllable boundary, once per line —
-                 see `holdJoins`. Per line, because a line break ends a box. */
-              const joins = holdJoins(line);
-              return line.map((t, ti) => renderToken(
-                t, ti, ctx, base + unitsBefore(line, ti), joins.get(ti),
-              ));
-            })()}
-          </div>
-        );
-      })}
-    </>
+    <div className="doc__translations">
+      {starts.map((from, i) => (
+        // eslint-disable-next-line react/no-array-index-key
+        <p className="doc__translation" key={i}>{lines.slice(from, starts[i + 1] ?? lines.length).join('\n')}</p>
+      ))}
+    </div>
   );
 }
 
@@ -214,10 +169,13 @@ function DocumentBlocksInner(
 
   return (
     <>
-      {/* The document's own name, as his Heading 2 and the Word export put it. */}
-      {doc.title.trim() !== '' && wanted(blockId.name()) && (
-        <h2 className="doc__name" data-block-id={blockId.name()}>{doc.title}</h2>
-      )}
+      {/* A book's title page and contents; a single text's own name, as his
+          Heading 2 and the Word export put it. */}
+      {doc.book === true
+        ? <BookFront doc={doc} wanted={wanted} />
+        : doc.title.trim() !== '' && wanted(blockId.name()) && (
+          <h2 className="doc__name" data-block-id={blockId.name()}>{doc.title}</h2>
+        )}
       {doc.sections.map((section) => {
         const partHere = section.part !== undefined && section.part !== part
           ? section.part
@@ -228,31 +186,43 @@ function DocumentBlocksInner(
         const heading = headingOf(section);
         return (
           <Fragment key={section.id}>
+            {/* A book's part is his Heading 2, its chant Heading 3 and a step
+                inside one Heading 4; a single text's are a level down. */}
             {partHere !== undefined && wanted(blockId.part(section.id)) && (
-              <h2 className="doc__part" data-block-id={blockId.part(section.id)}>
+              <h2 className={doc.book === true ? 'doc__part doc__part--book' : 'doc__part'} data-block-id={blockId.part(section.id)}>
                 {partHere}
               </h2>
             )}
             {heading !== undefined && wanted(blockId.heading(section.id)) && (
-              <h3 className="section__title" data-block-id={blockId.heading(section.id)}>
+              <h3
+                className={doc.book !== true ? 'section__title'
+                  : section.sub === true ? 'section__title section__title--sub' : 'section__title section__title--book'}
+                data-block-id={blockId.heading(section.id)}
+              >
                 {heading}
               </h3>
             )}
-            {/* Under its heading, where his files and the Word export keep it. */}
+            {/* Under its heading, where his files and the Word export keep it:
+                a line of his comment face each, on a mantra line. */}
             {sourceOf(section) !== undefined && wanted(blockId.source(section.id)) && (
-              <p className="doc__source" data-block-id={blockId.source(section.id)}>
-                {sourceOf(section)}
-              </p>
+              <Comment text={sourceOf(section)!} on="verse" id={blockId.source(section.id)} />
             )}
             {itemsOf(section).map((item, at) => {
               if (item.t === 'instruction') {
                 const id = blockId.instruction(section.id, at);
                 if (!wanted(id)) return null;
-                return (
-                  <p className="doc__instruction" data-block-id={id} key={id}>
-                    {item.instruction.text.en}
-                  </p>
-                );
+                return <Instruction ins={item.instruction} id={id} key={id} />;
+              }
+              /* An empty line of one of his paragraphs, and a page break. */
+              if (item.t === 'gap') {
+                const id = blockId.gap(section.id, at);
+                if (!wanted(id)) return null;
+                return <p className={`doc__gap doc__gap--${item.of}`} data-block-id={id} key={id} aria-hidden>{'\u200b'}</p>;
+              }
+              if (item.t === 'break') {
+                const id = blockId.pageBreak(section.id, at);
+                if (!wanted(id)) return null;
+                return <div className="doc__break" data-block-id={id} key={id} aria-hidden />;
               }
               if (item.t === 'figure') {
                 const id = blockId.figure(section.id, at);
@@ -299,6 +269,9 @@ function DocumentBlocksInner(
                */
               const lineCount = item.tokens.filter((t) => t.t === 'br').length + 1;
               const tail = range === undefined || range[1] >= lineCount - 1;
+              /* And what heads it goes with its FIRST: his source lines are
+                 written above the verse they name. */
+              const head = range === undefined || range[0] === 0;
               return (
                 <div
                   className="verse"
@@ -331,6 +304,7 @@ function DocumentBlocksInner(
                     verse is one text and a list of markings now; every one of
                     them takes an edit, and there is nothing left to say.
                   */}
+                  {head && item.source !== undefined && <Comment text={item.source} on="verse" />}
                   <VerseLines
                     verse={item}
                     script={script}
@@ -339,16 +313,13 @@ function DocumentBlocksInner(
                     {...(item.n == null ? {} : { number: `${item.n}` })}
                     {...(range === undefined ? {} : { range })}
                   />
+                  {tail && item.translation !== undefined && (
+                    <Translation en={item.translation.en} {...(item.translation.paragraphs === undefined ? {} : { paragraphs: item.translation.paragraphs })} />
+                  )}
                   {tail && (item.instructions ?? []).map((ins, k) => (
                     // eslint-disable-next-line react/no-array-index-key
-                    <p className="doc__instruction" key={k}>{ins.text.en}</p>
+                    <Instruction ins={ins} key={k} />
                   ))}
-                  {tail && item.translation !== undefined && (
-                    <p className="doc__translation">{item.translation.en}</p>
-                  )}
-                  {tail && item.source !== undefined && (
-                    <p className="doc__source">{item.source}</p>
-                  )}
                   {/*
                     A VERSE MAY CARRY ITS OWN PICTURES (`ChantVerse.figures`),
                     and they are not blocks: they are inside the verse, so the

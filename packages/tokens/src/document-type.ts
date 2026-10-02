@@ -24,6 +24,7 @@
  * second conversion factor to keep in step.
  */
 import { WORD_PARAGRAPHS, wordColor } from './word.js';
+import { WORD_EXACT_BASELINE, WORD_FACE_METRICS } from './word-metrics.js';
 
 /** A rem per point — `1rem = 16px = 12pt` at zoom 1. */
 export const PT = 1 / 12;
@@ -38,11 +39,11 @@ export const PT = 1 / 12;
  */
 export type DocRole =
   | 'title' | 'part' | 'section' | 'step'
-  | 'verse' | 'translation' | 'body' | 'comment' | 'head';
+  | 'verse' | 'translation' | 'body' | 'comment' | 'head' | 'small';
 
 export const DOC_ROLES: readonly DocRole[] = [
   'title', 'part', 'section', 'step',
-  'verse', 'translation', 'body', 'comment', 'head',
+  'verse', 'translation', 'body', 'comment', 'head', 'small',
 ];
 
 /**
@@ -125,6 +126,19 @@ export interface RoleMetric {
   readonly bold: boolean;
   /** A CSS colour, or a `var(--doc-*)` reference into the theme's own palette. */
   readonly color: string;
+  /**
+   * How far the text sits BELOW where CSS puts it in its line, in rem — Word's
+   * placement, where the page reproduces his (`WORD_FACE_METRICS`). Zero for a
+   * screen theme, which has no Word to agree with.
+   */
+  readonly shift: number;
+  /**
+   * WORD'S AUTOMATIC MULTIPLE, when the line is not exact: what the `.docx`
+   * writes (`w:line` ÷ 240, `w:lineRule="auto"`) while the page draws the line
+   * it makes. Without it the style sheet wrote his headings EXACT — the page's
+   * leading, frozen into a number Word then used for every face.
+   */
+  readonly auto?: number;
 }
 
 export type DocTypeScale = Readonly<Record<DocRole, RoleMetric>>;
@@ -132,7 +146,7 @@ export type DocTypeScale = Readonly<Record<DocRole, RoleMetric>>;
 /** Everything a role does not say. */
 const BASE = {
   floor: null, after: 0, indent: 0, hanging: 0, right: 0,
-  face: 'text', italic: false, bold: false, color: 'var(--doc-ink)',
+  face: 'text', italic: false, bold: false, color: 'var(--doc-ink)', shift: 0,
 } as const;
 
 /**
@@ -188,6 +202,8 @@ export function screenScale(size: number, leading: number): DocTypeScale {
       ...BASE, size: rem(0.68), leading: 1.4, face: 'ui',
       color: 'var(--doc-quiet)',
     },
+    /* His 8-point spacer, `Insert`: an empty line, so only its height shows. */
+    small: { ...BASE, size: rem(0.5), leading: 1.15 },
   };
 }
 
@@ -210,12 +226,20 @@ export function wordScale(): DocTypeScale {
   };
   const metric = (r: DocRole): RoleMetric => {
     const m = role(r === 'verse' ? 'verse-line' : r);
+    const f = WORD_FACE_METRICS[m.face === 'serif' ? 'serif' : 'sans'];
+    /* The line as Word makes it: exact, or the face's own line times the
+       multiple — never CSS's `normal`, which is single and was the page's
+       answer for every heading. */
+    const line = m.leading ?? (m.multiple ?? 1) * (f.ascent + f.descent + f.gap) * m.size;
+    /* Where CSS puts the baseline (centred), and where Word does. */
+    const css = (line - (f.ascent + f.descent) * m.size) / 2 + f.ascent * m.size;
+    const word = m.leading !== null ? WORD_EXACT_BASELINE * line : (f.gap + f.ascent) * m.size;
     return {
+      ...(m.leading === null ? { auto: m.multiple ?? 1 } : {}),
+      shift: Number(((word - css) * PT).toFixed(4)),
       size: Number((m.size * PT).toFixed(4)),
       floor: null,
-      leading: m.leading === null
-        ? 'normal'
-        : Number((m.leading / m.size).toFixed(4)),
+      leading: Number((line / m.size).toFixed(4)),
       after: Number((m.after * PT).toFixed(4)),
       indent: Number((m.indent * PT).toFixed(4)),
       hanging: Number((m.hanging * PT).toFixed(4)),
@@ -227,4 +251,20 @@ export function wordScale(): DocTypeScale {
     };
   };
   return Object.fromEntries(DOC_ROLES.map((r) => [r, metric(r)])) as DocTypeScale;
+}
+
+/**
+ * WHERE WORD PUTS A COMMENT WRITTEN ON A MANTRA LINE — his `Comment` face in a
+ * `Translit` paragraph's exact height, its baseline four fifths down the line
+ * like the mantra's own — as a shift from where CSS centres it, in rem. Zero
+ * on a screen theme, which has no Word to agree with.
+ */
+export function commentOnVerseShift(scale: DocTypeScale): number {
+  const lead = scale.verse.leading;
+  if (scale.verse.shift === 0 || lead === 'normal') return 0;
+  const line = scale.verse.size * lead;
+  const f = WORD_FACE_METRICS.serif;
+  const size = scale.comment.size;
+  const css = (line - (f.ascent + f.descent) * size) / 2 + f.ascent * size;
+  return Number((WORD_EXACT_BASELINE * line - css).toFixed(4));
 }

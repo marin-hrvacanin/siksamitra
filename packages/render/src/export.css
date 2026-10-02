@@ -226,6 +226,12 @@
 
   .export--page .flow { padding: 0; }
 
+  /* NO DESK ON PAPER. The sheet lies on \`--chrome-desk\` on screen; printed,
+     the desk was painted under every page and showed as a grey sliver down
+     the right edge and a hairline across the top, because the sheet is a
+     point narrower than the paper Chrome prints on. Paper is the sheet. */
+  .export--page { background: none; }
+
   /*
    * FLUSH LEFT, NOT CENTRED. `margin-inline: auto` centres the sheet on the
    * desk, and on paper the desk is the sheet — but Chrome's page box comes out
@@ -258,21 +264,38 @@
   }
 
   /*
-   * A VERSE AND ITS TRANSLATION DO NOT SPLIT ACROSS A PAGE.
+   * WHERE A PAGE MAY BREAK, AS WORD BREAKS HIS — and as the `.docx` says it
+   * (`KEEP_OF` in `interop/src/word/styles.ts`): his `Translit` keeps with the
+   * next paragraph and does NOT keep its lines together, his `Prijevod` keeps
+   * neither, and nothing turns widow control on. A line here is a `.pada`, and
+   * a paragraph of his runs from a `.pada--para` to the next.
    *
-   * Not a preference — an agreement. `Translit` in the `.docx` carries
-   * `w:keepNext` and `w:keepLines`, which is what his own style does, and with
-   * nothing said here Chrome split a four-line verse two and two where Word
-   * moved it whole: the PDF ended page one on verse 6 and the Word file on
-   * verse 5. Two files of one document, disagreeing about what is on the page.
+   * And as Word does it, measured in a real Word and on his pages: widow
+   * control — a paragraph never leaves one line alone at a page's foot or
+   * carries one alone to its head — and keep-with-next, which binds a verse's
+   * LAST line to what follows it. So his sūryopaniṣat 7, one paragraph of six
+   * lines, breaks four and two; a half-verse of two lines moves whole; a
+   * verse's earlier half-verses do not keep (`loose` in `body-blocks.ts`), so
+   * his bhū sūktam breaks verse 8 between its halves. A note over a verse is
+   * a `Translit` line of his and keeps with it. A line here is a `.pada`, and
+   * a paragraph of his runs from a `.pada--para` to the next. This sheet once
+   * kept every verse whole, believing his style carries `keepLines`; it does
+   * not.
    */
-  /* `.doc .verse` in `document.css` sets `break-inside: auto` at the same
-     specificity and is loaded AFTER this sheet, so a two-class selector lost
-     the cascade and Chrome split verse 6 away from its translation while Word
-     moved the whole block. Measured: 24 mantra lines on our page one against
-     Word's 20. */
-  .export--page .doc .verse {
-    break-inside: avoid;
+  .export--page .doc .verse { break-inside: auto; }
+  .export--page .doc .doc__translation { break-inside: auto; orphans: 2; widows: 2; }
+  /* Widow control: not after a paragraph's first line… */
+  .export--page .doc .verse > .pada--para:has(+ .pada:not(.pada--para)),
+  /* …nor before its last; */
+  .export--page .doc .verse > .pada:has(+ .pada:not(.pada--para) + .pada--para),
+  .export--page .doc .verse > .pada:has(+ .pada:not(.pada--para) + :not(.pada)),
+  .export--page .doc .verse > .pada:has(+ .pada:not(.pada--para):last-child),
+  /* keep with next: the verse's last line stays with its translation. A chain
+     of verses with none is longer than a page, and Word breaks it between
+     verses — 39 of his sādhanā's page ends — so nothing keeps there. */
+  .export--page .doc .verse > .pada:has(+ .doc__translations),
+  .export--page .doc .doc__comments {
+    break-after: avoid;
   }
 
   /*

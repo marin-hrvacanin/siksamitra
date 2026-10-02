@@ -129,7 +129,6 @@ const I = {
   book: svg(<><path d="M12 21V7a2 2 0 0 1 2-2h7.4c.331 0 .6.269.6.6v13.114" /><path d="M12 21V7a2 2 0 0 0-2-2H2.6a.6.6 0 0 0-.6.6v13.114" /><path d="M14 19h8M10 19H2" /><path d="M12 21a2 2 0 0 1 2-2M12 21a2 2 0 0 0-2-2" /></>),
 };
 
-
 type Chunk =
   | { kind: "word"; syls: Syl[]; wi: number }
   | { kind: "text"; s: string; fill?: boolean; placeholder?: boolean }
@@ -407,7 +406,6 @@ export default function ChantReader({
       .catch(() => { if (alive) setVariantVerses(null); });
     return () => { alive = false; };
   }, [variantOption, fetchedOrProp]);
-
 
   /* ---- composed (module) sections ---------------------------------------
      A section may declare `module: { kind: 'sankalpa' }`: the document says
@@ -1343,6 +1341,8 @@ export default function ChantReader({
                         />
                       );
                     }
+                    /* His empty lines and page breaks are the paper's; the reader flows. */
+                    if (it.t === "gap" || it.t === "break") return null;
                     const { t: _t, ...v } = it;
                     return <Fragment key={v.id}>{renderVerse(v as Verse, row.s)}</Fragment>;
                   })}

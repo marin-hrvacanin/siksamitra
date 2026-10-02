@@ -16,6 +16,7 @@
 import type { Mark, TextAndMarks } from '@siksamitra/format';
 import { assertMarks, markFaults, normalise, shiftForEdit, textEdits } from '@siksamitra/format';
 import { rerunRange, type ReRun, type ReRunRequest } from './rerun.js';
+import { aroundNotes } from './rerun-notes.js';
 
 const touches = (m: Mark, from: number, to: number): boolean =>
   (m.from === m.to ? m.from >= from && m.from <= to : m.to > from && m.from < to);
@@ -23,6 +24,8 @@ const touches = (m: Mark, from: number, to: number): boolean =>
 const delta = (e: { from: number; to: number; inserted: number }): number => e.inserted - (e.to - e.from);
 
 export function rerun(tm: TextAndMarks, req: ReRunRequest): ReRun {
+  /* A note on a line is not its letters: the rules run around it. */
+  if (tm.marks.some((m) => m.k === 'plain' && m.v === 'note')) return aroundNotes(tm, req, rerun);
   let from = Math.max(0, Math.min(req.from, tm.text.length));
   let to = Math.max(from, Math.min(req.to, tm.text.length));
   const lineFrom = from === 0 ? 0 : tm.text.lastIndexOf('\n', from - 1) + 1;

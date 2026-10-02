@@ -23,7 +23,7 @@ import {
 } from '@siksamitra/format';
 import { DEFAULT_PAGE, pageGeometry } from '@siksamitra/layout';
 import {
-  chooseFaces, codepointsIn, exportHtml, faceRule, facesNeeded, parseFaceCss,
+  chooseFaces, codepointsIn, exportHtml, faceRule, facesNeeded, markFaces, parseFaceCss,
 } from '@siksamitra/interop';
 import {
   documentThemeOf, exportStyle, styleStacks, type ExportStyle,
@@ -144,9 +144,11 @@ export async function buildExportPage(
      — a page that embedded one family while the Word file asked for another
      would be two documents. */
   const { text: textStack, ui: uiStack } = styleStacks(style);
-  const stacks = facesNeeded(theme, textStack, typeScaleOf(theme), uiStack);
+  /* And the faces its MARKS are drawn in, which no text node shows. */
+  const marks = markFaces(theme, textStack);
+  const stacks = [...facesNeeded(theme, textStack, typeScaleOf(theme), uiStack), ...marks.stacks];
   const { chosen, uncovered } = chooseFaces(
-    parseFaceCss(await io.faceCss()), stacks, codepointsIn(view),
+    parseFaceCss(await io.faceCss()), stacks, new Set([...codepointsIn(view), ...marks.codepoints]),
   );
 
   const rules: string[] = [];

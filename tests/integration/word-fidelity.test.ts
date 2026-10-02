@@ -78,11 +78,15 @@ describe('the theme uses the measured values', () => {
     expect(word!.leading).toBeCloseTo(1.5, 6);
   });
 
-  it('its face is metric-compatible with Arial, and names Arial second', () => {
+  it('its face is metric-compatible with Arial, and names no face the machine may not have', () => {
+    // Arial was named second "so his machine prints his face" — but a browser
+    // takes a face for each GLYPH the first lacks: a letter with a Ṛgvedic
+    // overline printed whole in Arial on his machine and in Gentium on the
+    // bot's server. The page is the same page everywhere now.
     expect(word!.face).toBe('wordSans');
     const stack = TEXT_FACES.wordSans;
-    expect(stack.indexOf('Arimo')).toBeLessThan(stack.indexOf('Arial'));
-    expect(stack).toContain('Arial');
+    expect(stack.startsWith("'Arimo'")).toBe(true);
+    expect(stack).not.toMatch(/\bArial\b/);
   });
 
   it('it is the same page in dark mode, deliberately', () => {

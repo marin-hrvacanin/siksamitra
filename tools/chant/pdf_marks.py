@@ -98,6 +98,11 @@ SVARA_GLYPHS = {'̱', '̍', '̎', '̅'}
 CANDRA_GLYPH = ''
 PUA_CANDRA = CANDRA_GLYPH      # kept: the round-trip verifier reads this name
 
+#: Every code the candrabindu comes back as. His newer exports (bhū sūktam
+#: v1.1) carry URW Palladio ITU's own private-use code for it, U+F141 — the
+#: one `VedicAnusvara` writes — where the older ones gave U+0001.
+CANDRA_GLYPHS = {CANDRA_GLYPH, '\uf141'}
+
 #: IAST digraphs that are ONE consonant. Needed to count a box's consonants.
 DIGRAPHS = ('kh', 'gh', 'ch', 'jh', 'ṭh', 'ḍh', 'th', 'dh', 'ph', 'bh')
 
@@ -330,11 +335,16 @@ def _events(row: List[Dict], cls: str) -> List[Dict]:
         if ch['pause']:
             ev.append({'kind': 'pause', 'len': ch['pause']})
             continue
-        if c == CANDRA_GLYPH:
+        if c in CANDRA_GLYPHS:
             ev.append({'kind': 'candra'})
             continue
         if ch['mark']:
-            if c in SVARA_GLYPHS:
+            # A svara INSIDE a note is the note's own letter — his "p.b.
+            # sūryā̍d (with svarita)" quotes a reading with its accent — and
+            # read as a svara of the line it split the note in two.
+            if cls == 'shloka' and ev and ev[-1]['kind'] == 'ann':
+                ev[-1]['text'] += c
+            elif c in SVARA_GLYPHS:
                 ev.append({'kind': 'svara', 'mark': c})
             continue
         if ch['sup']:
@@ -374,8 +384,12 @@ def extract(path: str):
                         and not any(e['kind'] == 'pause' for e in ev):
                     continue
                 base = [c for c in row if not c['mark'] and not c['sup']] or row
+                # `x0`: where the row starts — at the margin, or at a
+                # paragraph's hanging indent, which is how the page says a
+                # line continues the paragraph above it.
                 paras.append({'page': pno,
                               'baseline': max(c['y1'] for c in base),
+                              'x0': round(min(c['x0'] for c in base), 2),
                               'cls': cls, 'events': ev})
     finally:
         doc.close()

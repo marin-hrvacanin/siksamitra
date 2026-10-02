@@ -100,15 +100,18 @@ describe('the first half of a split verse', () => {
     expect(mount([0, 1]).querySelectorAll('.verse__n').length).toBeLessThanOrEqual(1);
   });
 
-  it('and NOT the translation or the source', () => {
+  it('carries its source line, ABOVE its first line — and NOT the translation', () => {
     /*
-     * They belong to the verse once, under its last line. Drawn on the first
-     * half they sit above lines they translate; drawn on both they are the
-     * same sentence twice — which is what the page did.
+     * A source heads its verse in his files, so it goes with the FIRST half,
+     * over its first line; the translation goes once, under the last. Drawn
+     * on both halves either is the same sentence twice — which is what the
+     * page once did.
      */
     const host = mount([0, 1]);
     expect(host.querySelectorAll('.doc__translation')).toHaveLength(0);
-    expect(host.querySelectorAll('.doc__source')).toHaveLength(0);
+    expect(host.querySelectorAll('.doc__source')).toHaveLength(1);
+    const verse = host.querySelector('.verse')!;
+    expect(verse.firstElementChild?.querySelector('.doc__source')).not.toBeNull();
   });
 });
 
@@ -124,10 +127,10 @@ describe('the second half', () => {
     expect(linesOf(mount([2, 3]))).toEqual([2, 3]);
   });
 
-  it('carries the translation and the source, under its last line', () => {
+  it('carries the translation, under its last line — and not the source again', () => {
     const host = mount([2, 3]);
     expect(host.querySelectorAll('.doc__translation')).toHaveLength(1);
-    expect(host.querySelectorAll('.doc__source')).toHaveLength(1);
+    expect(host.querySelectorAll('.doc__source')).toHaveLength(0);
   });
 
   it('and no verse number, which stayed with the first line', () => {

@@ -46,8 +46,9 @@ export function recitationText(
         out += script === 'iast' ? t.iast : (t[script] ?? t.deva ?? t.iast);
         break;
       case 'text':
-        // The one token whose CONTENT depends on whether it is a placeholder.
-        if (t.placeholder === true) break;
+        // The one token whose CONTENT depends on what it is: a placeholder is
+        // not text, and a note on the line is the author's, not the mantra's.
+        if (t.placeholder === true || t.note === true) break;
         out += script === 'iast' ? t.s : (t[script] ?? t.s);
         break;
       case 'slot':

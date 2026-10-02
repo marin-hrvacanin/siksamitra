@@ -26,6 +26,7 @@ export function AskPane({ adopt, onClose }: {
   onClose: () => void;
 }): ReactNode {
   const host = useMemo<Host>(() => ({
+    where: 'the śikṣāmitra app, beside the document the person has open',
     library: publishedLibrary(new URL('/', globalThis.location?.href ?? 'http://localhost/').toString()),
     async place(doc) {
       adopt(doc, `${doc.title}.smdoc`);

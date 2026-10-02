@@ -32,7 +32,7 @@ import { measureBlocks } from '../useMeasure.js';
 /** Points per pixel — the conversion `measureBlocks` applies. */
 const PT = 72 / 96;
 
-interface Box { readonly top: number; readonly bottom: number }
+interface Box { readonly top: number; readonly bottom: number; readonly para?: boolean }
 
 const rect = (b: Box): DOMRect =>
   ({ top: b.top, bottom: b.bottom, height: b.bottom - b.top } as DOMRect);
@@ -41,7 +41,10 @@ const rect = (b: Box): DOMRect =>
 const el = (id: string, box: Box, lines: readonly Box[] = []): unknown => ({
   dataset: { blockId: id },
   getBoundingClientRect: () => rect(box),
-  querySelectorAll: () => lines.map((l) => ({ getBoundingClientRect: () => rect(l) })),
+  querySelectorAll: () => lines.map((l) => ({
+    getBoundingClientRect: () => rect(l),
+    classList: { contains: (c: string) => c === 'pada--para' && l.para === true },
+  })),
 });
 
 /** A root whose `querySelectorAll` returns those elements, in order. */
@@ -95,6 +98,18 @@ describe('a block’s height is its advance, not its box', () => {
       el('b', { top: 60, bottom: 160 }),
     ]);
     expect(a!.height).toBeCloseTo(100 * PT, 6);
+  });
+});
+
+describe('where a page may end in a measured verse', () => {
+  it('is read off the lines that open his paragraphs — two half-verses of two lines', () => {
+    const [m] = measure([
+      el('v:s:1', { top: 0, bottom: 96 }, [
+        { top: 0, bottom: 20, para: true }, { top: 24, bottom: 44 },
+        { top: 48, bottom: 68, para: true }, { top: 72, bottom: 92 },
+      ]),
+    ]);
+    expect(m!.breaksAfter).toEqual([false, true, false]);
   });
 });
 

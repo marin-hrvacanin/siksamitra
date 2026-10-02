@@ -21,7 +21,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { contentBox, pageGeometry, paginate, type LayoutBlock } from '@siksamitra/layout';
-import { mayBreak, pageContent } from '../../apps/web/src/views/page-slices.js';
+import { breaksAfter, pageContent } from '../../apps/web/src/views/page-slices.js';
 
 const A4 = pageGeometry('a4');
 const COLUMN = contentBox(A4).height;
@@ -35,15 +35,16 @@ const verse = (id: string, n: number, lead = 38): LayoutBlock => ({
 
 /**
  * The blocks as the VIEW hands them to `paginate` — its `keepWithNext` and
- * `mayBreak` decisions included, because those are what make the map the map.
+ * `breaksAfter` decisions included, because those are what make the map the
+ * map. Each verse here is one paragraph of his.
  */
 const asTheViewDoes = (blocks: readonly LayoutBlock[]): LayoutBlock[] => blocks.map((b) => ({
   id: b.id,
   height: b.height,
   keepWithNext: b.id.startsWith('h:'),
-  ...(b.id.startsWith('h:') || b.lines === undefined || !mayBreak(b.height, COLUMN)
+  ...(b.id.startsWith('h:') || b.lines === undefined
     ? {}
-    : { breakable: true, lines: b.lines }),
+    : { breakable: true, lines: b.lines, breaksAfter: breaksAfter(b.lines.map((_, i) => i === 0)) }),
 }));
 
 /**
@@ -76,27 +77,26 @@ function drawn(
 }
 
 describe('a document of ordinary verses', () => {
-  /* 30 four-line verses at 38 pt a line: 152 pt each, four to a 700 pt page. */
-  const blocks = Array.from({ length: 30 }, (_, i) => verse(`v:s:${i}`, 4));
+  /* 30 four-line verses at 40 pt a line, 160 pt each: four to a 771 pt A4 column, and three lines of a fifth would fit — which his Word breaks two and two. */
+  const blocks = Array.from({ length: 30 }, (_, i) => verse(`v:s:${i}`, 4, 40));
 
-  it('holds every verse exactly once, whole', () => {
+  it('holds every line of every verse exactly once', () => {
     const d = drawn(blocks);
     expect(d.size).toBe(30);
-    for (const [id, { lines, pages }] of d) {
-      expect(lines, id).toEqual([0, 1, 2, 3]);
-      expect(pages, id).toHaveLength(1);
-    }
+    for (const [id, { lines }] of d) expect(lines, id).toEqual([0, 1, 2, 3]);
   });
 
-  it('and splits none of them, because they fit', () => {
+  it('and splits one only as his Word does — two lines and two, never one left alone', () => {
     /*
-     * HIS OWN STYLE'S RULE. `keepLines` on `Translit`, `break-inside: avoid`
-     * in the print sheet, and until this was taught to the view it split 22 of
-     * Śrī Rudram's verses at A4 that both exports keep whole.
+     * HIS WORD'S RULE, measured in a real Word and on his pages: widow control
+     * within a paragraph, and no `keepLines` on his `Translit`. It once kept
+     * every verse whole here, on the belief that his style carries
+     * `keepLines`; his own sādhanā breaks verses ten times inside a paragraph.
      */
     const map = paginate(asTheViewDoes(blocks), A4);
     const split = map.pages.flatMap((p) => p.blocks).filter((b) => b.lineRange !== undefined);
-    expect(split).toEqual([]);
+    expect(split.length).toBeGreaterThan(0);
+    for (const b of split) expect([[0, 1], [2, 3]]).toContainEqual(b.lineRange);
   });
 
   it('and no page is fuller than the column — the arithmetic, not the ink', () => {

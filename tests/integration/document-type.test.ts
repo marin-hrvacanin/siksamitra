@@ -23,7 +23,7 @@ import {
 import {
   DOC_ROLES, ROLE_OF_ELEMENT, screenScale, wordScale, type DocRole,
 } from '@siksamitra/tokens/document-type';
-import { WORD_PARAGRAPHS, WORD_PAGE } from '@siksamitra/tokens/word';
+import { WORD_AUTO_LEADING, WORD_FACE_METRICS, WORD_PARAGRAPHS, WORD_PAGE } from '@siksamitra/tokens/word';
 
 const CSS = readFileSync('packages/tokens/generated/tokens.css', 'utf8');
 
@@ -46,6 +46,7 @@ describe('the measured scale is his file', () => {
       body: 'Normal',
       comment: 'Comment',
       head: 'Header',
+      small: 'Insert',
     };
     for (const role of DOC_ROLES) {
       const style = WORD_PARAGRAPHS.find((m) => m.style === from[role]);
@@ -71,16 +72,28 @@ describe('the measured scale is his file', () => {
     expect(scale.verse.right).toBeLessThan(0);
   });
 
-  it('an automatic leading is the FONT\'s, not a number we chose', () => {
-    // `w:lineRule="auto"`. Reading it as an exact 12pt set every translation
-    // line 0.6pt tight against his PDF, which measures 11 on 12.6.
-    expect(scale.translation.leading).toBe('normal');
-    expect(scale.body.leading).toBe('normal');
-    for (const role of DOC_ROLES) {
-      const style = WORD_PARAGRAPHS.find((m) => m.role === (role === 'verse' ? 'verse-line' : role));
-      if (style?.leading == null) expect(scale[role].leading, role).toBe('normal');
-      else expect(scale[role].leading, role).toBeTypeOf('number');
-    }
+  it('an automatic leading is the FONT\'s line times his multiple, never a number we chose', () => {
+    // `w:lineRule="auto"`: the face's own ascent, descent and gap, times the
+    // style's `w:line` ÷ 240. His PDF measures a translation at 11 on 12.6 —
+    // Times' own line, once — and a heading at Arial's line times 259/240,
+    // which CSS's `normal` (single) set every heading 8 % short.
+    const times = WORD_FACE_METRICS.serif;
+    const arial = WORD_FACE_METRICS.sans;
+    expect(scale.translation.leading).toBeCloseTo(times.ascent + times.descent + times.gap, 4);
+    expect(scale.body.leading).toBeCloseTo((arial.ascent + arial.descent + arial.gap) * WORD_AUTO_LEADING, 4);
+    expect(scale.translation.auto).toBe(1);
+    expect(scale.body.auto).toBe(WORD_AUTO_LEADING);
+    /* An exact line is the style's number and has no multiple. */
+    expect(scale.verse.auto).toBeUndefined();
+    for (const role of DOC_ROLES) expect(scale[role].leading, role).toBeTypeOf('number');
+  });
+
+  it('the text sits in its line where Word sets it: an exact line four fifths down', () => {
+    // CSS centres a 16 pt Arial line in its 24 pt; Word puts the baseline at
+    // 19.2 pt. The difference is the shift, in rem (12 pt each).
+    const a = WORD_FACE_METRICS.sans;
+    const css = (24 - (a.ascent + a.descent) * 16) / 2 + a.ascent * 16;
+    expect(scale.verse.shift * 12).toBeCloseTo(0.8 * 24 - css, 2);
   });
 
   it('nothing in it is fluid — a page is 210mm wide whatever the window is', () => {

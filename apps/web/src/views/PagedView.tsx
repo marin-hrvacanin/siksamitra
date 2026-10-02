@@ -9,13 +9,15 @@
  * pagination (`packages/interop/src/pdf/`), and the `.docx` is paginated by
  * Word. Three mechanisms, not one, and no test compared them.
  *
- * SO THE AGREEMENT IS KEPT BY RULE INSTEAD, and there is one rule to keep: a
- * verse does not split. His `Translit` style carries `w:keepLines`, `export.css`
- * says `break-inside: avoid` on `.verse` when printing, and this view now
- * splits one only when it cannot fit a page by itself — see `mayBreak`, which
- * is where the measurement of what that divergence cost is written down.
- * Making the three genuinely share a map is `openspec/changes/bootstrap-v2/
- * tasks.md`, not a comment here.
+ * SO THE AGREEMENT IS KEPT BY RULE INSTEAD, and there is one rule to keep —
+ * his Word's: a verse may break between its lines, never leaving one line of
+ * a paragraph alone at a page's foot or head, its earlier half-verses do not
+ * keep with the next, and its last line stays with its translation. This view
+ * says it to `paginate` (`breaksAfter`), `export.css` to the printing browser,
+ * and the `.docx` to Word (`KEEP_OF`, `loose`); checked against a real Word
+ * and his own pages on bhū sūktam and sūryopaniṣat, where all three break
+ * where his do. Making the three genuinely share a map is
+ * `openspec/changes/bootstrap-v2/tasks.md`, not a comment here.
  *
  * How it works, in order:
  *   1. A hidden probe renders the document at the page's content width, at
@@ -35,7 +37,7 @@ import {
   DocumentBlocks, figureBlockProps, type FigureBlockProps,
 } from './DocumentBlocks.js';
 import { KEEP_WITH_NEXT } from './blocks.js';
-import { mayBreak, pageContent } from './page-slices.js';
+import { pageContent } from './page-slices.js';
 import { useMeasuredBlocks } from './useMeasure.js';
 
 /**
@@ -79,16 +81,17 @@ export function PagedView(
       height: m.height,
       keepWithNext: isHeading(m.id),
       /*
-       * A VERSE IS KEPT WHOLE unless it cannot fit a page by itself — his own
-       * `Translit` style's `w:keepLines`, which is also what `export.css` says
-       * to the browser when it prints. See `mayBreak`. A heading never splits.
+       * A VERSE BREAKS WHERE HIS WORD WOULD BREAK IT — widow control within
+       * each of his paragraphs, its last line with its translation — which is
+       * also what `export.css` says to the browser when it prints and what the
+       * `.docx` says to Word. See `breaksAfter`. A heading never splits.
        */
-      ...(isHeading(m.id) || m.lines === undefined || !mayBreak(m.height, columnHeight)
+      ...(isHeading(m.id) || m.lines === undefined
         ? {}
-        : { breakable: true, lines: m.lines }),
+        : { breakable: true, lines: m.lines, ...(m.breaksAfter === undefined ? {} : { breaksAfter: m.breaksAfter }) }),
     })),
     page,
-  ), [measured, page, columnHeight]);
+  ), [measured, page]);
 
   /**
    * What each page draws, derived ONCE per page map.

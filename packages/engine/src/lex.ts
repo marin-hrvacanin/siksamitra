@@ -112,6 +112,8 @@ export interface LexResult {
 
 /** Anything that already constitutes a break, so no pause is added against it. */
 const CLOSERS = new Set(['|', '/', '।', '॥']);
+/** A daṇḍa as a source writes it — `|` is one there, never a pause. */
+const DANDAS = new Set(['|', '।', '॥']);
 
 function allIn(s: string, set: Set<string>): boolean {
   for (const c of s) if (!set.has(c)) return false;
@@ -312,7 +314,13 @@ export function lex(lines: string[], profile: Profile = DEFAULT_PROFILE): LexRes
     // `paṁ | parama gurubhyo namaḥ` — the seed syllable stands on its own
     // before the words it opens.
     const isSeed = PRANAVA.has(p.text) || PRANAVA.has(bare) || BIJA.has(p.text);
-    if (isSeed && profile.pauses.bija && rest.length > 0 && !alreadyBroken) {
+    // …and one right after a daṇḍa on its line, before ś or h, unless
+    // the register says so: `॥ oṁ śāntiḥ śāntiḥ śāntiḥ ॥` is written without
+    // it, `॥ oṁ | namo bhagavate rudrāya ॥` with it.
+    const before = ps.slice(0, i).reverse().find((q) => q.text);
+    const afterDanda = before !== undefined && before.line === p.line && allIn(before.text, DANDAS)
+      && nxt !== undefined && /^[śh]/u.test(nxt.text);
+    if (isSeed && profile.pauses.bija && rest.length > 0 && !alreadyBroken && (profile.pauses.afterDanda || !afterDanda)) {
       const end = p.start + p.text.length;
       elems.push({
         kind: 'ompause', ch: '', text: '|',

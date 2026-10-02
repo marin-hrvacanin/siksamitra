@@ -54,7 +54,7 @@ export type {
 } from './chant-parts.js';
 
 export type {
-  ChantItem, ChantGroup, ChantSectionAudio, ChantSectionModule, ChantSection,
+  ChantItem, ChantGapKind, ChantCover, ChantContents, ChantGroup, ChantSectionAudio, ChantSectionModule, ChantSection,
   ChantRecording, ChantFeatures, ChantDoc,
 } from './chant-structure.js';
 

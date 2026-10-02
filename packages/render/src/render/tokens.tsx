@@ -54,7 +54,7 @@ export const TOKEN_RENDERERS: { readonly [T in ChantToken['t']]: Renderer<T> } =
 
   sp: (_t, key) => <span className="sp" key={key}> </span>,
 
-  danda: (t, key) => <span className="danda" key={key}>{t.s}</span>,
+  danda: (t, key) => <span className={t.s === '॥' ? 'danda danda--double' : 'danda'} key={key}>{t.s}</span>,
 
   /** Structure, not speech — see the contract. Drawn, never recited. */
   num: (t, key) => <span className="num" key={key}>{t.s}</span>,
@@ -95,7 +95,8 @@ export const TOKEN_RENDERERS: { readonly [T in ChantToken['t']]: Renderer<T> } =
       key={key}
       className={t.fill === true
         ? (t.placeholder === true ? 'fill fill--empty' : 'fill')
-        : 'plain'}
+        /* His note on the line, in the comment face (`ChantText.note`). */
+        : t.note === true ? 'note' : 'plain'}
       // A placeholder is SHOWN and is not text: it must never reach the
       // recitation, a copy or an export. Marked so a copy handler can strip it.
       {...(t.placeholder === true ? { 'data-placeholder': '1' } : {})}

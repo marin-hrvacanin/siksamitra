@@ -113,12 +113,14 @@ def main() -> int:
 
     try:
         paras, narrowed = read(family)
-    except AssertionError as e:
+    except (AssertionError, KeyError) as e:
         # The arial reader is calibrated to ONE document's outlined letters, and
         # it asserts loudly ON PURPOSE when a letter it knows is not where it
         # knows it — a re-exported copy must fail rather than put a letter in
         # the wrong word. But when it was only CHOSEN by font (auto), a refusal
         # means "this is not my document", and the generic reader is right.
+        # An outline it has no entry for (KeyError) is the same refusal: his
+        # bhū sūktam v1.1 is in Arial and is not that document.
         if args.family != "auto" or family != "arial":
             print(f"vu-import: the {family} reader refused this file — {e}", file=sys.stderr)
             return 4

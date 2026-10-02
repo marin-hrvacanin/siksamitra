@@ -41,17 +41,29 @@ export interface Research {
 
 export type DeliveryFormat = 'pdf' | 'docx' | 'smdoc' | 'vedaunion';
 
+/** Every file a host may be able to make, in the order they are offered. */
+export const DELIVERY_FORMATS: readonly DeliveryFormat[] = ['pdf', 'docx', 'smdoc', 'vedaunion'];
+
 export interface Delivered {
   readonly name: string;
   readonly mime: string;
   readonly bytes: Uint8Array;
   readonly format: DeliveryFormat;
+  /** What the file is, written by the program from its document (`describe.ts`). */
+  readonly summary?: string;
 }
 
 /** Each makes the file from the document; a host without one cannot deliver that format. */
 export type Exporters = { readonly [F in DeliveryFormat]?: (doc: ChantDoc, name: string) => Promise<Delivered> };
 
 export interface Host {
+  /**
+   * WHERE THE PERSON IS, in a few words the model is told: "a Telegram chat —
+   * what you deliver is sent into the chat as a file", "the Word add-in's
+   * panel, beside the person's open document". One harness for every host;
+   * this, and which capabilities a host has, is what differs.
+   */
+  readonly where?: string;
   readonly library?: Library;
   readonly research?: Research;
   readonly exporters?: Exporters;
@@ -82,6 +94,13 @@ export interface Tool {
   readonly writes: boolean;
   /** Which host capability it needs, if any. */
   readonly needs?: keyof Host;
+  /**
+   * THE SCHEMA AS THIS HOST HAS IT. One tool, one implementation — and what
+   * the model is told it can ask for is what THIS host can do: a Telegram chat
+   * has no open document, so "into the document you are working in" is not
+   * an option there at all, not an option that fails. The bot offered it.
+   */
+  readonly fit?: (spec: ToolSpec, host: Host) => ToolSpec;
   run(args: Record<string, unknown>, ctx: ToolContext): Promise<string>;
 }
 

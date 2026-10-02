@@ -56,6 +56,7 @@ const {
   DENSITIES, MODES, chromeVars, decl, densityVars, documentVars, flatten, legacyAliases,
   typeVars,
 } = await import('./emit.mjs');
+const { wordMarkRules } = await import('./word-marks.mjs');
 
 /* The tokens that vary with nothing: the scale steps and the mark geometry.
    `color-*` and `doc-*` are excluded because those DO vary, per theme. */
@@ -112,6 +113,7 @@ ${DOCUMENT_THEMES.flatMap((theme) => MODES.map((mode) => `
 ${decl(documentVars(theme, mode))}
 ${decl(legacyAliases())}
 }`)).join('')}
+${DOCUMENT_THEMES.filter((theme) => theme.scale === 'word').map((theme) => wordMarkRules(theme.id)).join('')}
 `;
 
 // ── TypeScript ──────────────────────────────────────────────────────────────

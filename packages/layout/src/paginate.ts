@@ -20,9 +20,10 @@
  * `w:keepLines` and `w:keepNext`. Three mechanisms.
  *
  * What holds them together today is that all three are told the same thing
- * about the one case where they could visibly disagree — a verse is not split
- * — and the view is the one that had to be taught it. Sharing the map for real
- * is open work; `openspec/changes/bootstrap-v2/tasks.md` says so.
+ * about where a verse may break — his Word's widow control within each of his
+ * paragraphs, and a verse's last line kept with its translation; here that is
+ * `LayoutBlock.breaksAfter`. Sharing the map for real is open work;
+ * `openspec/changes/bootstrap-v2/tasks.md` says so.
  *
  * Everything is in points, so the result does not depend on zoom (geometry.ts).
  */
@@ -62,6 +63,13 @@ export interface LayoutBlock {
   /** Minimum lines left behind / carried over, for a breakable block. */
   readonly orphans?: number;
   readonly widows?: number;
+  /**
+   * For each line but the last, may a page end after it? His Word's answer
+   * for a verse — widow control within each of his paragraphs, and the last
+   * line kept with what follows — measured by the view (`breaksAfter` in
+   * `page-slices.ts`). When given, it replaces `orphans` and `widows`.
+   */
+  readonly breaksAfter?: readonly boolean[];
 }
 
 export interface PlacedBlock {
@@ -159,11 +167,17 @@ export function paginate(
         h += lines[fit]!;
         fit += 1;
       }
+      /* Where the block says it may break: back to the last line a page may
+         end after, within what fits. */
+      const allowed = block.breaksAfter;
+      if (allowed !== undefined) {
+        while (fit > 0 && allowed[fit - 1] !== true) { fit -= 1; h -= lines[fit]!; }
+      }
       // Splitting is only allowed if both halves keep enough lines. Otherwise
       // move the whole block: one line stranded on a page is worse than a
       // slightly short page.
-      const leavesEnough = fit >= orphans;
-      const carriesEnough = lines.length - fit >= widows;
+      const leavesEnough = allowed !== undefined || fit >= orphans;
+      const carriesEnough = allowed !== undefined || lines.length - fit >= widows;
       if (fit > 0 && leavesEnough && carriesEnough) {
         current.push({
           id: block.id, top: used, height: h,

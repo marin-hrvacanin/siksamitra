@@ -57,7 +57,7 @@ export type { DocumentFile, DocumentManifest, SaveOptions } from './document.js'
  */
 export {
   CLIP_SELECTOR, FONT_BACKSTOP, HTML_FORMAT, HTML_SLOTS, HTML_VERSION, HtmlError,
-  RASTER_ATTR, chooseFaces, codepointsIn, exportHtml, faceRule, facesNeeded,
+  RASTER_ATTR, chooseFaces, codepointsIn, exportHtml, faceRule, facesNeeded, markFaces,
   fromBase64, importHtml, isSiksamitraHtml, parseFaceCss, svgDocument, toBase64,
 } from './html/index.js';
 export type {
@@ -91,10 +91,12 @@ export type {
  */
 export {
   PDF_ATTACHMENT, PDF_FORMAT, PDF_VERSION, PdfError, embedInPdf, importPdf,
-  importPdfRows, isSiksamitraPdf, paragraphsOfRows,
+  importPdfRows, isSiksamitraPdf, pageTemplates, paragraphsOfRows, runningHeadOf,
 } from './pdf/index.js';
+export type { FurnitureSheet, Templates } from './pdf/index.js';
 export type { PdfEvent, PdfImport, PdfManifest, PdfRow } from './pdf/index.js';
 export { buildDocument } from './build-document.js';
+export { VERSE_END, isCommentLine, isMantraLine } from './build-lines.js';
 export type { BuildOptions } from './build-document.js';
 /* The report a build fills in — for a caller that builds from paragraphs it made (the agent's outline). */
 export { reportFor } from './docx-report.js';

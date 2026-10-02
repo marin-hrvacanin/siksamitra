@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { PT_TO_PX, contentBox, type PageGeometry } from '@siksamitra/layout';
+import { breaksAfter } from './page-slices.js';
 
 export interface MeasuredBlock {
   readonly id: string;
@@ -26,6 +27,8 @@ export interface MeasuredBlock {
   readonly height: number;
   /** Line heights in points, when the block reported them. */
   readonly lines?: readonly number[];
+  /** For each line but the last, whether a page may end after it (`breaksAfter`). */
+  readonly breaksAfter?: readonly boolean[];
 }
 
 const pxToPt = (px: number): number => px / PT_TO_PX;
@@ -92,7 +95,7 @@ export function measureBlocks(root: HTMLElement): MeasuredBlock[] {
     out.push({
       id,
       height: pxToPt(end - rect.top),
-      ...(lines === undefined ? {} : { lines }),
+      ...(lines === undefined ? {} : { lines, breaksAfter: breaksAfter(lineEls.map((l) => l.classList?.contains('pada--para') === true)) }),
     });
   }
   return out;

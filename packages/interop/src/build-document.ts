@@ -9,8 +9,16 @@
  *
  * Marks are TRANSCRIBED from the styles, never re-derived (rule zero at the
  * import boundary): `tokensFromRuns` reads them.
+ *
+ * NOTHING OF HIS PAGE IS LEFT ON THE FLOOR. Measured on his sādhanā against the
+ * PDF Word printed from it (`tools/fidelity/compare_pdf.py`), this reader lost
+ * 571 of its 2,277 lines: every note written on a mantra line, every empty line
+ * he spaces his blocks with, every page break, the title page and the contents.
+ * Each is kept now, in the place he put it — see `openspec/changes/his-page`.
  */
-import type { ChantDoc, ChantFigure, ChantItem, ChantProfileKey, ChantSection, ChantVerse } from '@siksamitra/format';
+import type {
+  ChantDoc, ChantFigure, ChantInstruction, ChantItem, ChantProfileKey, ChantSection, ChantVerse,
+} from '@siksamitra/format';
 import { normalize } from '@siksamitra/engine';
 import { paraRoleOf, roleOf, type WordParaRole } from './word-styles.js';
 import type { DocxDrawing } from './docx-figures.js';
@@ -19,30 +27,8 @@ import { tokensFromRuns } from './docx-runs.js';
 import type { ImportReport } from './docx-report.js';
 import { scriptOfLine } from './word/script-reader.js';
 import { partOf } from './word/rule-parts.js';
-
-/** A locus line — "taittirīya saṁhitā 1.5.3", "Ṛgveda 10.90", "TA 3.12". */
-const RE_LOCUS = /^[\p{L}\s.'’-]+\s\d+(?:[.,]\d+)*\.?$/u;
-/** Prose that tells you to do something. */
-const RE_IMPERATIVE = /^(take|offer|ring|sip|place|touch|pour|show|wave|bow|sprinkle|light|put|say|recite|do|repeat|hold)\b/i;
-
-function classifyProse(text: string): 'source' | 'option' | 'do' | 'note' {
-  const t = text.trim();
-  if (/^optional(ly)?$/i.test(t)) return 'option';
-  if (RE_LOCUS.test(t) && t.length < 90) return 'source';
-  if (RE_IMPERATIVE.test(t)) return 'do';
-  return 'note';
-}
-
-
-/**
- * A line that ENDS a verse: a DOUBLE daṇḍa, numbered or not (`॥`, `॥ 1॥`), or
- * any daṇḍa with the verse's number after it — in the Devanāgarī daṇḍas a
- * PDF's text layer has or the ASCII bars his Word files type — and its number
- * in any script's digits, `॥ १४ ॥` as `॥ 14 ॥`. A SINGLE daṇḍa
- * with no number is the half-verse: it used to close the verse there, so
- * kanakadhārā's 21 ślokas read as 41 and agnimīḻe's 9 as 19.
- */
-const VERSE_END = /(?:॥|\|\|)\s*\p{Nd}*\s*(?:॥|\|\|)?\s*$|(?:[।॥]|\|{1,2})\s*\p{Nd}+\s*(?:[।॥]|\|{1,2})?\s*$/u;
+import { registersOf } from './build-registers.js';
+import { VERSE_END, classifyProse, linesIn, mantraOf, materialise, writeTranslations, type Entry } from './build-lines.js';
 
 export interface BuildOptions {
   /** A title the CALLER chose; it wins over the file's own. */
@@ -62,61 +48,48 @@ export function buildDocument(paragraphs: readonly WordParagraph[], opts: BuildO
   const { report } = opts;
   /** The file's own title, from a `Title` / `Heading1` paragraph. */
   let ownTitle: string | undefined;
-  const titleNow = (): string => opts.title ?? ownTitle ?? opts.fallbackTitle;
   /** Prose before the first section: the document's own front matter. */
-  const front: import('@siksamitra/format').ChantInstruction[] = [];
+  const front: ChantInstruction[] = [];
+  /** A book's title page, line by line, and its contents heading. */
+  const cover: string[] = [];
+  let contentsTitle: string | undefined;
+  /** Still before the first heading of the body — where a title page is. */
+  let inFront = true;
   const sections: ChantSection[] = [];
   let part: string | undefined;
   let sectionRef: ChantSection | null = null;
-  /** Reading through a call defeats control-flow narrowing: TypeScript cannot
-   *  see the closure's assignment and kept narrowing the variable to `null`,
-   *  which made every later read `never`. */
+  /** Read through a call: TypeScript cannot see a closure's assignment. */
   const current = (): ChantSection | null => sectionRef;
+  /** Sections whose source was our `Source`: comment lines after it head the verse. */
+  const sealed = new Set<ChantSection>();
+  /** Comment lines read on mantra lines, waiting for the verse they head. */
   let pendingSource: string | undefined;
   let verseRuns: WordRun[] = [];
+  /** How many of the verse's lines each of its paragraphs holds. */
+  let verseParas: number[] = [];
   /** The part the verse being read is in: its first line's content control. */
   let verseTag: string | undefined;
   /** Which register marks each verse — a Word part's, or none. */
   const registers = new Map<ChantVerse, ChantProfileKey | null>();
+  /** Each verse's translation as it is read: its lines, and how many of them
+   *  each of his paragraphs holds. Written onto the verse at the end. */
+  const translations = new Map<ChantVerse, { lines: string[]; paras: number[] }>();
+  const translationOf = (v: ChantVerse): { lines: string[]; paras: number[] } =>
+    translations.get(v) ?? translations.set(v, { lines: [], paras: [] }).get(v)!;
   let verseN = 0;
 
-  // Returns the section rather than only assigning it: TypeScript cannot see a
-  // closure's assignment, so reads after `if (section === null) newSection()`
-  // narrowed to `never`.
   /*
    * THE SHAPE OF THE FILE says what its headings are. A single document — his
    * Śivopāsana, and every file `exportWord` writes — names itself once, in
    * Heading 2, and gives its chants Heading 3 and their steps Heading 4: the
    * three levels the app draws (`ROLE_OF_ELEMENT` in the tokens). A BOOK — his
-   * sādhanā — has a title page and many Heading 2 parts, one level more than a
-   * document has, and there Heading 2 is the part and Heading 3 and 4 the
-   * sections, as before.
+   * sādhanā — has many Heading 2 parts, one level more than a document has,
+   * and there Heading 2 is the part, Heading 3 the chant and Heading 4 a step
+   * inside it (`ChantSection.sub`).
    */
   const roles = paragraphs.map((p) => paraRoleOf(p.pStyle));
+  let verseOurs = false; // the verse being read began with our tag
   const single = !roles.includes('title') && roles.filter((r) => r === 'part').length === 1;
-
-  /* A section nobody headed. A book's takes the book's title, as before; a
-     single document's has none, because its name is already its Heading 2
-     and a second copy under it would be a heading nobody wrote. */
-  const untitled = (): string => (single ? '' : titleNow());
-
-  const newSection = (titleText: string, _role: WordParaRole): ChantSection => {
-    const id = `s-${sections.length + 1}`;
-    /* No `n`: a number is written as the heading's own text when it has one.
-       This used to invent one from the count of sections, and his
-       `prathamo'nuvākaḥ` went back out to Word as `18. prathamo'nuvākaḥ`. */
-    const made = {
-      id,
-      title: titleText,
-      ...(part !== undefined ? { part } : {}),
-      verses: [],
-    } as ChantSection;
-    sections.push(made);
-    sectionRef = made;
-    report.structure.sections += 1;
-    verseN = 0;
-    return made;
-  };
 
   /*
    * THE ORDER OF A SECTION'S CONTENTS, kept as it is read.
@@ -124,37 +97,65 @@ export function buildDocument(paragraphs: readonly WordParagraph[], opts: BuildO
    * `ChantSection` carries both `verses` and `items`, and `itemsOf` prefers
    * `items` whenever it is not empty — so a section that put ONE thing in
    * `items` and its verses in `verses` drew that one thing and nothing else.
-   * That was already happening: a step beginning with a direction and then a
-   * mantra came back as the direction alone. Recorded here by reference and
-   * materialised at the end, so a verse that gains a translation or an
-   * instruction after it was recorded still goes in carrying it.
+   * Recorded here by reference and materialised at the end, so a verse that
+   * gains a translation or an instruction after it was recorded still goes in
+   * carrying it.
    */
-  type Entry = { verse: ChantVerse } | { item: ChantItem };
   const order = new Map<string, Entry[]>();
-  const entries = (sec: ChantSection): Entry[] => {
-    const found = order.get(sec.id);
-    if (found !== undefined) return found;
-    const made: Entry[] = [];
-    order.set(sec.id, made);
+  const entries = (sec: ChantSection): Entry[] =>
+    order.get(sec.id) ?? order.set(sec.id, []).get(sec.id)!;
+  /** What stands between a part's heading and its first chant waits for it. */
+  let waiting: ChantItem[] = [];
+
+  /** An item where it stands: in the section being read, or waiting. */
+  const place = (item: ChantItem): void => {
+    const sec = current();
+    if (sec === null) waiting.push(item);
+    else entries(sec).push({ item });
+  };
+  /** A comment line no verse came after keeps its place, as a note. */
+  const flushNote = (): void => {
+    if (pendingSource === undefined) return;
+    const text = pendingSource;
+    pendingSource = undefined;
+    place({ t: 'instruction', instruction: { kind: 'note', text: { en: text }, comment: 'verse' } });
+  };
+  /** Anything that is not the verse a comment heads puts the comment down first. */
+  const add = (item: ChantItem): void => { flushNote(); place(item); };
+
+  const newSection = (titleText: string, role: WordParaRole, heading = true): ChantSection => {
+    if (heading) flushNote(); // a section a verse needed keeps the line for it
+    const id = `s-${sections.length + 1}`;
+    /* No `n`: a number is the heading's own text when it has one — inventing
+       one sent his `prathamo'nuvākaḥ` back out as `18. prathamo'nuvākaḥ`. */
+    const made = {
+      id,
+      title: titleText,
+      ...(part !== undefined ? { part } : {}),
+      ...(!single && role === 'step' ? { sub: true as const } : {}),
+      verses: [],
+    } as ChantSection;
+    sections.push(made);
+    sectionRef = made;
+    report.structure.sections += 1;
+    verseN = 0;
+    if (waiting.length > 0) {
+      entries(made).push(...waiting.map((item) => ({ item })));
+      waiting = [];
+    }
     return made;
   };
+  /* A section nobody headed has no heading: a second copy of the document's
+     name over it, which a book's used to take, is a heading nobody wrote. */
+  const anySection = (): ChantSection => current() ?? newSection('', 'section', false);
 
-  /** One picture, as an item of the step being read. Where its bytes come
-      from is the caller's business — a zip for Word, nothing yet for a PDF. */
   const addFigure = (drawing: DocxDrawing): void => {
-    const sec = current() ?? newSection(untitled(), 'section');
-    const figure = opts.figure?.(drawing, sec.id) ?? null;
-    if (figure !== null) entries(sec).push({ item: { t: 'figure', figure } });
+    const figure = opts.figure?.(drawing, current()?.id ?? 'doc') ?? null;
+    if (figure !== null) add({ t: 'figure', figure });
   };
 
-  /**
-   * A `Caption` paragraph belongs to the picture above it.
-   *
-   * Word's own style, which is what we write and what a person using Word gets
-   * from Insert ▸ Caption. Without this the caption came back as a direction —
-   * a step with one picture read as picture, note, picture, note — because a
-   * caption is prose and `classifyProse` has no way to know better.
-   */
+  /** A `Caption` paragraph belongs to the picture above it (Word's own style,
+   *  which we write); without this it came back as a direction. */
   const addCaption = (text: string): void => {
     const list = order.get(current()?.id ?? '') ?? [];
     const last = list[list.length - 1];
@@ -166,7 +167,7 @@ export function buildDocument(paragraphs: readonly WordParagraph[], opts: BuildO
 
   const closeVerse = (): void => {
     if (verseRuns.length === 0) return;
-    const sec: ChantSection = current() ?? newSection(untitled(), 'section');
+    const sec: ChantSection = anySection();
     verseN += 1;
     const where = `${sec.id}/v-${verseN}`;
     /* A verse is read in the script it is written in, and its marks with it:
@@ -174,14 +175,24 @@ export function buildDocument(paragraphs: readonly WordParagraph[], opts: BuildO
     const script = scriptOfLine(verseRuns.map((r) => r.text).join(''));
     const tokens = tokensFromRuns(verseRuns, report, where, script);
     const register = partOf(verseTag)?.register ?? null;
+    const paras = verseParas;
     verseRuns = [];
+    verseParas = [];
     verseTag = undefined;
     if (tokens.length === 0) return;
+    /* The paragraphs, when there is more than one: they must account for every
+       line, and a count that does not is reported rather than written. */
+    const lines = tokens.filter((t) => t.t === 'br').length + 1;
+    const counted = paras.reduce((a, b) => a + b, 0);
+    if (paras.length > 1 && counted !== lines) {
+      report.unresolved.push({ at: where, what: `its paragraphs hold ${counted} lines and the verse has ${lines}`, raw: '' });
+    }
     const verse: ChantVerse = {
       id: `${sec.id}-v${verseN}`,
       n: String(verseN),
       tokens,
       ...(pendingSource !== undefined ? { source: pendingSource } : {}),
+      ...(paras.length > 1 && counted === lines ? { paragraphs: paras } : {}),
     };
     pendingSource = undefined;
     registers.set(verse, register);
@@ -190,148 +201,186 @@ export function buildDocument(paragraphs: readonly WordParagraph[], opts: BuildO
     report.structure.verses += 1;
   };
 
+  /** The verse the next translation line belongs to: the last thing read. */
+  const translated = (): ChantVerse | undefined => {
+    const sec = current();
+    const list = sec === null ? [] : entries(sec);
+    const last = list[list.length - 1];
+    return last !== undefined && 'verse' in last ? last.verse : undefined;
+  };
+
   for (const p of paragraphs) {
     const role = paraRoleOf(p.pStyle);
     const text = p.runs.map((r) => r.text).join('').trim();
+    const heading = role === 'title' || role === 'part' || role === 'section' || role === 'step';
 
-    /* A picture stands where its paragraph stands, so it is taken before the
-       paragraph is classified — a `<w:drawing>` carries no text, and a
-       paragraph with no text is one this reader would otherwise skip. */
-    if (p.drawings !== undefined) {
+    /* A book's contents: its heading is kept, its entries are Word's to make. */
+    if (p.pStyle === 'TOCHeading') { if (text !== '') contentsTitle = text; continue; }
+
+    /* THE TITLE PAGE: what is centred before the first heading. */
+    if (inFront && !heading && role === 'prose' && p.align === 'center' && text !== '') {
+      cover.push(...text.split('\n').map((l) => l.trim()).filter((l) => l !== ''));
+      continue;
+    }
+    if (heading) inFront = false;
+
+    /* A picture stands where its paragraph stands — after the heading it is
+       in, which opens the section it belongs to. */
+    if (p.drawings !== undefined && !heading) {
       closeVerse();
       for (const d of p.drawings) addFigure(d);
     }
 
     if (role === 'drop') continue;
     /* ANYTHING that is not a line of the verse ends the verse — a translation
-       above all, which belongs to the verse BEFORE it. It did not: a verse
-       whose last line ended in a single daṇḍa ran on through its translation
-       into the next verse, and the translation went to the verse before. */
+       above all, which belongs to the verse BEFORE it. */
     if (role !== 'verse-line') closeVerse();
 
     if (role === 'title') {
       closeVerse();
-      if (ownTitle === undefined && text !== '') { ownTitle = text; continue; }
-      part = text;
-      sectionRef = null;
-      continue;
-    }
-    if (role === 'part') {
+      if (ownTitle === undefined && text !== '') ownTitle = text;
+      else { part = text; flushNote(); sectionRef = null; }
+    } else if (role === 'part') {
       closeVerse();
-      if (single && ownTitle === undefined && sections.length === 0 && text !== '') { ownTitle = text; continue; }
-      part = text;
-      sectionRef = null;
-      continue;
-    }
-    /* In a single document a chant's heading is its PART, as the app keeps it,
-       and the steps under it are its sections. */
-    if (single && role === 'section') {
+      if (single && ownTitle === undefined && sections.length === 0 && text !== '') ownTitle = text;
+      else { flushNote(); part = text; sectionRef = null; }
+    } else if (single && role === 'section') {
+      /* In a single document a chant's heading is its PART, as the app keeps
+         it, and the steps under it are its sections. */
       closeVerse();
+      flushNote();
       part = text === '' ? undefined : text;
       sectionRef = null;
-      continue;
-    }
-    if (role === 'section' || role === 'step') {
+    } else if (role === 'section' || role === 'step') {
       closeVerse();
       if (text !== '') newSection(text, role);
+    }
+    if (heading) {
+      for (const d of p.drawings ?? []) addFigure(d);
+      if (p.pageBreak === true && !inFront) add({ t: 'break' });
       continue;
     }
-    /* A MANTRA-STYLE LINE WRITTEN WHOLLY IN HIS COMMENT STYLE is not a mantra:
-       it is the small grey label over one — `śivopāsana mantrāḥ`, `(anuṣṭup
-       chandaḥ, 8 syllables per pāda…)` — and read as a verse it had no
-       letters and was dropped. It is the next verse's source line. */
-    const commentOnly = text !== '' && p.runs.every((r) => r.text.trim() === '' || roleOf(r.rStyle) === 'comment');
-    if (role === 'verse-line' && commentOnly) {
+
+    /* AN EMPTY PARAGRAPH IS AN EMPTY LINE, of its own height — the way he
+       spaces his blocks. In the front matter it is the title page's. */
+    if (text === '' && p.drawings === undefined) {
+      /* A paragraph holding only his page break IS the break, not a line. */
+      if (p.pageBreak === true) { if (!inFront) add({ t: 'break' }); continue; }
+      if (!inFront) {
+        if (role === 'translation' && translated() !== undefined) {
+          /* An empty line of the translation — between two of its paragraphs,
+             or under a verse that has none, where it is a gap (see below). */
+          const t = translationOf(translated()!);
+          t.lines.push('');
+          t.paras.push(1);
+        } else if (role === 'verse-line') add({ t: 'gap', of: 'verse' });
+        else if (role === 'insert') add({ t: 'gap', of: 'small' });
+        else if (role === 'translation') add({ t: 'gap', of: 'translation' });
+        else if (role === 'prose') add({ t: 'gap', of: 'body' });
+      }
+      continue;
+    }
+
+    /* A LINE WRITTEN WHOLLY IN HIS COMMENT STYLE is not a mantra: it is the
+       small grey line over one — a source, a metre, a direction. On a mantra
+       line (a `Translit` paragraph) it heads the verse after it, or the
+       section when it stands right under the heading; in a prose paragraph it
+       is a note in the comment face, where it stands. */
+    /* A paragraph holding only a picture has nothing in it to read further. */
+    if (text === '') continue;
+    const commentOnly = p.runs.every((r) => r.text.trim() === '' || roleOf(r.rStyle) === 'comment');
+    if ((role === 'verse-line' || role === 'insert') && commentOnly) {
       closeVerse();
-      pendingSource = pendingSource === undefined ? text : `${pendingSource} ${text}`;
+      const sec = current() ?? (single && part !== undefined ? anySection() : null);
+      /* Our `Source` paragraph is the section's — or, after its verses, begins
+         one with no heading: the verses from that source (bhū sūktam's TB
+         3.1.2.6). His comment lines right under a heading are the section's
+         too, unless a `Source` came first — then they head the verse. */
+      const ours = p.pStyle === 'Source';
+      /* A line carrying our verse bookmark is the next verse's own. */
+      if (sec !== null && p.ours === undefined && (ours || (entries(sec).length === 0 && pendingSource === undefined && !sealed.has(sec)))) {
+        const into = ours && entries(sec).length > 0 ? newSection('', 'section', false) : sec;
+        into.source = into.source == null ? text : `${into.source}\n${text}`;
+        if (ours) sealed.add(into);
+      } else {
+        pendingSource = pendingSource === undefined ? text : `${pendingSource}\n${text}`;
+      }
       continue;
     }
-    /* So is a plain paragraph wholly in the Comment style, which is how a
-       source line is written (`body.ts`): the section's when it opens a
-       section that has none yet, else the next verse's. */
     if (role === 'prose' && commentOnly) {
-      const sec = current();
-      if (sec !== null && sec.verses.length === 0 && sec.source === undefined && pendingSource === undefined) sec.source = text;
-      else pendingSource = pendingSource === undefined ? text : `${pendingSource} ${text}`;
+      if (inFront) { front.push({ kind: 'note', text: { en: text }, comment: 'body' }); continue; }
+      const kind = classifyProse(text);
+      add({ t: 'instruction', instruction: { kind: kind === 'do' ? 'do' : 'note', text: { en: text }, comment: 'body' } });
       continue;
     }
     if (role === 'verse-line') {
       // Consecutive Translit paragraphs are one verse until a daṇḍa + number
       // closes it — the same grouping the PDF path uses.
-      if (verseRuns.length === 0) verseTag = p.sdt;
+      /* Our tag begins a verse; inside a verse of ours, so does an untagged line
+         — typed in Word. Inside one of his, his lines run on to the number. */
+      if (p.ours === 'start' || (verseOurs && p.ours === undefined)) closeVerse();
+      if (verseRuns.length === 0) { verseTag = p.sdt; verseOurs = p.ours !== undefined; }
       verseRuns.push(...p.runs, wordRun('\n'));
-      if (VERSE_END.test(text)) closeVerse();
+      verseParas.push(linesIn(p));
+      if (VERSE_END.test(mantraOf(p))) closeVerse();
+      if (p.pageBreak === true) { closeVerse(); add({ t: 'break' }); }
       continue;
     }
     if (role === 'translation') {
-      const sec = current();
-      const last = sec === null ? undefined : sec.verses[sec.verses.length - 1];
-      /* LINE BY LINE, as he writes them: a translation of three lines is
-         three paragraphs in his files, one per pāda, and runs on as one block
-         when joined with a space. */
-      if (last !== undefined && text !== '') {
-        last.translation = {
-          en: last.translation?.en === undefined ? text : `${last.translation.en}\n${text}`,
-        };
+      const last = translated();
+      /* LINE BY LINE, as he writes them: a paragraph per line or a soft break
+         between them, and which it was is kept (`translation.paragraphs`). */
+      if (last !== undefined) {
+        const t = translationOf(last);
+        t.lines.push(...text.split('\n').map((l) => l.trim()));
+        t.paras.push(text.split('\n').length);
+      } else {
+        add({ t: 'instruction', instruction: { kind: 'note', text: { en: text } } });
       }
+      if (p.pageBreak === true) add({ t: 'break' });
       continue;
     }
     if (role === 'caption') {
       addCaption(text);
       continue;
     }
-    if (role === 'insert') {
-      report.unresolved.push({
-        at: current()?.id ?? 'doc',
-        what: 'the "Insert" paragraph style has no home in the format yet (00 §5.1)',
-        raw: text.slice(0, 120),
-      });
-      continue;
-    }
     // Prose: a locus, an option, a direction, or a note.
-    if (text === '') continue;
     const kind = classifyProse(text);
     /* In a single document, a note under a chant's heading and before its
        first verse is that chant's — not the document's front matter. */
-    const sec = current() ?? (single && part !== undefined ? newSection(untitled(), 'section') : null);
-    if (kind === 'source') {
-      if (sec !== null && sec.verses.length === 0) sec.source = text;
-      else pendingSource = text;
-    } else if (sec !== null) {
-      const instr = {
-        kind: kind === 'option' ? ('option' as const)
-          : kind === 'do' ? ('do' as const) : ('note' as const),
-        text: { en: text },
-      };
-      const last = sec.verses[sec.verses.length - 1];
-      if (last !== undefined) last.instructions = [...(last.instructions ?? []), instr];
-      else entries(sec).push({ item: { t: 'instruction', instruction: instr } });
-    } else {
+    const sec = current() ?? (single && part !== undefined ? anySection() : null);
+    if (inFront || sec === null) {
       /* Before any section: the document's own front matter — the title
          page's lines, the dedication, the instructions for the whole text.
          It used to be dropped, all 13 paragraphs of the sādhanā's. */
       front.push({ kind: kind === 'option' ? 'option' : kind === 'do' ? 'do' : 'note', text: { en: text } });
+    } else if (kind === 'source' && entries(sec).length === 0) {
+      sec.source = text;
+    } else {
+      const instr: ChantInstruction = {
+        kind: kind === 'option' ? 'option' : kind === 'do' ? 'do' : 'note',
+        text: { en: text },
+      };
+      const last = translated();
+      if (last !== undefined) last.instructions = [...(last.instructions ?? []), instr];
+      else add({ t: 'instruction', instruction: instr });
     }
+    if (p.pageBreak === true) add({ t: 'break' });
   }
   closeVerse();
+  flushNote();
+
+  writeTranslations(translations, order);
 
   const norm = normalize(paragraphs.map((p) => p.runs.map((r) => r.text).join('')).join('\n'));
   report.normalisations = norm.changes;
 
-  /* Materialised last, so a verse goes in carrying whatever it gained after it
-     was recorded. A section with nothing but verses is left with no `items` at
-     all, which is the shape `itemsOf` reads as "the verses, in order". */
-  const withItems = sections.map((s) => {
-    const list = order.get(s.id) ?? [];
-    if (!list.some((e) => 'item' in e)) return s;
-    return {
-      ...s,
-      items: list.map((e) => ('item' in e ? e.item : { t: 'verse' as const, ...e.verse })),
-    };
-  });
+  const withItems = materialise(sections, order);
 
-  const title = titleNow();
-  const kept = withItems.filter((s) => s.verses.length > 0 || (s.items?.length ?? 0) > 0);
+  const title = opts.title ?? ownTitle ?? (cover.length > 0 ? cover.join(' ') : opts.fallbackTitle);
+  /* A heading is kept though nothing stands under it (`śrī rudranyāsaḥ` then
+     its first step at once): dropping it lost its words. */
+  const kept = withItems.filter((s) => s.verses.length > 0 || (s.items?.length ?? 0) > 0 || (s.title ?? '') !== '');
   const { sections: marked, register } = registersOf(kept, registers, opts.register ?? null);
   const doc: ChantDoc = {
     title,
@@ -339,46 +388,10 @@ export function buildDocument(paragraphs: readonly WordParagraph[], opts: BuildO
     ...(front.length === 0 ? {} : { instructions: front }),
     sections: marked,
     ...(register === null ? {} : { profile: { preset: register } }),
+    ...(single ? {} : { book: true as const }),
+    ...(cover.length === 0 ? {} : { cover: { lines: cover } }),
+    ...(contentsTitle === undefined ? {} : { contents: { title: contentsTitle } }),
     version: 3,
   };
   return doc;
-}
-
-/**
- * THE REGISTERS THE PARTS SAID, as the app keeps them: a register every verse
- * of the document was marked in is the DOCUMENT's, and one every verse of a
- * section was is the SECTION's — the shape `exportWord` writes them from, so a
- * document goes out and comes back the same. A verse in a part its section
- * does not share keeps its own. Outside every part, the document's recorded
- * register marks a verse, and when there is none nothing is said: the app's
- * default is the add-in's.
- */
-function registersOf(
-  sections: readonly ChantSection[], registers: ReadonlyMap<ChantVerse, ChantProfileKey | null>,
-  /** What marks a verse in no part: the document's recorded register. */
-  outside: ChantProfileKey | null,
-): { sections: ChantSection[]; register: ChantProfileKey | null } {
-  const of = (v: ChantVerse): ChantProfileKey | null => registers.get(v) ?? outside;
-  const shared = (regs: readonly (ChantProfileKey | null)[]): ChantProfileKey | null =>
-    (regs.length > 0 && regs.every((r) => r !== null && r === regs[0]) ? regs[0]! : null);
-  const whole = shared(sections.flatMap((s) => s.verses.map(of)));
-  if (whole !== null) return { sections: [...sections], register: whole };
-  return {
-    register: null,
-    sections: sections.map((s) => {
-      const regs = s.verses.map(of);
-      const one = shared(regs);
-      if (one !== null) return { ...s, profile: { preset: one } };
-      if (regs.every((r) => r === null)) return s;
-      const verses = s.verses.map((v) => (of(v) === null ? v : { ...v, profile: { preset: of(v)! } }));
-      const byId = new Map(verses.map((v) => [v.id, v]));
-      return {
-        ...s,
-        verses,
-        ...(s.items === undefined ? {} : {
-          items: s.items.map((it) => (it.t === 'verse' ? { t: 'verse' as const, ...(byId.get(it.id) ?? it) } : it)),
-        }),
-      };
-    }),
-  };
 }

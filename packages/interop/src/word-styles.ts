@@ -217,6 +217,7 @@ export interface WordParaStyle {
 
 export const WORD_PARA_STYLES: readonly WordParaStyle[] = [
   { id: 'Translit', role: 'verse-line', seen: 434, note: 'the mantra lines' },
+  { id: 'Source', role: 'verse-line', note: "ours: a section's source line, his Translit in every measure" },
   { id: 'Devanagari', role: 'verse-line', seen: 56, note: 'his mantra lines in Devanāgarī' },
   { id: 'Prijevod', role: 'translation', seen: 197, note: 'Croatian for "translation"' },
   { id: 'Title', role: 'title' },
@@ -231,7 +232,7 @@ export const WORD_PARA_STYLES: readonly WordParaStyle[] = [
   { id: 'Normal', role: 'prose' },
   { id: 'NormalWeb', role: 'prose' },
   // A table of contents is regenerable; running furniture is not content.
-  ...(['TOCHeading', 'TOC2', 'TOC3', 'Header', 'Footer', 'BalloonText', 'Revision'] as const)
+  ...(['TOCHeading', 'TOC1', 'TOC2', 'TOC3', 'TOC4', 'Header', 'Footer', 'BalloonText', 'Revision'] as const)
     .map((id) => ({ id, role: 'drop' as const })),
 ];
 

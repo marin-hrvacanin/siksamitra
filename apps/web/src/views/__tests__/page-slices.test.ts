@@ -7,15 +7,15 @@
  *                  which page (`lineRange`); the view chose its blocks by ID
  *                  and read none of it, so a split verse — whose id is on both
  *                  pages — was drawn WHOLE on both.
- *   `mayBreak`     a verse is not split at all unless it cannot fit a page by
- *                  itself, because that is what his `Translit` style says
- *                  (`w:keepLines`) and what `export.css` says to a printing
- *                  browser (`break-inside: avoid`). The view was the only one
- *                  of the three that split a verse for tidiness.
+ *   `breaksAfter`  where a page may end inside a verse: his Word's widow
+ *                  control within each of his paragraphs, and its last line
+ *                  kept with its translation. It once kept every verse whole,
+ *                  on the belief that his `Translit` carries `w:keepLines` —
+ *                  it does not, and his own pages break verses.
  */
 import { describe, expect, it } from 'vitest';
 import type { Page } from '@siksamitra/layout';
-import { mayBreak, pageContent } from '../page-slices.js';
+import { breaksAfter, pageContent } from '../page-slices.js';
 
 const page = (blocks: Page['blocks']): Page => ({ index: 0, blocks, used: 0 });
 
@@ -63,24 +63,25 @@ describe('the blocks one page draws', () => {
   });
 });
 
-describe('whether a block may be split', () => {
-  it('a verse that fits a page is kept whole', () => {
-    /* MEASURED as a divergence, not chosen as a taste: the view split 22 of
-       Śrī Rudram's verses at A4 that both exports keep whole. */
-    expect(mayBreak(200, 700)).toBe(false);
+describe('where a page may end inside a verse — his Word’s rule', () => {
+  /* `breaksAfter(starts)`: for each line but the last, may a page end after it. */
+  it('one paragraph of four lines: only in the middle — never one line alone at either end', () => {
+    expect(breaksAfter([true, false, false, false])).toEqual([false, true, false]);
   });
-
-  it('a verse exactly as tall as the column is kept whole', () => {
-    /* It fits. Splitting it would produce a page with two lines on it and a
-       page with the rest, for nothing. */
-    expect(mayBreak(700, 700)).toBe(false);
+  it('six lines, one paragraph — his sūryopaniṣat 7 broke four and two', () => {
+    expect(breaksAfter([true, false, false, false, false, false])).toEqual([false, true, true, true, false]);
   });
-
-  it('and one taller than the page is split, because nothing else can be done', () => {
-    /* Word splits a paragraph taller than the page despite `keepLines`, and so
-       does Chrome despite `break-inside: avoid`. Refusing here would draw a
-       verse off the bottom of the paper for ever. */
-    expect(mayBreak(701, 700)).toBe(true);
-    expect(mayBreak(2100, 700)).toBe(true);
+  it('two half-verses of two: between them, and nowhere inside either (bhū sūktam 8)', () => {
+    expect(breaksAfter([true, false, true, false])).toEqual([false, true, false]);
+  });
+  it('a refrain, a line a paragraph: after any line', () => {
+    expect(breaksAfter([true, true, true])).toEqual([true, true]);
+  });
+  it('nine and one (sūryopaniṣat 5): inside the nine away from its ends, and between them', () => {
+    const starts = [true, false, false, false, false, false, false, false, false, true];
+    expect(breaksAfter(starts)).toEqual([false, true, true, true, true, true, true, false, true]);
+  });
+  it('two lines are never parted', () => {
+    expect(breaksAfter([true, false])).toEqual([false]);
   });
 });

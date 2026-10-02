@@ -24,6 +24,9 @@ import type { ChantScriptKey, ChantSyllable, ChantToken } from '@siksamitra/form
 import { holdBoxVars } from '../holdBox';
 import { CANDRA_SIGN as DEVA_CANDRA, SCRIPT_DIGITS as DIGITS } from '@siksamitra/engine';
 
+/** U+0305, the Ṛgvedic overline — in the letter in the model, a mark of its own on the page. */
+const OVERLINE_MARK = '̅';
+
 export type ScriptKey = ChantScriptKey;
 export type Unit = ChantSyllable['units'][number];
 export type Syl = ChantSyllable;
@@ -124,7 +127,14 @@ export function renderUnit(
   if (o.showMarks && u.svara) cls.push(`sv-${u.svara}`);
   if (o.showMarks && u.change) cls.push('is-change');
   if (o.showMarks && u.c === VIRAMA) cls.push('u--virama');
-  const glyph = u.c + (u.candra ? '̐' : '');
+  /* The Vedic anusvāra (`gum`): his page draws it as one glyph of his
+     \`VedicAnusvara\` face, and a theme that does needs to know which it is. */
+  if (o.showMarks && u.candra === true && u.c === 'm') cls.push('u--gum');
+  /* The Ṛgvedic overline is its own mark after the letter — his \`Long\`
+     style, a run of its own — so a page that sets it apart can, and the
+     letter itself stays in the line's face. */
+  const long = u.c.includes(OVERLINE_MARK);
+  const glyph = u.c.replaceAll(OVERLINE_MARK, '') + (u.candra ? '̐' : '');
   return (
     <Fragment key={key}>
       {withSbhakti && u.sbhakti ? <span className="sbhakti" aria-hidden /> : null}
@@ -133,6 +143,7 @@ export function renderUnit(
         {...(o.unitOffset === undefined ? {} : { 'data-u': o.unitOffset + local })}
       >
         {glyph}
+        {long ? <span className="u__long">{OVERLINE_MARK}</span> : null}
       </span>
       {withSup && u.sup ? <sup className="u__sup">{u.sup}</sup> : null}
     </Fragment>

@@ -160,6 +160,7 @@
   --doc-title-style: normal;
   --doc-title-weight: 400;
   --doc-title-color: var(--doc-heading);
+  --doc-title-shift: 0px;
   --doc-part-size: 1.75rem;
   --doc-part-lead: 1.25;
   --doc-part-after: 0.55rem;
@@ -170,6 +171,7 @@
   --doc-part-style: normal;
   --doc-part-weight: 400;
   --doc-part-color: var(--doc-heading);
+  --doc-part-shift: 0px;
   --doc-section-size: 1.45rem;
   --doc-section-lead: 1.3;
   --doc-section-after: 0.45rem;
@@ -180,6 +182,7 @@
   --doc-section-style: normal;
   --doc-section-weight: 400;
   --doc-section-color: var(--doc-heading);
+  --doc-section-shift: 0px;
   --doc-step-size: 1.28rem;
   --doc-step-lead: 1.35;
   --doc-step-after: 0.4rem;
@@ -190,6 +193,7 @@
   --doc-step-style: normal;
   --doc-step-weight: 400;
   --doc-step-color: var(--doc-heading);
+  --doc-step-shift: 0px;
   --doc-verse-size: clamp(1.06rem, 4.286cqi, 1.62rem);
   --doc-verse-lead: 1.95;
   --doc-verse-after: 0.9rem;
@@ -200,6 +204,7 @@
   --doc-verse-style: normal;
   --doc-verse-weight: 400;
   --doc-verse-color: var(--doc-ink);
+  --doc-verse-shift: 0px;
   --doc-translation-size: 1rem;
   --doc-translation-lead: 1.55;
   --doc-translation-after: 0.5rem;
@@ -210,6 +215,7 @@
   --doc-translation-style: italic;
   --doc-translation-weight: 400;
   --doc-translation-color: var(--doc-soft);
+  --doc-translation-shift: 0px;
   --doc-body-size: 1rem;
   --doc-body-lead: 1.6;
   --doc-body-after: 0.5rem;
@@ -220,6 +226,7 @@
   --doc-body-style: normal;
   --doc-body-weight: 400;
   --doc-body-color: var(--doc-ink);
+  --doc-body-shift: 0px;
   --doc-comment-size: 0.72rem;
   --doc-comment-lead: 1.5;
   --doc-comment-after: 0.3rem;
@@ -230,6 +237,7 @@
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: var(--doc-quiet);
+  --doc-comment-shift: 0px;
   --doc-head-size: 0.68rem;
   --doc-head-lead: 1.4;
   --doc-head-after: 0px;
@@ -240,6 +248,19 @@
   --doc-head-style: normal;
   --doc-head-weight: 400;
   --doc-head-color: var(--doc-quiet);
+  --doc-head-shift: 0px;
+  --doc-small-size: 0.5rem;
+  --doc-small-lead: 1.15;
+  --doc-small-after: 0px;
+  --doc-small-indent: 0px;
+  --doc-small-hanging: 0px;
+  --doc-small-right: 0px;
+  --doc-small-face: 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', Georgia, serif;
+  --doc-small-style: normal;
+  --doc-small-weight: 400;
+  --doc-small-color: var(--doc-ink);
+  --doc-small-shift: 0px;
+  --doc-comment-on-verse-shift: 0px;
   --toolbar-h: 2rem;
   --status-h: 1.35rem;
   --text-ui: 0.7rem;
@@ -1083,6 +1104,7 @@
   --doc-title-style: normal;
   --doc-title-weight: 400;
   --doc-title-color: var(--doc-heading);
+  --doc-title-shift: 0px;
   --doc-part-size: 1.75rem;
   --doc-part-lead: 1.25;
   --doc-part-after: 0.55rem;
@@ -1093,6 +1115,7 @@
   --doc-part-style: normal;
   --doc-part-weight: 400;
   --doc-part-color: var(--doc-heading);
+  --doc-part-shift: 0px;
   --doc-section-size: 1.45rem;
   --doc-section-lead: 1.3;
   --doc-section-after: 0.45rem;
@@ -1103,6 +1126,7 @@
   --doc-section-style: normal;
   --doc-section-weight: 400;
   --doc-section-color: var(--doc-heading);
+  --doc-section-shift: 0px;
   --doc-step-size: 1.28rem;
   --doc-step-lead: 1.35;
   --doc-step-after: 0.4rem;
@@ -1113,6 +1137,7 @@
   --doc-step-style: normal;
   --doc-step-weight: 400;
   --doc-step-color: var(--doc-heading);
+  --doc-step-shift: 0px;
   --doc-verse-size: clamp(1.06rem, 4.286cqi, 1.62rem);
   --doc-verse-lead: 1.95;
   --doc-verse-after: 0.9rem;
@@ -1123,6 +1148,7 @@
   --doc-verse-style: normal;
   --doc-verse-weight: 400;
   --doc-verse-color: var(--doc-ink);
+  --doc-verse-shift: 0px;
   --doc-translation-size: 1rem;
   --doc-translation-lead: 1.55;
   --doc-translation-after: 0.5rem;
@@ -1133,6 +1159,7 @@
   --doc-translation-style: italic;
   --doc-translation-weight: 400;
   --doc-translation-color: var(--doc-soft);
+  --doc-translation-shift: 0px;
   --doc-body-size: 1rem;
   --doc-body-lead: 1.6;
   --doc-body-after: 0.5rem;
@@ -1143,6 +1170,7 @@
   --doc-body-style: normal;
   --doc-body-weight: 400;
   --doc-body-color: var(--doc-ink);
+  --doc-body-shift: 0px;
   --doc-comment-size: 0.72rem;
   --doc-comment-lead: 1.5;
   --doc-comment-after: 0.3rem;
@@ -1153,6 +1181,7 @@
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: var(--doc-quiet);
+  --doc-comment-shift: 0px;
   --doc-head-size: 0.68rem;
   --doc-head-lead: 1.4;
   --doc-head-after: 0px;
@@ -1163,6 +1192,19 @@
   --doc-head-style: normal;
   --doc-head-weight: 400;
   --doc-head-color: var(--doc-quiet);
+  --doc-head-shift: 0px;
+  --doc-small-size: 0.5rem;
+  --doc-small-lead: 1.15;
+  --doc-small-after: 0px;
+  --doc-small-indent: 0px;
+  --doc-small-hanging: 0px;
+  --doc-small-right: 0px;
+  --doc-small-face: 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', Georgia, serif;
+  --doc-small-style: normal;
+  --doc-small-weight: 400;
+  --doc-small-color: var(--doc-ink);
+  --doc-small-shift: 0px;
+  --doc-comment-on-verse-shift: 0px;
 }
 /* Warm — the type scale (screen), independent of the mode. */
 [data-doc="warm"] {
@@ -1178,6 +1220,7 @@
   --doc-title-style: normal;
   --doc-title-weight: 400;
   --doc-title-color: var(--doc-heading);
+  --doc-title-shift: 0px;
   --doc-part-size: 1.8375rem;
   --doc-part-lead: 1.25;
   --doc-part-after: 0.5775rem;
@@ -1188,6 +1231,7 @@
   --doc-part-style: normal;
   --doc-part-weight: 400;
   --doc-part-color: var(--doc-heading);
+  --doc-part-shift: 0px;
   --doc-section-size: 1.5225rem;
   --doc-section-lead: 1.3;
   --doc-section-after: 0.4725rem;
@@ -1198,6 +1242,7 @@
   --doc-section-style: normal;
   --doc-section-weight: 400;
   --doc-section-color: var(--doc-heading);
+  --doc-section-shift: 0px;
   --doc-step-size: 1.344rem;
   --doc-step-lead: 1.35;
   --doc-step-after: 0.42rem;
@@ -1208,6 +1253,7 @@
   --doc-step-style: normal;
   --doc-step-weight: 400;
   --doc-step-color: var(--doc-heading);
+  --doc-step-shift: 0px;
   --doc-verse-size: clamp(1.113rem, 4.500cqi, 1.701rem);
   --doc-verse-lead: 2.15;
   --doc-verse-after: 0.945rem;
@@ -1218,6 +1264,7 @@
   --doc-verse-style: normal;
   --doc-verse-weight: 400;
   --doc-verse-color: var(--doc-ink);
+  --doc-verse-shift: 0px;
   --doc-translation-size: 1.05rem;
   --doc-translation-lead: 1.55;
   --doc-translation-after: 0.525rem;
@@ -1228,6 +1275,7 @@
   --doc-translation-style: italic;
   --doc-translation-weight: 400;
   --doc-translation-color: var(--doc-soft);
+  --doc-translation-shift: 0px;
   --doc-body-size: 1.05rem;
   --doc-body-lead: 1.6;
   --doc-body-after: 0.525rem;
@@ -1238,6 +1286,7 @@
   --doc-body-style: normal;
   --doc-body-weight: 400;
   --doc-body-color: var(--doc-ink);
+  --doc-body-shift: 0px;
   --doc-comment-size: 0.756rem;
   --doc-comment-lead: 1.5;
   --doc-comment-after: 0.315rem;
@@ -1248,6 +1297,7 @@
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: var(--doc-quiet);
+  --doc-comment-shift: 0px;
   --doc-head-size: 0.714rem;
   --doc-head-lead: 1.4;
   --doc-head-after: 0px;
@@ -1258,6 +1308,19 @@
   --doc-head-style: normal;
   --doc-head-weight: 400;
   --doc-head-color: var(--doc-quiet);
+  --doc-head-shift: 0px;
+  --doc-small-size: 0.525rem;
+  --doc-small-lead: 1.15;
+  --doc-small-after: 0px;
+  --doc-small-indent: 0px;
+  --doc-small-hanging: 0px;
+  --doc-small-right: 0px;
+  --doc-small-face: 'Crimson Pro', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', Georgia, serif;
+  --doc-small-style: normal;
+  --doc-small-weight: 400;
+  --doc-small-color: var(--doc-ink);
+  --doc-small-shift: 0px;
+  --doc-comment-on-verse-shift: 0px;
 }
 /* Manuscript — the type scale (screen), independent of the mode. */
 [data-doc="manuscript"] {
@@ -1273,6 +1336,7 @@
   --doc-title-style: normal;
   --doc-title-weight: 400;
   --doc-title-color: var(--doc-heading);
+  --doc-title-shift: 0px;
   --doc-part-size: 1.925rem;
   --doc-part-lead: 1.25;
   --doc-part-after: 0.605rem;
@@ -1283,6 +1347,7 @@
   --doc-part-style: normal;
   --doc-part-weight: 400;
   --doc-part-color: var(--doc-heading);
+  --doc-part-shift: 0px;
   --doc-section-size: 1.595rem;
   --doc-section-lead: 1.3;
   --doc-section-after: 0.495rem;
@@ -1293,6 +1358,7 @@
   --doc-section-style: normal;
   --doc-section-weight: 400;
   --doc-section-color: var(--doc-heading);
+  --doc-section-shift: 0px;
   --doc-step-size: 1.408rem;
   --doc-step-lead: 1.35;
   --doc-step-after: 0.44rem;
@@ -1303,6 +1369,7 @@
   --doc-step-style: normal;
   --doc-step-weight: 400;
   --doc-step-color: var(--doc-heading);
+  --doc-step-shift: 0px;
   --doc-verse-size: clamp(1.166rem, 4.714cqi, 1.782rem);
   --doc-verse-lead: 2.25;
   --doc-verse-after: 0.99rem;
@@ -1313,6 +1380,7 @@
   --doc-verse-style: normal;
   --doc-verse-weight: 400;
   --doc-verse-color: var(--doc-ink);
+  --doc-verse-shift: 0px;
   --doc-translation-size: 1.1rem;
   --doc-translation-lead: 1.55;
   --doc-translation-after: 0.55rem;
@@ -1323,6 +1391,7 @@
   --doc-translation-style: italic;
   --doc-translation-weight: 400;
   --doc-translation-color: var(--doc-soft);
+  --doc-translation-shift: 0px;
   --doc-body-size: 1.1rem;
   --doc-body-lead: 1.6;
   --doc-body-after: 0.55rem;
@@ -1333,6 +1402,7 @@
   --doc-body-style: normal;
   --doc-body-weight: 400;
   --doc-body-color: var(--doc-ink);
+  --doc-body-shift: 0px;
   --doc-comment-size: 0.792rem;
   --doc-comment-lead: 1.5;
   --doc-comment-after: 0.33rem;
@@ -1343,6 +1413,7 @@
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: var(--doc-quiet);
+  --doc-comment-shift: 0px;
   --doc-head-size: 0.748rem;
   --doc-head-lead: 1.4;
   --doc-head-after: 0px;
@@ -1353,6 +1424,19 @@
   --doc-head-style: normal;
   --doc-head-weight: 400;
   --doc-head-color: var(--doc-quiet);
+  --doc-head-shift: 0px;
+  --doc-small-size: 0.55rem;
+  --doc-small-lead: 1.15;
+  --doc-small-after: 0px;
+  --doc-small-indent: 0px;
+  --doc-small-hanging: 0px;
+  --doc-small-right: 0px;
+  --doc-small-face: 'EB Garamond', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', Georgia, serif;
+  --doc-small-style: normal;
+  --doc-small-weight: 400;
+  --doc-small-color: var(--doc-ink);
+  --doc-small-shift: 0px;
+  --doc-comment-on-verse-shift: 0px;
 }
 /* Screen — the type scale (screen), independent of the mode. */
 [data-doc="screen"] {
@@ -1368,6 +1452,7 @@
   --doc-title-style: normal;
   --doc-title-weight: 400;
   --doc-title-color: var(--doc-heading);
+  --doc-title-shift: 0px;
   --doc-part-size: 1.75rem;
   --doc-part-lead: 1.25;
   --doc-part-after: 0.55rem;
@@ -1378,6 +1463,7 @@
   --doc-part-style: normal;
   --doc-part-weight: 400;
   --doc-part-color: var(--doc-heading);
+  --doc-part-shift: 0px;
   --doc-section-size: 1.45rem;
   --doc-section-lead: 1.3;
   --doc-section-after: 0.45rem;
@@ -1388,6 +1474,7 @@
   --doc-section-style: normal;
   --doc-section-weight: 400;
   --doc-section-color: var(--doc-heading);
+  --doc-section-shift: 0px;
   --doc-step-size: 1.28rem;
   --doc-step-lead: 1.35;
   --doc-step-after: 0.4rem;
@@ -1398,6 +1485,7 @@
   --doc-step-style: normal;
   --doc-step-weight: 400;
   --doc-step-color: var(--doc-heading);
+  --doc-step-shift: 0px;
   --doc-verse-size: clamp(1.06rem, 4.286cqi, 1.62rem);
   --doc-verse-lead: 1.85;
   --doc-verse-after: 0.9rem;
@@ -1408,6 +1496,7 @@
   --doc-verse-style: normal;
   --doc-verse-weight: 400;
   --doc-verse-color: var(--doc-ink);
+  --doc-verse-shift: 0px;
   --doc-translation-size: 1rem;
   --doc-translation-lead: 1.55;
   --doc-translation-after: 0.5rem;
@@ -1418,6 +1507,7 @@
   --doc-translation-style: italic;
   --doc-translation-weight: 400;
   --doc-translation-color: var(--doc-soft);
+  --doc-translation-shift: 0px;
   --doc-body-size: 1rem;
   --doc-body-lead: 1.6;
   --doc-body-after: 0.5rem;
@@ -1428,6 +1518,7 @@
   --doc-body-style: normal;
   --doc-body-weight: 400;
   --doc-body-color: var(--doc-ink);
+  --doc-body-shift: 0px;
   --doc-comment-size: 0.72rem;
   --doc-comment-lead: 1.5;
   --doc-comment-after: 0.3rem;
@@ -1438,6 +1529,7 @@
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: var(--doc-quiet);
+  --doc-comment-shift: 0px;
   --doc-head-size: 0.68rem;
   --doc-head-lead: 1.4;
   --doc-head-after: 0px;
@@ -1448,6 +1540,19 @@
   --doc-head-style: normal;
   --doc-head-weight: 400;
   --doc-head-color: var(--doc-quiet);
+  --doc-head-shift: 0px;
+  --doc-small-size: 0.5rem;
+  --doc-small-lead: 1.15;
+  --doc-small-after: 0px;
+  --doc-small-indent: 0px;
+  --doc-small-hanging: 0px;
+  --doc-small-right: 0px;
+  --doc-small-face: 'Source Serif 4', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', Georgia, serif;
+  --doc-small-style: normal;
+  --doc-small-weight: 400;
+  --doc-small-color: var(--doc-ink);
+  --doc-small-shift: 0px;
+  --doc-comment-on-verse-shift: 0px;
 }
 /* High contrast — the type scale (screen), independent of the mode. */
 [data-doc="high-contrast"] {
@@ -1463,6 +1568,7 @@
   --doc-title-style: normal;
   --doc-title-weight: 400;
   --doc-title-color: var(--doc-heading);
+  --doc-title-shift: 0px;
   --doc-part-size: 1.8375rem;
   --doc-part-lead: 1.25;
   --doc-part-after: 0.5775rem;
@@ -1473,6 +1579,7 @@
   --doc-part-style: normal;
   --doc-part-weight: 400;
   --doc-part-color: var(--doc-heading);
+  --doc-part-shift: 0px;
   --doc-section-size: 1.5225rem;
   --doc-section-lead: 1.3;
   --doc-section-after: 0.4725rem;
@@ -1483,6 +1590,7 @@
   --doc-section-style: normal;
   --doc-section-weight: 400;
   --doc-section-color: var(--doc-heading);
+  --doc-section-shift: 0px;
   --doc-step-size: 1.344rem;
   --doc-step-lead: 1.35;
   --doc-step-after: 0.42rem;
@@ -1493,6 +1601,7 @@
   --doc-step-style: normal;
   --doc-step-weight: 400;
   --doc-step-color: var(--doc-heading);
+  --doc-step-shift: 0px;
   --doc-verse-size: clamp(1.113rem, 4.500cqi, 1.701rem);
   --doc-verse-lead: 2.05;
   --doc-verse-after: 0.945rem;
@@ -1503,6 +1612,7 @@
   --doc-verse-style: normal;
   --doc-verse-weight: 400;
   --doc-verse-color: var(--doc-ink);
+  --doc-verse-shift: 0px;
   --doc-translation-size: 1.05rem;
   --doc-translation-lead: 1.55;
   --doc-translation-after: 0.525rem;
@@ -1513,6 +1623,7 @@
   --doc-translation-style: italic;
   --doc-translation-weight: 400;
   --doc-translation-color: var(--doc-soft);
+  --doc-translation-shift: 0px;
   --doc-body-size: 1.05rem;
   --doc-body-lead: 1.6;
   --doc-body-after: 0.525rem;
@@ -1523,6 +1634,7 @@
   --doc-body-style: normal;
   --doc-body-weight: 400;
   --doc-body-color: var(--doc-ink);
+  --doc-body-shift: 0px;
   --doc-comment-size: 0.756rem;
   --doc-comment-lead: 1.5;
   --doc-comment-after: 0.315rem;
@@ -1533,6 +1645,7 @@
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: var(--doc-quiet);
+  --doc-comment-shift: 0px;
   --doc-head-size: 0.714rem;
   --doc-head-lead: 1.4;
   --doc-head-after: 0px;
@@ -1543,101 +1656,135 @@
   --doc-head-style: normal;
   --doc-head-weight: 400;
   --doc-head-color: var(--doc-quiet);
+  --doc-head-shift: 0px;
+  --doc-small-size: 0.525rem;
+  --doc-small-lead: 1.15;
+  --doc-small-after: 0px;
+  --doc-small-indent: 0px;
+  --doc-small-hanging: 0px;
+  --doc-small-right: 0px;
+  --doc-small-face: 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', Georgia, serif;
+  --doc-small-style: normal;
+  --doc-small-weight: 400;
+  --doc-small-color: var(--doc-ink);
+  --doc-small-shift: 0px;
+  --doc-comment-on-verse-shift: 0px;
 }
 /* Veda Union · Word — the type scale (word), independent of the mode. */
 [data-doc="word"] {
   --doc-number-display: none;
   --doc-gutter: 0px;
   --doc-title-size: 2rem;
-  --doc-title-lead: normal;
+  --doc-title-lead: 1.2409;
   --doc-title-after: 0.5rem;
   --doc-title-indent: 1.6542rem;
   --doc-title-hanging: 0px;
   --doc-title-right: 0px;
-  --doc-title-face: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-title-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-title-style: normal;
   --doc-title-weight: 400;
   --doc-title-color: var(--doc-ink);
+  --doc-title-shift: -0.0583rem;
   --doc-part-size: 1.8333rem;
-  --doc-part-lead: normal;
+  --doc-part-lead: 1.2409;
   --doc-part-after: 0.5rem;
   --doc-part-indent: 0px;
   --doc-part-hanging: 0px;
   --doc-part-right: 0px;
-  --doc-part-face: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-part-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-part-style: normal;
   --doc-part-weight: 400;
   --doc-part-color: var(--doc-ink);
+  --doc-part-shift: -0.0535rem;
   --doc-section-size: 1.5rem;
-  --doc-section-lead: normal;
+  --doc-section-lead: 1.2409;
   --doc-section-after: 0.5rem;
   --doc-section-indent: 1.6542rem;
   --doc-section-hanging: 0px;
   --doc-section-right: 0px;
-  --doc-section-face: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-section-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-section-style: normal;
   --doc-section-weight: 400;
   --doc-section-color: #7f7f7f;
+  --doc-section-shift: -0.0437rem;
   --doc-step-size: 1.3333rem;
-  --doc-step-lead: normal;
+  --doc-step-lead: 1.2409;
   --doc-step-after: 0px;
   --doc-step-indent: 2.3625rem;
   --doc-step-hanging: 0px;
   --doc-step-right: 0px;
-  --doc-step-face: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-step-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-step-style: normal;
   --doc-step-weight: 400;
   --doc-step-color: #7f7f7f;
+  --doc-step-shift: -0.0389rem;
   --doc-verse-size: 1.3333rem;
   --doc-verse-lead: 1.5;
   --doc-verse-after: 0px;
   --doc-verse-indent: 1.1833rem;
   --doc-verse-hanging: 1.1833rem;
   --doc-verse-right: -1.1833rem;
-  --doc-verse-face: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-verse-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-verse-style: normal;
   --doc-verse-weight: 400;
   --doc-verse-color: var(--doc-ink);
+  --doc-verse-shift: 0.1378rem;
   --doc-translation-size: 0.9167rem;
-  --doc-translation-lead: normal;
+  --doc-translation-lead: 1.1499;
   --doc-translation-after: 0.25rem;
   --doc-translation-indent: 1.1833rem;
   --doc-translation-hanging: 1.1833rem;
   --doc-translation-right: 1.1833rem;
-  --doc-translation-face: 'Tinos', 'Times New Roman', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
+  --doc-translation-face: 'Tinos', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
   --doc-translation-style: italic;
   --doc-translation-weight: 400;
   --doc-translation-color: #808080;
+  --doc-translation-shift: 0.0195rem;
   --doc-body-size: 0.9167rem;
-  --doc-body-lead: normal;
+  --doc-body-lead: 1.2409;
   --doc-body-after: 0.6667rem;
   --doc-body-indent: 0px;
   --doc-body-hanging: 0px;
   --doc-body-right: 0px;
-  --doc-body-face: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-body-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-body-style: normal;
   --doc-body-weight: 400;
   --doc-body-color: var(--doc-ink);
+  --doc-body-shift: -0.0267rem;
   --doc-comment-size: 0.9167rem;
-  --doc-comment-lead: normal;
+  --doc-comment-lead: 1.1499;
   --doc-comment-after: 0px;
   --doc-comment-indent: 0px;
   --doc-comment-hanging: 0px;
   --doc-comment-right: 0px;
-  --doc-comment-face: 'Tinos', 'Times New Roman', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
+  --doc-comment-face: 'Tinos', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: #808080;
+  --doc-comment-shift: 0.0195rem;
   --doc-head-size: 1rem;
-  --doc-head-lead: normal;
+  --doc-head-lead: 1.1499;
   --doc-head-after: 0px;
   --doc-head-indent: 0px;
   --doc-head-hanging: 0px;
   --doc-head-right: 0px;
-  --doc-head-face: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --doc-head-face: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --doc-head-style: normal;
   --doc-head-weight: 400;
   --doc-head-color: var(--doc-ink);
+  --doc-head-shift: 0.0164rem;
+  --doc-small-size: 0.6667rem;
+  --doc-small-lead: 1.1499;
+  --doc-small-after: 0px;
+  --doc-small-indent: 0px;
+  --doc-small-hanging: 0px;
+  --doc-small-right: 0px;
+  --doc-small-face: 'Tinos', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', serif;
+  --doc-small-style: normal;
+  --doc-small-weight: 400;
+  --doc-small-color: var(--doc-ink);
+  --doc-small-shift: 0.0142rem;
+  --doc-comment-on-verse-shift: 0.2907rem;
 }
 /* Veda Union · web — the type scale (screen), independent of the mode. */
 [data-doc="vu-web"] {
@@ -1653,6 +1800,7 @@
   --doc-title-style: normal;
   --doc-title-weight: 400;
   --doc-title-color: var(--doc-heading);
+  --doc-title-shift: 0px;
   --doc-part-size: 2.0125rem;
   --doc-part-lead: 1.25;
   --doc-part-after: 0.6325rem;
@@ -1663,6 +1811,7 @@
   --doc-part-style: normal;
   --doc-part-weight: 400;
   --doc-part-color: var(--doc-heading);
+  --doc-part-shift: 0px;
   --doc-section-size: 1.6675rem;
   --doc-section-lead: 1.3;
   --doc-section-after: 0.5175rem;
@@ -1673,6 +1822,7 @@
   --doc-section-style: normal;
   --doc-section-weight: 400;
   --doc-section-color: var(--doc-heading);
+  --doc-section-shift: 0px;
   --doc-step-size: 1.472rem;
   --doc-step-lead: 1.35;
   --doc-step-after: 0.46rem;
@@ -1683,6 +1833,7 @@
   --doc-step-style: normal;
   --doc-step-weight: 400;
   --doc-step-color: var(--doc-heading);
+  --doc-step-shift: 0px;
   --doc-verse-size: clamp(1.219rem, 4.929cqi, 1.863rem);
   --doc-verse-lead: 2.05;
   --doc-verse-after: 1.035rem;
@@ -1693,6 +1844,7 @@
   --doc-verse-style: normal;
   --doc-verse-weight: 400;
   --doc-verse-color: var(--doc-ink);
+  --doc-verse-shift: 0px;
   --doc-translation-size: 1.15rem;
   --doc-translation-lead: 1.55;
   --doc-translation-after: 0.575rem;
@@ -1703,6 +1855,7 @@
   --doc-translation-style: italic;
   --doc-translation-weight: 400;
   --doc-translation-color: var(--doc-soft);
+  --doc-translation-shift: 0px;
   --doc-body-size: 1.15rem;
   --doc-body-lead: 1.6;
   --doc-body-after: 0.575rem;
@@ -1713,6 +1866,7 @@
   --doc-body-style: normal;
   --doc-body-weight: 400;
   --doc-body-color: var(--doc-ink);
+  --doc-body-shift: 0px;
   --doc-comment-size: 0.828rem;
   --doc-comment-lead: 1.5;
   --doc-comment-after: 0.345rem;
@@ -1723,6 +1877,7 @@
   --doc-comment-style: italic;
   --doc-comment-weight: 400;
   --doc-comment-color: var(--doc-quiet);
+  --doc-comment-shift: 0px;
   --doc-head-size: 0.782rem;
   --doc-head-lead: 1.4;
   --doc-head-after: 0px;
@@ -1733,6 +1888,19 @@
   --doc-head-style: normal;
   --doc-head-weight: 400;
   --doc-head-color: var(--doc-quiet);
+  --doc-head-shift: 0px;
+  --doc-small-size: 0.575rem;
+  --doc-small-lead: 1.15;
+  --doc-small-after: 0px;
+  --doc-small-indent: 0px;
+  --doc-small-hanging: 0px;
+  --doc-small-right: 0px;
+  --doc-small-face: 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', Georgia, serif;
+  --doc-small-style: normal;
+  --doc-small-weight: 400;
+  --doc-small-color: var(--doc-ink);
+  --doc-small-shift: 0px;
+  --doc-comment-on-verse-shift: 0px;
 }
 
 [data-doc="plain"]:not([data-mode="dark"]),
@@ -2336,8 +2504,8 @@
   --doc-size: 1.3333333333333333rem;
   --doc-leading: 1.5;
   --doc-soft: color-mix(in srgb, #000000 74%, #ffffff);
-  --font-body: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
-  --font-display: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --font-body: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --font-display: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --color-hold: #538135;
   --color-hold-long: #538135;
   --color-svara: #943634;
@@ -2395,8 +2563,8 @@
   --doc-size: 1.3333333333333333rem;
   --doc-leading: 1.5;
   --doc-soft: color-mix(in srgb, #000000 74%, #ffffff);
-  --font-body: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
-  --font-display: 'Arimo', Arial, 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --font-body: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
+  --font-display: 'Arimo', 'Gentium Book Plus', 'Noto Serif Devanagari', 'Noto Serif Telugu', 'Noto Serif Tamil', sans-serif;
   --color-hold: #538135;
   --color-hold-long: #538135;
   --color-svara: #943634;
@@ -2561,3 +2729,139 @@
   --c-pause-short: var(--color-pause-short);
   --c-pause-long: var(--color-pause-long);
 }
+
+/* His marks, as Word draws them — packages/tokens/word-marks.mjs. */
+[data-doc="word"] .doc .hold.hold-short,
+[data-doc="word"] .doc .hold.hold-long {
+  display: inline;
+  position: static;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border: 0.25pt solid var(--c-hold);
+}
+[data-doc="word"] .doc .hold.hold-long { border-width: 1pt; }
+[data-doc="word"] .doc .hold.hold--join-l { border-left-width: 0; }
+[data-doc="word"] .doc .hold.hold--join-r { border-right-width: 0; }
+[data-doc="word"] .doc .hold::before,
+[data-doc="word"] .doc .hold::after { content: none; }
+[data-doc="word"] .doc .u.sv-svarita,
+[data-doc="word"] .doc .u.sv-dirgha-svarita,
+[data-doc="word"] .doc .u.sv-anudatta {
+  display: inline;
+  line-height: inherit;
+}
+[data-doc="word"] .doc .u.sv-svarita::before,
+[data-doc="word"] .doc .u.sv-dirgha-svarita::before,
+[data-doc="word"] .doc .u.sv-anudatta::before { content: none; }
+[data-doc="word"] .doc .u.sv-svarita::after { content: "\30D"; }
+[data-doc="word"] .doc .u.sv-dirgha-svarita::after { content: "\30E"; }
+[data-doc="word"] .doc .u.sv-anudatta::after { content: "\331"; }
+[data-doc="word"] .doc .u.sv-svarita::after,
+[data-doc="word"] .doc .u.sv-dirgha-svarita::after,
+[data-doc="word"] .doc .u.sv-anudatta::after {
+  position: static;
+  display: inline;
+  inset: auto;
+  width: auto;
+  height: auto;
+  transform: none;
+  background: none;
+  border-radius: 0;
+  font-family: 'URW Palladio ITU', 'Gentium Book Plus', serif;
+  font-size: 1.1250em;
+  font-weight: 700;
+  font-style: normal;
+  line-height: 0;
+  color: var(--c-svara);
+}
+[data-doc="word"] .doc .u.is-change,
+[data-doc="word"] .doc .u__sup { font-style: italic; }
+/* Word's superscript. `vertical-align` takes the superscript's own ems. */
+[data-doc="word"] .doc .u__sup {
+  color: var(--c-change);
+  font-weight: 400;
+  margin: 0;
+  font-size: 0.6600em;
+  vertical-align: 0.5227em;
+  line-height: 0;
+}
+/* A pause written against a word gets the space his files put on each side
+   of it: `oṁ | bhūr`, never `oṁ |bhūr`. */
+[data-doc="word"] .doc .syl + .pause::before,
+[data-doc="word"] .doc .pause:has(+ .syl)::after { content: ' '; }
+/* The svarabhakti dot is his `Svara` style's middle dot — the svaras' face,
+   bold and red, set before its letter at its own width — not a drawn circle. */
+[data-doc="word"] .doc .sbhakti {
+  display: inline;
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: none;
+  border-radius: 0;
+  vertical-align: baseline;
+}
+[data-doc="word"] .doc .sbhakti::before {
+  content: "\B7";
+  font-family: 'URW Palladio ITU', 'Gentium Book Plus', serif;
+  font-size: 1.1250em;
+  font-weight: 700;
+  line-height: 0;
+  color: var(--c-svara);
+}
+/* The Vedic anusvāra is ONE glyph of his `VedicAnusvara` face — URW Palladio
+   ITU's own m with its candrabindu, U+F141, which no Unicode character draws —
+   in the substitution blue, and the face we ship draws it, at its own width.
+   The letters the text keeps (`m̐`) stay in the markup at no size, for a
+   copy and a search; the page and the PDF carry his glyph, as his do. Set in
+   the letters' own face they took the candrabindu from whatever face the
+   machine had — Arial, here — and were a point too wide. */
+[data-doc="word"] .doc .u.u--gum { font-size: 0; }
+[data-doc="word"] .doc .u.u--gum::before {
+  content: '\F141';
+  font-family: 'URW Palladio ITU';
+  font-style: italic;
+  font-weight: 400;
+  /* The line's size: the letters' own is nothing now. */
+  font-size: var(--doc-verse-size);
+  color: var(--c-change);
+}
+/* The Ṛgvedic overline: his `Long` style, a glyph at no width after its
+   letter like a svara, in his blue — Calibri Light's, set here in Carlito. */
+[data-doc="word"] .doc .u__long {
+  font-family: 'Carlito', 'Gentium Book Plus', serif;
+  font-size: 1.1250em;
+  line-height: 0;
+  color: #4472C4;
+}
+[data-doc="word"] .doc .u--virama {
+  font-family: 'Arimo', sans-serif;
+  font-size: 1.1250em;
+  line-height: 0;
+}
+[data-doc="word"] .doc .pause {
+  display: inline;
+  line-height: 0;
+  font-family: inherit;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: normal;
+  margin-inline: 0;
+}
+[data-doc="word"] .doc .danda {
+  /* INLINE, and no line height: a face taller than his line must not make the
+     line taller — his line is exactly as tall as `Translit` says. Measured:
+     every mantra line 25.49 pt where his are 24, until this. And in HIS
+     daṇḍa's own shape — Mangal's bars, as our face `Siksamitra Danda` draws
+     them: his width, his height, his weight. */
+  display: inline;
+  line-height: 0;
+  margin: 0;
+  padding: 0;
+  text-indent: 0;
+  color: var(--doc-verse-color);
+  font-family: 'Siksamitra Danda', 'Noto Serif Devanagari', serif;
+}
+

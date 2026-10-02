@@ -132,12 +132,44 @@ describe('G1 · the automatic pause after a praṇava or bīja', () => {
     // a break is ALREADY there → the daṇḍa stands alone
     ['oṁ | aparādha sahasrāṇi', ['|']],
     ['oṁ || aparādha sahasrāṇi', ['||']],
+    // right after a daṇḍa on its line, before ś or h → none: his closing formula
+    ['|| oṁ śāntiḥ śāntiḥ śāntiḥ ||', ['||', '||']],
+    ['|| oṁ hara hara hara ||', ['||', '||']],
+    // …but before anything else it keeps it, as every file of his does
+    ['|| oṁ namo bhagavate rudrāya ||', ['||', 'pause', '||']],
+    ['| oṁ namaḥ', ['|', 'pause']],
+    // …but a pāda that opens with it after a break keeps it
+    ['namaḥ | / oṁ śāntiḥ', ['|', 'pause']],
   ];
   for (const [text, want] of cases) {
     it(text, () => {
       expect(breaksOf(text)).toEqual(want);
     });
   }
+  it('…and with `pauses.afterDanda` on, it takes the pause there too', () => {
+    const on = mark('|| oṁ śāntiḥ śāntiḥ śāntiḥ ||', { ...LEGACY, pauses: { ...LEGACY.pauses, afterDanda: true } }) as ChantToken[];
+    expect(on.filter((t) => t.t === 'pause' || t.t === 'danda').map((t) => t.t)).toEqual(['danda', 'pause', 'danda']);
+  });
+});
+
+describe('G1 · a line after a daṇḍa opens bare — every file of his', () => {
+  /** The holding on the first letter of a verse's second line. */
+  const opening = (lines: string[], holdings: Partial<Profile['holdings']> = {}): string | undefined => {
+    const p: Profile = { ...PROFILES.taittiriya, holdings: { ...PROFILES.taittiriya.holdings, ...holdings } };
+    const tokens = derive({ lines }, p, { trace: false }).tokens;
+    const at = tokens.findIndex((t) => t.t === 'br');
+    const first = tokens.slice(at + 1).find((t) => t.t === 'syl');
+    return first?.t === 'syl' ? first.units[0]?.hold : undefined;
+  };
+  it('after a daṇḍa: no box (sādhanā 24 of 24, Devī 110 of 110, bhū sūktam 3 and 4)', () => {
+    expect(opening(['vāk pa̍ta̱ṅgāya̍ śiśriye |', 'pratya̍sya vaha̱ dyubhi̍ḥ || 3||'])).toBeUndefined();
+  });
+  it('after a letter the line continues, and its cluster is boxed', () => {
+    expect(opening(['vāk pa̍ta̱ṅgāya̍ śiśriye', 'pratya̍sya vaha̱ dyubhi̍ḥ || 3||'])).toBe('long');
+  });
+  it('with `holdings.afterDanda` — the shipped chants’ convention — it is boxed after a daṇḍa too', () => {
+    expect(opening(['vāk pa̍ta̱ṅgāya̍ śiśriye |', 'pratya̍sya vaha̱ dyubhi̍ḥ || 3||'], { afterDanda: true })).toBe('long');
+  });
 });
 
 describe('G1 · reading aids, measured off the owner’s own files', () => {

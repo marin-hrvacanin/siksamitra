@@ -17,7 +17,20 @@ export type ChantItem =
   /** `figure` inline, or `ref` into `ChantDoc.figures` (so a drawing reused at
    *  five steps ships once). */
   | { t: 'figure'; figure?: ChantFigure; ref?: string }
-  | { t: 'embed'; embed: ChantEmbed };
+  | { t: 'embed'; embed: ChantEmbed }
+  /**
+   * AN EMPTY LINE, of the height of one of his paragraphs: `verse` a
+   * `Translit` line, `body` a `Normal` one, `translation` a `Prijevod` one,
+   * `small` his 8-point `Insert`. His files space their blocks with these —
+   * the sādhanā has 85, 17, 50 and 29 of them — and the page is not his page
+   * without them.
+   */
+  | { t: 'gap'; of: ChantGapKind }
+  /** A page break, where his file has one. */
+  | { t: 'break' };
+
+/** Which of his paragraphs an empty line is as tall as. */
+export type ChantGapKind = 'verse' | 'body' | 'translation' | 'small';
 
 /**
  * A block of steps the reader may include, omit, or choose between.
@@ -110,6 +123,28 @@ export interface ChantSection {
   profile?: ChantProfileRef;
   /** Set by the loader from `ChantDoc.groups`; not authored on the section. */
   groupId?: string;
+  /**
+   * A step INSIDE the section before it — his `Heading 4` under a `Heading 3`
+   * chant in a book: `(ṛṣyādi nyāsaḥ)`, `(karanyāsaḥ)`. Drawn a level below.
+   * Only a book has three levels; see `ChantDoc.cover`.
+   */
+  sub?: true;
+}
+
+/**
+ * A BOOK'S TITLE PAGE — his sādhanā's first page: the title alone, large and
+ * centred well down the page. See `ChantDoc.book` for what a book's headings
+ * are.
+ */
+export interface ChantCover {
+  /** The title as the page sets it, a line each: `["Veda Union", "sādhanā"]`. */
+  lines: string[];
+}
+
+/** A book's table of contents, on its own page after the title page. */
+export interface ChantContents {
+  /** Its heading: `Viṣayānukramaṇikā - Table of Contents`. */
+  title: string;
 }
 
 export interface ChantRecording {
@@ -161,4 +196,15 @@ export interface ChantDoc {
   /** v4 — marks the author placed by hand, in source coordinates, so they
    *  survive re-derivation. Rule zero, as data. */
   overrides?: ChantOverride[];
+  /**
+   * A BOOK: many parts, each his `Heading 2`, its chants `Heading 3` and their
+   * steps `Heading 4` (`ChantSection.sub`) — his sādhanā. Its name is not
+   * drawn over the first chant; it is on the title page, when there is one.
+   * Absent: a single text, named in `Heading 2` with its part under it.
+   */
+  book?: true;
+  /** A book's title page. */
+  cover?: ChantCover;
+  /** A book's table of contents. */
+  contents?: ChantContents;
 }

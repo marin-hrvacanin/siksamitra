@@ -27,6 +27,7 @@
    of how a mantra is set. It must stay before `editor.css`, whose caret and
    selection are drawn ON the document. */
 @import './styles/document.css';
+@import './styles/document-structure.css';
 @import './styles/editor.css';
 @import './styles/audio.css';
 @import './styles/status.css';

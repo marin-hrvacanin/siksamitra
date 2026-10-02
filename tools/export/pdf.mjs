@@ -18,10 +18,20 @@
  * no holding-box fill, so a Veda Union page comes out with its green boxes
  * missing and the manuscript style comes out white. It is not optional here.
  */
-import { embedInPdf, embedded, PDF_FORMAT, PDF_VERSION } from '@siksamitra/interop';
+import { embedInPdf, embedded, pageTemplates, PDF_FORMAT, PDF_VERSION } from '@siksamitra/interop';
 import { DEFAULT_PAGE, pageGeometry } from '@siksamitra/layout';
 import { exportStyle } from '@siksamitra/tokens/export-styles';
 import { ENGINE, buildPage } from './page.mjs';
+
+/** How much finer than a CSS pixel the PDF is laid out: see `toPdf`. */
+const PRINT_FINE = 3;
+
+/** The page's own `@font-face` rules for these families — what a template, a
+ *  document of its own with no fonts, is given to draw in. */
+const faceRules = (html, families) => [...html.matchAll(/@font-face\s*\{[^}]*\}/g)]
+  .map((m) => m[0])
+  .filter((rule) => families.some((f) => rule.includes(`'${f}'`)))
+  .join('\n');
 
 /** A point is 1/72 in; a millimetre is 1/25.4 in. */
 const MM_PER_PT = 25.4 / 72;
@@ -41,8 +51,28 @@ export async function toPdf(browser, built, options = {}) {
        decoding an 818 KB TrueType still happens after the first paint, and a
        print taken before it finishes is a print of the fallback face. */
     await page.evaluate(() => document.fonts.ready);
+    /*
+     * PRINTED THREE TIMES AS LARGE, AT A THIRD. Chrome rounds a border to a
+     * whole pixel and sets each line on one, and a printed pixel is 0.75 pt:
+     * his quarter-point holding box (`Holding`, `w:sz="2"`) came out as thick
+     * as his one-point `2Holding`, and every line stood up to 0.75 pt off
+     * where Word sets it. Laid out at three times the size and printed at a
+     * third, a pixel is a quarter of a point — his hairline exactly — and the
+     * layout is the same layout, because everything in it scaled together.
+     */
+    await page.addStyleTag({ content: `html { zoom: ${PRINT_FINE}; }` });
     const sheet = options.page ?? pageGeometry(DEFAULT_PAGE);
+    /* HIS RUNNING HEAD AND FOOTER, where the style carries them: drawn by the
+       browser on every page, from his measured furniture (`pdf/furniture.ts`),
+       in the faces the page already embeds. */
+    const furniture = options.style?.runningHead === true
+      ? pageTemplates(built.doc, sheet, options.style.footer, faceRules(built.html, ['Arimo', 'Siksamitra Danda', 'Noto Serif Devanagari']))
+      : undefined;
     const bytes = await page.pdf({
+      scale: 1 / PRINT_FINE,
+      ...(furniture === undefined ? {} : {
+        displayHeaderFooter: true, headerTemplate: furniture.header, footerTemplate: furniture.footer,
+      }),
       printBackground: true,
       /*
        * IN MILLIMETRES. Given the same size in CSS pixels, Chrome wrote a
@@ -70,10 +100,12 @@ export async function toPdf(browser, built, options = {}) {
        * 2.94 %. Left inside the column's own padding, the overflow has
        * somewhere to go and nothing is scaled.
        */
+      /* Chrome takes the margins in the SCALED page's units, so a third of
+         them is the margin on paper. */
       margin: {
-        top: `${sheet.margins.top * MM_PER_PT}mm`,
+        top: `${(sheet.margins.top * MM_PER_PT) / PRINT_FINE}mm`,
         right: 0,
-        bottom: `${sheet.margins.bottom * MM_PER_PT}mm`,
+        bottom: `${(sheet.margins.bottom * MM_PER_PT) / PRINT_FINE}mm`,
         left: 0,
       },
       preferCSSPageSize: false,
@@ -94,7 +126,7 @@ export async function toPdf(browser, built, options = {}) {
 export async function buildPdf(browser, doc, options = {}) {
   const style = exportStyle(options.style ?? 'veda-union');
   const built = await buildPage(doc, { ...options, style: style.id });
-  const printed = await toPdf(browser, built, options);
+  const printed = await toPdf(browser, built, { ...options, style });
   const { manifest, json } = await embedded(PDF_FORMAT, PDF_VERSION, {
     doc: built.doc,
     slug: options.slug ?? `${doc.id ?? 'document'}.pdf`,

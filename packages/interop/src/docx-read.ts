@@ -54,6 +54,22 @@ export interface WordParagraph {
    * region of a document, and the Word add-in keeps a part's rules on one.
    */
   sdt?: string;
+  /** A page break in it (`<w:br w:type="page"/>`) — the page ends here. */
+  pageBreak?: true;
+  /**
+   * Our tag on a mantra paragraph (`body-blocks.ts`): `start` where a verse
+   * begins, `more` on its further paragraphs. His files end a verse with its
+   * number; ours say where each begins, and an untagged mantra paragraph in a
+   * file of ours was typed in Word.
+   */
+  ours?: 'start' | 'more';
+  /** `w:jc`, when the paragraph sets one: his title page is centred. */
+  align?: string;
+  /** `w:spacing w:before`, in twips, when the paragraph sets it. */
+  before?: number;
+  /** The paragraph's OWN indent (`w:ind`), in twips, when it sets one: his
+   *  verse lines with the hanging indent switched off say `left=0 firstLine=0`. */
+  ind?: { left?: number; hanging?: number; firstLine?: number };
 }
 
 /**
@@ -82,6 +98,15 @@ const RE_PSTYLE = /<w:pStyle\s+w:val="([^"]*)"/;
 /** Where a block content control opens, where it closes, and its tag. */
 const RE_SDT = /<w:sdt(?:\s[^>]*)?>|<\/w:sdt>|<w:tag\s+w:val="([^"]*)"\s*\/>/g;
 const RE_RSTYLE = /<w:rStyle\s+w:val="([^"]*)"/;
+/** The paragraph's own properties, before its first run. */
+const RE_PPR = /<w:pPr\b[^>]*>([\s\S]*?)<\/w:pPr>/;
+const RE_JC = /<w:jc\s+w:val="([^"]*)"/;
+const RE_BEFORE = /<w:spacing\b[^>]*\sw:before="(\d+)"/;
+const RE_IND = /<w:ind\b([^>]*?)\/?>/;
+const twipsOf = (attrs: string, name: string): number | undefined => {
+  const m = new RegExp(`\\sw:${name}="(-?\\d+)"`).exec(attrs);
+  return m === null ? undefined : Number(m[1]);
+};
 /** A run's content, in order: its text, a tab (a space here), a break or a carriage return (a line). */
 const RE_CONTENT = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:tab\b[^>]*\/?>|<w:(?:br|cr)\b[^>]*\/?>/g;
 
@@ -126,6 +151,7 @@ export function readParagraphs(documentXml: string, stylesXml?: string): WordPar
     const selfClosing = m[1] === undefined;
     const pStyle = canonicalStyleId(RE_PSTYLE.exec(body)?.[1] ?? null, table);
     const runs: WordRun[] = [];
+    let pageBreak = false;
     RE_RUN.lastIndex = 0;
     let r: RegExpExecArray | null;
     while ((r = RE_RUN.exec(body)) !== null) {
@@ -139,6 +165,9 @@ export function readParagraphs(documentXml: string, stylesXml?: string): WordPar
       let t: RegExpExecArray | null;
       while ((t = RE_CONTENT.exec(rb)) !== null) {
         if (t[1] !== undefined) text += xmlText(t[1]);
+        /* A PAGE break is not a line: the page ends here, and the paragraph
+           says so rather than gaining an empty line. */
+        else if (/w:type="page"/.test(t[0])) pageBreak = true;
         /* A tab is a tab: read as a space, the indent he puts before a pāda
            was written back as one. It is one character either way, as Word
            counts it. */
@@ -152,12 +181,31 @@ export function readParagraphs(documentXml: string, stylesXml?: string): WordPar
       });
     }
     const drawings = readDrawings(body);
+    const ppr = RE_PPR.exec(body)?.[1] ?? '';
+    const align = RE_JC.exec(ppr)?.[1];
+    const before = RE_BEFORE.exec(ppr)?.[1];
+    const indAttrs = RE_IND.exec(ppr)?.[1];
+    const left = indAttrs === undefined ? undefined : twipsOf(indAttrs, 'left') ?? twipsOf(indAttrs, 'start');
+    const hanging = indAttrs === undefined ? undefined : twipsOf(indAttrs, 'hanging');
+    const firstLine = indAttrs === undefined ? undefined : twipsOf(indAttrs, 'firstLine');
     out.push({
       pStyle,
       runs,
       ...(drawings.length === 0 ? {} : { drawings }),
       ...(selfClosing ? { empty: true } : {}),
       ...(sdt === undefined ? {} : { sdt }),
+      ...(pageBreak ? { pageBreak: true as const } : {}),
+      ...(/<w:bookmarkStart\b[^>]*w:name="_smv/.test(body) ? { ours: 'start' as const }
+        : /<w:bookmarkStart\b[^>]*w:name="_smp/.test(body) ? { ours: 'more' as const } : {}),
+      ...(align === undefined ? {} : { align }),
+      ...(before === undefined ? {} : { before: Number(before) }),
+      ...(indAttrs === undefined ? {} : {
+        ind: {
+          ...(left === undefined ? {} : { left }),
+          ...(hanging === undefined ? {} : { hanging }),
+          ...(firstLine === undefined ? {} : { firstLine }),
+        },
+      }),
     });
   }
   return out;

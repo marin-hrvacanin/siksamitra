@@ -15,7 +15,8 @@
 import { addVerseCommand, removeVerseCommand, setTextCommand, splitLines } from '@siksamitra/edit';
 import { CHANT_PROFILE_KEYS, type ChantProfileKey } from '@siksamitra/format';
 import { STAGES } from '@siksamitra/engine';
-import { documentOf, type OutlineSection, type OutlineVerse } from '../build.js';
+import { documentOf, versesOfFlow, type OutlineSection, type OutlineVerse } from '../build.js';
+import type { VerseLayout } from '../lines.js';
 import { outlineOf, type Workspace } from '../workspace.js';
 import { arg, opt, params, str, type Tool } from './types.js';
 
@@ -46,7 +47,10 @@ interface SectionArg {
   cite?: string;
   witness?: string;
   lines?: string;
-  verses?: { lines?: string[]; witness?: string; at?: string; translation?: string }[];
+  verses?: {
+    lines?: string[]; witness?: string; at?: string; translation?: string; note?: string;
+    numbered?: boolean; layout?: VerseLayout; lineNotes?: string[]; paragraphs?: number[]; translationParagraphs?: number[];
+  }[];
 }
 
 type From = { witness: string; at: string };
@@ -67,7 +71,22 @@ function sectionOf(ws: Workspace, s: SectionArg): { section: OutlineSection; fro
   const given = s.verses ?? [];
   const verses: OutlineVerse[] = given.map((v) => {
     const lines = v.witness !== undefined && v.at !== undefined ? linesOf(ws, v.witness, v.at) : (v.lines ?? []);
-    return { lines, ...(v.translation === undefined ? {} : { translation: v.translation }) };
+    /* A verse given is ONE verse: lines that the source's own numbering makes
+       two (a line inside ends with a daṇḍa and a number) are refused. */
+    const made = versesOfFlow(lines).length;
+    if (made > 1) {
+      throw new Error(`section "${s.title ?? ''}": 1 verse(s) given, ${made} made — a line inside a verse ends with a daṇḍa and a number; give each verse its own lines`);
+    }
+    return {
+      lines,
+      ...(v.translation === undefined ? {} : { translation: v.translation }),
+      ...(v.note === undefined || v.note.trim() === '' ? {} : { note: v.note }),
+      ...(v.numbered === false ? { numbered: false } : {}),
+      ...(v.layout === undefined ? {} : { layout: v.layout }),
+      ...(v.lineNotes === undefined || v.lineNotes.every((x) => x.trim() === '') ? {} : { lineNotes: v.lineNotes }),
+      ...(v.paragraphs === undefined ? {} : { paragraphs: v.paragraphs }),
+      ...(v.translationParagraphs === undefined ? {} : { translationParagraphs: v.translationParagraphs }),
+    };
   });
   if (verses.length === 0) throw new Error(`section "${s.title ?? ''}" has no verses — give witness + lines, or verses`);
   const verseFrom = given.map((v) => (v.witness !== undefined && v.at !== undefined ? { witness: v.witness, at: v.at } : undefined));
@@ -130,21 +149,23 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
     writes: true,
     spec: {
       name: 'build_document',
-      description: 'Make a new document, laid out as his own (the name, its locus, then the verses), and mark it by the rules '
-        + 'of its source. Each section takes its letters from a witness (witness + lines: the source\'s own lines, grouped '
-        + 'into verses by its own verse numbers), or from verses you give (each verse: lines typed, or witness + at). Never '
-        + 'retype a text you have a witness for. Names and loci in lower-case IAST, as he writes them: "puruṣa sūktam", '
-        + '"ṛgvedasaṁhitā 10.90".',
+      description: 'Make a new document, laid out as his own — the name; under it the tradition; the source line; each '
+        + 'verse with its translation under it — and mark it by the rules of its source. Each section takes its letters '
+        + 'from a witness (witness + lines: the source\'s own lines, grouped into verses by its own verse numbers), or '
+        + 'from verses you give (each verse: witness + at, or lines typed). Never retype a text you have a witness for. '
+        + 'The source\'s own reference numbers are taken off, and each verse is numbered as he numbers his (॥ 1॥). '
+        + 'Names and loci in lower-case IAST, as he writes them: "puruṣa sūktam", "ṛgvedasaṁhitā 10.90".',
       parameters: params({
-        title: str('The text\'s name: "nāsadīya sūktam".'),
-        locus: str('Where it is from: "ṛgvedasaṁhitā 10.129", "taittirīya āraṇyaka 3.12".'),
+        title: str('The text\'s name: "bhū sūktam".'),
+        subtitle: str('Under the name: its tradition ("kṛṣṇa yajurvedīya", "ṛgvedīya", "śukla yajurvedīya") or its other name ("saṁnyāsa sūktam").'),
+        locus: str('Where it is from: "taittirīya saṁhitā 1.5.3", "ṛgvedasaṁhitā 10.129" — the source line above the verses.'),
         description: str('What it is, in one line of English: "The hymn of creation".'),
         source: SOURCE,
         sections: {
           type: 'array',
           items: params({
             title: str('The section\'s own heading — only when the text has more than one section ("prathamo\'nuvākaḥ").'),
-            cite: str('That section\'s own source line, when it differs from the locus.'),
+            cite: str('That section\'s own source line, when it differs from the locus. Verses from another source, with no heading of their own, are a section with only a cite ("taittirīya brāhmaṇam 3.1.2.6").'),
             witness: str('A witness id (w1…), with lines.'),
             lines: str('Its lines, 1-based inclusive: "12-58".'),
             verses: {
@@ -153,7 +174,24 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
                 lines: { type: 'array', items: { type: 'string' }, description: 'Typed lines.' },
                 witness: str('A witness id, with at.'),
                 at: str('Its lines: "12-13".'),
-                translation: str('A translation of the verse.'),
+                translation: str('Its translation, in English: a line for each of its lines.'),
+                note: str('A line above the verse, when it has one: "Also in maitrāyaṇī saṁhitā 1.7.1.1", "optional", its metre, its ṛṣi.'),
+                numbered: { type: 'boolean', description: 'false for a verse he leaves unnumbered: the closing śānti, an optional verse.' },
+                paragraphs: {
+                  type: 'array', items: { type: 'integer' },
+                  description: 'Only when his page sets it otherwise than layout says: how many lines each of its paragraphs holds, [9, 1].',
+                },
+                translationParagraphs: { type: 'array', items: { type: 'integer' }, description: 'The same for the translation.' },
+                lineNotes: {
+                  type: 'array', items: { type: 'string' },
+                  description: 'A short note at the end of a line, one per line ("" for none): another source\'s reading, '
+                    + '"p.b. sūryā̍d (with svarita)", or why a line is there, "required as per taittirīya āraṇyaka 2.11.".',
+                },
+                layout: {
+                  type: 'string', enum: ['hang', 'halves', 'flush'],
+                  description: 'Only to override his rule: hang = one paragraph, lines after the first hanging in (a verse of two lines, prose); '
+                    + 'halves = a paragraph per half-verse (a stanza of four or six pādas, the default for one); flush = each line at the margin (a refrain).',
+                },
               }),
             },
           }),
@@ -163,12 +201,14 @@ export const DOCUMENT_TOOLS: readonly Tool[] = [
     async run(args, { ws }) {
       const title = arg<string>(args, 'title', 'string');
       const locus = opt<string>(args, 'locus', 'string');
+      const subtitle = opt<string>(args, 'subtitle', 'string');
       const description = opt<string>(args, 'description', 'string');
       const source = arg<ChantProfileKey>(args, 'source', 'string');
       if (!CHANT_PROFILE_KEYS.includes(source)) throw new Error(`source must be one of ${CHANT_PROFILE_KEYS.join(', ')}`);
       const built = arg<SectionArg[]>(args, 'sections', 'array').map((s) => sectionOf(ws, s));
       ws.open(documentOf({
-        title, ...(locus === undefined ? {} : { locus }), ...(description === undefined ? {} : { description }),
+        title, ...(subtitle === undefined ? {} : { subtitle }), ...(locus === undefined ? {} : { locus }),
+        ...(description === undefined ? {} : { description }),
         sections: built.map((b) => b.section),
       }));
       recordSources(ws, built);

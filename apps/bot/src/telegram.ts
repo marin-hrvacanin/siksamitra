@@ -24,6 +24,7 @@ import { join } from 'node:path';
 import { Bot, GrammyError, InlineKeyboard, InputFile, type Context } from 'grammy';
 import { ROOT, loadConfig } from './config.js';
 import { botCore, type BotReply, type Who } from './bot-core.js';
+import { StatusLog, type Ending } from './status.js';
 import { nodeHost } from './host.js';
 import { fileLedger, fileSessions } from './store.js';
 import { plainOf, telegramPieces } from '@siksamitra/agent';
@@ -48,98 +49,84 @@ const core = botCore({
   progress: (chat, step) => {
     const status = statuses.get(chat);
     if (status === undefined) return;
-    if ('started' in step) status.started(step.started, step.by); else status.finished(step.outcome, step.failed, step.by);
+    if ('intent' in step) status.thinking(step.intent);
+    else if ('started' in step) status.started(step.tool, step.started, step.by);
+    else status.finished(step.tool, step.outcome, step.failed, step.by);
   },
 });
 
 /**
- * THE CHECKLIST OF ONE REQUEST — what the agent is doing, as it does it.
+ * THE STATUS MESSAGE OF ONE REQUEST — `StatusLog` (`status.ts`) on Telegram.
  *
- * Posted when the work is not quick, and edited as it goes (at most every
- * two seconds, which Telegram allows): each step a line, ticked when done
- * with what came of it, the current one last; when the model goes quiet
- * for a minute, that is said too. Deleted when the answer comes.
+ * Posted when the work is not quick, and edited as it goes (at most every two
+ * seconds, which Telegram allows). NEVER DELETED: when the answer comes it is
+ * edited one last time to say how the request ended, and stays in the chat
+ * as the record of what was done.
  */
 class Status {
   private message: Promise<number | null> | null = null;
-  private readonly lines: string[] = [];
-  private current = 'Thinking';
-  /* The reviewer's step under "a second look", while it works. */
-  private sub: string | null = null;
+  private readonly log = new StatusLog();
+  private readonly began = Date.now();
   private last = 0;
-  private slow = false;
   private pending: ReturnType<typeof setTimeout> | undefined;
   private quiet: ReturnType<typeof setTimeout> | undefined;
   private readonly start: ReturnType<typeof setTimeout>;
+  private closed = false;
 
   constructor(private readonly ctx: Context) {
     this.start = setTimeout(() => this.show(), 2500);
     this.listen();
   }
 
-  started(what: string, by: 'agent' | 'reviewer' = 'agent'): void {
-    if (by === 'reviewer') this.sub = what; else this.current = what;
-    this.slow = false;
+  started(tool: string, what: string, by: 'agent' | 'reviewer' = 'agent'): void {
+    this.log.started(tool, what, by);
     this.listen();
     this.render();
   }
 
-  finished(outcome: string, failed: boolean, by: 'agent' | 'reviewer' = 'agent'): void {
-    const mark = failed ? '✗' : '✓';
-    if (by === 'reviewer') {
-      this.lines.push(`   ↳ ${mark} ${this.sub ?? 'Looking'}${outcome === '' ? '' : ` — ${outcome}`}`);
-      this.sub = null;
-    } else {
-      this.lines.push(`${mark} ${this.current}${outcome === '' ? '' : ` — ${outcome}`}`);
-      this.current = 'Thinking';
-    }
+  finished(tool: string, outcome: string, failed: boolean, by: 'agent' | 'reviewer' = 'agent'): void {
+    this.log.finished(tool, outcome, failed, by);
     this.listen();
     this.render();
   }
+
+  thinking(text: string): void { this.log.thinking(text); this.render(); }
 
   /** The person said something while this request runs. */
-  noted(what: string): void {
-    this.lines.push(`↪ your note: ${what.length > 80 ? `${what.slice(0, 80)}…` : what}`);
-    this.render();
-  }
+  noted(what: string): void { this.log.noted(what); this.render(); }
 
-  async done(): Promise<void> {
+  /** The request is over: the message says how, and stays. */
+  async done(how: Ending = 'answered'): Promise<void> {
+    if (this.closed) return;
+    this.closed = true;
     clearTimeout(this.start);
     clearTimeout(this.quiet);
     clearTimeout(this.pending);
-    const id = await this.message;
-    if (id != null) await this.ctx.api.deleteMessage(this.ctx.chat!.id, id).catch(() => undefined);
-  }
-
-  private text(): string {
-    const shown = this.lines.slice(-8);
-    const slow = this.slow ? ' (the model is slow just now; still working)' : '';
-    const now = this.sub === null
-      ? [`⏳ ${this.current}…${slow}`]
-      : [`⏳ ${this.current}…`, `   ↳ ⏳ ${this.sub}…${slow}`];
-    return [...(this.lines.length > 8 ? ['…'] : []), ...shown, ...now, '', 'Send a message to steer me, or /stop.'].join('\n');
+    if (this.message === null) return;
+    this.log.end(how, Date.now() - this.began);
+    await this.edit(this.log.text());
   }
 
   private show(): void {
-    if (this.message !== null) return;
-    this.message = this.ctx.reply(this.text()).then((m) => m.message_id, () => null);
+    if (this.message !== null || this.closed) return;
+    this.message = this.ctx.reply(this.log.text()).then((m) => m.message_id, () => null);
   }
 
   /* An edit at most every two seconds; the last one always goes. */
   private render(): void {
-    if (this.message === null) return;
+    if (this.message === null || this.closed) return;
     clearTimeout(this.pending);
     const wait = Math.max(0, 2000 - (Date.now() - this.last));
     this.pending = setTimeout(() => {
       this.last = Date.now();
-      void this.edit(this.text());
+      void this.edit(this.log.text());
     }, wait);
   }
 
   /* A minute with no step: the model is taking its time — said, not hidden. */
   private listen(): void {
     clearTimeout(this.quiet);
-    this.quiet = setTimeout(() => { this.slow = true; this.show(); this.render(); }, 60_000);
+    this.quiet = setTimeout(() => { this.log.quiet(); this.show(); this.render(); }, 60_000);
   }
 
   private async edit(text: string): Promise<void> {
@@ -169,7 +156,10 @@ async function sendPiece(ctx: Context, html: string, keyboard?: InlineKeyboard):
 }
 
 async function answer(ctx: Context, reply: BotReply): Promise<void> {
-  for (const f of reply.files) await ctx.replyWithDocument(new InputFile(f.bytes, f.name));
+  /* Each file goes with what the program says it is — from its own document. */
+  for (const f of reply.files) {
+    await ctx.replyWithDocument(new InputFile(f.bytes, f.name), f.summary === undefined ? {} : { caption: f.summary.slice(0, 1000) });
+  }
   const pieces = telegramPieces(reply.text);
   let keyboard: InlineKeyboard | undefined;
   if (reply.choices !== undefined && ctx.chat !== undefined) {
@@ -201,10 +191,11 @@ function work(ctx: Context, who: Who, text: string): void {
   const status = new Status(ctx);
   statuses.set(chat, status);
   const job: Promise<void> = core.handle(chat, who, text)
-    .then(async (reply) => { await status.done(); await answer(ctx, reply); })
+    .then(async (reply) => { await status.done(reply.stopped === true ? 'stopped' : 'answered'); await answer(ctx, reply); })
     .catch(async (e: unknown) => {
       /* The fault is the server's log's; the person is told only that it failed. */
       console.error(e);
+      await status.done('failed');
       await ctx.reply('Something went wrong on my side — please try again, or send /new.').catch(() => undefined);
     })
     .finally(() => {

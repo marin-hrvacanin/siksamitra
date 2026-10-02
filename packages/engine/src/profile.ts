@@ -98,6 +98,15 @@ export interface Profile {
   readonly pauses: {
     /** The short pause every praṇava and bīja takes. */
     readonly bija: boolean;
+    /**
+     * …and whether one takes it right after a daṇḍa on its own line, before ś
+     * or h: the closing `॥ oṁ śāntiḥ śāntiḥ śāntiḥ ॥`, `॥ oṁ hara hara …`.
+     * Off: his sādhanā writes both so, and bhū sūktam v1.1 — while `॥ oṁ |
+     * namo bhagavate rudrāya ॥` keeps it, as every file of his does, and so
+     * does `| oṁ | suvaḥ` in the Pūjā Vidhi. Only ś and h, because only they
+     * are in the evidence. On: the shipped Rudram's convention.
+     */
+    readonly afterDanda: boolean;
     /** The vowel-hiatus pauses — 35/35 against his own marked chants. */
     readonly hiatus: boolean;
   };
@@ -130,10 +139,19 @@ export interface Profile {
     /**
      * A new LINE inside a verse continues the recitation: its opening cluster
      * is boxed from the vowel that ended the line before (`…me / ▪pri…`, 38
-     * times in v9.1.4). Only the verse's first line opens bare, because nothing
-     * precedes it. Off, every line opens bare (the older convention).
+     * times in v9.1.4). The verse's first line opens bare, because nothing
+     * precedes it — and so does a line after a DAṆḌA, which is a pause the
+     * cluster is not carried over (`…śiśriye । / pratyasya`), unless
+     * `afterDanda`. Off, every line opens bare (the older convention).
      */
     readonly lineContinues?: boolean;
+    /**
+     * A line's opening cluster boxed even after a daṇḍa ends the line before.
+     * Off: every file of his — sādhanā v9.1.4 21 of 21, v9.1.13 24 of 24,
+     * rudram v1.622 8 of 8, Devī v6.62 110 of 110 — leaves it bare. On: the
+     * shipped chants' convention, which v1's generator marked them with.
+     */
+    readonly afterDanda?: boolean;
     /**
      * A GEMINATE — two of one consonant, or a consonant and its aspirate —
      * under one box or two letters' worth of it. The owner's ruling
@@ -191,7 +209,7 @@ const BASE = {
      more rarely and is optional". `jñ` always. */
   aids: { jna: true, vy: false, sv: false, semivowel: true },
   svarabhakti: true,
-  pauses: { bija: true, hiatus: true },
+  pauses: { bija: true, hiatus: true, afterDanda: false },
   holdings: {
     noInitialBox: true, crosswordHost: 'aspirate' as const, firstHost: true, lineContinues: true,
     geminate: 'one' as const,
@@ -248,7 +266,7 @@ export const PROFILES: Readonly<Record<ProfileKey, Profile>> = Object.freeze({
     recension: 'smriti',
     gum: false,
     svara: { register: 'prose' },
-    pauses: { bija: true, hiatus: true },
+    pauses: { bija: true, hiatus: true, afterDanda: false },
     aids: { ...BASE.aids, semivowel: false },
   }),
 } as Record<ProfileKey, Profile>);

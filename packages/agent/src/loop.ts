@@ -25,6 +25,8 @@ export type AgentEvent =
   | { readonly kind: 'tool'; readonly name: string; readonly args: string; readonly sub?: true }
   | { readonly kind: 'result'; readonly name: string; readonly text: string; readonly failed: boolean; readonly sub?: true }
   | { readonly kind: 'reply'; readonly text: string }
+  /** What the agent wrote beside its tool calls: what it is about to do, and why. */
+  | { readonly kind: 'intent'; readonly text: string; readonly sub?: true }
   | { readonly kind: 'usage'; readonly usage: Usage; readonly cost: number };
 
 export interface TurnOptions {
@@ -57,6 +59,8 @@ export interface TurnResult {
   readonly cost: number;
   readonly steps: number;
   readonly usage: Usage;
+  /** The person stopped it. */
+  readonly stopped?: true;
 }
 
 const add = (a: Usage, b: Usage): Usage => ({ input: a.input + b.input, cached: a.cached + b.cached, output: a.output + b.output });
@@ -95,7 +99,7 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
       const text = 'Stopped, as you asked. Tell me how to go on.';
       opts.messages.push({ role: 'assistant', content: text });
       opts.onEvent?.({ kind: 'reply', text });
-      return { text, cost, steps: step - 1, usage };
+      return { text, cost, steps: step - 1, usage, stopped: true };
     }
     for (const said of opts.steers?.() ?? []) {
       opts.messages.push({ role: 'user', content: `(the person, while you work: ${said})` });
@@ -121,6 +125,8 @@ export async function runTurn(opts: TurnOptions, userText: string): Promise<Turn
       opts.onEvent?.({ kind: 'reply', text });
       return { text, cost, steps: step, usage };
     }
+    const said = reply.message.content?.trim() ?? '';
+    if (said !== '') opts.onEvent?.({ kind: 'intent', text: said });
     for (const call of calls) {
       opts.onEvent?.({ kind: 'tool', name: call.name, args: call.arguments });
       const tool = byName.get(call.name);

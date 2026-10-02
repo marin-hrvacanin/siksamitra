@@ -271,6 +271,20 @@ function lineFirstLetters(elems: Elem[]): Set<number> {
   return out;
 }
 
+/** The first letters of lines that open after a DAṆḌA (`…śiśriye । / pratyasya`).
+ *  A daṇḍa is a pause, and the recitation does not carry a cluster over it:
+ *  his sādhanā leaves every such cluster bare, 33 times of 33. */
+function afterDanda(elems: Elem[], lineFirst: Set<number>): Set<number> {
+  const out = new Set<number>();
+  for (const k of lineFirst) {
+    let j = k - 1;
+    while (j >= 0 && elems[j]!.kind === 'br') j -= 1;
+    const kind = elems[j]?.kind;
+    if (kind === 'pause' || kind === 'num') out.add(k);
+  }
+  return out;
+}
+
 /** Two letters that make a geminate: the same consonant, or a stop and its
  *  own aspirate (`cch`, `ddh`, `tth`). */
 const geminates = (a: string, b: string): boolean =>
@@ -286,6 +300,7 @@ const geminates = (a: string, b: string): boolean =>
 export function applyHoldings(ctx: RuleCtx): void {
   const { elems, profile } = ctx;
   const lineFirst = lineFirstLetters(elems);
+  const pausedBefore = afterDanda(elems, lineFirst);
   const verseFirst = elems.findIndex((e) => e.kind === 'letter');
   let hg = 0;
   let i = 0;
@@ -313,7 +328,8 @@ export function applyHoldings(ctx: RuleCtx): void {
     // boxed normally. Not in `sanskrit_rules.js` — his rule on top of it.
     const opensVerse = comps[0]!.index === verseFirst;
     if (profile.holdings.noInitialBox && lineFirst.has(comps[0]!.index)
-      && (opensVerse || profile.holdings.lineContinues !== true)) {
+      && (opensVerse || profile.holdings.lineContinues !== true
+        || (pausedBefore.has(comps[0]!.index) && profile.holdings.afterDanda !== true))) {
       i = step;
       continue;
     }

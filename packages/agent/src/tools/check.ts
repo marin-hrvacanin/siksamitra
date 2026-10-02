@@ -25,8 +25,9 @@
 import { toTextAndMarks, type ChantDoc, type ChantVerse } from '@siksamitra/format';
 import { documentOf } from '../build.js';
 import { Workspace, verseLetters } from '../workspace.js';
+import { describeDocument } from '../describe.js';
 import { markAll } from './document.js';
-import { arg, opt, params, str, type DeliveryFormat, type Tool } from './types.js';
+import { DELIVERY_FORMATS, arg, opt, params, str, type DeliveryFormat, type Tool } from './types.js';
 
 export interface Finding {
   readonly severity: 'error' | 'warn';
@@ -46,8 +47,14 @@ const settledKey = (v: ChantVerse): string => {
   return `${tm.text}\u0000${tm.marks.filter((m) => m.k !== 'syl').map((m) => `${m.k}:${m.from}:${m.to}:${m.v ?? ''}`).sort().join('|')}`;
 };
 
-/** Letters compared as a reader sees them: the rules may widen a space for a pause. */
-const spaced = (s: string): string => s.replace(/[ \t ]+/g, ' ').replace(/ ?\n ?/g, '\n').trim();
+/**
+ * Letters compared as a reader sees them: the rules may widen a space for a
+ * pause, and daṇḍas and numbers are not letters — the builder numbers a verse
+ * as he does (`॥ 3॥`), where the source closed it its own way and carried its
+ * own references (`lines.ts`).
+ */
+const spaced = (s: string): string => s.replace(/[।॥|]+|[0-9०-९]+/gu, ' ')
+  .replace(/[ \t ]+/g, ' ').replace(/ ?\n ?/g, '\n').trim();
 const cut = (s: string, n = 90): string => (s.length > n ? `${s.slice(0, n)}…` : s);
 
 /**
@@ -214,10 +221,38 @@ export const CHECK_TOOLS: readonly Tool[] = [
         name: str('The file name without extension; the title when left out.'),
       }),
     },
+    /* Only what this host can do: `here` where there is a document open, and
+       each file only where the host can make it. */
+    fit: (spec, host) => {
+      const formats = (['here', ...DELIVERY_FORMATS] as const).filter((f) =>
+        (f === 'here' ? host.place !== undefined : host.exporters?.[f] !== undefined));
+      const files = formats.filter((f) => f !== 'here');
+      const description = [
+        formats.includes('here') ? 'Hand the document to the person. here: into the document they are working in (at the caret).' : 'Send the document to the person as a file.',
+        files.length === 0 ? '' : `${formats.includes('here') ? 'Or a file: ' : ''}${files.includes('pdf') ? 'pdf unless they asked for another' : files.join(', ')}`
+          + `${files.includes('docx') ? ' — docx (Word)' : ''}${files.includes('smdoc') ? ', smdoc (śikṣāmitra)' : ''}`
+          + `${files.includes('vedaunion') ? ', or vedaunion ONLY when they ask for the VedaUnion website upload' : ''}.`,
+        'Refused while check finds an error.',
+      ].filter((s) => s !== '').join(' ');
+      return {
+        ...spec,
+        description,
+        parameters: params({
+          format: { type: 'string', enum: [...formats] },
+          name: str('The file name without extension; the title when left out.'),
+        }),
+      };
+    },
     async run(args, { ws, host }) {
       const doc = ws.need();
-      const errors = checkDocument(ws).filter((f) => f.severity === 'error');
+      const found = checkDocument(ws);
+      const errors = found.filter((f) => f.severity === 'error');
       if (errors.length > 0) return `not delivered — the check finds:\n${said(ws, doc, errors)}`;
+      const warnings = found.filter((f) => f.severity === 'warn');
+      const checked = warnings.length === 0
+        ? 'Checked: every letter is the source’s, every mark the rules’.'
+        : `Checked, with ${warnings.length} note(s): ${warnings.map((w) => w.what).join('; ')}`;
+      const summary = describeDocument(ws, doc, checked);
       const asked = opt<string>(args, 'format', 'string') ?? (host.place !== undefined && host.exporters?.pdf === undefined ? 'here' : 'pdf');
       if (asked === 'here') {
         if (host.place === undefined) return 'this host has no open document to put it in — deliver a file';
@@ -229,7 +264,7 @@ export const CHECK_TOOLS: readonly Tool[] = [
       const stem = (opt<string>(args, 'name', 'string') ?? doc.title).replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'document';
       const file = await make(doc, stem);
       if (host.deliver === undefined) return `made ${file.name} (${Math.round(file.bytes.length / 1024)} KB), but this host cannot hand it over`;
-      await host.deliver({ ...file, mime: file.mime || MIME[format] });
+      await host.deliver({ ...file, mime: file.mime || MIME[format], summary });
       return `delivered ${file.name} (${Math.round(file.bytes.length / 1024)} KB)`;
     },
   },

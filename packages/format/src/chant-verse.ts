@@ -137,7 +137,29 @@ export interface ChantVerse {
    * against 120.6 kB.
    */
   marks?: StoredMark[];
-  translation?: { en: string };
+  /**
+   * The translation, a line per `
+`, and how his file paragraphs it — see
+   * `paragraphs` on the verse, which says the same thing about its lines.
+   */
+  translation?: { en: string; paragraphs?: number[] };
+  /**
+   * HOW HIS FILE PARAGRAPHS THIS VERSE: how many of its lines each paragraph
+   * holds, in order. `[1, 1]` is two `Translit` paragraphs of a line each;
+   * `[2]` is one paragraph whose second line follows a soft break (`w:br`).
+   *
+   * It is what decides the hanging indent, which is the most visible thing
+   * about the shape of his page: a line that STARTS a paragraph is drawn at
+   * the margin, and one after a soft break — like a line too long for the
+   * column as it wraps — hangs in. His sādhanā writes 296 verse lines as
+   * paragraphs and 200 after a soft break, and the two cannot be told apart
+   * from the text.
+   *
+   * Absent: one paragraph holding every line, which is how the Word export has
+   * always written a verse and how his newer files (bhū sūktam, sūryopaniṣat)
+   * are written. The counts must add up to the verse's lines.
+   */
+  paragraphs?: number[];
   /** Where THIS mantra's words come from, when that is not the whole section's
    *  source: a step may hold three mantras from three different loci. Rendered
    *  under the verse in the same quiet register as `ChantSection.source`, and

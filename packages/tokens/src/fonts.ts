@@ -35,13 +35,11 @@ export const TEXT_FACES = {
   sourceSerif: text('Source Serif 4'),
   crimson: text('Crimson Pro'),
   /**
-   * The Veda Union Word document's mantra face.
-   *
-   * Arimo first, Arial second: metric-compatible everywhere, and literally his
-   * face on a machine that has it. This is the only text face that is not a
-   * reading choice — it is a fidelity requirement.
+   * The Veda Union Word document's mantra face: Arimo, metric-compatible with
+   * his Arial. This is the only text face that is not a reading choice — it is
+   * a fidelity requirement. See `WORD_FACES` for why Arial itself is not named.
    */
-  wordSans: `'Arimo', Arial, ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
+  wordSans: `'Arimo', ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
 } as const;
 
 /** Chrome faces a chrome theme may name. */
@@ -56,21 +54,25 @@ export const MONO_FACE = "'IBM Plex Mono', Consolas, monospace";
 /**
  * The Veda Union Word document's faces — metric-compatible substitutes.
  *
- * Each stack names the substitute FIRST and the original SECOND: on a machine
- * that has Arial, Word's own face is used and the page is literally identical;
- * everywhere else the metric-compatible one gives the same widths at the same
- * size. Both are better than the browser's default, which differs per machine.
+ * The metric-compatible face, and NOT his original after it. It was named
+ * second — "on a machine that has Arial the page is literally identical" —
+ * and that is not what a browser does with a stack: it takes a face for each
+ * glyph the first one lacks, so on his machine a letter carrying a Ṛgvedic
+ * overline, which Arimo has no glyph for, printed WHOLE in Arial and on the
+ * bot's server in Gentium. Measured on his sādhanā: 40 letters in Arial, one
+ * arrow in Times. A page must be the same page on every machine, so a glyph
+ * missing from the first face goes to faces this program ships.
  *
  * The Indic faces and the text backstop follow, because a VU page still has to
  * write Devanāgarī and the Vedic candrabindu (see above).
  */
 export const WORD_FACES = {
   /** `Translit` — the mantra line. Arial 16 pt. */
-  sans: `'Arimo', Arial, ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
+  sans: `'Arimo', ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
   /** `Prijevod` — the translation. Times New Roman, italic. */
-  serif: `'Tinos', 'Times New Roman', ${TEXT_BACKSTOP}, ${INDIC_STACK}, serif`,
+  serif: `'Tinos', ${TEXT_BACKSTOP}, ${INDIC_STACK}, serif`,
   /** Headings and body. Calibri. */
-  ui: `'Carlito', Calibri, ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
+  ui: `'Carlito', ${TEXT_BACKSTOP}, ${INDIC_STACK}, sans-serif`,
 } as const;
 
 export type TextFace = keyof typeof TEXT_FACES;

@@ -173,17 +173,25 @@
    * THE HANGING INDENT, and it is measured, not styled: `Translit` carries
    * `w:left="284" w:hanging="284"`, so the paragraph sits at 14.2 pt and its
    * first line comes back out to the margin. Our markup is one element per
-   * recitation line rather than one wrapped paragraph, so "first line" is the
-   * verse's first line — addressed by `data-line`, not by `:first-child`,
-   * which the verse number would otherwise be.
+   * recitation line, and WHICH line starts one of his paragraphs is the
+   * verse's own (`ChantVerse.paragraphs`, `.pada--para`): that line comes out
+   * to the margin, a line after a soft break hangs in — and so does a long
+   * line as it wraps, because the outdent is a `text-indent` and only the
+   * first line of the box takes it, which is Word's rule exactly.
+   *
+   * PADDING, NOT MARGIN: the exported page clips each line to its own box so
+   * a mark cannot be painted on a page its letter left (`export.css`), and an
+   * outdent past a MARGIN put the first letter of every verse outside the
+   * clip — `śuklām` printed as `uklām`. Inside the padding it is in the box.
    */
-  margin-left: var(--doc-verse-indent);
+  padding-left: var(--doc-verse-indent);
   margin-right: var(--doc-verse-right);
+  text-indent: 0;
   letter-spacing: normal;
   word-spacing: normal;
 }
-.doc .pada[data-line='0'] {
-  margin-left: calc(var(--doc-verse-indent) - var(--doc-verse-hanging));
+.doc .pada--para {
+  text-indent: calc(-1 * var(--doc-verse-hanging));
 }
 
 /*
@@ -224,13 +232,18 @@
   font-style: var(--doc-translation-style);
   font-weight: var(--doc-translation-weight);
   color: var(--doc-translation-color);
-  margin: 0 var(--doc-translation-right) var(--doc-translation-after)
-          var(--doc-translation-indent);
+  margin: 0 var(--doc-translation-right) 0 var(--doc-translation-indent);
   text-indent: calc(-1 * var(--doc-translation-hanging));
-  /* A translation keeps its lines, as his Word files break them: one per
-     pāda, the continuation hanging in like the verse's own. */
+  /* A translation keeps its lines, as his Word files break them: a paragraph
+     of his per `<p>`, and inside one a line after a soft break hangs in like
+     the verse's own. */
   white-space: pre-line;
   break-inside: avoid;
+}
+/* His `Prijevod` is `contextualSpacing`: no space between two of its
+   paragraphs, its space after once, under the last. */
+.doc__translations {
+  margin-bottom: var(--doc-translation-after);
 }
 .doc__instruction {
   font-family: var(--doc-body-face);

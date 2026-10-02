@@ -15,6 +15,7 @@ import { insertChantDoc } from '../word/insert-doc.js';
 
 export function wordHost(base: string = new URL('./', globalThis.location?.href ?? 'https://localhost/').toString()): Host {
   return {
+    where: "the Word add-in's panel, beside the person's open Word document",
     library: publishedLibrary(base),
     async place(doc) {
       const done = await insertChantDoc(doc);

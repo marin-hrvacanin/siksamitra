@@ -166,7 +166,7 @@ export function toTokens(
       flush();
       const last = out[out.length - 1];
       if (last !== undefined && last.t === 'text' && prose.from < i) last.s += ch;
-      else emit({ t: 'text', s: ch, ...(prose.v === 'fill' ? { fill: true } : {}) }, i);
+      else emit({ t: 'text', s: ch, ...(prose.v === 'fill' ? { fill: true } : prose.v === 'note' ? { note: true as const } : {}) }, i);
       continue;
     }
 

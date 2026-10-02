@@ -13,7 +13,7 @@
  */
 import { WORD_PAGE } from './src/word.ts';
 import { CHROME_SCALES, MONO_FACE, TEXT_FACES, UI_FACES } from './src/fonts.ts';
-import { DOC_ROLES } from './src/document-type.ts';
+import { DOC_ROLES, commentOnVerseShift } from './src/document-type.ts';
 import { typeScaleOf } from './src/document-themes.ts';
 
 export const MODES = ['light', 'dark'];
@@ -210,7 +210,11 @@ export function typeVars(theme) {
     out[`doc-${role}-style`] = m.italic ? 'italic' : 'normal';
     out[`doc-${role}-weight`] = m.bold ? '700' : '400';
     out[`doc-${role}-color`] = m.color;
+    out[`doc-${role}-shift`] = zoomed(m.shift);
   }
+  /* A comment written on a mantra line: the comment's face in the mantra
+     line's height, set where Word sets it — four fifths down the line. */
+  out['doc-comment-on-verse-shift'] = zoomed(commentOnVerseShift(scale));
   return out;
 }
 

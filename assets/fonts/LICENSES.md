@@ -39,3 +39,10 @@ under a licence that permits it, and the notice travels with the file.
 
 Full text: https://openfontlicense.org/open-font-license-official-text/
 
+## URW Palladio ITU (free of charge, by permission of URW++ and Hermann Zapf)
+
+- **URW Palladio ITU** (`urw-palladio-itu`) — word
+  His Svara and VedicAnusvara styles: every svara mark is a glyph of this face.
+
+URW++ Design & Development GmbH, Hamburg, and Prof. Hermann Zapf donated URW Palladio to Ulrich Stiehl, Heidelberg, granting him permission to adapt and to add diacritical characters and to offer specialized URW Palladio diacritics fonts to Indologists free of charge. Copyright (c) by (URW)++ Design & Development, 1999. Designed by Hermann Zapf. Diacritics added by Ulrich Stiehl. Source: http://www.sanskritweb.net/itrans/
+

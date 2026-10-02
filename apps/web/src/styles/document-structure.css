@@ -1,0 +1,118 @@
+/* Part of the app shell's styles. See styles/README.md for what lives where.
+   Every value resolves to a token; `check:literals` fails the build on a
+   literal colour, face or size.
+
+   THE PAGE'S STRUCTURE, AS HIS FILES HAVE IT — what `document.css` sets
+   the roles of, laid out: comment lines on the line they are written on,
+   notes on a mantra line, his empty lines and page breaks, a book's
+   headings and its first two pages, and where Word sets text in its line.
+   Out of `document.css` when that file passed 400 lines; it is still the
+   page, and nothing but the page is styled here. */
+
+/*
+ * HIS COMMENT FACE, ON THE LINE IT IS WRITTEN ON.
+ *
+ * A source line written on a mantra line — a `Translit` paragraph holding only
+ * a comment, which is how 148 of the sādhanā's are — is as TALL as a mantra
+ * line, set in the comment face; one in a prose paragraph is a comment-face
+ * paragraph whose lines after a break hang in, like a translation's.
+ */
+.doc .doc__source--verse {
+  line-height: calc(var(--doc-verse-size) * var(--doc-verse-lead));
+  margin: 0 var(--doc-verse-right) 0 calc(var(--doc-verse-indent) - var(--doc-verse-hanging));
+}
+.doc .doc__source--body {
+  margin: 0 var(--doc-translation-right) var(--doc-translation-after) var(--doc-translation-indent);
+  text-indent: calc(-1 * var(--doc-translation-hanging));
+  white-space: pre-line;
+}
+
+/* A NOTE ON A MANTRA LINE — `maheśvaraḥ । bramha` — in the comment face,
+   where he wrote it, and never recited (`ChantText.note`). */
+.doc .note {
+  font-family: var(--doc-comment-face);
+  font-size: var(--doc-comment-size);
+  font-style: var(--doc-comment-style);
+  font-weight: var(--doc-comment-weight);
+  color: var(--doc-comment-color);
+}
+
+/*
+ * AN EMPTY LINE OF ONE OF HIS PARAGRAPHS — his spacing, each as tall as the
+ * paragraph it is: a mantra line, a body line and its space after, a
+ * translation line, his 8-point `Insert`.
+ */
+.doc .doc__gap {
+  margin: 0;
+  font-size: 0;
+  user-select: none;
+}
+.doc .doc__gap--verse { height: calc(var(--doc-verse-size) * var(--doc-verse-lead)); }
+.doc .doc__gap--body {
+  height: calc(var(--doc-body-size) * var(--doc-body-lead) + var(--doc-body-after));
+}
+.doc .doc__gap--translation { height: calc(var(--doc-translation-size) * var(--doc-translation-lead)); }
+.doc .doc__gap--small { height: calc(var(--doc-small-size) * var(--doc-small-lead)); }
+
+/* A page break where his file has one: the page ends here when printed, and
+   the paged view starts a new page after it. */
+.doc .doc__break { height: 0; break-after: page; }
+
+/* A BOOK'S HEADINGS are a level up from a single text's: its part is his
+   `Heading 2`, its chant `Heading 3` and a step inside one `Heading 4`. */
+.doc .doc__part--book {
+  font-family: var(--doc-part-face);
+  font-size: var(--doc-part-size);
+  line-height: var(--doc-part-lead);
+  font-style: var(--doc-part-style);
+  font-weight: var(--doc-part-weight);
+  color: var(--doc-part-color);
+  margin-left: var(--doc-part-indent);
+  margin-bottom: var(--doc-part-after);
+}
+.doc .section__title--book {
+  font-family: var(--doc-section-face);
+  font-size: var(--doc-section-size);
+  line-height: var(--doc-section-lead);
+  font-style: var(--doc-section-style);
+  font-weight: var(--doc-section-weight);
+  color: var(--doc-section-color);
+  margin-left: var(--doc-section-indent);
+  margin-bottom: var(--doc-section-after);
+}
+
+/* A book's title page and contents, each a page of its own when printed. */
+.doc .doc__cover {
+  break-after: page;
+  text-align: center;
+}
+.doc .doc__cover-line { display: block; }
+.doc .doc__contents { break-after: page; }
+.doc .doc__contents-entry {
+  display: flex;
+  align-items: baseline;
+  margin: 0;
+}
+.doc .doc__contents-entry--section .doc__contents-text { flex: 1; }
+
+/*
+ * WHERE THE TEXT SITS IN ITS LINE, as Word sets it — `--doc-*-shift`, which is
+ * zero on a screen theme and on his page is the difference between Word's
+ * placement and CSS's (`WORD_FACE_METRICS`): a mantra line's text 1.65 pt
+ * lower than CSS centres it, because Word puts an exact line's baseline four
+ * fifths down. A shift moves the ink and not the box, so nothing reflows.
+ */
+.doc .pada { position: relative; top: var(--doc-verse-shift); }
+.doc .doc__translation { position: relative; top: var(--doc-translation-shift); }
+.doc .doc__source--verse { position: relative; top: var(--doc-comment-on-verse-shift); }
+.doc .doc__source--body { position: relative; top: var(--doc-translation-shift); }
+.doc .doc__instruction { position: relative; top: var(--doc-body-shift); }
+.doc .doc__name { position: relative; top: var(--doc-part-shift); }
+.doc .doc__part { position: relative; top: var(--doc-section-shift); }
+.doc .section__title { position: relative; top: var(--doc-step-shift); }
+.doc .doc__part--book { top: var(--doc-part-shift); }
+.doc .section__title--book { top: var(--doc-section-shift); }
+
+/* A note on a mantra line is smaller than the line, and must not make it
+   taller: his line is exactly as tall as the style says, whatever is on it. */
+.doc .pada .note { line-height: 0; }

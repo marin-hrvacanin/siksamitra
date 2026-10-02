@@ -146,12 +146,15 @@ describe('what the reader could not place', () => {
     expect(found.filter((u) => u.lossy)).toEqual([]);
   });
 
-  it('but calls a comment INSIDE a line a loss, because it cannot be put back', () => {
+  it('and a comment INSIDE a line is no loss either: it is the line’s own note, kept where it stands', () => {
+    /* It was a loss once — a note was read out of the line and could only be
+       put back at an end. A note is part of the line now (`ChantText.note`),
+       read and written back in place. */
     const found = unresolvedIn([{
       pStyle: 'Translit',
       runs: [run('agne ', null), run('(Taittirīya 1.1)', 'Comment'), run(' īḷe', null)],
     }]);
-    expect(found.filter((u) => u.lossy).map((u) => u.raw)).toEqual(['(Taittirīya 1.1)']);
+    expect(found.filter((u) => u.lossy)).toEqual([]);
   });
 
   it('the `Long` style is read now, not reported: the Ṛgvedic overline has a home', () => {

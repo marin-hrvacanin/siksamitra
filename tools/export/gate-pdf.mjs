@@ -96,8 +96,13 @@ function differences(a, b, path = '', out = []) {
  * The SVARABHAKTI DOT, U+00B7, goes for the same reason: `MARK_GEOMETRY`'s
  * `sbhaktiDot` draws it, so it is a filled circle on the page and a character
  * in the `.docx`.
+ *
+ * And HIS VEDIC ANUSVĀRA is one glyph on his page, URW Palladio ITU's U+F141,
+ * which is what his own PDFs carry in their text and what ours now carry; the
+ * `.docx` of a new document writes the letters, `m̐`. One letter, two codes.
  */
 const letters = (s) => s
+  .replace(//g, 'm')
   .replace(/\s+/g, '')
   .replace(/·/g, '')
   .normalize('NFD')

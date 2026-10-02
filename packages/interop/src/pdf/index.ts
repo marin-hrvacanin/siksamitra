@@ -9,6 +9,8 @@
  * and taking it back off.
  */
 export { embedInPdf } from './embed.js';
+export { pageTemplates, runningHeadOf } from './furniture.js';
+export type { FurnitureSheet, Templates } from './furniture.js';
 
 export { importPdf, isSiksamitraPdf } from './import.js';
 export { importPdfRows, paragraphsOfRows, runsOf } from './page-rows.js';

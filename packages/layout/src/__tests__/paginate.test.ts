@@ -160,6 +160,30 @@ describe('splitting a long verse', () => {
   });
 });
 
+describe('a block that says where it may break (`breaksAfter`)', () => {
+  const four = { breakable: true, lines: [24, 24, 24, 24], breaksAfter: [false, true, false] } as const;
+
+  it('breaks at the last allowed line within what fits', () => {
+    /* Room for three lines; a page may end only after the second. */
+    const map = paginate([block('filler', H - 80), block('v', 96, four)], A4);
+    expect(map.pages[0]!.blocks.find((b) => b.id === 'v')?.lineRange).toEqual([0, 1]);
+    expect(map.pages[1]!.blocks.find((b) => b.id === 'v')?.lineRange).toEqual([2, 3]);
+  });
+
+  it('and moves whole when no allowed break fits', () => {
+    /* Room for one line, and a page may not end after the first. */
+    const map = paginate([block('filler', H - 30), block('v', 96, four)], A4);
+    expect(map.pages[0]!.blocks.some((b) => b.id === 'v')).toBe(false);
+    expect(map.pages[1]!.blocks.find((b) => b.id === 'v')?.lineRange).toBeUndefined();
+  });
+
+  it('a break it allows is taken even where orphans and widows would refuse it', () => {
+    /* A refrain: a line a paragraph, so a page may end after any one. */
+    const map = paginate([block('filler', H - 30), block('v', 72, { breakable: true, lines: [24, 24, 24], breaksAfter: [true, true] })], A4);
+    expect(map.pages[0]!.blocks.find((b) => b.id === 'v')?.lineRange).toEqual([0, 0]);
+  });
+});
+
 describe('THE PROMISE: pagination does not depend on zoom', () => {
   const blocks = Array.from({ length: 120 }, (_, i) => block(`v${i}`, 18 + (i % 41)));
 
