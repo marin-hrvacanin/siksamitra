@@ -35,6 +35,16 @@ export const WORD_SUPERSCRIPT = { size: 0.66, raise: 0.345 };
 /** A family his file names, then ours that stands in for it where his is not installed. */
 const stack = (his, ours) => `'${his}', '${ours}', serif`;
 
+/*
+ * How far above its line box a svara of his reaches, in the verse's ems: the
+ * export clips each line to its box and this margin (`export.css`), so a mark
+ * cannot be painted on a page its letter left. Measured in Chromium with his
+ * URW Palladio ITU Bold at 18 pt over a 16 pt line on 24 pt: a dīrgha svarita
+ * reaches 0.414em, a svarita 0.273em — past the 0.36em the drawn strokes of
+ * the other themes need, so his were cut. A little over the tallest.
+ */
+const SVARA_REACH_EM = 0.5;
+
 export function wordMarkRules(themeId) {
   const at = `[data-doc="${themeId}"] .doc`;
   const verse = WORD_PARAGRAPHS.find((p) => p.style === 'Translit').size;
@@ -43,6 +53,7 @@ export function wordMarkRules(themeId) {
   const glyphs = { svarita: '\\30D', 'dirgha-svarita': '\\30E', anudatta: '\\331' };
   return `
 /* His marks, as Word draws them — packages/tokens/word-marks.mjs. */
+${at} .pada { --mark-reach: ${SVARA_REACH_EM}em; }
 ${at} .hold.hold-short,
 ${at} .hold.hold-long {
   display: inline;

@@ -22,7 +22,7 @@ function memorySessions(): SessionStore & { all: Map<string, SessionState> } {
 
 const deliverSteps = () => [
   { calls: [{ name: 'fetch_page', args: { url: 'https://sanskritdocuments.org/x' } }] },
-  { calls: [{ name: 'build_document', args: { title: 'Puruṣa Sūktam', source: 'taittiriya', sections: [{ title: 'Puruṣa Sūktam', witness: 'w1', lines: '5-8' }] } }] },
+  { calls: [{ name: 'build_document', args: { title: 'puruṣa sūktam', source: 'taittiriya', sections: [{ witness: 'w1', lines: '5-8' }] } }] },
   { calls: [{ name: 'deliver', args: {} }] },
   { say: 'Here it is, as a PDF.' },
 ];
@@ -81,7 +81,7 @@ describe('the bot', () => {
     const { core, sessions, ledger } = bot();
     const r = await core.handle('c1', { id: '42' }, 'the Puruṣa Sūktam, Taittirīya, please');
     expect(r.text).toBe('Here it is, as a PDF.');
-    expect(r.files.map((f) => f.name)).toEqual(['Puruṣa Sūktam.pdf']);
+    expect(r.files.map((f) => f.name)).toEqual(['puruṣa sūktam.pdf']);
     expect(sessions.all.get('c1')!.doc).toBeTypeOf('string');
     expect(sessions.all.get('c1')!.messages.some((m) => m.role === 'user')).toBe(true);
     expect(await ledger.spent('c1')).toBeGreaterThan(0);

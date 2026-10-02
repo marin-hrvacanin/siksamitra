@@ -18,8 +18,8 @@ async function verseByVerse(extra: { lines: string[] }[] = []) {
   const ctx = { ws, host: testHost(), review: async (task: string) => { asked.push(task); return 'no problems found'; } };
   ws.keep('https://sanskritdocuments.org/x', 'page', PURUSHA_PAGE.split('\n'));
   await tool('build_document').run({
-    title: 'Puruṣa Sūktam', source: 'taittiriya',
-    sections: [{ title: 'Puruṣa Sūktam', verses: [{ witness: 'w1', at: '5-6' }, { witness: 'w1', at: '7-8' }, ...extra] }],
+    title: 'puruṣa sūktam', source: 'taittiriya',
+    sections: [{ verses: [{ witness: 'w1', at: '5-6' }, { witness: 'w1', at: '7-8' }, ...extra] }],
   }, ctx);
   return { ws, ctx, asked };
 }

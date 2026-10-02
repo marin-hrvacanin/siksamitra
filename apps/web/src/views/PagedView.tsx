@@ -9,14 +9,13 @@
  * pagination (`packages/interop/src/pdf/`), and the `.docx` is paginated by
  * Word. Three mechanisms, not one, and no test compared them.
  *
- * SO THE AGREEMENT IS KEPT BY RULE INSTEAD, and there is one rule to keep —
- * his Word's: a verse may break between its lines, never leaving one line of
- * a paragraph alone at a page's foot or head, its earlier half-verses do not
- * keep with the next, and its last line stays with its translation. This view
- * says it to `paginate` (`breaksAfter`), `export.css` to the printing browser,
- * and the `.docx` to Word (`KEEP_OF`, `loose`); checked against a real Word
- * and his own pages on bhū sūktam and sūryopaniṣat, where all three break
- * where his do. Making the three genuinely share a map is
+ * SO THE AGREEMENT IS KEPT BY RULE INSTEAD, and there is one rule to keep: a
+ * verse that fits a page is kept whole, with its translation, and moves to
+ * the next page rather than splitting (`mayBreak`); only a verse taller than
+ * a page breaks, and then never leaving one line of a paragraph alone at a
+ * page's foot or head, its last line with its translation (`breaksAfter`).
+ * This view says it to `paginate`, `export.css` to the printing browser, and
+ * the `.docx` to Word (`KEEP_OF`). Making the three genuinely share a map is
  * `openspec/changes/bootstrap-v2/tasks.md`, not a comment here.
  *
  * How it works, in order:
@@ -37,7 +36,7 @@ import {
   DocumentBlocks, figureBlockProps, type FigureBlockProps,
 } from './DocumentBlocks.js';
 import { KEEP_WITH_NEXT } from './blocks.js';
-import { pageContent } from './page-slices.js';
+import { mayBreak, pageContent } from './page-slices.js';
 import { useMeasuredBlocks } from './useMeasure.js';
 
 /**
@@ -81,17 +80,17 @@ export function PagedView(
       height: m.height,
       keepWithNext: isHeading(m.id),
       /*
-       * A VERSE BREAKS WHERE HIS WORD WOULD BREAK IT — widow control within
-       * each of his paragraphs, its last line with its translation — which is
-       * also what `export.css` says to the browser when it prints and what the
-       * `.docx` says to Word. See `breaksAfter`. A heading never splits.
+       * A VERSE IS KEPT WHOLE unless it cannot fit a page by itself
+       * (`mayBreak`), and one that cannot breaks where his Word would
+       * (`breaksAfter`) — also what `export.css` says to the browser when it
+       * prints and what the `.docx` says to Word. A heading never splits.
        */
-      ...(isHeading(m.id) || m.lines === undefined
+      ...(isHeading(m.id) || m.lines === undefined || !mayBreak(m.height, columnHeight)
         ? {}
         : { breakable: true, lines: m.lines, ...(m.breaksAfter === undefined ? {} : { breaksAfter: m.breaksAfter }) }),
     })),
     page,
-  ), [measured, page]);
+  ), [measured, page, columnHeight]);
 
   /**
    * What each page draws, derived ONCE per page map.

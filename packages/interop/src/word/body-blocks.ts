@@ -27,8 +27,8 @@ import { xmlEscape } from '../xml.js';
 
 /** What the section writer is given by `documentXml`. */
 export interface BlockTools {
-  /** `loose`: a page may break after it, whatever its style keeps. */
-  readonly p: (style: string | null, runs: string, loose?: boolean) => string;
+  /** `keepNext`: keep it with the next paragraph (or not), whatever its style says. */
+  readonly p: (style: string | null, runs: string, keepNext?: boolean) => string;
   readonly run: (text: string, rStyle: string | null) => string;
   readonly verseRuns: (tokens: readonly ChantToken[]) => string;
   /** A picture's paragraphs: its drawing and its caption. */
@@ -104,20 +104,23 @@ export function blockWriter(tools: BlockTools) {
       out.push(...v.source.split('\n').filter((l) => l.trim() !== '')
         .map((l) => p(styleOf('pada'), `${next()}${run(l, 'Comment')}`)));
     }
-    /* A page may break between a verse's half-verses, and not after its
-       last: `Translit` keeps with the next paragraph, and his bhū sūktam
-       breaks verse 8 between its halves — which Word, measured, does only
-       for a paragraph that does not keep. The print sheet says the same. */
-    const groups = grouped(linesOfTokens(v.tokens), v.paragraphs);
-    groups.forEach((group, gi) => {
+    /* A verse is kept whole (`KEEP_OF`): every paragraph of it keeps with the
+       next, so the verse moves to the next page with its translation rather
+       than splitting where the page runs out. The print sheet says the same. */
+    for (const group of grouped(linesOfTokens(v.tokens), v.paragraphs)) {
       const tokens = group.flatMap((line, i) => (i === 0 ? line : [{ t: 'br' } as ChantToken, ...line]));
       const runs = verseRuns(tokens);
-      if (runs !== '') out.push(p(styleOf('pada'), `${next()}${runs}`, gi < groups.length - 1));
-    });
+      if (runs !== '') out.push(p(styleOf('pada'), `${next()}${runs}`));
+    }
     if (v.translation?.en !== undefined) {
-      for (const group of grouped(v.translation.en.split('\n'), v.translation.paragraphs)) {
-        out.push(p(styleOf('doc__translation'), group.map((l) => (l === '' ? '' : run(l, null))).join(br)));
-      }
+      /* And a translation of several paragraphs keeps them together: all but
+         the last keep with the next, the last does not, so no chain runs on
+         into the next verse. */
+      const groups = grouped(v.translation.en.split('\n'), v.translation.paragraphs);
+      groups.forEach((group, gi) => {
+        out.push(p(styleOf('doc__translation'), group.map((l) => (l === '' ? '' : run(l, null))).join(br),
+          gi < groups.length - 1 ? true : undefined));
+      });
     }
     for (const ins of v.instructions ?? []) out.push(...instruction(ins));
     /* A verse's own pictures, which are inside it and move with it. */

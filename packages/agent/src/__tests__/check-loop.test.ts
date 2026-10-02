@@ -20,7 +20,7 @@ async function built(page = PURUSHA_PAGE, source = 'taittiriya'): Promise<{ ws: 
   const host = testHost();
   const ctx = { ws, host, review: async () => '' };
   ws.keep('https://x', 'page', page.split('\n'));
-  await tool('build_document').run({ title: 'Puruṣa Sūktam', source, sections: [{ title: 'Puruṣa Sūktam', witness: 'w1', lines: '5-8' }] }, ctx);
+  await tool('build_document').run({ title: 'puruṣa sūktam', source, sections: [{ witness: 'w1', lines: '5-8' }] }, ctx);
   return { ws, ctx };
 }
 
@@ -64,7 +64,7 @@ describe('an author\'s text', () => {
     /* A verified text whose marks are NOT what the rules make — one holding moved by its author. */
     const { ws: made } = await built();
     const doc = made.need();
-    const host = testHost({ id: 'purusha', title: 'Puruṣa Sūktam', load: () => ({ doc, kind: 'verified' }) });
+    const host = testHost({ id: 'purusha', title: 'puruṣa sūktam', load: () => ({ doc, kind: 'verified' }) });
     const ws = new Workspace();
     const ctx = { ws, host, review: async () => '' };
     const open = toolsFor('deliver', host).find((t) => t.spec.name === 'open_text')!;
@@ -133,7 +133,7 @@ describe('a session, kept and restored', () => {
   it('comes back with its document, its witnesses and what each section was built from', async () => {
     const model = scripted([
       { calls: [{ name: 'fetch_page', args: { url: 'https://x' } }] },
-      { calls: [{ name: 'build_document', args: { title: 'Puruṣa Sūktam', source: 'taittiriya', sections: [{ title: 'Puruṣa Sūktam', witness: 'w1', lines: '5-8' }] } }] },
+      { calls: [{ name: 'build_document', args: { title: 'puruṣa sūktam', source: 'taittiriya', sections: [{ witness: 'w1', lines: '5-8' }] } }] },
       { say: 'built' },
     ]);
     const opts = { id: 's', mode: 'deliver' as const, model, price: PRICE, host: testHost(), ledger: memoryLedger(), limits: {} };

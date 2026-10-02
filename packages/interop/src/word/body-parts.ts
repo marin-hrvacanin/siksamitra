@@ -123,5 +123,5 @@ export const pauseRun = (text: string, rStyle: string): string =>
   + `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`;
 
 /** One paragraph, in a paragraph style. Exported for the same reason. */
-export const styledParagraph = (style: string | null, runs: string, loose = false): string =>
-  `<w:p>${style === null ? '' : `<w:pPr><w:pStyle w:val="${style}"/>${loose ? '<w:keepNext w:val="0"/>' : ''}</w:pPr>`}${runs}</w:p>`;
+export const styledParagraph = (style: string | null, runs: string, keepNext?: boolean): string =>
+  `<w:p>${style === null ? '' : `<w:pPr><w:pStyle w:val="${style}"/>${keepNext === undefined ? '' : keepNext ? '<w:keepNext/>' : '<w:keepNext w:val="0"/>'}</w:pPr>`}${runs}</w:p>`;

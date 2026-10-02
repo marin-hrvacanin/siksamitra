@@ -111,17 +111,37 @@ export interface LetterDifference { readonly where: string; readonly have: strin
  * for the difference (2026-10-02).
  */
 export function letterDifference(lines: readonly string[], spaced: readonly string[], first = true): LetterDifference | null {
+  /* The verse's letters AS ONE TEXT first: where its lines break is not a
+     letter, and the program sets it (`fitLine`). Compared line by line, a
+     verse given in as many lines as the source's but broken elsewhere was
+     "a changed letter" — and a real run spent its steps on TITUS breaking
+     bhū sūktam 1 after `upasthe` (2026-10-02). */
+  const whole = [textOf(lines), textOf(spaced)] as const;
+  if (whole[0] === whole[1] || (first && dropsOpeningOm(whole[0], whole[1]))) return null;
+  /* A letter does differ: said at its line when the lines are the source's. */
   const same = spaced.length === lines.length;
-  const pairs = same ? lines.map((l, i) => [strictLetters(l), strictLetters(spaced[i]!)] as const) : [[textOf(lines), textOf(spaced)] as const];
+  const pairs = [
+    ...(same ? lines.map((l, i) => [strictLetters(l), strictLetters(spaced[i]!), `line ${i + 1}`] as const) : []),
+    [whole[0], whole[1], 'its lines'] as const,
+  ];
   for (let i = 0; i < pairs.length; i += 1) {
-    const [want, got] = pairs[i]!;
+    const [want, got, where] = pairs[i]!;
     if (want === got || (first && i === 0 && dropsOpeningOm(want, got))) continue;
     let at = 0;
     while (at < want.length && want[at] === got[at]) at += 1;
     const near = (s: string): string => s.slice(Math.max(0, at - 10), at + 10);
-    return { where: same ? `line ${i + 1}` : 'its lines', have: near(got), source: near(want) };
+    return { where, have: near(got), source: near(want) };
   }
   return null;
+}
+
+/** Are these the source's own lines — the same letters, broken where it breaks them? */
+function sourceLines(lines: readonly string[], spaced: readonly string[]): boolean {
+  return lines.length === spaced.length && lines.every((l, i) => {
+    const want = strictLetters(l);
+    const got = strictLetters(spaced[i]!);
+    return want === got || (i === 0 && dropsOpeningOm(want, got));
+  });
 }
 
 
@@ -217,7 +237,8 @@ export function withSourceSvaras(lines: readonly string[], spaced: readonly stri
  * source's own; the last line's close is the builder's, with its number.
  */
 export function withSourceDandas(lines: readonly string[], spaced: readonly string[]): string[] {
-  if (lines.length !== spaced.length) return [...spaced];
+  /* Only over the source's own line ends: lines broken elsewhere carry their own. */
+  if (!sourceLines(lines, spaced)) return [...spaced];
   return spaced.map((s, i) => {
     if (i === spaced.length - 1 || /[।॥|]\s*$/u.test(s)) return s;
     const end = /([।॥|])[\s।॥|0-9०-९]*$/u.exec(cleanLine(lines[i]!));

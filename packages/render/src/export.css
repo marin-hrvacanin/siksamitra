@@ -282,7 +282,11 @@
    * kept every verse whole, believing his style carries `keepLines`; it does
    * not.
    */
-  .export--page .doc .verse { break-inside: auto; }
+  /* A VERSE THAT FITS A PAGE IS KEPT WHOLE, with its translation — his ruling
+     (2026-10-02), as the paged view (`mayBreak`) and Word (`KEEP_OF`) are
+     told. Only a verse taller than a page breaks, and then where the rules
+     below allow. */
+  .export--page .doc .verse { break-inside: avoid; }
   .export--page .doc .doc__translation { break-inside: auto; orphans: 2; widows: 2; }
   /* Widow control: not after a paragraph's first line… */
   .export--page .doc .verse > .pada--para:has(+ .pada:not(.pada--para)),
@@ -315,7 +319,12 @@
    */
   .export--page .doc .pada {
     overflow: clip;
-    overflow-clip-margin: calc(-1 * var(--mark-svara-top));
+    /* `padding-box` named, and not the length alone: Chromium drops a calc()
+       in this property unless a box is named with it — `calc(0.36em)` computes
+       to 0px, `padding-box calc(…)` to 7.19px (Edge 154, measured) — so every
+       line was clipped AT its edge and the top of each svara cut off. A theme
+       whose marks reach further sets `--mark-reach` (`word-marks.mjs`). */
+    overflow-clip-margin: padding-box var(--mark-reach, calc(-1 * var(--mark-svara-top)));
   }
 
   .export--page .doc .section__title,

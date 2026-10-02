@@ -18,12 +18,15 @@
  * MEASURED: 40 to 101 px unaccounted per page, 16 of 58 A4 pages of Śrī Rudram
  * over the foot of their text column.
  *
- * A VERSE IS NOW KEPT WHOLE unless it cannot fit a page by itself — his
- * `Translit` style's `w:keepLines`, and `break-inside: avoid` in the print
- * sheet. So nothing in the corpus splits any more, and the splitting machinery
- * is tested where a verse taller than the paper can be constructed:
+ * A VERSE IS KEPT WHOLE unless it cannot fit a page by itself — his ruling
+ * (2026-10-02: "Splitting only when the page is full is precisely what I
+ * dislike"), and what `export.css` and the `.docx` say too. One taller than a
+ * page breaks only where his Word would: never one line of a paragraph alone
+ * at a page's foot or head, its last line with its translation — checked
+ * below against the FILE's paragraphs, not the view's, so the two can
+ * disagree. The splitting machinery itself is tested in
  * `tests/integration/paged-map.test.ts` and
- * `tests/component/paged-slices.test.tsx`. What is left for a real browser is
+ * `tests/component/paged-slices.test.tsx`; what is left for a real browser is
  * what only a real browser can see — the rectangles.
  *
  * WHAT THIS COMPARES AGAINST, and it is not the program. How many lines a
@@ -91,7 +94,7 @@ const fromFile = (slug) => page.evaluate(async (s) => {
       const lines = typeof item.text === 'string'
         ? item.text.split('\n').length
         : (item.tokens ?? []).filter((t) => t.t === 'br').length + 1;
-      out[item.id] = { lines, translated: item.translation !== undefined };
+      out[item.id] = { lines, paragraphs: item.paragraphs, translated: item.translation !== undefined };
     }
   }
   return out;
@@ -116,13 +119,16 @@ const drawn = () => page.evaluate(() => {
     const foot = box.bottom - parseFloat(getComputedStyle(pg).paddingBottom);
     for (const el of pg.querySelectorAll('[data-verse]')) {
       const id = el.getAttribute('data-verse');
-      const was = per[id] ?? { pages: 0, padas: 0, translations: 0, lines: [] };
+      const was = per[id] ?? { pages: 0, padas: 0, translations: 0, lines: [], slices: [] };
       const padas = [...el.querySelectorAll('.pada')];
+      const here = padas.map((l) => Number(l.getAttribute('data-line')));
+      const translations = el.querySelectorAll('.doc__translation').length;
       per[id] = {
         pages: was.pages + 1,
         padas: was.padas + padas.length,
-        translations: was.translations + el.querySelectorAll('.doc__translation').length,
-        lines: [...was.lines, ...padas.map((l) => Number(l.getAttribute('data-line')))],
+        translations: was.translations + translations,
+        lines: [...was.lines, ...here],
+        slices: [...was.slices, { lines: here, translations }],
       };
     }
     /* Anything drawn below the column is content a page does not have room
@@ -261,17 +267,43 @@ for (const { title, slug } of SUBJECTS) {
       `${pages} pages then ${settled.pages}, ${settled.overflowing} over`);
 
     /*
-     * AND NONE OF THEM IS SPLIT. A verse that fits a page is kept whole, which
-     * is what Word does with `w:keepLines` and what a printing browser does
-     * with `break-inside: avoid`. The view was the only one of the three that
-     * split a verse for tidiness — 22 of Śrī Rudram's at A4 — so the three
-     * files of one document disagreed about what was on the page.
+     * AND NONE OF THEM IS SPLIT. A verse that fits a page is kept whole and
+     * moves to the next one — his ruling, and what a printing browser does
+     * with `break-inside: avoid` and Word with `w:keepNext` + `w:keepLines`.
+     * No verse of these two documents is taller than a page at any of the
+     * three sizes, so none may split.
      */
-    const split = names
-      .filter((id) => per[id] !== undefined && per[id].pages > 1)
-      .map((id) => `${id} on ${per[id].pages} pages`);
+    const split = names.filter((id) => per[id] !== undefined && per[id].pages > 1);
     check(`${where}: a verse that fits a page is kept whole`, split.length === 0,
-      split.slice(0, 4).join(' | '));
+      split.slice(0, 4).map((id) => `${id} on ${per[id].pages} pages`).join(' | '));
+
+    /*
+     * AND ONE THAT CANNOT FIT BREAKS ONLY WHERE HIS WORD WOULD: a paragraph of
+     * his of two lines or more never leaves one line alone at a page's foot
+     * nor carries one alone to its head, and a verse's last line goes with its
+     * translation. His paragraphs are the file's `paragraphs` — absent, one
+     * holding every line — so this is the document's answer, not the view's.
+     */
+    const astray = split.flatMap((id) => {
+      const { lines: n, paragraphs, translated } = truth[id];
+      const paragraph = (i) => {
+        let start = 0;
+        for (const count of paragraphs ?? [n]) {
+          if (i < start + count) return [start, start + count - 1];
+          start += count;
+        }
+        return [i, i];
+      };
+      const faults = per[id].slices.slice(0, -1).map((sl) => sl.lines[sl.lines.length - 1]).filter((j) => {
+        const [first, last] = paragraph(j);
+        return last > first && (j === first || j + 1 === last);
+      }).map((j) => `${id} breaks after line ${j}`);
+      const tail = per[id].slices.find((sl) => sl.lines.includes(n - 1));
+      if (translated && tail !== undefined && tail.translations === 0) faults.push(`${id}: its last line left its translation`);
+      return faults;
+    });
+    check(`${where}: a verse breaks only where his Word would break it`, astray.length === 0,
+      astray.length === 0 ? `${split.length} verse(s) run over a page` : astray.slice(0, 4).join(' | '));
 
     versesSeen += names.filter((id) => per[id] !== undefined).length;
     pagesSeen += pages;

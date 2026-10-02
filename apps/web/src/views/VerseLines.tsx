@@ -13,7 +13,7 @@
  */
 import type { ReactNode } from 'react';
 import type { ChantScriptKey, ChantToken, ChantVerse } from '@siksamitra/format';
-import { holdJoins, renderToken, unitsBefore, type TokenContext } from '@siksamitra/render';
+import { holdJoins, renderToken, signRuns, unitsBefore, type TokenContext } from '@siksamitra/render';
 
 const FONT_STACK = 'var(--doc-verse-face)';
 
@@ -86,9 +86,21 @@ export function VerseLines(
               /* Which boxes run through a syllable boundary, once per line —
                  see `holdJoins`. Per line, because a line break ends a box. */
               const joins = holdJoins(line);
-              return line.map((t, ti) => renderToken(
-                t, ti, ctx, base + unitsBefore(line, ti), joins.get(ti),
-              ));
+              const drawn = (ti: number): ReactNode => renderToken(
+                line[ti]!, ti, ctx, base + unitsBefore(line, ti), joins.get(ti),
+              );
+              /* A run of signs is one piece a line does not break inside —
+                 `॥ 1॥` stays one sign, and with its word (`signRuns`). */
+              const out: ReactNode[] = [];
+              let ti = 0;
+              for (const [from, to] of signRuns(line)) {
+                for (; ti < from; ti += 1) out.push(drawn(ti));
+                const run: ReactNode[] = [];
+                for (; ti <= to; ti += 1) run.push(drawn(ti));
+                out.push(<span className="sign" key={`sign-${from}`}>{run}</span>);
+              }
+              for (; ti < line.length; ti += 1) out.push(drawn(ti));
+              return out;
             })()}
           </div>
         );

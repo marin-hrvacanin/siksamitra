@@ -44,6 +44,7 @@ import { WORD_PARAGRAPHS } from '@siksamitra/tokens/word';
 import { buildPage, loadDoc } from './page.mjs';
 import { toPng, toSvg, withBrowser } from './raster.mjs';
 import { analyse, analyseSvg, fidelity } from './pixels.mjs';
+import { uncutMarks } from './clip-check.mjs';
 
 const OUT = 'artifacts/export';
 const SOURCE = 'corpus/chants/durga-suktam.json';
@@ -170,6 +171,13 @@ await withBrowser(async (browser) => {
      gutter number there would be the number twice. */
   is('gutter numbers drawn', seen.counts.numbers, 0);
   atLeast('translations drawn', seen.counts.translations, seen.counts.verses);
+
+  /* His svaras, printed: not cut by the line they sit on (`clip-check.mjs`). */
+  const iast = await buildPage(doc, { style: 'veda-union', script: 'iast', select: ONE_SECTION });
+  const clip = await uncutMarks(browser, iast.html);
+  if (clip.lines === 0) fail('svaras under the clip', 'no line with a svara was measured');
+  for (const c of clip.cut) fail('a svara cut by its line', c);
+  console.log(`  svaras      ${clip.lines} lines printed, ${clip.cut.length} cut by their line's clip`);
 
   console.log(`  mantra      ${seen.first?.size} pt on ${seen.first?.lead} `
     + `(${line.size} pt on ${(line.leading / line.size).toFixed(3)}), ${seen.first?.family}`);

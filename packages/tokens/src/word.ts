@@ -145,6 +145,20 @@ export const WORD_MARKS = {
  * in, so a 1.1 pt error per side moves where a long pāda wraps — and
  * `packages/layout` had 25 mm all along, so the two disagreed.
  */
+/*
+ * HOW WIDE A MANTRA LINE MAY RUN BEFORE IT IS DIVIDED, as a share of the
+ * column a hanging line has (454 pt). His own lines run close to it when they
+ * fit — his bhū sūktam 1's second line is 434 pt — so a line that fits is his
+ * and stays; one that would wrap is divided EVENLY where it is written
+ * (`fitLine`, `packages/layout`), never filled and left with a stub: his
+ * ruling, 2026-10-02, "no need to fill the entire line". The share below one
+ * leaves room for what the text does not carry and the page draws — the
+ * holding boxes' borders, the raised reading aids.
+ */
+export const MANTRA_LINE_FILL = 0.97;
+
+export { MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK } from './mantra-widths.js';
+
 export const WORD_PAGE = {
   size: 'a4',
   /** 25 mm, as his PDF measures — `1417` twips, Word's own default. */

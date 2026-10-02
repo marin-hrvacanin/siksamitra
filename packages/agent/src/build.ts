@@ -44,7 +44,23 @@ import { openChantDoc } from '@siksamitra/engine';
 import {
   SVARA_BY_CHAR, VERSE_END, buildDocument, reportFor, wordRun, type WordParagraph, type WordRun,
 } from '@siksamitra/interop';
+import { advanceWidth, fitLine, type LineFit } from '@siksamitra/layout';
+import {
+  MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK, MANTRA_LINE_FILL, WORD_PAGE, WORD_PARAGRAPHS,
+} from '@siksamitra/tokens/word';
 import { cleanLine, groupedBy, layoutOf, numbered, paragraphsIn, unnumbered, type VerseLayout } from './lines.js';
+
+/*
+ * HIS COLUMN, and how wide a line of his may run in it: the width a line
+ * that hangs in has (`Translit`: in by its indent, out by its negative right
+ * one), at his share of it (`MANTRA_LINE_FILL`). A line the source gives
+ * wider is divided evenly, at a word's end (`fitLine`).
+ */
+const VERSE = WORD_PARAGRAPHS.find((p) => p.role === 'verse-line')!;
+const MANTRA_FIT: LineFit = {
+  widthOf: advanceWidth(MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK, VERSE.size),
+  limit: MANTRA_LINE_FILL * (WORD_PAGE.widthPt - 2 * WORD_PAGE.marginPt - VERSE.indent - VERSE.right),
+};
 
 export interface OutlineVerse {
   /** The verse's lines — its pādas or half-verses — as the source has them. */
@@ -164,9 +180,16 @@ export function paragraphsOf(o: Outline): WordParagraph[] {
       const groups = groupedBy(ended, v.paragraphs) ?? paragraphsIn(ended, layout);
       let at = 0;
       for (const p of groups) {
+        /* A line too wide for his column is divided evenly where it is
+           written — its parts soft breaks of its paragraph, hanging in as a
+           wrapped line of his does, its note after the last (`fitLine`). */
         out.push(para('Translit', p.flatMap((l, i) => {
           const note = kept[at + i]!.note;
-          return [...(i === 0 ? [] : [wordRun('\n')]), ...runsOf(l), ...(note === '' ? [] : [wordRun(' '), wordRun(note, 'Comment')])];
+          const parts = fitLine(l, MANTRA_FIT);
+          return [
+            ...parts.flatMap((part, pi) => [...(i === 0 && pi === 0 ? [] : [wordRun('\n')]), ...runsOf(part)]),
+            ...(note === '' ? [] : [wordRun(' '), wordRun(note, 'Comment')]),
+          ];
         }), tag()));
         at += p.length;
       }
@@ -180,8 +203,41 @@ export function paragraphsOf(o: Outline): WordParagraph[] {
   return out;
 }
 
+/*
+ * HIS HEADINGS AND HIS SOURCE LINES — what a real run got wrong (nīla sūktam,
+ * 2026-10-02): the closing śānti made a section of its own, headed
+ * "Śāntipāṭha" over the source line "śāntimantraḥ", and so the first section
+ * had to be headed too — "Nīla Sūktam", the title again. His headings are
+ * lower case; a heading never repeats the title; a source line names a work
+ * and the place in it ("taittirīya saṁhitā 1.5.3" — every one of his does).
+ */
+const IAST_LETTER = /[āīūṛṝḷḹṃṁḥñṅṇṭḍśṣĀĪŪṚṜḶḸṂṀḤÑṄṆṬḌŚṢ]/u;
+const bare = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]/gu, '');
+
+/** What is wrong with the outline's headings or source lines, said as he would. */
+export function headingFault(o: Outline): string | undefined {
+  for (const t of [o.title, ...o.sections.map((s) => s.title ?? '')]) {
+    if (IAST_LETTER.test(t) && /(?:^|\s)\p{Lu}/u.test(t)) {
+      return `"${t}": his headings are lower case, as his files write them ("${t.toLowerCase()}")`;
+    }
+  }
+  for (const s of o.sections) {
+    if ((s.title ?? '').trim() !== '' && bare(s.title!) === bare(o.title)) {
+      return `a section headed "${s.title}" repeats the title. A text of one part has no heading of its own, and a closing śānti is the last verse of the last section (numbered: false) — never a section`;
+    }
+  }
+  for (const c of [o.locus, ...o.sections.map((s) => s.cite)]) {
+    if (c !== undefined && c.trim() !== '' && !/[0-9]/u.test(c) && c.trim().split(/\s+/u).length < 2) {
+      return `"${c}" is no source line: a source line names a work and the place in it ("taittirīya saṁhitā 4.4.12")`;
+    }
+  }
+  return undefined;
+}
+
 /** The document an outline describes, opened. */
 export function documentOf(o: Outline): ChantDoc {
+  const fault = headingFault(o);
+  if (fault !== undefined) throw new Error(fault);
   /* A section after the first stands apart by its heading, or by its own
      source line; one with neither would run into the one before it. */
   const named = (s: OutlineSection): boolean => (s.title ?? '').trim() !== '' || (s.cite ?? '').trim() !== '';

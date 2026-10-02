@@ -22,15 +22,15 @@ function deliverScript() {
     { calls: [{ name: 'fetch_page', args: { url: 'https://sanskritdocuments.org/doc_veda/purusha.html' } }] },
     { calls: [{ name: 'read_witness', args: { witness: 'w1', from: 4, to: 8 } }] },
     { calls: [{ name: 'build_document', args: {
-      title: 'Puruṣa Sūktam', source: 'taittiriya',
-      sections: [{ title: 'Puruṣa Sūktam', cite: 'Taittirīya Āraṇyaka 3.12', witness: 'w1', lines: '5-8' }],
+      title: 'puruṣa sūktam', subtitle: 'kṛṣṇa yajurvedīya', source: 'taittiriya',
+      sections: [{ cite: 'Taittirīya Āraṇyaka 3.12', witness: 'w1', lines: '5-8' }],
     } }] },
     { calls: [{ name: 'check', args: {} }] },
-    { calls: [{ name: 'review', args: { focus: 'the Taittirīya Puruṣa Sūktam, first two verses' } }] },
+    { calls: [{ name: 'review', args: { focus: 'the Taittirīya puruṣa sūktam, first two verses' } }] },
     /* The reviewer's own call — the same model, a separate conversation. */
     { say: 'no problems found — compared s-1 with w1 lines 5-8' },
     { calls: [{ name: 'deliver', args: {} }] },
-    { say: 'Here is the Puruṣa Sūktam (Taittirīya Āraṇyaka 3.12), from sanskritdocuments.org, as a PDF.' },
+    { say: 'Here is the puruṣa sūktam (Taittirīya Āraṇyaka 3.12), from sanskritdocuments.org, as a PDF.' },
   ]);
 }
 
@@ -42,11 +42,11 @@ describe('delivery mode, end to end', () => {
     const events: AgentEvent[] = [];
     const session = new Session({ id: 'chat-1', user: 'marin', mode: 'deliver', model, price: PRICE, host, ledger, limits: { global: 5 }, onEvent: (e) => events.push(e) });
 
-    const done = await session.ask('I want the Puruṣa Sūktam, the Taittirīya version, please');
-    expect(done.text).toContain('Puruṣa Sūktam');
+    const done = await session.ask('I want the puruṣa sūktam, the Taittirīya version, please');
+    expect(done.text).toContain('puruṣa sūktam');
 
     /* The file: a PDF, because nobody asked for anything else. */
-    expect(host.delivered.map((f) => [f.name, f.format, f.mime])).toEqual([['Puruṣa Sūktam.pdf', 'pdf', 'application/pdf']]);
+    expect(host.delivered.map((f) => [f.name, f.format, f.mime])).toEqual([['puruṣa sūktam.pdf', 'pdf', 'application/pdf']]);
 
     /* The document: the page's two verses, letter for letter, accents as marks. */
     const doc = session.ws.need();
@@ -96,13 +96,13 @@ describe('delivery mode, end to end', () => {
     const host = testHost();
     const steps = (format: string) => scripted([
       { calls: [{ name: 'fetch_page', args: { url: 'https://x' } }] },
-      { calls: [{ name: 'build_document', args: { title: 'Puruṣa Sūktam', source: 'taittiriya', sections: [{ title: 'Puruṣa Sūktam', witness: 'w1', lines: '5-8' }] } }] },
+      { calls: [{ name: 'build_document', args: { title: 'puruṣa sūktam', source: 'taittiriya', sections: [{ witness: 'w1', lines: '5-8' }] } }] },
       { calls: [{ name: 'deliver', args: { format } }] },
       { say: 'done' },
     ]);
     for (const f of ['docx', 'vedaunion']) {
       await new Session({ id: f, mode: 'deliver', model: steps(f), price: PRICE, host, ledger: memoryLedger(), limits: {} }).ask(`as ${f}`);
     }
-    expect(host.delivered.map((d) => d.name)).toEqual(['Puruṣa Sūktam.docx', 'Puruṣa Sūktam.vuchant']);
+    expect(host.delivered.map((d) => d.name)).toEqual(['puruṣa sūktam.docx', 'puruṣa sūktam.vuchant']);
   });
 });

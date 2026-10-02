@@ -67,8 +67,13 @@ describe('what never joins', () => {
 
 describe('the source’s daṇḍas, where his lines end with them', () => {
   const SOURCE = ['ओम् ॥ ओ-म्भूमि॑र्भू॒म्ना द्यौर्व॑रि॒णा-ऽन्तरि॑क्ष-म्महि॒त्वा ।', 'उ॒पस्थे॑ ते देव्यदिते॒-ऽग्निम॑न्ना॒द-म॒न्नाद्या॒याद॑धे ॥'];
+  const OPEN = ["bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣam mahi̱tvā", "u̱pasthe̍ te devy adite̱'gnim a̍nnā̱dam a̱nnādyā̱yā''da̍dhe"];
   it('a half-line the model left open is closed as the source closes it', () => {
-    expect(withSourceDandas(SOURCE, ['bhūmi̍r bhū̱mnā', 'u̱pasthe̍ te'])).toEqual(['bhūmi̍r bhū̱mnā ।', 'u̱pasthe̍ te']);
+    expect(withSourceDandas(SOURCE, OPEN)).toEqual([`${OPEN[0]} ।`, OPEN[1]]);
+  });
+  it('but not where the model broke the lines elsewhere — the daṇḍa ends the source’s line, not this one', () => {
+    const moved = ["bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣam", "mahi̱tvā u̱pasthe̍ te devy adite̱'gnim a̍nnā̱dam a̱nnādyā̱yā''da̍dhe"];
+    expect(withSourceDandas(SOURCE, moved)).toEqual(moved);
   });
   it('the last line is the builder’s to close, with its number', () => {
     expect(withSourceDandas(SOURCE, ['a ।', 'b'])[1]).toBe('b');

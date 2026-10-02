@@ -21,7 +21,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { contentBox, pageGeometry, paginate, type LayoutBlock } from '@siksamitra/layout';
-import { breaksAfter, pageContent } from '../../apps/web/src/views/page-slices.js';
+import { breaksAfter, mayBreak, pageContent } from '../../apps/web/src/views/page-slices.js';
 
 const A4 = pageGeometry('a4');
 const COLUMN = contentBox(A4).height;
@@ -42,7 +42,7 @@ const asTheViewDoes = (blocks: readonly LayoutBlock[]): LayoutBlock[] => blocks.
   id: b.id,
   height: b.height,
   keepWithNext: b.id.startsWith('h:'),
-  ...(b.id.startsWith('h:') || b.lines === undefined
+  ...(b.id.startsWith('h:') || b.lines === undefined || !mayBreak(b.height, COLUMN)
     ? {}
     : { breakable: true, lines: b.lines, breaksAfter: breaksAfter(b.lines.map((_, i) => i === 0)) }),
 }));
@@ -86,17 +86,17 @@ describe('a document of ordinary verses', () => {
     for (const [id, { lines }] of d) expect(lines, id).toEqual([0, 1, 2, 3]);
   });
 
-  it('and splits one only as his Word does — two lines and two, never one left alone', () => {
+  it('and splits none of them — a verse that fits a page moves to the next, whole', () => {
     /*
-     * HIS WORD'S RULE, measured in a real Word and on his pages: widow control
-     * within a paragraph, and no `keepLines` on his `Translit`. It once kept
-     * every verse whole here, on the belief that his style carries
-     * `keepLines`; his own sādhanā breaks verses ten times inside a paragraph.
+     * HIS RULING (2026-10-02): "Splitting only when the page is full is
+     * precisely what I dislike... it should be visually nicer". Word fills a
+     * page and breaks a verse where it runs out, and his own files do; his
+     * program does not. Every page here ends between two verses.
      */
     const map = paginate(asTheViewDoes(blocks), A4);
     const split = map.pages.flatMap((p) => p.blocks).filter((b) => b.lineRange !== undefined);
-    expect(split.length).toBeGreaterThan(0);
-    for (const b of split) expect([[0, 1], [2, 3]]).toContainEqual(b.lineRange);
+    expect(map.pages.length).toBeGreaterThan(1);
+    expect(split).toEqual([]);
   });
 
   it('and no page is fuller than the column — the arithmetic, not the ink', () => {

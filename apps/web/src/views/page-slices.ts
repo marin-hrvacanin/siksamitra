@@ -37,8 +37,21 @@ export function pageContent(page: Page): PageContent {
 }
 
 /**
- * Where a page may end inside a verse — his Word's answer, and the same one
- * `export.css` gives a printing browser and `KEEP_OF` and `loose` give Word.
+ * Whether a verse may be split at all: only when it cannot fit a page by
+ * itself. A verse that fits is kept whole and moves to the next page —
+ * his ruling (2026-10-02): "Splitting only when the page is full is precisely
+ * what I dislike... it should be visually nicer". So a page ends between verses, and the same is said to a printing
+ * browser (`break-inside: avoid` on `.verse`, `export.css`) and to Word
+ * (`KEEP_OF`: the verse's lines keep together and with what follows). Word's
+ * own pagination, which fills a page and breaks a verse where it runs out, is
+ * what his own files do and what he does not want here.
+ */
+export const mayBreak = (height: number, contentHeight: number): boolean =>
+  height > contentHeight;
+
+/**
+ * Where a page may end inside a verse TOO TALL FOR ONE — his Word's answer,
+ * and the same one `export.css` gives a printing browser.
  *
  * His `Translit` keeps with the next paragraph and NOT its lines together;
  * nothing of his turns widow control off. Measured in a real Word and on his

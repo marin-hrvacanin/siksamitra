@@ -2731,6 +2731,7 @@
 }
 
 /* His marks, as Word draws them — packages/tokens/word-marks.mjs. */
+[data-doc="word"] .doc .pada { --mark-reach: 0.5em; }
 [data-doc="word"] .doc .hold.hold-short,
 [data-doc="word"] .doc .hold.hold-long {
   display: inline;

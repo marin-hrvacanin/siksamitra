@@ -28,3 +28,4 @@ export {
   DEFAULT_VIEW, VIEW_CYCLE, VIEW_MODES, nextView, themeFor, viewMode,
 } from './view.js';
 export type { ViewKind, ViewMode } from './view.js';
+export { advanceWidth, fitLine, piecesOf, type LineFit } from './line-fit.js';

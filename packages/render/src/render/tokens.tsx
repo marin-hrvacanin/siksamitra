@@ -14,7 +14,7 @@
 
 import { Fragment, type ReactNode } from 'react';
 import { PAUSE_GLYPH } from './run-marks.js';
-import type { ChantScriptKey, ChantToken } from '@siksamitra/format';
+import { NBSP, type ChantScriptKey, type ChantToken } from '@siksamitra/format';
 import { holdJoins, type HoldJoin } from './hold-joins.js';
 import { renderSyl } from './marks.js';
 
@@ -52,7 +52,9 @@ export const TOKEN_RENDERERS: { readonly [T in ChantToken['t']]: Renderer<T> } =
     ...(join?.joinR === true ? { joinR: true } : {}),
   }),
 
-  sp: (_t, key) => <span className="sp" key={key}> </span>,
+  /* His no-break spaces — 4 000-odd in his mantra lines, placed to keep two
+     words on one line — are no-break here too, as the `.docx` writes them. */
+  sp: (t, key) => <span className="sp" key={key}>{t.nb === true ? NBSP : ' '}</span>,
 
   danda: (t, key) => <span className={t.s === '॥' ? 'danda danda--double' : 'danda'} key={key}>{t.s}</span>,
 
@@ -123,6 +125,38 @@ export const TOKEN_RENDERERS: { readonly [T in ChantToken['t']]: Renderer<T> } =
     </span>
   ),
 };
+
+/** The tokens that write a line's signs rather than its words. */
+const SIGN: ReadonlySet<ChantToken['t']> = new Set(['danda', 'num', 'bar']);
+
+/**
+ * WHERE A LINE MAY NOT BREAK: inside a run of signs, or before one. A daṇḍa
+ * never begins a line, and `॥ 1॥` is one sign — his words (2026-10-02): "we
+ * have "||" at the end and in the next line "1||" which is just awful in all
+ * regards". A no-break space cannot hold them: Unicode lets a line break
+ * AFTER a daṇḍa with no space at all (UAX #14, class BA). So a run — the
+ * space before it, its signs and the spaces between them — is drawn as one
+ * piece that does not break (`.sign`), and the space after it stays a place
+ * a line may end.
+ *
+ * Each run is `[first, last]`, inclusive, in the line's own token indices.
+ */
+export function signRuns(tokens: readonly ChantToken[]): Array<readonly [number, number]> {
+  const out: Array<readonly [number, number]> = [];
+  let i = 0;
+  while (i < tokens.length) {
+    if (!SIGN.has(tokens[i]!.t)) { i += 1; continue; }
+    const from = i > 0 && tokens[i - 1]!.t === 'sp' ? i - 1 : i;
+    let to = i;
+    for (let j = i + 1; j < tokens.length; j += 1) {
+      if (SIGN.has(tokens[j]!.t)) to = j;
+      else if (tokens[j]!.t !== 'sp') break;
+    }
+    out.push([from, to]);
+    i = to + 1;
+  }
+  return out;
+}
 
 /**
  * Draw one token.

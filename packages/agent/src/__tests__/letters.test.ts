@@ -58,6 +58,19 @@ describe('a difference of reading — not equal', () => {
   });
 });
 
+describe('his lines, broken where the source does not break them', () => {
+  /* TITUS breaks bhū sūktam 1 after `upasthe`; his page breaks it after
+     `mahitvā` — as many lines, the same letters (a real run, 2026-10-02). */
+  const TITUS = ["bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣam mahi̱tvā u̱pasthe̍", "te devy adite̱'gnim a̍nnā̱dam a̱nnādyā̱yā''da̍dhe ॥"];
+  const HIS = ["bhūmi̍r bhū̱mnā dyaur va̍ri̱ṇā'ntari̍kṣam mahi̱tvā ।", "u̱pasthe̍ te devya-dite̱'gnima̍-nnā̱dama̱-nnādyā̱yā''da̍dhe ॥"];
+  it('are the same letters — where a line breaks is not a letter', () => {
+    expect(letterChange(TITUS, HIS)).toBeNull();
+  });
+  it('and a letter changed in them is still found', () => {
+    expect(letterChange(TITUS, [HIS[0]!, HIS[1]!.replace('nnādyā', 'nnādya')])).toMatch(/spaced changes a letter/);
+  });
+});
+
 describe('his lines, where the source has fewer', () => {
   const ONE = ['म॒हीन्दे॒वीं-विँष्णु॑पत्नी मजू॒र्या-म्प्रती॒ची॑मेनाग्ं ह॒विषा॑ यजामः ॥'];
   it('one source line set as two of his is the same letters', () => {

@@ -159,7 +159,7 @@ function rPr(
 }
 
 /** Which of Word's keeps a style carries: none, keep-with-next, or both keeps. */
-type Keep = 'none' | 'next' | 'whole';
+type Keep = 'none' | 'next' | 'lines' | 'whole';
 
 function pPr(m: RoleMetric, keep: Keep = 'none', contextual = false): string {
   /*
@@ -181,7 +181,7 @@ function pPr(m: RoleMetric, keep: Keep = 'none', contextual = false): string {
   /* `keepNext` and `keepLines` come FIRST: `CT_PPrBase` is a sequence, and a
      `w:keepNext` written after `w:spacing` is a schema violation Word reports
      only as "the file appears to be corrupted". */
-  return `<w:pPr>${keep === 'none' ? '' : keep === 'next' ? '<w:keepNext/>' : '<w:keepNext/><w:keepLines/>'}`
+  return `<w:pPr>${keep === 'none' ? '' : keep === 'next' ? '<w:keepNext/>' : keep === 'lines' ? '<w:keepLines/>' : '<w:keepNext/><w:keepLines/>'}`
     + `<w:spacing w:after="${twips(m.after)}" ${line}/>${ind}${contextual ? '<w:contextualSpacing/>' : ''}</w:pPr>`;
 }
 
@@ -215,7 +215,13 @@ function styleName(id: string): string {
  * the same to `paginate`.
  */
 const KEEP_OF: Readonly<Partial<Record<DocRole, Keep>>> = {
-  verse: 'next', title: 'whole', part: 'whole', section: 'whole', step: 'whole',
+  /* KEPT WHOLE, not his: his `Translit` keeps only with the next paragraph,
+     and Word then fills a page and breaks a verse where it runs out — "what
+     I dislike... it should be visually nicer" (his ruling, 2026-10-02). So a
+     verse's lines keep together and with what follows, its translation's
+     lines together, and Word moves a verse that does not fit to the next
+     page; one taller than a page Word breaks anyway. */
+  verse: 'whole', translation: 'lines', title: 'whole', part: 'whole', section: 'whole', step: 'whole',
 };
 
 /**

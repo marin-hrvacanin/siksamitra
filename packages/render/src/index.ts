@@ -67,6 +67,6 @@ export type { Run, RunKind, RunMarks } from './runs.js';
 export { PAUSE_GLYPH, renderRun, renderRunLine, runClassName } from './render/run-marks.js';
 /* A token stream drawn — one entry per token type. The app's three views, the
    Word add-in's panel and the exports draw a verse through this one table. */
-export { TOKEN_RENDERERS, renderToken, unitsBefore } from './render/tokens.js';
+export { TOKEN_RENDERERS, renderToken, signRuns, unitsBefore } from './render/tokens.js';
 export type { TokenContext } from './render/tokens.js';
 export type { RunRenderOptions } from './render/run-marks.js';

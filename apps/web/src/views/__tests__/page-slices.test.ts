@@ -7,17 +7,28 @@
  *                  which page (`lineRange`); the view chose its blocks by ID
  *                  and read none of it, so a split verse — whose id is on both
  *                  pages — was drawn WHOLE on both.
- *   `breaksAfter`  where a page may end inside a verse: his Word's widow
- *                  control within each of his paragraphs, and its last line
- *                  kept with its translation. It once kept every verse whole,
- *                  on the belief that his `Translit` carries `w:keepLines` —
- *                  it does not, and his own pages break verses.
+ *   `mayBreak`     whether a verse may split at all: only when it cannot fit
+ *                  a page by itself. His ruling (2026-10-02): a page that
+ *                  fills and breaks a verse is "precisely what I dislike".
+ *   `breaksAfter`  where a page may end inside a verse too tall for one: his
+ *                  Word's widow control within each of his paragraphs, and
+ *                  its last line kept with its translation.
  */
 import { describe, expect, it } from 'vitest';
 import type { Page } from '@siksamitra/layout';
-import { breaksAfter, pageContent } from '../page-slices.js';
+import { breaksAfter, mayBreak, pageContent } from '../page-slices.js';
 
 const page = (blocks: Page['blocks']): Page => ({ index: 0, blocks, used: 0 });
+
+describe('whether a verse may split at all', () => {
+  it('not when it fits a page — it moves to the next one whole', () => {
+    expect(mayBreak(300, 700)).toBe(false);
+    expect(mayBreak(700, 700)).toBe(false);
+  });
+  it('only when it is taller than a page, where nothing else can hold it', () => {
+    expect(mayBreak(700.5, 700)).toBe(true);
+  });
+});
 
 describe('the blocks one page draws', () => {
   it('is every id the map put on it', () => {
