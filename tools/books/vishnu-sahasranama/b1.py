@@ -1,0 +1,102 @@
+import json
+def V(at,spaced,tr=None,**k):
+    d={"witness":"w1","at":at,"spaced":spaced}
+    if tr: d["translation"]=tr
+    d.update(k); return d
+U=dict(numbered=False)
+anu="(anuṣṭup chandaḥ)"
+pp=[
+ V("39-40",["śuklām baradharaṁ viṣṇuṁ śaśi varṇaṁ caturbhujam ।","prasanna vadanaṁ dhyāyet sarva vighno-paśāntaye ॥"],
+   "The all-pervading one wearing garments of the colour of the Moon, and with four arms,\none should meditate upon Him whose face is bright, and who counteracts all obstacles.",note=anu),
+ V("41-42",["yasya dvirada vaktrā-dyāḥ pāriṣadyāḥ paraḥ śatam ।","vighnaṁ nighnanti satataṁ viṣvaksenaṁ tam āśraye ॥"],
+   "He whose attendants, the elephant-faced and others, more than a hundred,\nconstantly strike down every obstacle, in that Viṣvaksena I take refuge."),
+ V("43-44",["vyāsaṁ vasiṣṭha naptāraṁ śakteḥ pautram akalmaṣam ।","parāśarā-tmajaṁ vande śuka tātaṁ tapo nidhim ॥"],
+   "I bow to Vyāsa, the great-grandson of Vasiṣṭha and the grandson of Śakti, the stainless,\nthe son of Parāśara and the father of Śuka, a treasury of austerity."),
+ V("45-46",["vyāsāya viṣṇu rūpāya vyāsa rūpāya viṣṇave ।","namo vai brahma nidhaye vāsiṣṭhāya namo namaḥ ॥"],
+   "Salutation to Vyāsa who is Viṣṇu in form, to Viṣṇu who is Vyāsa in form,\nto the treasury of the Veda, the descendant of Vasiṣṭha, salutation again and again."),
+ V("47-48",["avikārāya śuddhāya nityāya paramā-tmane ।","sadai-ka rūpa rūpāya viṣṇave sarva jiṣṇave ॥"],
+   "To the changeless, the pure, the eternal, the supreme Self,\nto Viṣṇu, ever of one and the same form, the conqueror of all,"),
+ V("49-50",["yasya smaraṇa mātreṇa janma saṁsāra bandhanāt ।","vimucyate namas tasmai viṣṇave prabhaviṣṇave ॥"],
+   "by the mere remembrance of whom one is freed from the bondage of birth and rebirth,\nsalutation to that Viṣṇu, the all-powerful."),
+ V("53",["oṁ namo viṣṇave prabhaviṣṇave ॥"],"Oṁ, salutation to Viṣṇu, the all-powerful.",**U),
+ V("54",["śrī vaiśampāyana uvāca"],"Śrī Vaiśampāyana said:",**U),
+ V("55-56",["śrutvā dharmān aśeṣeṇa pāvanāni ca sarvaśaḥ ।","yudhiṣṭhiraḥ śāntanavaṁ punar evā-bhyabhāṣata ॥"],
+   "Having heard all the dharmas in their entirety, and all that purifies,\nYudhiṣṭhira again addressed Bhīṣma, the son of Śantanu."),
+ V("57",["yudhiṣṭhira uvāca"],"Yudhiṣṭhira said:",**U),
+ V("58-59",["kim ekaṁ daivataṁ loke kiṁ vāpy ekaṁ parāyaṇam ।","stuvantaḥ kaṁ kam arcantaḥ prāpnuyur mānavāḥ śubham ॥"],
+   "Who is the one God in the world? What is the one supreme goal?\nPraising whom, and worshipping whom, may human beings attain the good?"),
+ V("60-61",["ko dharmaḥ sarva dharmāṇāṁ bhavataḥ paramo mataḥ ।","kiṁ japan mucyate jantur janma saṁsāra bandhanāt ॥"],
+   "Which dharma of all dharmas is held by you to be the highest?\nBy repeating what is a creature freed from the bondage of birth and rebirth?"),
+ V("62",["bhīṣma uvāca"],"Bhīṣma said:",**U),
+ V("63-64",["jagat prabhuṁ deva devam anantaṁ puruṣo-ttamam ।","stuvan nāma sahasreṇa puruṣaḥ satato-tthitaḥ ॥"],
+   "The man who ever with diligence praises with the thousand names the Lord of the world,\nthe God of gods, the Infinite, the Supreme Person,"),
+ V("65-66",["tam eva cā-rcayan nityaṁ bhaktyā puruṣam avyayam ।","dhyāyan stuvan namasyaṁś ca yajamānas tam eva ca ॥"],
+   "who always worships with devotion that same imperishable Person,\nmeditating on Him, praising Him and bowing to Him, the worshipper,"),
+ V("67-68",["anādi nidhanaṁ viṣṇuṁ sarva loka mahe-śvaram ।","lokā-dhyakṣaṁ stuvan nityaṁ sarva duḥkhā-tigo bhavet ॥"],
+   "always praising Viṣṇu, without beginning or end, the great Lord of all the worlds,\nthe overseer of the world, goes beyond all sorrow."),
+ V("69-70",["brahmaṇyaṁ sarva dharma jñaṁ lokānāṁ kīrti vardhanam ।","loka nāthaṁ mahad bhūtaṁ sarva bhūta bhavo-dbhavam ॥"],
+   "Him, devoted to Brahman, knower of all dharmas, who increases the fame of the worlds,\nthe Lord of the world, the great Being, the source of the birth of all beings."),
+ V("71-72",["eṣa me sarva dharmāṇāṁ dharmo'dhikatamo mataḥ ।","yad bhaktyā puṇḍarīkā-kṣaṁ stavair arcen naraḥ sadā ॥"],
+   "This I hold to be the greatest of all dharmas:\nthat a man should always worship the lotus-eyed one with hymns, in devotion."),
+ V("73-74",["paramaṁ yo mahat tejaḥ paramaṁ yo mahat tapaḥ ।","paramaṁ yo mahad brahma paramaṁ yaḥ parāyaṇam ॥"],
+   "He who is the supreme great light, He who is the supreme great austerity,\nHe who is the supreme great Brahman, He who is the supreme goal,"),
+ V("75-76",["pavitrāṇāṁ pavitraṁ yo maṅgalānāṁ ca maṅgalam ।","daivataṁ devatānāṁ ca bhūtānāṁ yo'vyayaḥ pitā ॥"],
+   "He who is the purifier of purifiers, the auspiciousness of all that is auspicious,\nthe God of the gods, and the imperishable father of beings,"),
+ V("77-78",["yataḥ sarvāṇi bhūtāni bhavanty ādi yugā-game ।","yasmiṁś ca pralayaṁ yānti punar eva yuga kṣaye ॥"],
+   "from whom all beings come forth at the dawn of the first age,\nand into whom they pass again at the dissolution, when the age is ended,"),
+ V("79-80",["tasya loka pradhānasya jagan nāthasya bhūpate ।","viṣṇor nāma sahasraṁ me śṛṇu pāpa bhayā-paham ॥"],
+   "of that foremost of the worlds, the Lord of the universe, O king,\nhear from me the thousand names of Viṣṇu, which take away sin and fear."),
+ V("81-82",["yāni nāmāni gauṇāni vikhyātāni mahā-tmanaḥ ।","ṛṣibhiḥ parigītāni tāni vakṣyāmi bhūtaye ॥"],
+   "Those names of the great-souled one which are born of his qualities, renowned,\nand sung by the seers, those I shall recite, for the good of all."),
+ V("83-84",["ṛṣir nāmnāṁ sahasrasya veda vyāso mahā muniḥ ।","chando'nuṣṭup tathā devo bhagavān devakī sutaḥ ॥"],
+   "The seer of the thousand names is the great sage Vedavyāsa,\nthe metre is anuṣṭup, and the deity is the Blessed One, the son of Devakī."),
+ V("85-86",["amṛtā-ṁśū-dbhavo bījaṁ śaktir devakī nandanaḥ ।","trisāmā hṛdayaṁ tasya śāntyarthe viniyujyate ॥"],
+   "Amṛtāṁśūdbhava is the seed, Devakīnandana the power,\nTrisāmā its heart; it is employed for peace."),
+ V("87-88",["viṣṇuṁ jiṣṇuṁ mahā viṣṇuṁ prabhaviṣṇuṁ mahe-śvaram ।","aneka rūpa daityā-ntaṁ namāmi puruṣo-ttamam ॥"],
+   "I bow to Viṣṇu, the victorious, the great Viṣṇu, the all-powerful, the great Lord,\nof many forms, the end of the demons, the Supreme Person."),
+]
+vini=V("91-105",["oṁ asya śrī viṣṇor divya sahasra nāma stotra mahā mantrasya ।","śrī veda vyāso bhagavān ṛṣiḥ ।","anuṣṭup chandaḥ ।",
+  "śrī mahā viṣṇuḥ paramā-tmā śrīman nārāyaṇo devatā ।","amṛtā-ṁśū-dbhavo bhānur iti bījam ।","devakī nandanaḥ sraṣṭe-ti śaktiḥ ।",
+  "udbhavaḥ kṣobhaṇo deva iti paramo mantraḥ ।","śaṅkha bhṛn nandakī cakrī-ti kīlakam ।","śārṅga dhanvā gadā dhara ity astram ।",
+  "rathā-ṅga pāṇir akṣobhya iti netram ।","trisāmā sāmagaḥ sāme-ti kavacam ।","ānandaṁ para brahme-ti yoniḥ ।",
+  "ṛtuḥ sudarśanaḥ kāla iti digbandhaḥ ।","śrī viśva rūpa iti dhyānam ।","śrī mahā viṣṇu prītyarthe sahasra nāma stotra pāṭhe viniyogaḥ ॥"],
+  lineNotes=["añjali mudrā","ring and middle finger touching the top of the head","right palm in front of the mouth","ring and middle finger of a right hand touching the heart","touch right side lowermost rib","touch left side lowermost rib","","touch middle above navel (underneath sternum)","slap!","third eye","shield","","snap clockwise","","añjali mudrā →"],**U)
+rsy=V("107-113",["oṁ śirasi veda vyāsarṣaye namaḥ ।","mukhe anuṣṭup chandase namaḥ ।","hṛdi śrī kṛṣṇa paramā-tma devatāyai namaḥ ।",
+  "guhye amṛtā-ṁśū-dbhavo bhānur iti bījāya namaḥ ।","pādayor devakī nandanaḥ sraṣṭe-ti śaktaye namaḥ ।",
+  "sarvā-ṅge śaṅkha bhṛn nandakī cakrī-ti kīlakāya namaḥ ।","kara sampūṭe mama śrī kṛṣṇa prītyarthe jape viniyogaḥ ॥"],
+  lineNotes=["ring and middle finger touching the top of the head","right palm in front of the mouth","ring and middle finger of a right hand touching the heart",
+   "touch below the navel","touch both feet","pass both palms over the whole body","añjali mudrā"],**U)
+kara=V("116-121",["oṁ viśvaṁ viṣṇur vaṣaṭkāra ity aṅguṣṭhābhyāṁ namaḥ ।","amṛtā-ṁśū-dbhavo bhānur iti tarjanībhyāṁ namaḥ ।",
+  "brahmaṇyo brahma kṛd brahme-ti madhyamābhyāṁ namaḥ ।","suvarṇa bindur akṣobhya ity anāmikābhyāṁ namaḥ ।",
+  "nimiṣo'nimiṣaḥ sragvī-ti kaniṣṭhikābhyāṁ namaḥ ।","rathā-ṅga pāṇir akṣobhya iti karatala kara pṛṣṭhābhyāṁ namaḥ ॥"],
+  lineNotes=["roll index fingers over thumbs","roll thumbs over index fingers","roll thumbs over middle fingers","roll thumbs over ring fingers","roll thumbs over little fingers","rub palms"],**U)
+hrdv=[V("124-129",["oṁ viśvaṁ viṣṇur vaṣaṭkāra iti hṛdayāya namaḥ ।","amṛtā-ṁśū-dbhavo bhānur iti śirase svāhā ।","brahmaṇyo brahma kṛd brahme-ti śikhāyai vaṣaṭ ।",
+  "suvarṇa bindur akṣobhya iti kavacāya hum ।","nimiṣo'nimiṣaḥ sragvī-ti netratrayāya vauṣaṭ ।","rathā-ṅga pāṇir akṣobhya ity astrāya phaṭ ।"],
+  lineNotes=["heart","head top, vertex","head back, nape","shield","third eye","slap!"],**U),
+  V("137",["ṛtuḥ sudarśanaḥ kāla iti bhūr bhuvaḥ suvaromiti digbandhaḥ ॥"],lineNotes=["snap clockwise"],**U)]
+sragdhara="(sragdharā chandaḥ)"
+dhy=[
+ V("142-145",["kṣīrodanvat pradeśe śuci maṇi vilasat saikate mauktikānāṁ","mālā kḷptā-sana sthaḥ sphaṭika maṇi nibhair mauktikair maṇḍitā-ṅgaḥ ।","śubhrair abhrair adabhrair upari viracitair mukta pīyūṣa varṣair","ānandī naḥ punīyād ari nalina gadā śaṅkha pāṇir mukundaḥ ॥"],
+   "On the shore of the milk ocean, on sands glittering with pure gems, seated on a throne of garlands of pearls,\nhis limbs adorned with pearls bright as crystal,\nshowered with nectar from the many white clouds formed above him,\nmay blissful Mukunda, holding the discus, the lotus, the mace and the conch, purify us.",note=sragdhara,**U),
+ V("146-149",["bhūḥ pādau yasya nābhir viyad asur anilaś candra sūryau ca netre","karṇāv āśāḥ śiro dyaur mukham api dahano yasya vāsteyam abdhiḥ ।","antaḥ sthaṁ yasya viśvaṁ sura nara khaga go bhogi gandharva daityaiḥ","citraṁ raṁramyate taṁ tribhuvana vapuṣaṁ viṣṇum īśaṁ namāmi ॥"],
+   "He whose feet are the earth, whose navel is the sky, whose breath is the wind, whose eyes are the moon and the sun,\nwhose ears are the quarters, whose head is heaven, whose mouth is fire, whose abdomen is the ocean,\nwithin whom the universe, with gods, men, birds, cattle, serpents, gandharvas and demons,\nplays in all its wonder, to that Lord Viṣṇu, whose body is the three worlds, I bow.",**U),
+ V("150",["oṁ namo bhagavate vāsudevāya ॥"],"Oṁ, salutation to the Blessed Vāsudeva.",**U),
+ V("151-154",["oṁ śāntā-kāraṁ bhujaga śayanaṁ padma nābhaṁ sure-śaṁ","viśvā-dhāraṁ gagana sadṛśaṁ megha varṇaṁ śubhā-ṅgam ।","lakṣmī kāntaṁ kamala nayanaṁ yogibhir dhyāna gamyaṁ","vande viṣṇuṁ bhava bhaya haraṁ sarva lokai-ka nātham ॥"],
+   "Of peaceful form, reclining on the serpent, from whose navel the lotus springs, the Lord of the gods,\nthe support of the universe, like the sky, of the hue of the rain-cloud, of auspicious limbs,\nthe beloved of Lakṣmī, lotus-eyed, reached by the yogīs in meditation,\nI worship Viṣṇu, who takes away the fear of rebirth, the one Lord of all the worlds.",
+   note="(mandākrāntā chandaḥ)",**U),
+ V("155-158",["megha śyāmaṁ pīta kauśeya vāsaṁ","śrīvatsā-ṅkaṁ kaustubho-dbhāsitā-ṅgam ।","puṇyo-petaṁ puṇḍarīkā-yatā-kṣaṁ","viṣṇuṁ vande sarva lokai-ka nātham ॥"],
+   "Dark as the rain-cloud, clad in yellow silk,\nmarked with the śrīvatsa, his body shining with the kaustubha gem,\nendowed with all merit, with long eyes like lotuses,\nI worship Viṣṇu, the one Lord of all the worlds.",
+   note="(śālinī chandaḥ)",**U),
+ V("159-160",["namaḥ samasta bhūtānām ādi bhūtāya bhūbhṛte ।","aneka rūpa rūpāya viṣṇave prabhaviṣṇave ॥"],
+   "Salutation to the first being of all beings, the bearer of the earth,\nto him of many forms, to Viṣṇu, the all-powerful.",note=anu,**U),
+ V("161-164",["saśaṅkha cakraṁ sakirīṭa kuṇḍalaṁ","sapīta vastraṁ sarasīruhe-kṣaṇam ।","sahāra vakṣaḥ sthala kaustubha śriyaṁ","namāmi viṣṇuṁ śirasā catur bhujam ॥"],
+   "With conch and discus, with crown and earrings,\nclad in yellow, with eyes like lotuses,\nwith a garland on his breast, and the splendour of the kaustubha gem,\nto four-armed Viṣṇu I bow my head.",
+   note="(vaṁśastha chandaḥ)",**U),
+ V("165-168",["chāyāyāṁ pārijātasya hema siṁhā-sano-pari","āsīnam ambuda śyāmam āyatā-kṣam alaṁkṛtam ।","candrā-nanaṁ catur bāhuṁ śrīvatsā-ṅkita vakṣasaṁ","rukmiṇī satyabhāmābhyāṁ sahitaṁ kṛṣṇam āśraye ॥"],
+   "In the shade of the pārijāta tree, upon a golden lion throne,\nseated, dark as the rain-cloud, long-eyed, adorned,\nmoon-faced, four-armed, his breast marked with the śrīvatsa,\nwith Rukmiṇī and Satyabhāmā, in that Kṛṣṇa I take refuge.",note=anu,**U),
+]
+doc={"title":"śrī viṣṇu sahasranāma stotram","subtitle":"mahābhārata","locus":"mahābhārata, anuśāsana parva 149","source":"smarta",
+ "sections":[{"title":"pūrvapīṭhikā","verses":pp},{"title":"nyāsaḥ","verses":[vini]},{"title":"ṛṣyādi nyāsaḥ","verses":[rsy]},
+  {"title":"karanyāsaḥ","verses":[kara]},{"title":"hṛdayādi nyāsaḥ","verses":hrdv},{"title":"dhyānāni","verses":dhy},{"title":"laṁ ityādi pañcapūjā","verses":[{"witness":"w4","at":"717-722","spaced":["laṁ pṛthivyātmane gandhaṁ samarpayāmi ।","haṁ ākāśātmane puṣpaiḥ pūjayāmi ।","yaṁ vāyvātmane dhūpam āghrāpayāmi ।","raṁ agnyātmane dīpaṁ darśayāmi ।","vaṁ amṛtātmane naivedyaṁ nivedayāmi ।","saṁ sarvātmane sarvopacāra pūjā namaskārān samarpayāmi ॥"],"lineNotes":["roll thumbs over little fingers","roll index fingers over thumbs","roll thumbs over index fingers","roll thumbs over middle fingers","roll thumbs over ring fingers","añjali mudrā"],"numbered":False}]}]}
+json.dump(doc,open('b1.json','w',encoding='utf-8'),ensure_ascii=False)
+print('ok')
