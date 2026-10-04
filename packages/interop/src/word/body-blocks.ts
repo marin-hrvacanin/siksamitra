@@ -20,7 +20,7 @@
 import type {
   ChantDoc, ChantFigure, ChantGapKind, ChantInstruction, ChantSection, ChantToken, ChantVerse,
 } from '@siksamitra/format';
-import { WORD_COVER } from '@siksamitra/tokens/word';
+import { WORD_COVER, WORD_MARKS } from '@siksamitra/tokens/word';
 import { styleOf } from './body-parts.js';
 import { SOURCE_STYLE } from './styles.js';
 import { xmlEscape } from '../xml.js';
@@ -97,6 +97,12 @@ export function blockWriter(tools: BlockTools) {
     return [p(styleOf('doc__instruction'), run(text, null))];
   };
 
+  /** A translation line: its text, and a name's raised number in his `Name` (`¹Great Mother`). */
+  const translationRuns = (line: string): string =>
+    line.split(/([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/u).filter((x) => x !== '').map((x) => (/^[⁰¹²³⁴⁵⁶⁷⁸⁹]+$/u.test(x)
+      ? run([...x].map((c) => String('⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(c))).join(''), WORD_MARKS.nameInTranslation.id)
+      : run(x, null))).join('');
+
   const verse = (v: ChantVerse): string[] => {
     const out: string[] = [];
     /* The bookmark goes on the verse's FIRST paragraph, its own source line
@@ -129,7 +135,7 @@ export function blockWriter(tools: BlockTools) {
          into the next verse. */
       const groups = grouped(v.translation.en.split('\n'), v.translation.paragraphs);
       groups.forEach((group, gi) => {
-        out.push(p(styleOf('doc__translation'), group.map((l) => (l === '' ? '' : run(l, null))).join(br),
+        out.push(p(styleOf('doc__translation'), group.map((l) => (l === '' ? '' : translationRuns(l))).join(br),
           gi < groups.length - 1 ? true : undefined));
       });
     }

@@ -15,6 +15,7 @@
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { openChantDoc } from '@siksamitra/engine';
+import { readChantFile } from '@siksamitra/format';
 import { EXPORT_SCRIPTS, buildExportPage } from '../../apps/web/src/views/export-page.js';
 import { appCss } from './css.mjs';
 
@@ -25,9 +26,13 @@ export const ENGINE = 'siksamitra-cli';
 
 export const SCRIPTS = [...EXPORT_SCRIPTS];
 
-/** Read a `.json` chant off disk. */
+/** Read a `.json` chant off disk — through `readChantFile`, which decodes the
+ *  stored markings: read bare, a stored file's hand-placed svaras were lost on
+ *  the way to Word (2026-10-04). */
 export function loadDoc(path) {
-  return openChantDoc(JSON.parse(readFileSync(path, 'utf8')));
+  const text = readFileSync(path, 'utf8');
+  const read = readChantFile(text);
+  return openChantDoc(read.ok ? read.doc : JSON.parse(text));
 }
 
 /** Where a command gets the three things only its host can give it. */

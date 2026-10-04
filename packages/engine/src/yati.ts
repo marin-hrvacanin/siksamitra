@@ -20,6 +20,10 @@ import type { Elem } from './lex.js';
 export const YATI: Readonly<Partial<Record<MeterKey, { readonly pada: number; readonly after: readonly number[] }>>> = {
   sragdhara: { pada: 21, after: [7, 14] },
   sardulavikridita: { pada: 19, after: [12] },
+  /* His Lalitā's pṛthvī: `sa̱kuṅkuma vilepanām | alika cumbi ka̱stū̍rikā̱ṁ |`. */
+  prthvi: { pada: 17, after: [8] },
+  /* Mandākrāntā's yatis, after the 4th and the 10th, as it is sung. */
+  mandakranta: { pada: 17, after: [4, 10] },
 };
 
 

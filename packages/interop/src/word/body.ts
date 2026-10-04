@@ -29,7 +29,7 @@
 import type { ChantDoc, ChantFigure, ChantToken, ChantUnit } from '@siksamitra/format';
 import { FIGURE_DEFAULTS, figureItem } from '@siksamitra/format';
 import { CANDRA, VIRAMA_TICK, digitsIn, type ScriptKey } from '@siksamitra/engine';
-import { WORD_DEVANAGARI } from '@siksamitra/tokens/word';
+import { WORD_DEVANAGARI, WORD_MARKS } from '@siksamitra/tokens/word';
 import { BAR_GLYPH, OVERLINE, SVARA_CHAR, changeStyle, holdingStyle } from '../word-styles.js';
 import {
   bridging, dandaRun, pauseRun, signature, styleOf, styledParagraph, styledRun, type WordPictures,
@@ -153,7 +153,8 @@ export function documentXml(
        * it answers the owner's own question about his `Name` and `Nma`. The
        * superscript is IN the style now, not on the run.
        */
-      if (u.sup !== undefined) r += run(u.sup, 'Reference');
+      /* A number is a name's count, in his `Nma`; a letter is a reading aid. */
+      if (u.sup !== undefined) r += run(u.sup, /^[0-9]+$/u.test(u.sup) ? WORD_MARKS.nameNumber.id : 'Reference');
       return r;
     };
     /**
@@ -199,7 +200,16 @@ export function documentXml(
         return;
       }
       /* ONE BAR, its colour its length: short in his blue, long in his red. */
-      if (t.t === 'pause') { runs += pauseRun('|', t.len === 'long' ? 'Pause' : changeStyle('')); return; }
+      if (t.t === 'pause') {
+        /* A BAR BETWEEN TWO SPACES, as his pages print every one: the praṇava's
+           pause is stored `oṁ ␣ |` with the next syllable straight after it,
+           and printed so it read `oṁ |śirasi` where his Lalitā has `oṁ | asya`
+           (2026-10-04). The space is the page's, so it is written INSIDE the
+           bar's run, and the reader reads it as the bar's (`readPause`). */
+        const spaced = as === 'iast' && tokens[at + 1]?.t === 'syl';
+        runs += pauseRun(spaced ? '| ' : '|', t.len === 'long' ? 'Pause' : changeStyle(''));
+        return;
+      }
       /* A BAR IS NOT A PAUSE. Both were written as `|` in the `Pause` style, so
          all 59 bars in the corpus came back from a round trip as short pauses.
          `¦` is a different character in the same style: the same colour and

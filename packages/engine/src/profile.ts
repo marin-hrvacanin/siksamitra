@@ -32,7 +32,14 @@ export type MeterKey =
   | 'jagati'
   | 'sardulavikridita'
   | 'pushpitagra'
-  | 'sragdhara';
+  | 'sragdhara'
+  | 'upajati'
+  | 'salini'
+  | 'vasantatilaka'
+  | 'vamsastha'
+  | 'rucira'
+  | 'prthvi'
+  | 'mandakranta';
 
 /**
  * Which svara register a verse belongs to. The prohibition is the point:

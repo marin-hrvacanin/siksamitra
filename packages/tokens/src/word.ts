@@ -137,6 +137,16 @@ export const WORD_MARKS = {
    */
   /** The theme's `change` ink, which is `Anusvara`'s — see `char-styles.ts`. */
   reference: { ink: 'change', italic: true, superscript: true },
+  /**
+   * A NAME'S NUMBER, AS HIS LALITĀ SETS IT — not a reading aid, so not
+   * `Reference`: his `Nma` in the mantra line (the blue, italic, 6 pt, raised
+   * 5 pt and superscripted: "barely visible little info next to the word"),
+   * and his `Name` in the translation (the blue, superscripted, the
+   * translation's size). Set as `Reference` the numbers of his Viṣṇu
+   * sahasranāma came out twice his size (2026-10-04).
+   */
+  nameNumber: { id: 'Nma', ink: 'change', italic: true, superscript: true, halfPoints: 12, raise: 10 },
+  nameInTranslation: { id: 'Name', ink: 'change', italic: false, superscript: true },
 } as const;
 
 /**

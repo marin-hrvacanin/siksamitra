@@ -14,9 +14,15 @@ describe('the metre his note names', () => {
     expect(meterOfNote('(puṣpitāgrā chandaḥ, ardhasamavṛtta: 12 syllables in odd padas)')).toBe('pushpitagra');
   });
   it('is no plan at all for a metre none of his files marks — never another metre’s', () => {
-    expect(meterOfNote('(mandākrāntā chandaḥ, 17 syllables per pāda)')).toBeNull();
-    expect(meterOfNote('(vasantatilakā chandaḥ, 14 syllables per pāda, yatiḥ after 14th, and also 8th but not for chanting)')).toBeNull();
+    expect(meterOfNote('(mālinī chandaḥ, 15 syllables per pāda, yatiḥ after the 8th, and 15th)')).toBeNull();
     expect(meterOfNote('(aupacchandasikam/upodgatā/mālabhāriṇī/vasantamālikā chandaḥ)')).toBeNull();
+  });
+  it('his trimetres and their kin take their plans', () => {
+    expect(meterOfNote('(vasantatilakā chandaḥ, 14 syllables per pāda, yatiḥ after 14th, and also 8th but not for chanting)')).toBe('vasantatilaka');
+    expect(meterOfNote('(upendravajrā/upajāti chandaḥ, 11 syllables per pāda)')).toBe('upajati');
+    expect(meterOfNote('(mandākrāntā chandaḥ)')).toBe('mandakranta');
+    expect(meterOfNote('(śālinī chandaḥ)')).toBe('salini');
+    expect(meterOfNote('(vaṁśastha chandaḥ)')).toBe('vamsastha');
   });
   it('and nothing when the note names none, or names a Vedic metre outside brackets', () => {
     expect(meterOfNote('Also in maitrāyaṇī saṁhitā 1.7.1.1')).toBeUndefined();
@@ -32,11 +38,11 @@ describe('a built stotra', () => {
         { lines: ['śrī rāma rāma rāmeti rame rāme manorame ।', 'sahasra nāma tat tulyaṁ rāma nāma varānane ॥'], note: '(anuṣṭup chandaḥ, 8 syllables per pāda)' },
         { lines: ['kṣīrodanvat pradeśe śuci maṇi vilasat saikate mauktikānāṁ'], note: '(sragdharā chandaḥ, 21 syllables per pāda, yatiḥ at 7th, 14th, and 21th)' },
         { lines: ['megha śyāmaṁ pīta kauśeya vāsaṁ'], note: '(śālinī chandaḥ, 11 syllables per pāda)' },
-        { lines: ['oṁ namo bhagavate vāsudevāya ॥'] },
+        { lines: ['oṁ namo nārāyaṇāya ॥'] },
       ] }],
     } as never);
     const meters = doc.sections[0]!.verses.map((v) => (v.profile?.patch as { svara?: { meter?: unknown } } | undefined)?.svara?.meter);
-    expect(meters).toEqual(['anustubh', 'sragdhara', null, undefined]);
+    expect(meters).toEqual(['anustubh', 'sragdhara', 'salini', undefined]);
   });
 });
 

@@ -25,8 +25,8 @@ function placed(line: string): string[] {
   return out;
 }
 
-const profile = resolveProfile([{ preset: 'smarta' }, { patch: { svara: { meter: 'sragdhara' } } }]);
-const marked = (plain: string): string[] => {
+const planned = (meter: string) => resolveProfile([{ preset: 'smarta' }, { patch: { svara: { meter } } }]);
+const marked = (plain: string, profile = planned('sragdhara')): string[] => {
   const out = rerun({ text: plain, marks: [] }, { stages: STAGES, mode: 'keep-hand', profile, from: 0, to: plain.length });
   const at: string[] = [];
   const vowels = [...out.text.normalize('NFC').matchAll(VOWEL)];
@@ -69,6 +69,35 @@ describe('a sragdharā verse, a pāda a line', () => {
         return `${i}:${k}${mark}`;
       });
       expect(local).toEqual(want);
+    });
+  }
+});
+
+/* His trimetre scheme, two pādas a line as his Kanakadhārā sets them. */
+const KANAKA: [string, string, string[]][] = [
+  ['vasantatilakā', 'vasantatilaka', [
+    "a̱ṅga̱ṁ hareḥ pulaka bhūṣaṇamā̱śra̍yantī̱ bhṛ̱ṅgāṅganeva mukulābharaṇa̱n tamā̍lam",
+    "a̱ṅgī̱kṛtākhila vibhūtirapā̱ṅga̍ līlā̱ mā̱ṅgalyadā'stu mama maṅgala de̱vatā̍yāḥ",
+  ]],
+  ['upajāti', 'upajati', [
+    "na̱mo̱'stu nālīka nibhā̱na̍nāyai̱ na̱mo'stu dugdhodadhi ja̱nma bhū̍myai",
+    "na̱mo̱'stu somāmṛta so̱da̍rāyai̱ na̱mo'stu nārāyaṇa va̱llabhā̍yai",
+  ]],
+];
+describe('his trimetres, two pādas a line', () => {
+  for (const [name, meter, lines] of KANAKA) {
+    it(`a ${name} verse is marked as his Kanakadhārā marks it`, () => {
+      const plain = lines.map((p) => p.normalize('NFD').replace(UDATTA_FREE, '').normalize('NFC'));
+      const got = marked(plain.join('
+'), planned(meter));
+      const offsets = plain.map((p) => [...p.matchAll(VOWEL)].length);
+      const local = got.map((x) => {
+        let k = Number.parseInt(x, 10); const mark = x.replace(/^\d+/u, '');
+        let i = 0;
+        while (k > offsets[i]!) { k -= offsets[i]!; i += 1; }
+        return `${i}:${k}${mark}`;
+      });
+      expect(local).toEqual(lines.flatMap((p, i) => placed(p).map((x) => `${i}:${x}`)));
     });
   }
 });

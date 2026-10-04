@@ -276,16 +276,17 @@ export function figureDrawing(
    */
   const gutter = Math.round(EMU_PER_INCH / 8);
   const beside = wrap === 'square';
+  const behind = wrap === 'behind';
   const align = flow === 'end' ? 'right' : flow === 'start' ? 'left' : 'center';
   return `<w:drawing xmlns:wp="${WP_NS}">`
     + `<wp:anchor distT="0" distB="0" distL="${beside && flow === 'end' ? gutter : 0}" `
     + `distR="${beside && flow === 'start' ? gutter : 0}" simplePos="0" relativeHeight="2" `
-    + 'behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">'
+    + `behindDoc="${behind ? 1 : 0}" locked="0" layoutInCell="1" allowOverlap="1">`
     + '<wp:simplePos x="0" y="0"/>'
     + `<wp:positionH relativeFrom="margin"><wp:align>${align}</wp:align></wp:positionH>`
     + '<wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>'
     + size
-    + (beside ? '<wp:wrapSquare wrapText="bothSides"/>' : '<wp:wrapTopAndBottom/>')
+    + (behind ? '<wp:wrapNone/>' : beside ? '<wp:wrapSquare wrapText="bothSides"/>' : '<wp:wrapTopAndBottom/>')
     + docPr + graphic(fig, media, id, cx, cy)
     + '</wp:anchor></w:drawing>';
 }

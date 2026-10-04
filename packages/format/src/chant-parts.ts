@@ -92,7 +92,9 @@ export type ChantFigureFlow = 'block' | 'start' | 'end' | 'aside';
  * narrows whatever is beside it, mantra included. So `square` is offered, it
  * really wraps, and the consequence is the person's to choose.
  */
-export type ChantFigureWrap = 'top-bottom' | 'square';
+/** `behind`: Word's "Behind text" — his sādhanā's Gaṇeśa and gāyatrī pictures sit
+ *  so at the right of the column, the text running over them (2026-10-04). */
+export type ChantFigureWrap = 'top-bottom' | 'square' | 'behind';
 /** Width as a fraction of the step column — never free-form pixels. The same
  *  document is drawn in an A4 column, a web measure and a card, so a picture
  *  set at 340 px is a third of one and two thirds of another. */

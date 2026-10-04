@@ -178,10 +178,11 @@ describe('reading the drawings out of a paragraph', () => {
     expect(readDrawings(offsetLeft)[0]?.side).toBe('start');
   });
 
-  it('does NOT pretend a watermark is a float', () => {
-    /* `wrapNone` means the text runs over it. There is no such thing here, so
-       it becomes an ordinary block rather than a lie about the layout. */
-    expect(readDrawings(behind)[0]?.side).toBeUndefined();
+  it('keeps a picture the text runs over where it was — behind the text, on its side', () => {
+    /* `wrapNone`: his sādhanā's Gaṇeśa and gāyatrī pictures sit so at the right
+       of the column. Read as a centred block, the round trip moved every one
+       of them (2026-10-04). The side is read from its offset, as a float's is. */
+    expect(readDrawings(behind)[0]?.side).toBe('end');
   });
 
   /* ── the wrap, which is a SEPARATE question from the side ──────────────── */
@@ -213,8 +214,8 @@ describe('reading the drawings out of a paragraph', () => {
     expect(readDrawings(inlineDrawing)[0]?.wrap).toBeUndefined();
   });
 
-  it('and a watermark has no wrap either — `wrapNone` is not a wrap', () => {
-    expect(readDrawings(behind)[0]?.wrap).toBeUndefined();
+  it('and its wrap is `behind` — Word's "Behind text", the text running over it', () => {
+    expect(readDrawings(behind)[0]?.wrap).toBe('behind');
   });
 
   it('skips a drawing that is not a picture', () => {

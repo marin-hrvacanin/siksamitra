@@ -200,11 +200,7 @@ export const SVARA_PLANS: Readonly<Record<MeterKey, SvaraPlan>> = Object.freeze(
     verified: 'owner-file',
     source: 'shankaracharya-stotrani-iast.pdf — ONE verse, four pādas; widen before reuse',
   },
-  /* MEASURED off two of his files that agree pāda for pāda: the Lalitā
-     sahasranāma v9.3.1's dhyāna "dhyāyet padmāsanasthāṁ" and the Rudram
-     v1.622's (and his sādhanā's) "brahmāṇḍavyāptadehā" — eight pādas. The
-     odd pādas end `bhavānīṁ` 15̱ 17̱ 19̍ 21̱, the even ones `varāṅgīm`
-     15̱ 17̱ 20̍, both opening anudātta (2026-10-04). */
+  /* Measured off his Lalitā v9.3.1 and Rudram v1.622 dhyānas, 8 pādas agreeing (2026-10-04). */
   sragdhara: {
     id: 'sragdhara',
     label: 'Sragdharā (21)',
@@ -215,7 +211,38 @@ export const SVARA_PLANS: Readonly<Record<MeterKey, SvaraPlan>> = Object.freeze(
     verified: 'owner-file',
     source: "lalita-sahasranama v9.3.1 dhyāna + rudram v1.622 dhyāna (= sādhanā v9.1.13) — 8 pādas, two files",
   },
+  /* HIS TRIMETRES AND KIN, one scheme read off his Kanakadhārā, Devī Māhātmyam
+     and Lalitā (2026-10-04) — see `trimetre`. Śālinī and mandākrāntā are in no
+     file of his and take the plan of their syllable count, at his asking. */
+  upajati: trimetre('upajati', 'Upajāti (11)', 11, true, 'kanakadhārā v1.29 + devī māhātmyam v6.62 — 26 lines'),
+  salini: trimetre('salini', 'Śālinī (11)', 11, true, "no file of his: upajāti's plan, its syllable count"),
+  vasantatilaka: trimetre('vasantatilaka', 'Vasantatilakā (14)', 14, true, 'kanakadhārā v1.29 — 70 lines'),
+  rucira: trimetre('rucira', 'Rucirā (13)', 13, true, 'kanakadhārā v1.29 — 2 lines'),
+  prthvi: trimetre('prthvi', 'Pṛthvī (17)', 17, false, 'lalitā v9.3.1 dhyāna — 4 pādas'),
+  mandakranta: trimetre('mandakranta', 'Mandākrāntā (17)', 17, false, "no file of his: pṛthvī's plan, its syllable count"),
+  vamsastha: {
+    id: 'vamsastha',
+    label: 'Vaṁśastha (12)',
+    unit: 'pada',
+    count: 12,
+    positions: parsePlan('1̱2̱12̱'),
+    even: { count: 12, positions: parsePlan('1̱8̱10̍') },
+    verified: 'owner-file',
+    source: 'devī māhātmyam v6.62 — vaṁśastha 2 lines, indravaṁśā 2 lines, alike',
+  },
 } as Record<MeterKey, SvaraPlan>);
+
+/** His trimetre scheme for a pāda of n syllables — odd: 1̱ 2̱ (n−3)̱ (n−2)̍ ṉ̱, even:
+ *  1̱ (n−3)̱ (n−1)̍. Upajāti 26 lines, vasantatilakā 70, rucirā 2; pṛthvī (no 2̱) his Lalitā's. */
+function trimetre(id: MeterKey, label: string, n: number, second: boolean, source: string): SvaraPlan {
+  return {
+    id, label, unit: 'pada', count: n,
+    positions: parsePlan(`1̱${second ? '2̱' : ''}${n - 3}̱${n - 2}̍${n}̱`),
+    even: { count: n, positions: parsePlan(`1̱${n - 3}̱${n - 1}̍`) },
+    verified: 'owner-file',
+    source,
+  };
+}
 
 /**
  * A metrical segment of a verse: a run of nuclei the plan applies to.
@@ -333,6 +360,16 @@ export function applySvaraPlan(ctx: RuleCtx, plan: SvaraPlan, opts?: { allowUnve
       && s + 1 < segs.length && nuclei.length < most(spec.count)) {
       s += 1;
       nuclei = [...nuclei, ...segs[s]!.nuclei];
+    }
+    /* Two pādas on one line, as his half-verses are set: each pāda in turn. */
+    const each = typeof spec.count === 'number' ? spec.count : 0;
+    if (plan.unit === 'pada' && each > 0 && nuclei.length > each && nuclei.length % each === 0) {
+      for (let at = 0, j = 0; at < nuclei.length; at += each, j += 1) {
+        const part = (k + j) % 2 === 1 && plan.even !== undefined ? plan.even : plan;
+        jobs.push({ nuclei: nuclei.slice(at, at + each), positions: part.positions });
+      }
+      k += nuclei.length / each - 1;
+      continue;
     }
     if (!accepts(spec.count, nuclei.length)) {
       ctx.warn(

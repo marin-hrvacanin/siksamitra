@@ -71,6 +71,10 @@ export function readPause(run: WordRun): PauseRead {
   /* Letters typed after a pause take the pause's style in Word, and they are
      the person's text: read them, never drop them. */
   const after = run.text.trimStart().replace(/^[|¦]+/, '');
-  const tailSpace = /^\s*/.exec(after)![0];
+  /* `| ` — a bar and ONE space inside its own run, nothing before it — is how
+     the exporter spaces `oṁ | asya` (`body.ts`): the page's, not a word gap.
+     His files write the bar and the space after it as two runs, and a run of
+     his with spaces both sides (` | `) keeps them. */
+  const tailSpace = lead === '' && after === ' ' && (bars > 0 || pipes > 0) ? '' : /^\s*/.exec(after)![0];
   return { lead, tokens, tailSpace, tail: after.trimStart() };
 }

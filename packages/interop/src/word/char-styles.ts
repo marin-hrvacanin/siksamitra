@@ -101,6 +101,8 @@ export function charStyles(
       sz?: number; italic?: boolean; face?: string; bold?: boolean;
       /** `w:vertAlign`, which comes AFTER `w:sz` in `CT_RPr`'s sequence. */
       superscript?: boolean;
+      /** `w:position`, half-points raised — BEFORE `w:sz` in the sequence. */
+      raise?: number;
     } = {},
   ): string =>
     `<w:style w:type="character" w:customStyle="1" w:styleId="${id}"><w:name w:val="${id}"/>`
@@ -110,6 +112,7 @@ export function charStyles(
       : `<w:rFonts w:ascii="${xmlEscape(opts.face)}" w:hAnsi="${xmlEscape(opts.face)}"/>`)
     + `${opts.bold === true ? '<w:b/>' : ''}${opts.italic === true ? '<w:i/>' : ''}`
     + `<w:color w:val="${wordHex(color)}"/>`
+    + (opts.raise === undefined ? '' : `<w:position w:val="${opts.raise}"/>`)
     + (opts.sz === undefined ? '' : `<w:sz w:val="${opts.sz}"/><w:szCs w:val="${opts.sz}"/>`)
     + (opts.superscript === true ? '<w:vertAlign w:val="superscript"/>' : '')
     + '</w:rPr></w:style>';
@@ -151,6 +154,18 @@ export function charStyles(
     ...(used.has('Reference')
       ? [ink('Reference', mode[WORD_MARKS.reference.ink], {
         italic: WORD_MARKS.reference.italic, superscript: WORD_MARKS.reference.superscript,
+      })]
+      : []),
+    /* His own two for a name's number (`WORD_MARKS.nameNumber`), when a line counts names. */
+    ...(used.has(WORD_MARKS.nameNumber.id)
+      ? [ink(WORD_MARKS.nameNumber.id, mode[WORD_MARKS.nameNumber.ink], {
+        italic: WORD_MARKS.nameNumber.italic, superscript: WORD_MARKS.nameNumber.superscript,
+        sz: WORD_MARKS.nameNumber.halfPoints, raise: WORD_MARKS.nameNumber.raise,
+      })]
+      : []),
+    ...(used.has(WORD_MARKS.nameInTranslation.id)
+      ? [ink(WORD_MARKS.nameInTranslation.id, mode[WORD_MARKS.nameInTranslation.ink], {
+        italic: WORD_MARKS.nameInTranslation.italic, superscript: WORD_MARKS.nameInTranslation.superscript,
       })]
       : []),
   ];

@@ -51,7 +51,7 @@ export interface DocxDrawing {
    * a picture aligned right with a top-and-bottom wrap used to come back as a
    * square wrap, and then flowed text beside a mantra it was never meant to.
    */
-  readonly wrap?: 'square' | 'top-bottom';
+  readonly wrap?: 'square' | 'top-bottom' | 'behind';
 }
 
 const RE_DRAWING = /<w:drawing\b[\s\S]*?<\/w:drawing>/g;
@@ -59,6 +59,7 @@ const RE_EMBED = /<a:blip\b[^>]*r:embed="([^"]+)"/;
 const RE_EXTENT = /<wp:extent\b[^>]*cx="(\d+)"[^>]*cy="(\d+)"/;
 const RE_DESCR = /<wp:docPr\b[^>]*descr="([^"]*)"/;
 const RE_WRAP = /<wp:wrap(Square|Tight|Through)\b/;
+const RE_BEHIND = /<wp:wrapNone\b/;
 const RE_WRAP_BAND = /<wp:wrapTopAndBottom\b/;
 const RE_ALIGN_H = /<wp:positionH\b[\s\S]*?<wp:align>(left|right|center|inside|outside)<\/wp:align>/;
 const RE_OFFSET_H = /<wp:positionH\b[\s\S]*?<wp:posOffset>(-?\d+)<\/wp:posOffset>/;
@@ -114,8 +115,11 @@ export function readDrawings(paragraphXml: string): DocxDrawing[] {
  * `undefined` for an inline drawing, which has no wrap: it sits in the text
  * line, and `top-bottom` is what that becomes on our page.
  */
-function wrapOf(xml: string): 'square' | 'top-bottom' | undefined {
+function wrapOf(xml: string): 'square' | 'top-bottom' | 'behind' | undefined {
   if (!xml.includes('<wp:anchor')) return undefined;
+  /* BEHIND TEXT, as his sādhanā sets its pictures: kept as it is, not read as
+     a centred block (2026-10-04 — the round trip moved every one of them). */
+  if (RE_BEHIND.test(xml)) return 'behind';
   if (RE_WRAP.test(xml)) return 'square';
   if (RE_WRAP_BAND.test(xml)) return 'top-bottom';
   return undefined;
@@ -134,7 +138,7 @@ function sideOf(xml: string): 'start' | 'end' | undefined {
    * layout, and a test holds that line.
    */
   if (!xml.includes('<wp:anchor')) return undefined;
-  if (!RE_WRAP.test(xml) && !RE_WRAP_BAND.test(xml)) return undefined;
+  if (!RE_WRAP.test(xml) && !RE_WRAP_BAND.test(xml) && !RE_BEHIND.test(xml)) return undefined;
   const align = RE_ALIGN_H.exec(xml)?.[1];
   if (align === 'right' || align === 'outside') return 'end';
   if (align === 'left' || align === 'inside') return 'start';

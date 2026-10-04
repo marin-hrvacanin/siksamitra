@@ -26,9 +26,22 @@ const METRES: readonly (readonly [RegExp, ChantMeterKey | null])[] = [
   [/^sragdharā$/u, 'sragdhara'],
   [/^triṣṭu[pb]h?$/u, 'tristubh'],
   [/^puṣpitāgrā$/u, 'pushpitagra'],
+  [/^(?:upajāti|indravajrā|upendravajrā)$/u, 'upajati'],
+  [/^śālinī$/u, 'salini'],
+  [/^vasantatilakā$/u, 'vasantatilaka'],
+  [/^(?:vaṁśastha|indravaṁśā)$/u, 'vamsastha'],
+  [/^rucirā$/u, 'rucira'],
+  [/^pṛthvī$/u, 'prthvi'],
+  [/^mandākrāntā$/u, 'mandakranta'],
   /* Named in his files, and no plan read off them yet. */
-  [/^(?:mandākrāntā|śālinī|vaṁśastha|vasantatilakā|mālinī|pṛthvī|śikhariṇī|rathoddhatā|rucirā|upajāti|indravajrā|upendravajrā|indravaṁśā|dodhaka[ṁm]?|aupacchandasika[ṁm]?)$/u, null],
+  [/^(?:mālinī|śikhariṇī|rathoddhatā|dodhaka[ṁm]?|aupacchandasika[ṁm]?)$/u, null],
 ];
+
+/** A pāda's syllables, by the metre's plan: what a line must reach to be one. */
+const PADA: Partial<Record<ChantMeterKey, number>> = {
+  anustubh: 8, sardulavikridita: 19, sragdhara: 21, tristubh: 11, pushpitagra: 12,
+  upajati: 11, salini: 11, vasantatilaka: 14, vamsastha: 12, rucira: 13, prthvi: 17, mandakranta: 17,
+};
 
 /** The metre a note declares — `null` for one with no plan, `undefined` for none named. */
 export function meterOfNote(note: string | undefined): ChantMeterKey | null | undefined {
@@ -51,8 +64,16 @@ export function withNotedMetres(doc: ChantDoc, o: Outline): ChantDoc {
     if (given === undefined) return s;
     const outline = [...versesOfFlow(given.flow ?? []), ...given.verses];
     if (outline.length !== s.verses.length) return s;
+    /* HIS NOTE STANDS ONCE, AT THE HEAD OF ITS VERSES: the verses after it,
+       until the next, are in its metre — a line too short to be a pāda of it
+       (`oṁ namo bhagavate vāsudevāya`) is no verse of that metre. */
+    let current: ChantMeterKey | null | undefined;
     const verses = s.verses.map((v, k) => {
-      const meter = meterOfNote(outline[k]!.note);
+      const noted = meterOfNote(outline[k]!.note);
+      if (noted !== undefined) current = noted;
+      const pada = current == null ? 0 : (PADA[current] ?? 0);
+      const long = outline[k]!.lines.some((l) => syllablesOf(l.replace(/^\s*oṁ\s+/u, '')) >= pada);
+      const meter = noted !== undefined ? noted : long ? current : undefined;
       if (meter === undefined) return v;
       touched = true;
       return { ...v, profile: { ...(v.profile ?? {}), patch: { ...(v.profile?.patch ?? {}), svara: { meter } } } };
