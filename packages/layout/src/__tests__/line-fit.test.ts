@@ -6,7 +6,7 @@
  * `tests/integration/line-fit.test.ts` against his own lines.
  */
 import { describe, expect, it } from 'vitest';
-import { advanceWidth, fitLine, piecesOf } from '../line-fit.js';
+import { advanceWidth, fitLine, fitLineAt, piecesOf } from '../line-fit.js';
 
 const letters = { widthOf: (t: string): number => [...t].length, limit: 20 };
 
@@ -82,5 +82,18 @@ describe('a name’s raised number, measured', () => {
   });
   it('and a host that does not say measures it as its digit', () => {
     expect(advanceWidth(advance, 1, 10)('a¹')).toBeCloseTo(10);
+  });
+});
+
+describe('a line divided only where it may be', () => {
+  /* A limit of 20 letters; the words a b c (cut after 3) d e f. */
+  it('is divided at the cuts it is given, and nowhere else', () => {
+    expect(fitLineAt('aaaa bbbb cccc dddd eeee ffff', [3], letters)).toEqual(['aaaa bbbb cccc', 'dddd eeee ffff']);
+    /* A unit still too wide for the line is divided as fitLine divides it. */
+    expect(fitLineAt('aaaa bbbb cccc dddd eeee ffff', [1], letters)).toEqual(['aaaa', ...fitLine('bbbb cccc dddd eeee ffff', letters)]);
+  });
+  it('is left whole when it fits, and divided as fitLine divides it when no cut is usable', () => {
+    expect(fitLineAt('aaaa bbbb', [1], letters)).toEqual(['aaaa bbbb']);
+    expect(fitLineAt('aaaa bbbb cccc dddd eeee ffff', [], letters)).toEqual(fitLine('aaaa bbbb cccc dddd eeee ffff', letters));
   });
 });

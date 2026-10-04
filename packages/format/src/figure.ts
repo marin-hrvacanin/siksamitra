@@ -306,8 +306,8 @@ export interface FigureAt {
 /**
  * Every figure a document draws, in reading order.
  *
- * Three places can hold one — a section item inline, a section item by `ref`
- * into the shared library, and a verse's own `figures` — and every consumer
+ * Four places can hold one — a book's title page, a section item inline, a
+ * section item by `ref` into the shared library, and a verse's own `figures` — and every consumer
  * that wants "the pictures in this document" needs all three. Written once
  * because the exporter, the validator and the gate all ask, and three walks
  * would be three chances to miss the library.
@@ -316,6 +316,8 @@ export function figuresOf(doc: ChantDoc): FigureAt[] {
   const library = figureLibrary(doc);
 
   const out: FigureAt[] = [];
+  /* A book's title page picture comes first: it is the first thing drawn. */
+  if (doc.cover?.figure !== undefined) out.push({ figure: doc.cover.figure, sectionId: '', at: -1 });
   for (const section of doc.sections) {
     const items: readonly ChantItem[] = section.items ?? [];
     items.forEach((item, at) => {

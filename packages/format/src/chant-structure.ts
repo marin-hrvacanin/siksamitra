@@ -139,6 +139,11 @@ export interface ChantSection {
 export interface ChantCover {
   /** The title as the page sets it, a line each: `["Veda Union", "sādhanā"]`. */
   lines: string[];
+  /** Lines under the title, at the mantra line's size — his Lalitā's
+   *  `vyākṛta saṃskṛta pustam - word-separated Sanskrit text`. */
+  under?: string[];
+  /** A picture above the title, as his Lalitā's peacock. */
+  figure?: ChantFigure;
 }
 
 /** A book's table of contents, on its own page after the title page. */

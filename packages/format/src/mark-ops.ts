@@ -12,7 +12,7 @@
  * runs after every one of these in the callers that can afford it.
  */
 import {
-  compareMarks, LETTER_KINDS, MERGING_KINDS, sameValue,
+  CARRIED_ON_REPLACEMENT, compareMarks, LETTER_KINDS, MERGING_KINDS, sameValue,
   type Mark, type MarkKind,
 } from './mark.js';
 
@@ -215,6 +215,10 @@ export function shiftForEdit(
       continue;
     }
     if (m.from >= edit.from && m.to <= edit.to && edit.to > edit.from) {
+      if (CARRIED_ON_REPLACEMENT.has(m.k) && edit.inserted > 0) {
+        kept.push({ ...m, from: edit.from, to: edit.from + edit.inserted });
+        continue;
+      }
       dropped.push(m);
       continue;
     }

@@ -53,6 +53,12 @@ describe('a verse of one word', () => {
     expect(headingFault(nila('oṁ ॥'))).toBeUndefined();
   });
 
+  it('and so is a speaker’s line, one name and its uvāca joined into a word', () => {
+    expect(headingFault(nila('pārvatyuvāca'))).toBeUndefined();
+    expect(headingFault(nila('brahmo-vāca ॥'))).toBeUndefined();
+    expect(headingFault(nila('ब्रह्मोवाच ।'))).toBeUndefined();
+  });
+
   it('and the verse it opens, with it, is built', () => {
     const fixed: Outline = { ...nila(''), sections: [{ verses: [
       { lines: ['gṛṇāhi । ghṛtavatī savitar ādhipatyaiḥ payasvatī rantir āśā no astu ।', 'dhruvā diśāṁ viṣṇupatny aghorā ॥'] },

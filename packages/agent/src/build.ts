@@ -44,11 +44,12 @@ import { KAMPA_CHAR, kampaOf, openChantDoc } from '@siksamitra/engine';
 import {
   SVARA_BY_CHAR, VERSE_END, buildDocument, reportFor, wordRun, type WordParagraph, type WordRun,
 } from '@siksamitra/interop';
-import { advanceWidth, fitLine, type LineFit } from '@siksamitra/layout';
+import { DEFAULT_PAGE, advanceWidth, pageGeometry, type LineFit } from '@siksamitra/layout';
 import {
-  MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK, MANTRA_LINE_FILL, WORD_PAGE, WORD_PARAGRAPHS,
+  MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK, MANTRA_LINE_FILL, WORD_PARAGRAPHS,
 } from '@siksamitra/tokens/word';
 import { MARK_GEOMETRY } from '@siksamitra/tokens/source';
+import { fitMantraLine, withNotedMetres } from './meters.js';
 import { cleanLine, groupedBy, layoutOf, numbered, pairedPadas, paragraphsIn, unnumbered, type VerseLayout } from './lines.js';
 
 /*
@@ -58,9 +59,17 @@ import { cleanLine, groupedBy, layoutOf, numbered, pairedPadas, paragraphsIn, un
  * wider is divided evenly, at a word's end (`fitLine`).
  */
 const VERSE = WORD_PARAGRAPHS.find((p) => p.role === 'verse-line')!;
+/* The sheet the exporters print on — his margins, 25 mm at the left and 9 mm
+   at the right, as his Lalitā's — and not `WORD_PAGE`'s 25 mm each side,
+   which is a reference column for type on a screen. Measured against that,
+   a half-verse of his Lalitā's names (499 pt of column) was divided in two,
+   and the śloka's svaras, which are planned a half-verse a line, were lost
+   with it (2026-10-04). */
+const PAGE = pageGeometry(DEFAULT_PAGE);
+export const MANTRA_COLUMN = PAGE.width - PAGE.margins.left - PAGE.margins.right - VERSE.indent - VERSE.right;
 const MANTRA_FIT: LineFit = {
   widthOf: advanceWidth(MANTRA_ADVANCE, MANTRA_ADVANCE_FALLBACK, VERSE.size, MARK_GEOMETRY.supScale),
-  limit: MANTRA_LINE_FILL * (WORD_PAGE.widthPt - 2 * WORD_PAGE.marginPt - VERSE.indent - VERSE.right),
+  limit: MANTRA_LINE_FILL * MANTRA_COLUMN,
 };
 
 export interface OutlineVerse {
@@ -250,7 +259,7 @@ export function paragraphsOf(o: Outline): WordParagraph[] {
            wrapped line of his does, its note after the last (`fitLine`). */
         out.push(para('Translit', p.flatMap((l, i) => {
           const note = kept[at + i]!.note;
-          const parts = fitLine(l, MANTRA_FIT);
+          const parts = fitMantraLine(l, v.note, MANTRA_FIT);
           return [
             ...parts.flatMap((part, pi) => [...(i === 0 && pi === 0 ? [] : [wordRun('\n')]), ...runsOf(part)]),
             ...(note === '' ? [] : [wordRun(' '), wordRun(note, 'Comment')]),
@@ -299,7 +308,12 @@ export function headingFault(o: Outline): string | undefined {
        (2026-10-02), where TITUS opens TS 4.4.12.5 with it, and sanskritdocuments'
        `३७` before it counts fifty words, not verses. */
     const words = v.lines.join(' ').replace(/[।॥|0-9०-९()]/gu, ' ').split(/\s+/u).filter((w) => w !== '');
-    if (words.length === 1 && !/^(?:o[mṁṃ]|ओ[ंम्]|ॐ)$/u.test(words[0]!.normalize('NFC').replace(/\p{M}/gu, ''))) {
+    /* A speaker's line is a verse of its own (house style), and one name and
+       its `uvāca` are one word once joined: `pārvatyuvāca`, `brahmovāca`, the
+       Viṣṇu sahasranāma's phalaśruti (2026-10-04). */
+    const plain = words[0]?.normalize('NFC').replace(/\p{M}/gu, '').replace(/-/gu, '') ?? '';
+    const speaker = /(?:uvāca|ovāca)$/u.test(plain) || /(?:उवाच|ोवाच)$/u.test(words[0]?.normalize('NFC') ?? '');
+    if (words.length === 1 && !/^(?:o[mṁṃ]|ओ[ंम्]|ॐ)$/u.test(plain) && !speaker) {
       return `a verse of one word ("${words[0]}") is the sentence that opens the verse after it or closes the one before — put it with its verse, as the edition's own verse numbers divide them; an edition's running count (sanskritdocuments' ३७, fifty words a pañcāśat) is no verse boundary`;
     }
     /* NO DIGIT, NO DASH IN A MANTRA LINE — its anukramaṇī's too. The bot set
@@ -357,5 +371,5 @@ export function documentOf(o: Outline): ChantDoc {
     ...(o.description === undefined || o.description.trim() === '' ? {} : { subtitle: o.description.trim() }),
     ...(o.locus === undefined || o.locus.trim() === '' ? {} : { source: o.locus.trim() }),
   };
-  return openChantDoc(doc);
+  return openChantDoc(withNotedMetres(doc, o));
 }

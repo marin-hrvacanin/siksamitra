@@ -22,11 +22,16 @@ const VOWEL_AT_START = /^(?:ai|au|[aāiīuūṛṝḷḹeo])\p{M}*/u;
 /** A consonant a word can end in and join the next word's vowel with — not the anusvāra or the visarga. */
 const JOINS = /[kgṅcjñṭḍṇtdnpbmyrlvśṣs]$/u;
 const CONSONANT_AT_START = /^[kgṅcjñṭḍṇtdnpbmyrlvśṣsh]/u;
+/** A name's number, raised, at the end of a word (`build.ts`, his Lalitā). */
+const NAME_NUMBER_AT_END = /[⁰¹²³⁴⁵⁶⁷⁸⁹]+$/u;
 
 const base = (w: string): string => w.replace(MARKS, '');
 
 /** A word as he types it, before the word that follows it. */
-function typed(word: string, next: string): string {
+function typed(numbered: string, next: string): string {
+  const sup = NAME_NUMBER_AT_END.exec(numbered)?.[0] ?? '';
+  if (sup !== '') return `${typed(numbered.slice(0, -sup.length), next)}${sup}`;
+  const word = numbered;
   const b = base(word);
   const marks = word.slice(b.length);
   const n = next.normalize('NFC');
@@ -59,11 +64,16 @@ export function hisJunctions(line: string): string {
   for (let i = 1; i < spelt.length; i += 1) {
     const next = spelt[i]!;
     const vowel = VOWEL_AT_START.exec(next);
-    if (vowel !== null && JOINS.test(base(cur))) {
+    /* A name's raised number stays with the letters it counts: his Lalitā's
+       `mūlaprakṛtira³⁹⁷-vyaktā` — the number after the vowel the next name
+       lent, before the hyphen. */
+    const sup = NAME_NUMBER_AT_END.exec(cur)?.[0] ?? '';
+    const bare = cur.slice(0, cur.length - sup.length);
+    if (vowel !== null && JOINS.test(base(bare))) {
       const rest = next.slice(vowel[0].length);
       /* A word that is its vowel alone (`ā`) joins on to the word after it. */
-      if (rest === '' && i + 1 < spelt.length) { cur = `${cur}${vowel[0]}-${spelt[i + 1]!}`; i += 1; }
-      else cur = rest === '' ? `${cur}${vowel[0]}` : `${cur}${vowel[0]}-${rest}`;
+      if (rest === '' && i + 1 < spelt.length) { cur = `${bare}${vowel[0]}${sup}-${spelt[i + 1]!}`; i += 1; }
+      else cur = rest === '' ? `${bare}${vowel[0]}${sup}` : `${bare}${vowel[0]}${sup}-${rest}`;
       continue;
     }
     out.push(cur);

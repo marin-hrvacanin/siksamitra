@@ -129,6 +129,17 @@ export const POINT_KINDS: ReadonlySet<MarkKind> = new Set<MarkKind>(['sbhakti', 
 export const LETTER_KINDS: ReadonlySet<MarkKind> =
   new Set<MarkKind>(['was', 'svara', 'sup', 'cj']);
 
+/**
+ * MARKINGS THAT GO WITH THE LETTER THEY ARE ON WHEN IT IS REWRITTEN — a
+ * name's raised number (`sup`) in a text of names. The rules rewrite a name's
+ * last letter (`śivaḥ` before `sthāṇur`, `pavitraṁ` before `maṅgalaṁ`) and a
+ * marking wholly on a replaced letter is otherwise dropped: his Viṣṇu
+ * sahasranāma lost names 25, 26 and 27 so (2026-10-04). The number counts the
+ * name, whatever its last letter becomes, so it is carried onto the
+ * replacement. A holding or a svara is about the letter itself and is not.
+ */
+export const CARRIED_ON_REPLACEMENT: ReadonlySet<MarkKind> = new Set<MarkKind>(['sup']);
+
 export interface Mark {
   k: MarkKind;
   /** Half-open over the verse's text. `from === to` for a point marking. */

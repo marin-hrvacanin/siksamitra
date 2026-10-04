@@ -74,6 +74,23 @@ export function fitLine(line: string, fit: LineFit): string[] {
 }
 
 /**
+ * The line, divided only where it may be — at the word ends `cuts` names
+ * (counted from 0, a cut after that many words) — as few lines as fit and as
+ * even as they can be; the line itself when it fits. A classical metre's
+ * pāda is divided at its yati so (his sragdharā: `… sthaḥ | sphaṭika maṇi
+ * nibhair |` and not `… maṇi / nibhair |`, 2026-10-04). A unit still too wide
+ * is divided by `fitLine`.
+ */
+export function fitLineAt(line: string, cuts: readonly number[], fit: LineFit): string[] {
+  if (fit.widthOf(line) <= fit.limit) return [line];
+  const words = piecesOf(line);
+  const at = [...new Set(cuts)].filter((c) => c > 0 && c < words.length).sort((a, b) => a - b);
+  if (at.length === 0) return fitLine(line, fit);
+  const units = [0, ...at].map((from, i) => words.slice(from, at[i] ?? words.length).join(' '));
+  return evenly(units, fit).flatMap((u) => (fit.widthOf(u) <= fit.limit ? [u] : fitLine(u, fit)));
+}
+
+/**
  * Items set into as few lines as fit the limit, each closest to an even share
  * — the squared difference, so two lines of 300 beat one of 450 and one of
  * 150. An item wider than the limit by itself is a line of its own.

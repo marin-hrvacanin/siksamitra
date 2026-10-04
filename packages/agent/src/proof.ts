@@ -157,8 +157,12 @@ export function proofread(doc: ChantDoc, o: ProofOptions = {}): Finding[] {
       /* A ŚLOKA LEFT BARE among marked ones: the rules mark a śloka a
          half-verse a line, and one whose half-verse is set in two lines does
          not scan for them — so it is the only verse of its stotra with no
-         svara (a real run's verse 15, 2026-10-02). */
-      if (marksŚlokas && regular(i) && !accented[i]) {
+         svara (a real run's verse 15, 2026-10-02). A verse the edition itself
+         has outside its metre (`irregular`) cannot be planned by the metre's
+         positions, and its bare lines are no fault of the setting — his Viṣṇu
+         sahasranāma 54 and 92, the edition's seventeen-syllable ārṣa
+         half-verses (2026-10-04). */
+      if (marksŚlokas && regular(i) && !accented[i] && o.irregular?.(v.id) !== true) {
         const lines = text.split('\n').map((l) => syllablesOf(l.replace(/[0-9०-९]/gu, ' '))).filter((n) => n > 0);
         out.push({
           severity: 'error', where: v.id,

@@ -29,7 +29,7 @@ import type { DocumentMode, DocumentTheme } from '@siksamitra/tokens/document-th
 import { typeScaleOf } from '@siksamitra/tokens/document-themes';
 import type { DocRole, DocTypeScale, RoleMetric } from '@siksamitra/tokens/document-type';
 import {
-  WORD_BODY_LINE, WORD_HEADER_RULE, WORD_HEADER_TABS, WORD_MARKS, WORD_SUBSTITUTES, WORD_TITLE,
+  WORD_BODY_LINE, WORD_FOOTER, WORD_HEADER_RULE, WORD_HEADER_TABS, WORD_MARKS, WORD_SUBSTITUTES, WORD_TITLE,
 } from '@siksamitra/tokens/word';
 import type { PageGeometry } from '@siksamitra/layout';
 import { xmlEscape } from '../xml.js';
@@ -357,12 +357,16 @@ export function stylesXml(input: StyleSheetInput): string {
  * pads the exported page's column with — so the `.docx`'s margins and the
  * PDF's are one number, not two.
  */
-export function sectPr(page: PageGeometry, header?: string): string {
+export function sectPr(page: PageGeometry, header?: string, footer?: string, firstPage?: number): string {
   const tw = (pt: number): number => Math.round(pt * 20);
-  /* `headerReference` FIRST: `w:sectPr` is a schema sequence. */
+  /* `headerReference`, then `footerReference`, FIRST: `w:sectPr` is a schema
+     sequence, and so is `pgNumType` after `pgMar`. A book's body numbers its
+     pages from 1 after the cover and the contents, as his do. */
   return `<w:sectPr>${header === undefined ? '' : `<w:headerReference w:type="default" r:id="${header}"/>`}`
+    + `${footer === undefined ? '' : `<w:footerReference w:type="default" r:id="${footer}"/>`}`
     + `<w:pgSz w:w="${tw(page.width)}" w:h="${tw(page.height)}"/>`
     + `<w:pgMar w:top="${tw(page.margins.top)}" w:right="${tw(page.margins.right)}"`
     + ` w:bottom="${tw(page.margins.bottom)}" w:left="${tw(page.margins.left)}"`
-    + ` w:header="${header === undefined ? 0 : WORD_HEADER_RULE.distance}" w:footer="0" w:gutter="0"/><w:cols w:space="708"/></w:sectPr>`;
+    + ` w:header="${header === undefined ? 0 : WORD_HEADER_RULE.distance}" w:footer="${footer === undefined ? 0 : WORD_FOOTER.distance}" w:gutter="0"/>`
+    + `${firstPage === undefined ? '' : `<w:pgNumType w:start="${firstPage}"/>`}<w:cols w:space="708"/></w:sectPr>`;
 }

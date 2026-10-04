@@ -31,7 +31,8 @@ export type MeterKey =
   | 'tristubh'
   | 'jagati'
   | 'sardulavikridita'
-  | 'pushpitagra';
+  | 'pushpitagra'
+  | 'sragdhara';
 
 /**
  * Which svara register a verse belongs to. The prohibition is the point:
@@ -109,6 +110,12 @@ export interface Profile {
     readonly afterDanda: boolean;
     /** The vowel-hiatus pauses — 35/35 against his own marked chants. */
     readonly hiatus: boolean;
+    /**
+     * A pause at each yati of a classical metre the verse declares (`yati.ts`):
+     * his sragdharā and śārdūlavikrīḍita dhyānas draw one after the yati
+     * syllable of every pāda. Absent counts as on.
+     */
+    readonly yati?: boolean;
   };
 
   readonly holdings: {
@@ -209,7 +216,7 @@ const BASE = {
      more rarely and is optional". `jñ` always. */
   aids: { jna: true, vy: false, sv: false, semivowel: true },
   svarabhakti: true,
-  pauses: { bija: true, hiatus: true, afterDanda: false },
+  pauses: { bija: true, hiatus: true, afterDanda: false, yati: true },
   holdings: {
     noInitialBox: true, crosswordHost: 'aspirate' as const, firstHost: true, lineContinues: true,
     geminate: 'one' as const,
@@ -266,7 +273,7 @@ export const PROFILES: Readonly<Record<ProfileKey, Profile>> = Object.freeze({
     recension: 'smriti',
     gum: false,
     svara: { register: 'prose' },
-    pauses: { bija: true, hiatus: true, afterDanda: false },
+    pauses: { bija: true, hiatus: true, afterDanda: false, yati: true },
     aids: { ...BASE.aids, semivowel: false },
   }),
 } as Record<ProfileKey, Profile>);

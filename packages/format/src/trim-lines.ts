@@ -35,8 +35,16 @@ export function trimLineEnds({ text, marks, units }: TextAndMarks): TextAndMarks
        365 of his lines. The rules put the same space there, so a re-run still
        agrees with the text. */
     const end = at + line.length;
-    const paused = marks.some((m) => m.k === 'pause' && m.from === end && m.to === end);
-    if (kept.length !== line.length && !paused) cuts.push({ from: at + kept.length, to: end });
+    /* A pause INSIDE the trailing spaces — the rules write one between two
+       spaces, `nābhir · | · ⏎`, where a classical metre's yati falls at a line
+       the page divided (2026-10-04) — keeps its line too: only what follows it
+       is trailing, so the line ends `nābhir |` as a pause at its end does. */
+    const pauses = marks.filter((m) => m.k === 'pause' && m.from === m.to && m.from >= at + kept.length && m.from <= end);
+    const last = pauses.length === 0 ? undefined : Math.max(...pauses.map((m) => m.from));
+    if (kept.length !== line.length) {
+      if (last === undefined) cuts.push({ from: at + kept.length, to: end });
+      else if (last < end) cuts.push({ from: last, to: end });
+    }
     at += line.length + 1;
   }
   if (cuts.length === 0) return { text, marks, units };

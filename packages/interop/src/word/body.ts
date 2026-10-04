@@ -51,6 +51,8 @@ export function documentXml(
   script: ScriptKey = 'iast',
   /** Tag the verses (`body-blocks.ts`) — false for a line written into his own file. */
   tags = true,
+  /** What ends a book's front pages — a section break, from `exportWord`. */
+  sectionBreak?: string,
 ): string {
   const paras: string[] = [];
   const p = styledParagraph;
@@ -274,7 +276,7 @@ export function documentXml(
   /* Where each section's paragraphs are, and which register marks it: a
      section marked by other rules than the rest is a PART in Word. Each thing
      a section holds is written as his files write it — `body-blocks.ts`. */
-  const blocks = blockWriter({ p, run, verseRuns: (t) => verseRuns(t), picture, tags });
+  const blocks = blockWriter({ p, run, verseRuns: (t) => verseRuns(t), picture, tags, ...(sectionBreak === undefined ? {} : { sectionBreak }) });
   paras.push(...blocks.front(doc));
   const regions: Region[] = [];
   for (const s of doc.sections) {

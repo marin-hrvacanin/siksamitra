@@ -142,15 +142,23 @@ describe('the document as it will print', () => {
 });
 
 describe('a śloka left bare among marked ones', () => {
-  /* The rules mark a śloka a half-verse a line; a half-verse set in two lines
-     does not scan for them, and that verse alone of its stotra had no svara
-     (a real run's verse 15, 2026-10-02). */
+  /* A verse that does not scan has no svara, and that verse alone of its
+     stotra stood bare (a real run's verse 15, 2026-10-02). A half-verse merely
+     set in two lines is read on and scans since 2026-10-04 (`svara.ts`), so the
+     bare one here is a syllable short. */
   it('is found, with why, when its section’s other ślokas have svaras', () => {
     const ws = new Workspace();
-    ws.open(documentOf({ title: 'x', sections: [{ verses: [...SLOKAS, ['śakrāc ca nāradaḥ prāpto dhaumyaś ca tad anantaram ।', 'dhaumyād yudhiṣṭhiraḥ prāpya', 'sarvān kāmān avāptavān ॥']].map((lines) => ({ lines })) }] }));
+    ws.open(documentOf({ title: 'x', sections: [{ verses: [...SLOKAS, ['śakrāc ca nāradaḥ prāpto dhaumyaś ca tad anantaram ।', 'dhaumyād yudhiṣṭhiraḥ prāpya', 'sarvān kāmān avāpta ॥']].map((lines) => ({ lines })) }] }));
     ws.run({ k: 'profile', scope: 'document', preset: 'smarta' });
     markAll(ws, 'keep-hand');
     const found = proofread(ws.need(), strict);
     expect(found).toEqual([expect.objectContaining({ severity: 'error', where: 's-1-v4', what: expect.stringMatching(/^has no svara where the section's other ślokas have theirs/) })]);
+  });
+  it('is not a fault when the edition itself has the verse outside its metre, said so', () => {
+    const ws = new Workspace();
+    ws.open(documentOf({ title: 'x', sections: [{ verses: [...SLOKAS, ['śakrāc ca nāradaḥ prāpto dhaumyaś ca tad anantaram ।', 'dhaumyād yudhiṣṭhiraḥ prāpya', 'sarvān kāmān avāpta ॥']].map((lines) => ({ lines })) }] }));
+    ws.run({ k: 'profile', scope: 'document', preset: 'smarta' });
+    markAll(ws, 'keep-hand');
+    expect(proofread(ws.need(), { ...strict, irregular: (v) => v === 's-1-v4' })).toEqual([]);
   });
 });

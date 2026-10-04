@@ -82,3 +82,18 @@ describe('the source’s daṇḍas, where his lines end with them', () => {
     expect(withSourceDandas(SOURCE, ['a', 'b', 'c'])).toEqual(['a', 'b', 'c']);
   });
 });
+
+describe('a name’s raised number, in a text of names', () => {
+  it('stays after the vowel the next name lent, before the hyphen — his Lalitā', () => {
+    his('mūla̍prakṛ̍tir³⁹⁷ avuyaktā̍³⁹⁸', 'mūla̍prakṛ̍tira³⁹⁷-vuyaktā̍³⁹⁸');
+    his('aṣṭa̍ mūrti̍r⁶⁶² ajā̱ jaitrī̍⁶⁶³', 'aṣṭa̍ mūrti̍ra⁶⁶²-jā̱ jaitrī̍⁶⁶³');
+    his('prāṁśur¹⁵¹ amoghaḥ¹⁵² śucir¹⁵³ ūrjitaḥ¹⁵⁴ ।', 'prāṁśura¹⁵¹-moghaḥ¹⁵² śucirū¹⁵³-rjitaḥ¹⁵⁴ ।');
+  });
+  it('a number before a word that does not join is left as it is', () => {
+    his('śrī mā̍tā¹ śrī̍ mahā̱rājñī²', 'śrī mā̍tā¹ śrī̍ mahā̱rājñī²');
+    his('bhaga̍s² tvaṣṭā³', 'bhaga̍s² tvaṣṭā³');
+  });
+  it('a numbered last m before a consonant is still the anusvāra', () => {
+    his('maṅgalam⁶³ param', 'maṅgalaṁ⁶³ param');
+  });
+});

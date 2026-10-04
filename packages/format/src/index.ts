@@ -56,7 +56,7 @@ export type {
  */
 export {
   assertMarks, compareMarks, mark, markFaults,
-  LETTER_KINDS, MERGING_KINDS, POINT_KINDS, sameValue, STAGE_OF,
+  CARRIED_ON_REPLACEMENT, LETTER_KINDS, MERGING_KINDS, POINT_KINDS, sameValue, STAGE_OF,
 } from './mark.js';
 export type { Mark, MarkFault, MarkInput, MarkKind, Stage } from './mark.js';
 export {

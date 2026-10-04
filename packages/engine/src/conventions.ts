@@ -21,7 +21,7 @@
 import type { Profile } from './profile.js';
 
 export type ConventionId =
-  | 'nasal-before-nasal' | 'visarga-before-velar' | 'puranic-svara' | 'vy-aid' | 'geminate-box' | 'pause-after-danda';
+  | 'nasal-before-nasal' | 'visarga-before-velar' | 'puranic-svara' | 'vy-aid' | 'geminate-box' | 'pause-after-danda' | 'yati-pause';
 
 /** A profile patch — the shape `resolveProfile` merges. */
 type Patch = Record<string, Record<string, unknown>>;
@@ -106,6 +106,17 @@ export const CONVENTIONS: readonly Convention[] = [
     on: { pauses: { afterDanda: true } },
     off: { pauses: { afterDanda: false } },
     isOn: (p) => p.pauses.afterDanda,
+  },
+  {
+    id: 'yati-pause',
+    label: 'A pause at each yati of a classical metre',
+    example: { typed: 'dhyāyet padmāsanasthāṁ vikasitavadanāṁ', marked: 'dhyāyet padmāsanasthāṁ | vikasitavadanāṁ |' },
+    note: 'A sragdharā or śārdūlavikrīḍita verse, its metre named in its note, takes a pause after the yati syllable of each pāda where a word ends there — as his Lalitā and Rudram dhyānas draw it. Off draws none.',
+    on: { pauses: { yati: true } },
+    off: { pauses: { yati: false } },
+    isOn: (p) => p.pauses.yati !== false,
+    applies: (p) => p.svara.register === 'conventional',
+    onlyFor: 'Smārta and purāṇic verse in a classical metre.',
   },
 ];
 

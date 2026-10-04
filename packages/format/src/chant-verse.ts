@@ -56,7 +56,7 @@ export type ChantSvaraRegister =
 
 export type ChantMeterKey =
   | 'anustubh' | 'gayatri' | 'tristubh' | 'jagati'
-  | 'sardulavikridita' | 'pushpitagra';
+  | 'sardulavikridita' | 'pushpitagra' | 'sragdhara';
 
 /**
  * One mark the author placed by hand, addressed in SOURCE coordinates so it

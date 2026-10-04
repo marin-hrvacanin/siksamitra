@@ -200,6 +200,21 @@ export const SVARA_PLANS: Readonly<Record<MeterKey, SvaraPlan>> = Object.freeze(
     verified: 'owner-file',
     source: 'shankaracharya-stotrani-iast.pdf — ONE verse, four pādas; widen before reuse',
   },
+  /* MEASURED off two of his files that agree pāda for pāda: the Lalitā
+     sahasranāma v9.3.1's dhyāna "dhyāyet padmāsanasthāṁ" and the Rudram
+     v1.622's (and his sādhanā's) "brahmāṇḍavyāptadehā" — eight pādas. The
+     odd pādas end `bhavānīṁ` 15̱ 17̱ 19̍ 21̱, the even ones `varāṅgīm`
+     15̱ 17̱ 20̍, both opening anudātta (2026-10-04). */
+  sragdhara: {
+    id: 'sragdhara',
+    label: 'Sragdharā (21)',
+    unit: 'pada',
+    count: 21,
+    positions: parsePlan('1̱2̱15̱17̱19̍21̱'),
+    even: { count: 21, positions: parsePlan('1̱15̱17̱20̍') },
+    verified: 'owner-file',
+    source: "lalita-sahasranama v9.3.1 dhyāna + rudram v1.622 dhyāna (= sādhanā v9.1.13) — 8 pādas, two files",
+  },
 } as Record<MeterKey, SvaraPlan>);
 
 /**
@@ -213,6 +228,8 @@ export const SVARA_PLANS: Readonly<Record<MeterKey, SvaraPlan>> = Object.freeze(
 export interface Segment {
   /** Indices into the element list, of the vowel nuclei, in order. */
   nuclei: number[];
+  /** Closed by a line break with no daṇḍa before it — a line the page wrapped, perhaps. */
+  wrapped?: true;
 }
 
 /** A leading praṇava stands OUTSIDE the metre — exclude it, or a 16-syllable
@@ -231,13 +248,13 @@ function dropLeadingPranava(elems: Elem[], nuclei: number[]): number[] {
 export function segments(elems: Elem[]): Segment[] {
   const out: Segment[] = [];
   let cur: number[] = [];
-  const flush = () => {
-    if (cur.length > 0) out.push({ nuclei: dropLeadingPranava(elems, cur) });
+  const flush = (wrapped = false) => {
+    if (cur.length > 0) out.push({ nuclei: dropLeadingPranava(elems, cur), ...(wrapped ? { wrapped: true as const } : {}) });
     cur = [];
   };
   elems.forEach((e, i) => {
     if (e.kind === 'br') {
-      flush();
+      flush(true);
       return;
     }
     if (e.kind === 'pause') {
@@ -297,20 +314,34 @@ export function applySvaraPlan(ctx: RuleCtx, plan: SvaraPlan, opts?: { allowUnve
   const accepts = (count: number | readonly number[], n: number): boolean =>
     typeof count === 'number' ? count === n : count.includes(n);
 
+  const most = (count: number | readonly number[]): number =>
+    (typeof count === 'number' ? count : Math.max(...count));
+
   // Verify EVERY segment before marking ANY of them.
   const jobs: { nuclei: number[]; positions: readonly SvaraPosition[] }[] = [];
-  for (let s = 0; s < segs.length; s += 1) {
-    const seg = segs[s]!;
-    const isEven = s % 2 === 1;
+  for (let s = 0, k = 0; s < segs.length; s += 1, k += 1) {
+    const isEven = k % 2 === 1;
     const spec = isEven && plan.even !== undefined ? plan.even : plan;
-    if (!accepts(spec.count, seg.nuclei.length)) {
+    /* A HALF-VERSE THE PAGE WRAPPED is still one half-verse. A line too wide
+       for the column is divided at a word's end with no daṇḍa there — his
+       Viṣṇu sahasranāma's half-verses of nine numbered names (2026-10-04) —
+       and is read on to the next line, but only while it is short of what the
+       plan expects: a source that sets its pādas a line each and scans so is
+       read as it always was. */
+    let nuclei = segs[s]!.nuclei;
+    while (!accepts(spec.count, nuclei.length) && segs[s]!.wrapped === true
+      && s + 1 < segs.length && nuclei.length < most(spec.count)) {
+      s += 1;
+      nuclei = [...nuclei, ...segs[s]!.nuclei];
+    }
+    if (!accepts(spec.count, nuclei.length)) {
       ctx.warn(
         'svara.does-not-scan',
-        `segment ${s + 1} has ${seg.nuclei.length} nuclei, the ${plan.id} plan expects ${String(spec.count)} — the whole verse is left unmarked`,
+        `segment ${k + 1} has ${nuclei.length} nuclei, the ${plan.id} plan expects ${String(spec.count)} — the whole verse is left unmarked`,
       );
       return false;
     }
-    jobs.push({ nuclei: seg.nuclei, positions: spec.positions });
+    jobs.push({ nuclei, positions: spec.positions });
   }
 
   for (const job of jobs) {

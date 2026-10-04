@@ -30,6 +30,7 @@ import { norm } from './normalize.js';
 import type { ChantSvara } from '@siksamitra/format';
 import { DEFAULT_PROFILE } from './profile.js';
 import type { Profile } from './profile.js';
+import { withYati } from './yati.js';
 
 /** Where an element came from in the source. */
 export interface SrcSpan {
@@ -331,7 +332,7 @@ export function lex(lines: string[], profile: Profile = DEFAULT_PROFILE): LexRes
   });
 
   return {
-    elems: profile.pauses.hiatus ? applyHiatusPauses(elems) : elems,
+    elems: withYati(profile.pauses.hiatus ? applyHiatusPauses(elems) : elems, profile),
     wordIsBija,
     lines: normalised,
   };

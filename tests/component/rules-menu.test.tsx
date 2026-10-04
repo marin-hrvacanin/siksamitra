@@ -38,8 +38,9 @@ describe('the Rules menu', () => {
     for (const c of CONVENTIONS) {
       const b = byText(c.label)!;
       expect(b, c.id).toBeDefined();
-      /* The default register is Taittirīya: the purāṇic svaras have nothing to do there. */
-      if (c.id === 'puranic-svara') {
+      /* The default register is Taittirīya: a switch for Smārta verse only —
+         the purāṇic svaras, a classical metre's yati — has nothing to do there. */
+      if (c.onlyFor !== undefined) {
         expect(b.disabled).toBe(true);
         expect(b.textContent).toContain(c.onlyFor);
       } else {

@@ -36,6 +36,10 @@ export interface BlockTools {
   /** Tag the verses (`_smv`/`_smp`): a whole document, yes; a line the add-in
    *  writes into HIS file, no — his file is not ours because one line was. */
   readonly tags?: boolean;
+  /** A book's front pages end in a section break, not a page break, when the
+   *  writer knows the sheet: his cover and contents carry no running head and
+   *  his body numbers its pages from 1. */
+  readonly sectionBreak?: string;
 }
 
 /** The style an empty line of each height is written in. */
@@ -107,11 +111,18 @@ export function blockWriter(tools: BlockTools) {
     /* A verse is kept whole (`KEEP_OF`): every paragraph of it keeps with the
        next, so the verse moves to the next page with its translation rather
        than splitting where the page runs out. The print sheet says the same. */
-    for (const group of grouped(linesOfTokens(v.tokens), v.paragraphs)) {
+    /* With no translation to keep with, its last paragraph keeps only its own
+       lines: a nyāsa's formulas, a heading, the next heading's formulas and a
+       dhyāna made one chain longer than a page, and Word broke it where it
+       liked — a heading alone at the foot of a page (his Viṣṇu sahasranāma's
+       karanyāsaḥ, 2026-10-04). */
+    const groups = grouped(linesOfTokens(v.tokens), v.paragraphs);
+    const bare = v.translation?.en === undefined || v.translation.en.trim() === '';
+    groups.forEach((group, gi) => {
       const tokens = group.flatMap((line, i) => (i === 0 ? line : [{ t: 'br' } as ChantToken, ...line]));
       const runs = verseRuns(tokens);
-      if (runs !== '') out.push(p(styleOf('pada'), `${next()}${runs}`));
-    }
+      if (runs !== '') out.push(p(styleOf('pada'), `${next()}${runs}`, bare && gi === groups.length - 1 ? false : undefined));
+    });
     if (v.translation?.en !== undefined) {
       /* And a translation of several paragraphs keeps them together: all but
          the last keep with the next, the last does not, so no chain runs on
@@ -136,10 +147,19 @@ export function blockWriter(tools: BlockTools) {
     if (doc.book !== true) return doc.title.trim() === '' ? [] : [p(styleOf('doc__name'), run(doc.title, null))];
     const out: string[] = [];
     if (doc.cover !== undefined) {
+      /* His Lalitā's title page: a picture, the title under it — no longer
+         spaced half the sheet down, the picture is above it — and a line under
+         the title at his mantra line's size, centred (2026-10-04). */
+      const figure = doc.cover.figure;
+      if (figure !== undefined) out.push(...tools.picture(figure));
       const lines = doc.cover.lines.map((l) => `<w:t xml:space="preserve">${xmlEscape(l)}</w:t>`).join('<w:br/>');
-      out.push(`<w:p><w:pPr><w:spacing w:before="${WORD_COVER.before}"/><w:jc w:val="center"/></w:pPr>`
+      out.push(`<w:p><w:pPr>${figure === undefined ? `<w:spacing w:before="${WORD_COVER.before}"/>` : ''}<w:jc w:val="center"/></w:pPr>`
         + `<w:r><w:rPr><w:sz w:val="${WORD_COVER.size * 2}"/><w:szCs w:val="${WORD_COVER.size * 2}"/></w:rPr>${lines}</w:r></w:p>`);
-      out.push(pageBreak());
+      for (const line of doc.cover.under ?? []) {
+        out.push(`<w:p><w:pPr><w:pStyle w:val="${styleOf('pada')}"/><w:ind w:left="0" w:right="0" w:hanging="0"/><w:jc w:val="center"/></w:pPr>`
+          + `<w:r><w:t xml:space="preserve">${xmlEscape(line)}</w:t></w:r></w:p>`);
+      }
+      out.push(tools.sectionBreak ?? pageBreak());
     }
     if (doc.contents !== undefined) {
       /* Word's own contents, as his is: its heading, and the field Word fills
@@ -149,7 +169,7 @@ export function blockWriter(tools: BlockTools) {
         + '<w:p><w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "2-3" \\h \\z \\u </w:instrText></w:r>'
         + '<w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>'
         + '</w:sdtContent></w:sdt>');
-      out.push(pageBreak());
+      out.push(tools.sectionBreak ?? pageBreak());
     }
     return out;
   };

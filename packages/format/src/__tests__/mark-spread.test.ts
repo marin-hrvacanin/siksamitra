@@ -146,3 +146,34 @@ describe('the set itself', () => {
     }
   });
 });
+
+describe('the letter a marking is on, REWRITTEN', () => {
+  /*
+   * A name's raised number sits on its last letter, 4..5 (`śivaḥ`'s ḥ). The
+   * rules rewrite that one letter to another (the visarga before a sibilant):
+   * a replacement of 4..5 by one character.
+   *
+   *   before:  śiva[ḥ]¹   sthāṇur
+   *   after:   śiva[s]¹   sthāṇur
+   */
+  const replace = { from: 4, to: 5, inserted: 1 };
+  it('a name’s number goes with it — it counts the name, whatever its last letter becomes', () => {
+    const r = shiftForEdit([mark({ k: 'sup', from: 4, to: 5, v: '27' })], replace);
+    expect(rangeOf(r)).toEqual([[4, 5]]);
+    expect(r.dropped).toEqual([]);
+  });
+  it('and onto the whole of a longer replacement, ending where it ends', () => {
+    expect(rangeOf(shiftForEdit([mark({ k: 'sup', from: 4, to: 5, v: '27' })], { from: 4, to: 5, inserted: 3 })))
+      .toEqual([[4, 7]]);
+  });
+  it('a holding or a svara on that letter is about the letter itself, and is dropped', () => {
+    for (const k of ['hold', 'svara'] as const) {
+      const r = shiftForEdit(one(k, 4, 5), replace);
+      expect(r.marks, k).toEqual([]);
+      expect(r.dropped.length, k).toBe(1);
+    }
+  });
+  it('a number on a letter that is deleted outright has nowhere to go', () => {
+    expect(shiftForEdit([mark({ k: 'sup', from: 4, to: 5, v: '27' })], { from: 4, to: 5, inserted: 0 }).dropped.length).toBe(1);
+  });
+});
