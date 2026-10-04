@@ -65,7 +65,7 @@ rsy=V("107-113",["oṁ śirasi veda vyāsarṣaye namaḥ ।","mukhe anuṣṭu
   "guhye amṛtā-ṁśū-dbhavo bhānur iti bījāya namaḥ ।","pādayor devakī nandanaḥ sraṣṭe-ti śaktaye namaḥ ।",
   "sarvā-ṅge śaṅkha bhṛn nandakī cakrī-ti kīlakāya namaḥ ।","kara sampūṭe mama śrī kṛṣṇa prītyarthe jape viniyogaḥ ॥"],
   lineNotes=["ring and middle finger touching the top of the head","right palm in front of the mouth","ring and middle finger of a right hand touching the heart",
-   "touch below the navel","touch both feet","pass both palms over the whole body","añjali mudrā"],**U)
+   "","","","añjali mudrā"],**U)
 kara=V("116-121",["oṁ viśvaṁ viṣṇur vaṣaṭkāra ity aṅguṣṭhābhyāṁ namaḥ ।","amṛtā-ṁśū-dbhavo bhānur iti tarjanībhyāṁ namaḥ ।",
   "brahmaṇyo brahma kṛd brahme-ti madhyamābhyāṁ namaḥ ।","suvarṇa bindur akṣobhya ity anāmikābhyāṁ namaḥ ।",
   "nimiṣo'nimiṣaḥ sragvī-ti kaniṣṭhikābhyāṁ namaḥ ।","rathā-ṅga pāṇir akṣobhya iti karatala kara pṛṣṭhābhyāṁ namaḥ ॥"],

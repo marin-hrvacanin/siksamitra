@@ -37,3 +37,12 @@ describe('a śloka whose half-verse runs on to a second line', () => {
     expect(svaras(mark('sarvaḥ śarvaḥ śivaḥ\nsthāṇur bhūtādir nidhir avyayaḥ prabhur ।\nsambhavo bhāvano bhartā prabhavaḥ prabhur īśvaraḥ ॥'))).toEqual([]);
   });
 });
+
+describe('a śloka half-verse of seventeen — the edition’s ārṣa pāda', () => {
+  it('is marked as sixteen with the first two syllables as one: every svara one on', () => {
+    const plan = svaras(mark('somapo\'mṛtapaḥ somaḥ purujit purusattamaḥ ।\nvinayo jayaḥ satyasandho dāśārhaḥ sātvatāṁ patiḥ ॥'));
+    const regular = svaras(mark('somapo\'mṛtapaḥ somaḥ purujit purusattamaḥ ।\nnayo jayaḥ satyasandho dāśārhaḥ sātvatāṁ patiḥ ॥'));
+    expect(plan.length).toBe(regular.length);
+    expect(plan.length).toBeGreaterThan(0);
+  });
+});

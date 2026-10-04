@@ -61,8 +61,10 @@ export interface ChantInstruction {
    * as a line of the mantra), `body` in a prose paragraph ("Place mṛgi mudrā
    * assembled with both hands, …", "Not in Gita Press text"), where a line
    * break in the text is his soft break and the lines after it hang in.
+   * `translation`: in his translation face, with no verse right before it
+   * (his sādhanā's puruṣa sūktam: verse, empty line, then its translation).
    */
-  comment?: 'verse' | 'body';
+  comment?: 'verse' | 'body' | 'translation';
 }
 
 /** WHICH SIDE a figure sits on. `aside` is a margin rail (>=1024 only);

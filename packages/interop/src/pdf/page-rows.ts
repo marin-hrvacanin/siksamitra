@@ -81,7 +81,14 @@ export function runsOf(events: readonly PdfEvent[]): WordRun[] {
   };
   for (const e of events) {
     switch (e.kind) {
-      case 'text': runs.push(wordRun(e.text, styleOf(e))); break;
+      /* The svarabhakti dot is a mark, not a letter: in his Word files it is
+         in the accent's style, and the page gives it as text — after a svara
+         (`śīr̍·ṣan`) it was read as a letter and drawn black. */
+      case 'text':
+        e.text.split(/(·)/u).forEach((t) => {
+          if (t !== '') runs.push(t === '·' ? wordRun(t, 'Svara') : wordRun(t, styleOf(e)));
+        });
+        break;
       /* The overline rides in the svara set on the page; in his Word files
          it is its own style, `Long`. */
       case 'svara': runs.push(wordRun(e.mark, e.mark === '̅' ? 'Long' : 'Svara')); break;

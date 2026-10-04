@@ -93,6 +93,7 @@ export function blockWriter(tools: BlockTools) {
     const text = ins.text.en ?? '';
     if (text === '') return [];
     if (ins.comment === 'verse') return onMantraLines(text);
+    if (ins.comment === 'translation') return [p(styleOf('doc__translation'), text.split('\n').map((l) => translationRuns(l.trim())).join(br))];
     if (ins.comment === 'body') return [p(null, text.split('\n').map((l) => run(l, 'Comment')).join(br))];
     return [p(styleOf('doc__instruction'), run(text, null))];
   };

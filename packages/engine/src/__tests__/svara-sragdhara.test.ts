@@ -88,8 +88,7 @@ describe('his trimetres, two pādas a line', () => {
   for (const [name, meter, lines] of KANAKA) {
     it(`a ${name} verse is marked as his Kanakadhārā marks it`, () => {
       const plain = lines.map((p) => p.normalize('NFD').replace(UDATTA_FREE, '').normalize('NFC'));
-      const got = marked(plain.join('
-'), planned(meter));
+      const got = marked(plain.join('\n'), planned(meter));
       const offsets = plain.map((p) => [...p.matchAll(VOWEL)].length);
       const local = got.map((x) => {
         let k = Number.parseInt(x, 10); const mark = x.replace(/^\d+/u, '');

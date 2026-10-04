@@ -5,6 +5,9 @@
 import { describe, expect, it } from 'vitest';
 import type { ChantToken } from '@siksamitra/format';
 import { importPdfRows, paragraphsOfRows, runsOf, type PdfEvent, type PdfRow } from '../pdf/page-rows.js';
+import { buildDocument } from '../build-document.js';
+import { reportFor } from '../docx-report.js';
+import { documentXml } from '../word/body.js';
 
 const text = (t: string, hold: 'short' | 'long' | null = null, change = false): PdfEvent =>
   ({ kind: 'text', text: t, hold, change });
@@ -24,6 +27,11 @@ describe('each event, as the run his Word file would have had', () => {
     expect(r[0]).toMatchObject({ text: 'u', superscript: true });
     expect(r[1]).toMatchObject({ text: '||', rStyle: 'Pause' });
     expect(r[2]).toMatchObject({ text: 'note', rStyle: 'Comment' });
+  });
+  it('a svarabhakti dot given as text is in the accent style, even after a svara — śīr̍·ṣan', () => {
+    expect(runsOf([text(' śīr'), { kind: 'svara', mark: '̍' }, text('·'), text('r·ṣa')])
+      .map((r) => [r.text, r.rStyle ?? null])).toEqual([
+      [' śīr', null], ['̍', 'Svara'], ['·', 'Svara'], ['r', null], ['·', 'Svara'], ['ṣa', null]]);
   });
   it('the candrabindu glyph after an m is the candrabindu on it', () => {
     expect(runsOf([text('gm'), { kind: 'candra' }])[1]).toMatchObject({ text: '̐' });
@@ -68,5 +76,20 @@ describe('a page into a document, through the one builder', () => {
     const vs = doc.sections.flatMap((s) => s.verses);
     expect(vs).toHaveLength(1);
     expect(vs[0]!.translation?.en).toBe('I praise Agni');
+  });
+});
+
+describe('a translation after an empty line, as his sādhanā\'s puruṣa sūktam has it', () => {
+  const page = [row('title', text('t')), row('shloka', text('adbhyaḥ sambhūtaḥ ॥ 1॥')), row('small', text('From the essence of water'))];
+  const { paragraphs } = importPdfRows(page, { fallbackTitle: 'f', bytes: 0 });
+  const withGap = [...paragraphs.slice(0, 2), { pStyle: 'Insert', runs: [] }, ...paragraphs.slice(2)];
+  const doc = buildDocument(withGap, { fallbackTitle: 'f', report: reportFor('docx', 0, withGap) });
+  const ins = doc.sections.flatMap((s) => s.items ?? []).find((x) => x.t === 'instruction');
+  it('is kept in his translation face, not as a plain direction', () => {
+    expect(ins).toMatchObject({ instruction: { kind: 'note', comment: 'translation', text: { en: 'From the essence of water' } } });
+  });
+  it('and is written back as a Translation paragraph', () => {
+    const xml = documentXml(doc);
+    expect(xml).toMatch(/<w:pStyle w:val="Insert"\/><\/w:pPr><\/w:p><w:p><w:pPr><w:pStyle w:val="(?:Prijevod|Translation)"\/><\/w:pPr><w:r><w:t xml:space="preserve">From the essence of water/u);
   });
 });

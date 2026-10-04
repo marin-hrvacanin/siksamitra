@@ -349,12 +349,8 @@ export function applySvaraPlan(ctx: RuleCtx, plan: SvaraPlan, opts?: { allowUnve
   for (let s = 0, k = 0; s < segs.length; s += 1, k += 1) {
     const isEven = k % 2 === 1;
     const spec = isEven && plan.even !== undefined ? plan.even : plan;
-    /* A HALF-VERSE THE PAGE WRAPPED is still one half-verse. A line too wide
-       for the column is divided at a word's end with no daṇḍa there — his
-       Viṣṇu sahasranāma's half-verses of nine numbered names (2026-10-04) —
-       and is read on to the next line, but only while it is short of what the
-       plan expects: a source that sets its pādas a line each and scans so is
-       read as it always was. */
+    /* A half-verse the page wrapped is still one: read on to the next line while
+       short of the plan — a source whose pādas scan a line each reads as before. */
     let nuclei = segs[s]!.nuclei;
     while (!accepts(spec.count, nuclei.length) && segs[s]!.wrapped === true
       && s + 1 < segs.length && nuclei.length < most(spec.count)) {
@@ -369,6 +365,11 @@ export function applySvaraPlan(ctx: RuleCtx, plan: SvaraPlan, opts?: { allowUnve
         jobs.push({ nuclei: nuclei.slice(at, at + each), positions: part.positions });
       }
       k += nuclei.length / each - 1;
+      continue;
+    }
+    /* A half-verse one syllable over (ārṣa: `vinayo jayaḥ`, `vina` as one): the first two as one. */
+    if (plan.unit === 'half-verse' && each > 0 && nuclei.length === each + 1) {
+      jobs.push({ nuclei: nuclei.slice(1), positions: spec.positions });
       continue;
     }
     if (!accepts(spec.count, nuclei.length)) {

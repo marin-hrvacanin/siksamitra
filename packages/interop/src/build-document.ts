@@ -335,7 +335,7 @@ export function buildDocument(paragraphs: readonly WordParagraph[], opts: BuildO
         t.lines.push(...text.split('\n').map((l) => l.trim()));
         t.paras.push(text.split('\n').length);
       } else {
-        add({ t: 'instruction', instruction: { kind: 'note', text: { en: text } } });
+        add({ t: 'instruction', instruction: { kind: 'note', text: { en: text }, comment: 'translation' } });
       }
       if (p.pageBreak === true) add({ t: 'break' });
       continue;

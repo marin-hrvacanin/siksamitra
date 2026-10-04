@@ -57,7 +57,8 @@ const Comment = ({ text, on, id }: { text: string; on: 'verse' | 'body'; id?: st
 
 /** A direction, a note, or a line in his comment face. */
 const Instruction = ({ ins, id }: { ins: ChantInstruction; id?: string }): ReactNode => (
-  ins.comment !== undefined
+  ins.comment === 'translation' ? <Translation en={ins.text.en ?? ''} />
+  : ins.comment !== undefined
     ? <Comment text={ins.text.en} on={ins.comment} {...(id === undefined ? {} : { id })} />
     : <p className="doc__instruction" {...(id === undefined ? {} : { 'data-block-id': id })}>{ins.text.en}</p>
 );

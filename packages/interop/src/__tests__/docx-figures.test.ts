@@ -214,7 +214,7 @@ describe('reading the drawings out of a paragraph', () => {
     expect(readDrawings(inlineDrawing)[0]?.wrap).toBeUndefined();
   });
 
-  it('and its wrap is `behind` — Word's "Behind text", the text running over it', () => {
+  it('and its wrap is `behind` — Word\'s "Behind text", the text running over it', () => {
     expect(readDrawings(behind)[0]?.wrap).toBe('behind');
   });
 
